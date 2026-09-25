@@ -614,6 +614,85 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1224881674}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &324203274
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 324203275}
+  - component: {fileID: 324203277}
+  - component: {fileID: 324203276}
+  m_Layer: 0
+  m_Name: Stage FX
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &324203275
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 324203274}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1996129471}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &324203276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 324203274}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df5968adc00af4e4a8b2dbf6d814d9b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RythmeRunner.FX.DropDirector
+  backdrop: {fileID: 1466426824}
+  cameraRig: {fileID: 620517799}
+  debrisPoint: {fileID: 620517798}
+  dropSections:
+  - refrain
+  - drop
+  - final
+  dropBars: 2
+  dropZoom: 0.85
+  dropYOffset: -0.6
+  dropColor: {r: 0.3, g: 0.8, b: 1, a: 1}
+--- !u!114 &324203277
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 324203274}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d05e5bfa0fa0a4c76bcc90188d1f2fc7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RythmeRunner.FX.Chaser
+  target: {fileID: 1371135630}
+  square: {fileID: 21300000, guid: 4630c8012c3ee422b8637667e68cefdb, type: 3}
+  additive: {fileID: 2100000, guid: 0d59fc4c0a6024883989af3b16c4a926, type: 2}
+  barColor: {r: 1, g: 0.45, b: 0.1, a: 0.9}
+  haloColor: {r: 1, g: 0.2, b: 0.05, a: 0.35}
+  barCount: 12
+  wallHeight: 12
+  normalDistance: 1.7
+  lungeDistance: 0.7
+  lungeBeats: 4
+  catchSeconds: 0.35
 --- !u!1 &357800198
 GameObject:
   m_ObjectHideFlags: 0
@@ -953,8 +1032,8 @@ MonoBehaviour:
   ySmoothing: 4
   yFollow: 0.35
   downbeatPunch: 0.08
-  background: {r: 0.05, g: 0.03, b: 0.1, a: 1}
-  backgroundFlash: {r: 0.16, g: 0.06, b: 0.24, a: 1}
+  background: {r: 0.07, g: 0.03, b: 0.1, a: 1}
+  backgroundFlash: {r: 0.3, g: 0.08, b: 0.06, a: 1}
 --- !u!1 &755226472
 GameObject:
   m_ObjectHideFlags: 0
@@ -1383,28 +1462,45 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f70b5c492fd10414390a2978ba120442, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RythmeRunner.FX.Backdrop
+  theme: {fileID: 11400000, guid: ed6ec144f3d2243cfb503bb27c4aeebc, type: 2}
   square: {fileID: 21300000, guid: 174b0f03aa83647eab52a878655a4fe2, type: 3}
   cameraTransform: {fileID: 620517798}
   span: 44
+  horizonY: 1.6
   layers:
-  - parallax: 0.15
-    color: {r: 0.09, g: 0.05, b: 0.18, a: 1}
-    count: 12
+  - parallax: 0.12
+    color: {r: 0.34, g: 0.12, b: 0.16, a: 1}
+    count: 10
     widthRange: {x: 2, y: 4}
     heightRange: {x: 5, y: 11}
-    baseY: -2
+    baseY: -1.2
     sortingOrder: -60
     root: {fileID: 0}
     pieces: []
-  - parallax: 0.4
-    color: {r: 0.14, g: 0.07, b: 0.26, a: 1}
-    count: 16
+    collapseBaseY: []
+    collapseBaseRotation: []
+  - parallax: 0.35
+    color: {r: 0.17, g: 0.05, b: 0.11, a: 1}
+    count: 12
     widthRange: {x: 0.8, y: 2.2}
     heightRange: {x: 2, y: 7}
-    baseY: -1
+    baseY: -1.4
     sortingOrder: -50
     root: {fileID: 0}
     pieces: []
+    collapseBaseY: []
+    collapseBaseRotation: []
+  - parallax: 0.62
+    color: {r: 0.07, g: 0.02, b: 0.06, a: 1}
+    count: 9
+    widthRange: {x: 0.8, y: 2.2}
+    heightRange: {x: 2, y: 7}
+    baseY: -1.6
+    sortingOrder: -40
+    root: {fileID: 0}
+    pieces: []
+    collapseBaseY: []
+    collapseBaseRotation: []
 --- !u!4 &1466426825
 Transform:
   m_ObjectHideFlags: 0
@@ -1557,7 +1653,7 @@ MonoBehaviour:
   playingScreen: {fileID: 2431114014234477562}
   gameOverScreen: {fileID: 8224753471174891999}
   attractSong: {fileID: 11400000, guid: 34cae093b2879454b805828a5cad61ec, type: 2}
-  levelSong: {fileID: 11400000, guid: f5fb68483896e4d4cb666121e0609c7c, type: 2}
+  levelSong: {fileID: 11400000, guid: bd99ae0cb017d44b88b1f85a5ddc4be6, type: 2}
   attractVolume: 0.5
   attractHighscoreSwap: 8
   explainDuration: 6
@@ -1746,6 +1842,7 @@ Transform:
   m_Children:
   - {fileID: 1683521335}
   - {fileID: 1371135630}
+  - {fileID: 324203275}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2431114014234477559

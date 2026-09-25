@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace RythmeRunner.Level
 {
@@ -13,14 +14,47 @@ namespace RythmeRunner.Level
         public Sprite square;
         public Sprite circle;
         public Sprite glow;
+        [Tooltip("Formes supplémentaires (tools/gen-shapes.py), toutes de 1×1 unité, blanches, à teinter.")]
+        public Sprite triangle;
+        public Sprite ring;
+        public Sprite sparkle;
+        public Sprite rounded;
+        [Tooltip("Dégradé vertical : opaque en bas, transparent en haut.")]
+        public Sprite gradient;
         [Tooltip("Matériau additif pour halos et particules.")]
         public Material additive;
+
+        [Header("Sprites (optionnels, sinon formes)")]
+        public Sprite[] playerRun = new Sprite[2];
+        public Sprite playerIdle;
+        public Sprite playerJump;
+        public Sprite playerDuck;
+        public Sprite hookRope;
+        public Sprite hookAnchor;
+        public Sprite[] playerClimb = new Sprite[2];
+        public Sprite playerHit;
+        public Sprite[] enemyFrames = new Sprite[2];
+        public Sprite enemyDead;
+        public Sprite[] blockFrames = new Sprite[2];
+        public Sprite wallTile;
+        public Sprite groundTop;
+        public Sprite groundTopLeft;
+        public Sprite groundTopRight;
+        public Sprite groundFill;
+        public Sprite slideBarTile;
+        public Sprite chainTile;
+        public Sprite[] lumFrames = new Sprite[2];
+        public Sprite[] checkpointFrames = new Sprite[2];
+        public Color spriteTint = Color.white;
+        [Tooltip("Teinte du remplissage du sol : sombre, pour garder le contraste néon.")]
+        public Color groundFillTint = new Color(0.3f, 0.18f, 0.5f);
 
         [Header("Palette")]
         public Color background = new Color(0.05f, 0.03f, 0.1f);
         public Color backgroundFlash = new Color(0.16f, 0.06f, 0.24f);
         public Color groundBody = new Color(0.12f, 0.07f, 0.22f);
-        public Color groundTop = new Color(0.3f, 0.95f, 1f);
+        [FormerlySerializedAs("groundTop")]
+        public Color groundTopColor = new Color(0.3f, 0.95f, 1f);
         public Color beatTick = new Color(0.3f, 0.95f, 1f, 0.35f);
         public Color player = new Color(0.3f, 0.95f, 1f);
         public Color enemy = new Color(1f, 0.3f, 0.35f);

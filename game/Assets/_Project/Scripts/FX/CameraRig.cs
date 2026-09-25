@@ -28,15 +28,31 @@ namespace RythmeRunner.FX
         float flash;
         Color flashColor;
         float smoothY;
+        float framingSize;
+        float framingTarget;
+        float framingY;
+        float framingYTarget;
+        float framingStartSize;
+        float framingStartY;
+        float framingElapsed;
+        float framingDuration;
+        float baseYOffset;
         Conductor subscribed;
 
         public Transform Target { get => target; set => target = value; }
+        /// <summary>Offset vertical de départ (réglé dans l'inspecteur), référence pour SetFraming.</summary>
+        public float BaseYOffset => baseYOffset;
 
         void Awake()
         {
             Instance = this;
             cam = GetComponent<Camera>();
             baseSize = cam.orthographicSize;
+            framingSize = baseSize;
+            framingTarget = baseSize;
+            baseYOffset = offset.y;
+            framingY = baseYOffset;
+            framingYTarget = baseYOffset;
             smoothY = offset.y;
             flashColor = backgroundFlash;
         }
@@ -61,6 +77,38 @@ namespace RythmeRunner.FX
         {
             flashColor = color;
             flash = Mathf.Max(flash, intensity);
+        }
+
+        /// <summary>Cadre la scène avec un multiplicateur de la taille orthographique initiale.</summary>
+        public void SetFraming(float zoom, float yOffset, float blendSeconds)
+        {
+            framingStartSize = framingSize;
+            framingStartY = framingY;
+            framingTarget = baseSize * Mathf.Max(0.01f, zoom);
+            framingYTarget = yOffset;
+            framingElapsed = 0f;
+            framingDuration = Mathf.Max(0f, blendSeconds);
+            if (framingDuration <= 0f)
+            {
+                framingSize = framingTarget;
+                framingY = framingYTarget;
+            }
+        }
+
+        /// <summary>Réinitialise le cadrage sur la taille orthographique initiale.</summary>
+        public void ResetFraming(float blendSeconds)
+        {
+            framingStartSize = framingSize;
+            framingStartY = framingY;
+            framingTarget = baseSize;
+            framingYTarget = baseYOffset;
+            framingElapsed = 0f;
+            framingDuration = Mathf.Max(0f, blendSeconds);
+            if (framingDuration <= 0f)
+            {
+                framingSize = framingTarget;
+                framingY = framingYTarget;
+            }
         }
 
         /// <summary>Recentre immédiatement (respawn, début de partie).</summary>
@@ -104,7 +152,20 @@ namespace RythmeRunner.FX
             transform.position = new Vector3(pos.x, pos.y, -10f) + (Vector3)shake;
 
             punch = Mathf.Lerp(punch, 0f, 1f - Mathf.Exp(-10f * dt));
-            cam.orthographicSize = baseSize - punch;
+            if (framingElapsed < framingDuration)
+            {
+                framingElapsed += dt;
+                float t = Mathf.Clamp01(framingElapsed / Mathf.Max(0.0001f, framingDuration));
+                framingSize = Mathf.Lerp(framingStartSize, framingTarget, t);
+                framingY = Mathf.Lerp(framingStartY, framingYTarget, t);
+            }
+            else
+            {
+                framingSize = framingTarget;
+                framingY = framingYTarget;
+            }
+            offset.y = framingY;
+            cam.orthographicSize = framingSize - punch;
 
             flash = Mathf.Lerp(flash, 0f, 1f - Mathf.Exp(-6f * dt));
             cam.backgroundColor = Color.Lerp(background, flashColor, flash);

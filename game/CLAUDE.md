@@ -69,8 +69,13 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 | `Rhythm/ActionSfx` | Sons d'action quantifiés à la double-croche (`PlayDelayed`), lums = gamme pentatonique. |
 | `FX/CameraRig`, `FX/FxPool`, `FX/Backdrop`, `FX/BeatPulse` | Caméra (suivi, shake, punch, flash du fond), particules en pool, décor en parallaxe, pulsation sur le beat. |
 | `UI/RunHud` | HUD sur le prefab `Screen_Playing`. |
+| `Player/PlayerRig` | Héros néon « sans membres » construit en code (ADR-011), posé chaque frame par `PlayerController` selon `PlayerPose`. |
+| `FX/Chaser`, `FX/DropDirector` | Mur de flammes qui poursuit le joueur ; drops sur les sections `refrain`/`drop`/`final` (effondrement du décor, zoom). |
+| `FX/Telegraph`, `FX/BeatDance`, `FX/BeatFlipbook`, `FX/GroundWave` | Télégraphie 1 mesure avant l'action, danse sur le beat, animation de sprites, onde sur le sol. |
 - Aucun moteur physique (ADR-009). Aucun `Instantiate` en jeu : le niveau est construit une fois par partie, puis on réactive au respawn.
-- Assets provisoires générés : `tools/gen-shapes.py` (formes), `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py --structure …` (musique de test).
+- Assets provisoires générés : `tools/gen-shapes.py` (formes 1×1 u, PPU 64), `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py --style rock --structure …` (musique de test).
+- Niveau actuel : `Charts/level01_neon_rock.json` + `Song_NeonRock` (piste provisoire 120 BPM). Vérifier une chart : `python3 tools/check-chart.py <chart.json>` (0 problème), puis autoplay (F9, F10).
+- Piège : une frame très longue (capture d'écran, onglet en arrière-plan) peut faire tomber le perso, même en autoplay. Ne pas conclure à une chart infaisable sans rejouer.
 
 ## Juice / perfs (GPU intégré)
 - Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.
@@ -93,3 +98,4 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 Package `com.coplaydev.unity-mcp` **figé en `#v10.2.0`** dans `Packages/manifest.json`. On ne pointe jamais sur `#main` : les 3 postes doivent avoir la même version. Pour monter de version, mettre à jour le manifest et la version du serveur MCP dans la même PR.
 Quand il est connecté, s'en servir pour : créer et modifier GameObjects, prefabs et composants, lire la console après compilation, lancer le Play mode. Toujours vérifier la console (0 erreur) avant de rendre la main.
 Sans MCP : écrire le C# et lister les étapes éditeur. **Jamais** de modification manuelle des fichiers YAML (`.unity`, `.prefab`, `.asset`, `.meta`).
+Piège : le bridge Unity parle au serveur MCP **HTTP** `127.0.0.1:8080/mcp`, enregistré pour une session Claude Code lancée **dans le dossier du repo**. Lancée ailleurs, la session utilise un autre serveur et répond « No Unity Editor instances found ».
