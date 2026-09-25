@@ -25,6 +25,7 @@ namespace RythmeRunner.Core
         [SerializeField] GameObject gameOverScreen;
 
         [Header("Musique")]
+        [Tooltip("Boucle de menu, utilisée seulement si le niveau n'a pas de chart (sinon : démo en autoplay).")]
         [SerializeField] SongData attractSong;
         [SerializeField] SongData levelSong;
         [SerializeField, Range(0f, 1f)] float attractVolume = 0.5f;
@@ -37,12 +38,13 @@ namespace RythmeRunner.Core
         [Tooltip("Délai avant d'accepter une validation, pour éviter qu'un appui en rafale saute un écran.")]
         [SerializeField] float inputGuard = 0.5f;
 
-        [Header("Textes (provisoire)")]
-        [SerializeField] TMP_Text hudScoreText;
+        [Header("Écran Game Over")]
+        [SerializeField] TMP_Text gameOverTitleText;
         [SerializeField] TMP_Text gameOverScoreText;
+        [SerializeField] TMP_Text gameOverDetailText;
 
         public GameState State { get; private set; }
-        public int Score { get; private set; }
+        public int Score => RunManager.Instance != null ? RunManager.Instance.Score : 0;
         public event Action<GameState> OnStateChanged;
 
         float stateTimer;
@@ -54,25 +56,15 @@ namespace RythmeRunner.Core
             Instance = this;
         }
 
-        // Abonnement dans Start (et pas OnEnable) : tous les Awake, dont celui du Conductor, sont passés.
+        // Start (et pas Awake) : tous les Awake, dont ceux du Conductor et du RunManager, sont passés.
         void Start()
         {
-            if (Conductor.Instance != null)
-            {
-                Conductor.Instance.OnBeat += HandleBeat;
-                Conductor.Instance.OnSongEnd += HandleSongEnd;
-            }
             StartCoroutine(HighscoreManager.FetchHighscores());
             Enter(GameState.Attract);
         }
 
         void OnDestroy()
         {
-            if (Conductor.Instance != null)
-            {
-                Conductor.Instance.OnBeat -= HandleBeat;
-                Conductor.Instance.OnSongEnd -= HandleSongEnd;
-            }
             if (Instance == this) Instance = null;
         }
 
@@ -100,8 +92,7 @@ namespace RythmeRunner.Core
                     break;
 
                 case GameState.Playing:
-                    // DEBUG provisoire tant que le gameplay n'existe pas : Start = fin de partie.
-                    if (guardPassed && ArcadeInput.StartDown()) EndRun();
+                    // La fin de partie vient du RunManager (plus de cœurs ou fin du morceau) → EndRun().
                     break;
 
                 case GameState.GameOver:
@@ -134,33 +125,34 @@ namespace RythmeRunner.Core
             SetActive(gameOverScreen, next == GameState.GameOver);
 
             var conductor = Conductor.Instance;
+            var run = RunManager.Instance;
             switch (next)
             {
                 case GameState.Attract:
-                    if (conductor != null && attractSong != null)
-                    {
-                        conductor.SetVolume(attractVolume);
+                    if (conductor != null) conductor.SetVolume(attractVolume);
+                    if (run != null && levelSong != null && levelSong.chart != null)
+                        run.BeginRun(levelSong, demo: true); // démo en autoplay derrière le titre
+                    else if (conductor != null && attractSong != null)
                         conductor.Play(attractSong, 0, loop: true);
-                    }
                     break;
 
                 case GameState.Explain:
-                    if (conductor != null) conductor.Stop();
+                    run?.StopRun(hideWorld: true);
+                    conductor?.Stop();
+                    break;
+
+                case GameState.Config:
                     break;
 
                 case GameState.Playing:
-                    Score = 0;
-                    UpdateScoreTexts();
-                    if (conductor != null && levelSong != null)
-                    {
-                        conductor.SetVolume(1f);
-                        conductor.Play(levelSong, 0, loop: false);
-                    }
+                    conductor?.SetVolume(1f);
+                    run?.BeginRun(levelSong, demo: false);
                     break;
 
                 case GameState.GameOver:
-                    if (conductor != null) conductor.Stop();
-                    UpdateScoreTexts();
+                    // Le monde reste affiché, figé, derrière le récapitulatif.
+                    conductor?.Stop();
+                    UpdateGameOverTexts();
                     break;
 
                 case GameState.NameEntry:
@@ -177,23 +169,6 @@ namespace RythmeRunner.Core
             if (State == GameState.Playing) Enter(GameState.GameOver);
         }
 
-        public void AddScore(int amount)
-        {
-            Score += amount;
-            UpdateScoreTexts();
-        }
-
-        void HandleBeat(int beat)
-        {
-            // Provisoire : 10 points par beat pour valider le branchement Conductor → score.
-            if (State == GameState.Playing) AddScore(10);
-        }
-
-        void HandleSongEnd()
-        {
-            // Provisoire : fin du morceau = fin de partie. Plus tard : tour REMIX 8-bit.
-            EndRun();
-        }
 
         void ToggleAttractHighscores()
         {
@@ -203,10 +178,14 @@ namespace RythmeRunner.Core
             else HighscoreManager.HideHighscores();
         }
 
-        void UpdateScoreTexts()
+        void UpdateGameOverTexts()
         {
-            if (hudScoreText != null) hudScoreText.text = Score.ToString("N0");
-            if (gameOverScoreText != null) gameOverScoreText.text = $"SCORE  {Score:N0}";
+            var run = RunManager.Instance;
+            if (run == null) return;
+            if (gameOverTitleText != null) gameOverTitleText.text = run.Completed ? "NIVEAU TERMINÉ !" : "GAME OVER";
+            if (gameOverScoreText != null) gameOverScoreText.text = $"SCORE  {run.Score:N0}";
+            if (gameOverDetailText != null)
+                gameOverDetailText.text = $"LUMS {run.Lums}/{run.TotalLums}     MÉDAILLE {run.Medal}     CHUTES {run.Deaths}";
         }
 
         static bool IsTopTen(int score) =>

@@ -8,9 +8,9 @@ Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en sc
 ## Commandes (3 boutons max)
 | Action | Entrée | Son |
 |---|---|---|
-| Sauter (maintenu = plus haut) | **B1** | accent/percussion quantifié |
+| Sauter (hauteur fixe, le saut dure **1 beat**, avec une vrille) | **B1** | accent/percussion quantifié |
 | Frapper (casse blocs et ennemis) | **B2** | caisse claire/impact |
-| Glisser (sous les obstacles) | **joystick bas** | swoosh |
+| Glisser (sous les obstacles) ; en l'air = chute rapide | **joystick bas** | swoosh |
 | Course sur les murs, lianes, crochets | **contextuel, automatique** | note |
 | Menus : valider | Start ou B1 | — |
 
@@ -27,7 +27,9 @@ Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en sc
 - Morceau d'environ 1 min 30 à 2 min, découpé en sections (intro, montée, refrain, break, final), avec une densité d'actions croissante (noires → croches → syncopes).
 - Fin du morceau → **tour REMIX 8-bit** : même chart, clip chiptune séparé, perturbations visuelles croissantes (brouillage, zoom, tremblements, zones sombres, image inversée). On boucle en ajoutant une perturbation à chaque tour, jusqu'à la mort.
 - Durée cible d'une partie : **2 à 4 min**.
-- **Score** = lums × multiplicateur de combo (+1 par action réussie, remis à ×1 si on est touché) + bonus de section parfaite + bonus de tour. Médailles bronze/argent/or affichées aux résultats.
+- **Score** (implémenté dans `RunManager`, réglable dans l'inspecteur) : lum 10, ennemi/bloc cassé 50, obstacle franchi 20, **× multiplicateur** = 1 + combo/8 (max ×8). Le combo gagne +1 par action réussie et retombe à 0 quand on est touché. Bonus : section sans chute +500, niveau terminé +1000 par cœur restant. Au respawn, le score et les lums reviennent à leur valeur du checkpoint (pas de farm en mourant).
+- **Médailles** (ratio de lums) : OR ≥ 90 %, ARGENT ≥ 60 %, sinon BRONZE si le niveau est terminé ; en cas d'échec, BRONZE à partir de 30 %.
+- État actuel de la démo : fin du morceau = fin de partie. Le tour REMIX n'est pas encore fait.
 - **2 joueurs** : hot-seat en alternance (P1 puis P2 sur le même morceau, comparaison à la fin). À faire **après le MVP**.
 
 ## Écrans (flow imposé par l'enseignant)
@@ -51,7 +53,7 @@ Démarrage → [1 Attract + HighScore] ⟲ (tourne en boucle)
 
 | # | Écran | Contenu Rythme Runner | Toolkit |
 |---|---|---|---|
-| 1 | **Attract + HighScore** | Alternance toutes les ~8 s : démo en **autoplay** du niveau (musique basse) ↔ classement top 10. Logo + « APPUIE SUR UN BOUTON » qui pulse sur le beat. N'importe quel bouton → écran 2. Cet appui débloque aussi l'audio du navigateur. | `HighscoreUI` |
+| 1 | **Attract + HighScore** | Alternance toutes les ~8 s : démo en **autoplay** du niveau (musique basse, implémentée : `RunManager.BeginRun(song, demo: true)`) ↔ classement top 10. Logo + « APPUIE SUR UN BOUTON » qui pulse sur le beat. N'importe quel bouton → écran 2. Cet appui débloque aussi l'audio du navigateur. | `HighscoreUI` |
 | 2 | **Explain (How to play)** | Une planche animée : joystick bas = glisser, B1 = sauter, B2 = frapper, « suis la musique ». B1/Start pour passer, sinon passage auto après ~6 s. | — |
 | 3 | **Config** *(facultatif)* | 1 joueur / 2 joueurs (hot-seat), plus tard le choix du morceau. Si on ne le fait pas, on passe directement en 1P. | — |
 | 4 | **Game** | HUD : score, multiplicateur, cœurs, progression du morceau, section, tour de remix. | — |

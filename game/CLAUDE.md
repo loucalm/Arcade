@@ -57,6 +57,21 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 - `ActionSfx` : quantifie les sons d'action à la double-croche (`round(beat * 4) / 4`).
 - Clips musicaux : Vorbis, `Compressed In Memory`, `Preload Audio Data` activé. SFX courts : `Decompress On Load`.
 
+## Gameplay (démo jouable)
+| Script | Rôle |
+|---|---|
+| `Core/RunManager` | Une partie : build du niveau, cœurs (3), score/combo/multiplicateur, checkpoints = sections, respawn (seek audio), fin → `GameFlow.EndRun()`. Mode `demo` = autoplay sur l'Attract. |
+| `Level/ChartData` | Parse la chart JSON (`JsonUtility`, champ `@params`). |
+| `Level/LevelBuilder` | Chart → visuels (sprites teintés) + données de collision (`LevelObject`). Géométrie : voir docs/chart-format.md § Placement. |
+| `Level/LevelTheme` (SO `Theme_Neon`) | Sprites de base + palette. Les artistes remplacent ici, sans code. |
+| `Player/PlayerController` | X = `BeatToX(SongBeat)` ; Y = physique maison réglée en beats. Collisions AABB **balayées** entre frames (anti-traversée). |
+| `Player/PlayerInputs` | `IPlayerInput` : `ArcadePlayerInput` (borne) ou `AutoPlayerInput` (joue la chart parfaitement). |
+| `Rhythm/ActionSfx` | Sons d'action quantifiés à la double-croche (`PlayDelayed`), lums = gamme pentatonique. |
+| `FX/CameraRig`, `FX/FxPool`, `FX/Backdrop`, `FX/BeatPulse` | Caméra (suivi, shake, punch, flash du fond), particules en pool, décor en parallaxe, pulsation sur le beat. |
+| `UI/RunHud` | HUD sur le prefab `Screen_Playing`. |
+- Aucun moteur physique (ADR-009). Aucun `Instantiate` en jeu : le niveau est construit une fois par partie, puis on réactive au respawn.
+- Assets provisoires générés : `tools/gen-shapes.py` (formes), `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py --structure …` (musique de test).
+
 ## Juice / perfs (GPU intégré)
 - Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.
 - Juice = screen shake, squash & stretch, hit-stop court, sprites **additifs**, particules légères (< ~300 actives), flash sur `OnBeat`, tweening de l'UI.
@@ -64,7 +79,7 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 - Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades.
 
 ## Debug
-- `Debug/` (namespace **`RythmeRunner.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). À venir : grille de beats et **autoplay**.
+- `Debug/` (namespace **`RythmeRunner.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
 - `GameFlow` (`Core/GameFlow.cs`) : les écrans sont des prefabs `Prefabs/Screens/Screen_*.prefab` sous le canvas `Screens` (sortingOrder −10, sous l'overlay Anatidae). En attendant le gameplay : +10 points par beat, **Start = fin de partie**.
 
 ## Build → borne

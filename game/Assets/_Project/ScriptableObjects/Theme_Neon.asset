@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ad704ae6a597477e841225aab965a68, type: 3}
+  m_Name: Theme_Neon
+  m_EditorClassIdentifier: Assembly-CSharp::RythmeRunner.Level.LevelTheme
+  square: {fileID: 21300000, guid: 174b0f03aa83647eab52a878655a4fe2, type: 3}
+  circle: {fileID: 21300000, guid: 360c9e599ce144fa49e6a8e11d82d6e0, type: 3}
+  glow: {fileID: 21300000, guid: 38847a6667cb6419a944ea37309cf9c3, type: 3}
+  additive: {fileID: 2100000, guid: 0d59fc4c0a6024883989af3b16c4a926, type: 2}
+  background: {r: 0.05, g: 0.03, b: 0.1, a: 1}
+  backgroundFlash: {r: 0.16, g: 0.06, b: 0.24, a: 1}
+  groundBody: {r: 0.12, g: 0.07, b: 0.22, a: 1}
+  groundTop: {r: 0.3, g: 0.95, b: 1, a: 1}
+  beatTick: {r: 0.3, g: 0.95, b: 1, a: 0.35}
+  player: {r: 0.3, g: 0.95, b: 1, a: 1}
+  enemy: {r: 1, g: 0.3, b: 0.35, a: 1}
+  block: {r: 1, g: 0.6, b: 0.2, a: 1}
+  wall: {r: 1, g: 0.25, b: 0.75, a: 1}
+  slideBar: {r: 1, g: 0.85, b: 0.2, a: 1}
+  lum: {r: 1, g: 0.95, b: 0.4, a: 1}
+  checkpoint: {r: 0.4, g: 1, b: 0.6, a: 1}
+  backdropNear: {r: 0.14, g: 0.07, b: 0.26, a: 1}
+  backdropFar: {r: 0.09, g: 0.05, b: 0.18, a: 1}

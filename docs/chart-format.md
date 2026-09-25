@@ -34,6 +34,22 @@ Un fichier par niveau dans `game/Assets/_Project/Charts/<id>.json`, chargé comm
 - `beat` : en temps (float). Granularité minimale : **0,25** (double-croche).
 - Les `sections` servent aussi de **checkpoints**.
 
+## Placement (important)
+Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (appuyer). L'obstacle est placé juste après par `LevelBuilder` (constantes en tête de fichier) :
+| type | géométrie | fenêtre de réussite (≈, en beats autour de `beat`) |
+|---|---|---|
+| `gap` | trou de `beat+0,2` à `beat+0,2+length` (défaut 0,6) | −0,18 … +0,42 |
+| `wall` | bloc de 0,9 u à `beat+0,3`, hauteur `height` (défaut 0,8) | −0,29 … +0,11 |
+| `enemy` / `block` | centre à `beat+0,4` | −0,46 … +0,22 |
+| `slide_bar` | plafond de `beat+0,1` à `beat+0,1+length` (défaut 1), bas à 0,62 u | tenir le bas tout du long |
+| `lum_line` | lums aux beats `beat + i×step`, hauteur selon `lane` : 0 → 0,45 u (au sol), 1 → 2,0 u (sommet d'un saut lancé 0,5 beat avant), 2 → 3,1 u | — |
+
+Contraintes de faisabilité (le saut dure 1 beat, sommet à 2,2 u) :
+- deux sauts (gap/wall) espacés d'**au moins 1 beat** ;
+- pas d'ennemi pendant un saut (entre `j` et `j+1`), sauf pile à l'atterrissage `j+1` ;
+- pas de saut entre `slide_bar.beat − 1,2` et la fin de la barre ;
+- lums `lane 1` au-dessus d'un saut lancé en `j` : de `j+0,25` à `j+0,75`.
+
 ## Types d'événements
 | type | Action attendue | params utiles |
 |---|---|---|
@@ -42,8 +58,8 @@ Un fichier par niveau dans `game/Assets/_Project/Charts/<id>.json`, chargé comm
 | `block` | frapper (cassable) | `variant` |
 | `slide_bar` | glisser | `length` |
 | `wall` | sauter (mur à franchir) | `height` |
-| `wall_run` | automatique | `length` |
-| `hook` | automatique (liane/crochet) | `length` |
+| `wall_run` | automatique (**pas encore implémenté**) | `length` |
+| `hook` | automatique, liane/crochet (**pas encore implémenté**) | `length` |
 | `lum_line` | collecter | `count`, `step` (beats entre lums) |
 | `fx_flash` | — (visuel) | `intensity` |
 | `camera_shake` | — | `intensity`, `length` |
@@ -55,4 +71,5 @@ Ajouter un type = mettre à jour **ce tableau**, `LevelBuilder` et l'autoplay de
 ## Règles de level design
 - Télégraphier chaque obstacle **1 mesure avant** (`beatsPerBar` beats).
 - Au moins **1 beat** entre deux actions dans l'intro. Les croches (0,5) seulement à partir du refrain, les syncopes au final.
-- Valider chaque chart avec l'**autoplay** + la grille de beats avant de merger.
+- Valider chaque chart avec l'**autoplay** avant de merger : F9 (overlay), puis F10 (autoplay) en partie. L'overlay doit afficher **0 chute** en fin de morceau.
+- Exemple complet : `game/Assets/_Project/Charts/test_level_120.json` (128 beats, 5 sections, densité croissante).

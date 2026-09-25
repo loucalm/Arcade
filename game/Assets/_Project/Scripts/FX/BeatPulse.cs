@@ -22,6 +22,14 @@ namespace RythmeRunner.FX
 
         void Awake() => baseScale = transform.localScale;
 
+        /// <summary>Réglage depuis le code (objets générés par LevelBuilder).</summary>
+        public void Configure(float pulse, float downbeat, int everyN = 1)
+        {
+            pulseAmount = pulse;
+            downbeatAmount = downbeat;
+            everyNBeats = Mathf.Max(1, everyN);
+        }
+
         void OnEnable() => TrySubscribe();
 
         void OnDisable()
