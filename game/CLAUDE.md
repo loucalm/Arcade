@@ -32,6 +32,7 @@ Les `.gitkeep` gardent les dossiers vides dans git (Unity ignore les fichiers qu
 - Fin de partie : `if (HighscoreManager.IsHighscore(score)) HighscoreManager.ShowHighscoreInput(score);`. Bloquer nos menus tant que `IsHighscoreInputScreenShown` est vrai.
 - Appels vers notre VPS : **uniquement `AnatidaeProxyWebRequest.Get/Post`**, qui passe par `localhost:3000/proxy`. URL de base dans un ScriptableObject `NetConfig` (en local : `http://localhost:8080/api`). Contrat dans [../docs/api-contract.md](../docs/api-contract.md).
 - Normal en éditeur : `EntryPointNotFoundException: BackToMenu` en sortant du Play mode (ou après 60 s d'AFK, ou avec Échap maintenu). Le `.jslib` n'existe qu'en build Web. À ignorer, ne pas « corriger » le toolkit.
+- `TextMesh Pro/.../LiberationSans SDF - Fallback.asset` change tout seul (atlas de police dynamique) : **ne pas le commiter** (`git restore` dessus).
 - `ExtradataManager` sert à stocker des clés/valeurs sur la borne (stats globales, ex. nombre total de morts).
 
 ## Flow d'écrans (ADR-007)
@@ -46,12 +47,30 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 - Axe vertical manette déjà inversé dans l'InputManager : **haut = positif**.
 
 ## Rythme (cœur technique)
-- `Conductor` (singleton, `Rhythm/`) : `SongTime` calculé depuis `audioSource.timeSamples / clip.frequency`, interpolé chaque frame avec `Time.unscaledDeltaTime` puis **recalé si la dérive dépasse 20 ms** (l'horloge audio WebGL avance par paquets). Expose `SongBeat`, `BeatToSeconds()`, `SecondsToBeat()`, l'événement `OnBeat(int)`, `Seek(beat)`.
-- Démarrage : `PlayScheduled`. ⚠️ `AudioSettings.dspTime` n'est pas garanti sur WebGL : à valider en build Web (spike), sinon repli sur `timeSamples`.
+- `Conductor` (singleton, `Rhythm/Conductor.cs`) : `SongTime` vient de `timeSamples / frequency`, interpolé avec `unscaledDeltaTime` et recalé à chaque nouveau paquet audio (correction douce, saut au-delà de 20 ms). API : `Play(SongData, startBeat, loop, useRemix)`, `Seek(beat)`, `Stop()`, `SongTime`, `SongBeat`, `BeatToSeconds()` (relatif au beat 0, offset déjà retiré), `OnBeat(int)`, `OnSongEnd`. Il gère les clips en boucle (menu).
+- Démarrage via `Play()` + `timeSamples`, **pas** `PlayScheduled`/`dspTime` (non garantis sur WebGL).
+- Un morceau = un asset `SongData` (`ScriptableObjects/Songs/`) : clip, remixClip, bpm, offsetSeconds, beatsPerBar, chart.
+- S'abonner aux événements du Conductor dans `Start()` (pas `OnEnable`), ou en différé comme `FX/BeatPulse` : l'ordre des `Awake` n'est pas garanti.
+- Pistes de test générées par `tools/gen-test-beat.py` (kick sur chaque temps) : `Audio/Test/test_*_120.wav`.
 - ⚠️ Le navigateur exige une interaction avant de jouer du son. À vérifier **sur la borne** (l'appui sur un bouton de manette compte-t-il ?). Attract = « APPUIE SUR UN BOUTON », et ce premier appui débloque l'audio.
 - `LevelBuilder` : lit la chart JSON (`Charts/*.json` via `TextAsset`) et instancie les prefabs à `x = BeatToSeconds(beat) * runSpeed`. Pooling obligatoire.
 - `ActionSfx` : quantifie les sons d'action à la double-croche (`round(beat * 4) / 4`).
 - Clips musicaux : Vorbis, `Compressed In Memory`, `Preload Audio Data` activé. SFX courts : `Decompress On Load`.
+
+## Gameplay (démo jouable)
+| Script | Rôle |
+|---|---|
+| `Core/RunManager` | Une partie : build du niveau, cœurs (3), score/combo/multiplicateur, checkpoints = sections, respawn (seek audio), fin → `GameFlow.EndRun()`. Mode `demo` = autoplay sur l'Attract. |
+| `Level/ChartData` | Parse la chart JSON (`JsonUtility`, champ `@params`). |
+| `Level/LevelBuilder` | Chart → visuels (sprites teintés) + données de collision (`LevelObject`). Géométrie : voir docs/chart-format.md § Placement. |
+| `Level/LevelTheme` (SO `Theme_Neon`) | Sprites de base + palette. Les artistes remplacent ici, sans code. |
+| `Player/PlayerController` | X = `BeatToX(SongBeat)` ; Y = physique maison réglée en beats. Collisions AABB **balayées** entre frames (anti-traversée). |
+| `Player/PlayerInputs` | `IPlayerInput` : `ArcadePlayerInput` (borne) ou `AutoPlayerInput` (joue la chart parfaitement). |
+| `Rhythm/ActionSfx` | Sons d'action quantifiés à la double-croche (`PlayDelayed`), lums = gamme pentatonique. |
+| `FX/CameraRig`, `FX/FxPool`, `FX/Backdrop`, `FX/BeatPulse` | Caméra (suivi, shake, punch, flash du fond), particules en pool, décor en parallaxe, pulsation sur le beat. |
+| `UI/RunHud` | HUD sur le prefab `Screen_Playing`. |
+- Aucun moteur physique (ADR-009). Aucun `Instantiate` en jeu : le niveau est construit une fois par partie, puis on réactive au respawn.
+- Assets provisoires générés : `tools/gen-shapes.py` (formes), `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py --structure …` (musique de test).
 
 ## Juice / perfs (GPU intégré)
 - Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.
@@ -60,13 +79,15 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 - Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades.
 
 ## Debug
-- `Debug/` : overlay de la grille de beats, métronome audible et **autoplay** (joue la chart parfaitement). Activés par le define `RR_DEBUG` ou par F1 en éditeur. Jamais actifs en build de rendu.
+- `Debug/` (namespace **`RythmeRunner.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
+- `GameFlow` (`Core/GameFlow.cs`) : les écrans sont des prefabs `Prefabs/Screens/Screen_*.prefab` sous le canvas `Screens` (sortingOrder −10, sous l'overlay Anatidae). En attendant le gameplay : +10 points par beat, **Start = fin de partie**.
 
 ## Build → borne
-1. File > Build Profiles > **Web** → Build dans `game/Builds/WebGL` (gitignoré).
-2. Copier le contenu vers `dist/RythmeRunner/`, puis ajouter `game/BuildExtras/info.json` et `thumbnail.png` (à placer dans `game/BuildExtras/`).
-3. Tester dans `tools/anatidae-arcade/public/RythmeRunner/` avec `node server.js` → `http://localhost:3000`.
-4. Vérifier : bouton blanc, AFK 60 s, saisie du highscore, dead zone, 60 fps.
+1. File > Build Profiles > **Web** → Build dans **`game/Build`** (gitignoré).
+2. `tools/package-build.sh` : copie vers `dist/RythmeRunner/`, ajoute `BuildExtras/{info.json,thumbnail.png,attract.mp4?}` et installe le tout dans la borne locale.
+3. `cd tools/anatidae-arcade && node server.js` → `http://localhost:3000`. Le jeu apparaît dans le menu (Entrée/B1 pour lancer). Accès direct : `http://localhost:3000/RythmeRunner/`.
+4. Vérifier : **Échap maintenu 1,5 s → retour menu** (testé OK le 2026-09-25), AFK 60 s → menu, `GET /api/?game=RythmeRunner` en 200, saisie du highscore, dead zone, 60 fps.
+`thumbnail.png` est une vignette provisoire (dégradé) : à remplacer par la vraie jaquette carrée.
 
 ## MCP Unity
 Package `com.coplaydev.unity-mcp` **figé en `#v10.2.0`** dans `Packages/manifest.json`. On ne pointe jamais sur `#main` : les 3 postes doivent avoir la même version. Pour monter de version, mettre à jour le manifest et la version du serveur MCP dans la même PR.

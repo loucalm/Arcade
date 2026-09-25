@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "borne-locale",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd tools/anatidae-arcade && node server.js"
+      ],
+      "port": 3000
+    }
+  ]
+}

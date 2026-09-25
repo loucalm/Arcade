@@ -32,3 +32,9 @@ Flow de l'enseignant ([img/flow-ecrans.webp](img/flow-ecrans.webp)) : Attract+Hi
 
 ## ADR-008 — Migration vers Unity 6000.3.23f1 + MCP Unity (2026-09-25)
 Le projet du toolkit (6000.0.40f1) a été ouvert et migré en **6000.3.23f1**. La 6000.0.40f1 bloquait sur les Mac Apple Silicon (Package Manager x86_64 uniquement). Après la migration : console vide, réglages borne intacts (Built-in RP, ancien Input Manager, Web Minimal sans compression, 1920×1080). Plateforme passée en Web, scène `Main` créée avec `AnatidaeInterface`. Package MCP CoplayDev figé en v10.2.0. **Les 3 postes doivent utiliser exactement 6000.3.23f1.** À vérifier tôt : un build Web de cette version tourne bien dans le Firefox ESR de la borne.
+
+## ADR-009 — Collisions à la main, pas de moteur physique (2026-09-25)
+Le joueur avance à x = BeatToX(SongBeat) (pas de vélocité physique). Collisions AABB maison contre les `LevelObject`, balayées entre deux frames, Y en physique cinématique réglée en beats. Raisons : déterminisme, synchro parfaite avec l'audio, coût quasi nul sur la borne, autoplay fiable pour valider les charts.
+
+## ADR-010 — Démo en autoplay sur l'écran Attract (2026-09-25)
+L'Attract lance le vrai niveau en autoplay (sans perte de cœur), sous le titre. Ça montre le jeu aux passants, et ça réutilise l'autoplay de debug. La boucle de menu `attractSong` ne sert que si le niveau n'a pas de chart.
