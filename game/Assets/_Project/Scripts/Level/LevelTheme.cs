@@ -14,6 +14,13 @@ namespace RythmeRunner.Level
         public Sprite square;
         public Sprite circle;
         public Sprite glow;
+        [Tooltip("Formes supplémentaires (tools/gen-shapes.py), toutes de 1×1 unité, blanches, à teinter.")]
+        public Sprite triangle;
+        public Sprite ring;
+        public Sprite sparkle;
+        public Sprite rounded;
+        [Tooltip("Dégradé vertical : opaque en bas, transparent en haut.")]
+        public Sprite gradient;
         [Tooltip("Matériau additif pour halos et particules.")]
         public Material additive;
 

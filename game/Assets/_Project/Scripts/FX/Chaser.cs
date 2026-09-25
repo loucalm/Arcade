@@ -15,10 +15,10 @@ namespace RythmeRunner.FX
         [SerializeField] Color haloColor = new(0.2f, 0.5f, 1f, 0.2f);
         [SerializeField, Min(1)] int barCount = 12;
         [SerializeField] float wallHeight = 12f;
-        [Tooltip("Distance entre le joueur et le front du mur (le bord gauche de l'écran est à ~3,6 u du joueur).")]
-        [SerializeField] float normalDistance = 3.2f;
+        [Tooltip("Distance entre le joueur et le front du mur (le bord gauche de l'écran est à ~2,1 u du joueur).")]
+        [SerializeField] float normalDistance = 1.7f;
         [Tooltip("Distance au respawn : le mur repart de là et recule jusqu'à normalDistance.")]
-        [SerializeField] float lungeDistance = 1.4f;
+        [SerializeField] float lungeDistance = 0.7f;
         [SerializeField] float lungeBeats = 4f;
         [Tooltip("Durée (s, temps réel) pendant laquelle le mur avale le joueur touché. L'audio est coupé à ce moment-là.")]
         [SerializeField] float catchSeconds = 0.35f;

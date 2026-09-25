@@ -689,8 +689,8 @@ MonoBehaviour:
   haloColor: {r: 0.2, g: 0.5, b: 1, a: 0.2}
   barCount: 12
   wallHeight: 12
-  normalDistance: 3.2
-  lungeDistance: 1.4
+  normalDistance: 1.7
+  lungeDistance: 0.7
   lungeBeats: 4
   catchSeconds: 0.35
 --- !u!1 &357800198

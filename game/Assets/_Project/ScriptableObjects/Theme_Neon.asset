@@ -15,11 +15,21 @@ MonoBehaviour:
   square: {fileID: 21300000, guid: 174b0f03aa83647eab52a878655a4fe2, type: 3}
   circle: {fileID: 21300000, guid: 360c9e599ce144fa49e6a8e11d82d6e0, type: 3}
   glow: {fileID: 21300000, guid: 38847a6667cb6419a944ea37309cf9c3, type: 3}
+  triangle: {fileID: 21300000, guid: 4630c8012c3ee422b8637667e68cefdb, type: 3}
+  ring: {fileID: 21300000, guid: 8ef5f75afca7041da889d1a5517f89e3, type: 3}
+  sparkle: {fileID: 21300000, guid: f1b8fafc92118406e9fd0bcdcc0f222a, type: 3}
+  rounded: {fileID: 21300000, guid: f21a7c70fc0fa4af8be96765c824131f, type: 3}
+  gradient: {fileID: 21300000, guid: 2e19eda5d3a7245cda679f2cda8cf54b, type: 3}
   additive: {fileID: 2100000, guid: 0d59fc4c0a6024883989af3b16c4a926, type: 2}
   playerRun: []
   playerIdle: {fileID: 0}
   playerJump: {fileID: 0}
   playerDuck: {fileID: 0}
+  hookRope: {fileID: 0}
+  hookAnchor: {fileID: 0}
+  playerClimb:
+  - {fileID: 0}
+  - {fileID: 0}
   playerHit: {fileID: 0}
   enemyFrames: []
   enemyDead: {fileID: 0}
