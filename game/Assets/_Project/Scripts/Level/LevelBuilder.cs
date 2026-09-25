@@ -229,7 +229,9 @@ namespace RythmeRunner.Level
 
         SpriteRenderer SpriteTiled(Transform parent, string name, Sprite sprite, Vector2 center, Vector2 size, int order)
         {
+            // En mode Tiled, la taille est en unités locales : échelle 1, sinon elle se multiplie (tuiles de 1 unité).
             var sr = SpriteFit(parent, name, sprite, center, 1f, order);
+            sr.transform.localScale = Vector3.one;
             sr.drawMode = SpriteDrawMode.Tiled;
             sr.size = size;
             return sr;
@@ -252,7 +254,7 @@ namespace RythmeRunner.Level
                 if (x1 - x0 < 0.01f) return;
                 float w = x1 - x0, mid = (x0 + x1) * 0.5f;
                 if (theme.groundFill != null)
-                    SpriteTiled(g, "Fill", theme.groundFill, new Vector2(mid, -5f), new Vector2(w, 8f), 0);
+                    SpriteTiled(g, "Fill", theme.groundFill, new Vector2(mid, -5f), new Vector2(w, 8f), 0).color = theme.groundFillTint;
                 else
                     Sprite(g, "Body", theme.square, theme.groundBody, new Vector2(mid, -4f), new Vector2(w, 8f), 0);
                 if (theme.groundTop != null)
@@ -318,7 +320,7 @@ namespace RythmeRunner.Level
         {
             var t = Group("Wall", new Vector2(r.center.x, 0f));
             if (theme.wallTile != null)
-                SpriteTiled(t, "Body", theme.wallTile, new Vector2(0f, r.height * 0.5f), new Vector2(r.width, r.height), 10);
+                SpriteTiled(t, "Body", theme.wallTile, new Vector2(0f, r.height * 0.5f), new Vector2(r.width, r.height), 10).color = theme.wall;
             else
                 Sprite(t, "Body", theme.square, theme.wall, new Vector2(0f, r.height * 0.5f), new Vector2(r.width, r.height), 10);
             Sprite(t, "Top", theme.square, Color.white, new Vector2(0f, r.height - 0.05f), new Vector2(r.width, 0.1f), 11);

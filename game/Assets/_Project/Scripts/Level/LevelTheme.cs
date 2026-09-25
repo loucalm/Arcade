@@ -36,6 +36,8 @@ namespace RythmeRunner.Level
         public Sprite[] lumFrames = new Sprite[2];
         public Sprite[] checkpointFrames = new Sprite[2];
         public Color spriteTint = Color.white;
+        [Tooltip("Teinte du remplissage du sol : sombre, pour garder le contraste néon.")]
+        public Color groundFillTint = new Color(0.3f, 0.18f, 0.5f);
 
         [Header("Palette")]
         public Color background = new Color(0.05f, 0.03f, 0.1f);
