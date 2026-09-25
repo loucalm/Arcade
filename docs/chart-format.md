@@ -58,8 +58,8 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à 2,2 u) :
 | `block` | frapper (cassable) | `variant` |
 | `slide_bar` | glisser | `length` |
 | `wall` | sauter (mur à franchir) | `height` |
-| `wall_run` | automatique (**pas encore implémenté**) | `length` |
-| `hook` | automatique, liane/crochet (**pas encore implémenté**) | `length` |
+| `wall_run` | automatique, course sur mur courbe | `length` (défaut 4, minimum 2), `count` |
+| `hook` | automatique, liane/crochet | `length` (défaut 2, minimum 1,5), `count` |
 | `lum_line` | collecter | `count`, `step` (beats entre lums) |
 | `fx_flash` | — (visuel) | `intensity` |
 | `camera_shake` | — | `intensity`, `length` |
@@ -69,6 +69,9 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à 2,2 u) :
 Ajouter un type = mettre à jour **ce tableau**, `LevelBuilder` et l'autoplay de debug dans la même PR.
 
 ## Règles de level design
+- `hook` et `wall_run` ne peuvent pas chevaucher un début de section et gardent au moins 1 beat avant la fin de section.
+- Aucun autre obstacle entre `hook.beat − 1` et `hook.beat + length + 1,5`, ni entre `wall_run.beat − 1` et `wall_run.beat + length + 1`.
+- Une liane crée un trou de `beat + 0,2` à `beat + length + 0,5`; les lums de `hook` sont répartis entre `t=0,15` et `t=0,85`, ceux de `wall_run` entre `t=0,1` et `t=0,9`.
 - Télégraphier chaque obstacle **1 mesure avant** (`beatsPerBar` beats).
 - Au moins **1 beat** entre deux actions dans l'intro. Les croches (0,5) seulement à partir du refrain, les syncopes au final.
 - Valider chaque chart avec l'**autoplay** avant de merger : F9 (overlay), puis F10 (autoplay) en partie. L'overlay doit afficher **0 chute** en fin de morceau.

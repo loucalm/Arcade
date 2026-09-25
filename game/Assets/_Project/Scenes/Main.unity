@@ -1640,7 +1640,7 @@ MonoBehaviour:
   playingScreen: {fileID: 2431114014234477562}
   gameOverScreen: {fileID: 8224753471174891999}
   attractSong: {fileID: 11400000, guid: 34cae093b2879454b805828a5cad61ec, type: 2}
-  levelSong: {fileID: 11400000, guid: f5fb68483896e4d4cb666121e0609c7c, type: 2}
+  levelSong: {fileID: 11400000, guid: bd99ae0cb017d44b88b1f85a5ddc4be6, type: 2}
   attractVolume: 0.5
   attractHighscoreSwap: 8
   explainDuration: 6

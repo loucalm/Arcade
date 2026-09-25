@@ -18,4 +18,4 @@ MonoBehaviour:
   bpm: 120
   offsetSeconds: 0
   beatsPerBar: 4
-  chart: {fileID: 0}
+  chart: {fileID: 4900000, guid: 69e0111d7c9e5442fa2ee3befcf9dcab, type: 3}

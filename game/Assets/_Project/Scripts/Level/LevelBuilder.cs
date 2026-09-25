@@ -20,6 +20,8 @@ namespace RythmeRunner.Level
         const float SlideStartBeats = 0.1f;
         const float SlideDefaultLength = 1f;
         const float SlideBarBottom = 0.62f;
+        const float HookDefaultLength = 2f;
+        const float WallRunDefaultLength = 4f;
         static readonly float[] LumLaneY = { 0.45f, 2.0f, 3.1f };
 
         [SerializeField] LevelTheme theme;
@@ -108,6 +110,29 @@ namespace RythmeRunner.Level
                         o.view = MakeSlideBar(o.bounds, e.beat);
                         Obstacles.Add(o);
                         AutoSlideSpans.Add(new Vector2(e.beat - 0.05f, e.beat + SlideStartBeats + len + 0.35f));
+                        lastX = Mathf.Max(lastX, x1);
+                        break;
+                    }
+                    case "hook":
+                    {
+                        float len = Mathf.Max(1.5f, p.length > 0 ? p.length : HookDefaultLength);
+                        float x0 = BeatToX(e.beat), x1 = BeatToX(e.beat + len);
+                        gaps.Add(new Vector2(BeatToX(e.beat + 0.2f), BeatToX(e.beat + len + 0.5f)));
+                        var o = new LevelObject { kind = LevelObjectKind.Hook, beat = e.beat, startBeat = e.beat, endBeat = e.beat + len, trajectoryY0 = 0f, bounds = Rect.MinMaxRect(x0, -50f, x1, 8f) };
+                        o.view = MakeHook(o);
+                        Obstacles.Add(o);
+                        AddTrajectoryLums(o, p.count, true);
+                        lastX = Mathf.Max(lastX, x1);
+                        break;
+                    }
+                    case "wall_run":
+                    {
+                        float len = Mathf.Max(2f, p.length > 0 ? p.length : WallRunDefaultLength);
+                        float x0 = BeatToX(e.beat), x1 = BeatToX(e.beat + len);
+                        var o = new LevelObject { kind = LevelObjectKind.WallRun, beat = e.beat, startBeat = e.beat, endBeat = e.beat + len, bounds = Rect.MinMaxRect(x0, 0f, x1, 8f) };
+                        o.view = MakeWallRun(o);
+                        Obstacles.Add(o);
+                        AddTrajectoryLums(o, p.count, false);
                         lastX = Mathf.Max(lastX, x1);
                         break;
                     }
@@ -394,6 +419,55 @@ namespace RythmeRunner.Level
             // Hachures d'avertissement
             for (float x = r.xMin + 0.3f; x < r.xMax - 0.2f; x += 0.7f)
                 Sprite(t, "Stripe", theme.square, new Color(0f, 0f, 0f, 0.35f), new Vector2(x - r.center.x, r.yMin + 0.08f), new Vector2(0.25f, 0.16f), 12);
+            return t.gameObject;
+        }
+
+        void AddTrajectoryLums(LevelObject trajectory, int count, bool hook)
+        {
+            if (count <= 0) return;
+            for (int i = 0; i < count; i++)
+            {
+                float t = count == 1 ? 0.5f : (hook ? Mathf.Lerp(0.15f, 0.85f, i / (float)(count - 1)) : Mathf.Lerp(0.1f, 0.9f, i / (float)(count - 1)));
+                double beat = Mathf.Lerp(trajectory.startBeat, trajectory.endBeat, t);
+                float x = BeatToX(beat);
+                float y = trajectory.EvaluateY(beat) + (hook ? 0f : 0.9f);
+                var o = new LevelObject { kind = LevelObjectKind.Lum, beat = (float)beat, sequenceIndex = i, bounds = new Rect(x - 0.3f, y - 0.3f, 0.6f, 0.6f) };
+                o.view = MakeLum(new Vector2(x, y));
+                Lums.Add(o);
+            }
+        }
+
+        GameObject MakeHook(LevelObject hook)
+        {
+            var t = Group("Hook", Vector2.zero);
+            float x = BeatToX((hook.startBeat + hook.endBeat) * 0.5f);
+            SpriteFit(t, "Anchor", theme.hookAnchor != null ? theme.hookAnchor : theme.circle, new Vector2(x, 6f), 0.7f, 12);
+            float ropeHeight = 5.5f;
+            if (theme.hookRope != null)
+                SpriteTiled(t, "Rope", theme.hookRope, new Vector2(x, 6f - ropeHeight * 0.5f), new Vector2(0.12f, ropeHeight), 11);
+            else
+                Sprite(t, "Rope", theme.square, theme.wall, new Vector2(x, 6f - ropeHeight * 0.5f), new Vector2(0.08f, ropeHeight), 11);
+            return t.gameObject;
+        }
+
+        GameObject MakeWallRun(LevelObject wallRun)
+        {
+            var t = Group("WallRun", Vector2.zero);
+            float startX = BeatToX(wallRun.startBeat);
+            float width = Mathf.Max(1f, BeatToX(wallRun.endBeat) - startX);
+            int columns = Mathf.CeilToInt(width);
+            for (int i = 0; i < columns; i++)
+            {
+                float x = startX + i + 0.5f;
+                float beat = wallRun.startBeat + (x - startX) / width * (wallRun.endBeat - wallRun.startBeat);
+                float height = Mathf.Max(0.1f, wallRun.EvaluateY(beat));
+                if (theme.wallTile != null)
+                    SpriteTiled(t, "Tile", theme.wallTile, new Vector2(x, height * 0.5f), new Vector2(1f, height), 5);
+                else
+                    Sprite(t, "Tile", theme.square, theme.wall, new Vector2(x, height * 0.5f), new Vector2(1f, height), 5);
+                if (theme.groundTop != null)
+                    SpriteFit(t, "Top", theme.groundTop, new Vector2(x, height), 1f, 6);
+            }
             return t.gameObject;
         }
 

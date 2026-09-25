@@ -51,6 +51,8 @@ namespace RythmeRunner.Player
         double lastGroundedBeat, jumpBufferBeat = -99, hitUntilBeat = -99, jumpStartBeat;
         bool spinning;
         int obstacleCursor, lumCursor;
+        int trajectoryCursor;
+        LevelObject activeTrajectory;
         float prevX, prevCenterY;
         Vector3 squash = Vector3.one;
         float slashTimer, slashDuration = 0.1f;
@@ -75,6 +77,7 @@ namespace RythmeRunner.Player
             grounded = true;
             sliding = false;
             spinning = false;
+            activeTrajectory = null;
             jumpBufferBeat = hitUntilBeat = -99;
             lastGroundedBeat = beat;
             float x = level.BeatToX(beat);
@@ -82,6 +85,7 @@ namespace RythmeRunner.Player
             prevX = x;
             prevCenterY = standHeight * 0.5f;
             obstacleCursor = LevelBuilder.FirstIndexAfter(level.Obstacles, x - 4f);
+            trajectoryCursor = obstacleCursor;
             lumCursor = LevelBuilder.FirstIndexAfter(level.Lums, x - 4f);
             input?.ResetAt(beat);
             gameObject.SetActive(true);
@@ -118,15 +122,24 @@ namespace RythmeRunner.Player
             float airTime = jumpAirBeats * spb;
             float gravity = 8f * jumpHeight / (airTime * airTime);
             float jumpVelocity = 4f * jumpHeight / airTime;
+            UpdateTrajectory(beat, jumpVelocity);
+            bool onTrajectory = activeTrajectory != null;
             bool overGap = level.IsOverGap(x, width * 0.5f);
 
-            if (grounded && overGap) { grounded = false; vy = 0f; }
+            if (onTrajectory)
+            {
+                y = activeTrajectory.EvaluateY(beat);
+                vy = 0f;
+                grounded = false;
+                sliding = false;
+            }
+            if (!onTrajectory && grounded && overGap) { grounded = false; vy = 0f; }
             if (grounded) lastGroundedBeat = beat;
 
             // Saut (avec buffer et coyote time)
-            if (cmd.jumpDown) jumpBufferBeat = beat;
+            if (!onTrajectory && cmd.jumpDown) jumpBufferBeat = beat;
             bool coyote = !grounded && vy <= 0f && y > -0.2f && beat - lastGroundedBeat <= coyoteBeats;
-            if (beat - jumpBufferBeat <= jumpBufferBeats && (grounded || coyote)) Jump(jumpVelocity, beat, x);
+            if (!onTrajectory && beat - jumpBufferBeat <= jumpBufferBeats && (grounded || coyote)) Jump(jumpVelocity, beat, x);
 
             // Frappe
             if (cmd.hitDown)
@@ -138,8 +151,8 @@ namespace RythmeRunner.Player
             }
 
             // Glissade au sol, chute rapide en l'air
-            if (!grounded && cmd.slideHeld && vy > -jumpVelocity) vy = -jumpVelocity;
-            bool nowSliding = cmd.slideHeld && grounded;
+            if (!onTrajectory && !grounded && cmd.slideHeld && vy > -jumpVelocity) vy = -jumpVelocity;
+            bool nowSliding = !onTrajectory && cmd.slideHeld && grounded;
             if (nowSliding && !sliding)
             {
                 ActionSfx.Instance?.Slide();
@@ -148,7 +161,7 @@ namespace RythmeRunner.Player
             sliding = nowSliding;
 
             // Intégration verticale
-            if (!grounded)
+            if (!onTrajectory && !grounded)
             {
                 vy -= gravity * dt;
                 y += vy * dt;
@@ -169,6 +182,44 @@ namespace RythmeRunner.Player
             UpdateVisual(beat, dt);
             prevX = x;
             prevCenterY = y + (sliding ? slideHeight : standHeight) * 0.5f;
+        }
+
+        void UpdateTrajectory(double beat, float jumpVelocity)
+        {
+            var obstacles = level.Obstacles;
+            while (trajectoryCursor < obstacles.Count && !obstacles[trajectoryCursor].IsTrajectory)
+                trajectoryCursor++;
+            while (activeTrajectory == null && trajectoryCursor < obstacles.Count && obstacles[trajectoryCursor].endBeat <= beat)
+                trajectoryCursor++;
+            if (activeTrajectory != null && beat >= activeTrajectory.endBeat)
+            {
+                var finished = activeTrajectory;
+                activeTrajectory = null;
+                trajectoryCursor++;
+                finished.passed = true;
+                run.OnObstacleCleared(finished);
+                if (finished.kind == LevelObjectKind.Hook)
+                {
+                    y = finished.EvaluateY(finished.endBeat);
+                    vy = jumpVelocity * 0.5f;
+                    grounded = false;
+                }
+                else
+                {
+                    y = 0f;
+                    vy = 0f;
+                    grounded = true;
+                }
+            }
+            if (activeTrajectory == null && trajectoryCursor < obstacles.Count)
+            {
+                var candidate = obstacles[trajectoryCursor];
+                if (beat >= candidate.startBeat && beat < candidate.endBeat)
+                {
+                    activeTrajectory = candidate;
+                    candidate.trajectoryY0 = Mathf.Max(0f, y);
+                }
+            }
         }
 
         void Jump(float velocity, double beat, float x)
@@ -210,6 +261,7 @@ namespace RythmeRunner.Player
                 var o = obstacles[i];
                 if (o.bounds.xMin > x + hitReach + 0.5f) break;
                 if (!o.alive) continue;
+                if (o.IsTrajectory) continue;
 
                 if (o.kind == LevelObjectKind.Gap)
                 {
@@ -273,6 +325,8 @@ namespace RythmeRunner.Player
             squash = Vector3.Lerp(squash, target, 1f - Mathf.Exp(-14f * dt));
             visual.localScale = squash;
 
+            ApplyPlayerSprite(beat);
+
             // Vrille pendant le saut : un tour complet par saut, calé sur sa durée.
             if (spinning)
             {
@@ -291,6 +345,38 @@ namespace RythmeRunner.Player
                 slash.color = c;
             }
             else if (slash.enabled) slash.enabled = false;
+        }
+
+        Sprite appliedSprite;
+        int appliedFrame = -1;
+        int appliedState = -1;
+        bool spriteConfigured;
+
+        void ApplyPlayerSprite(double beat)
+        {
+            var theme = level.Theme;
+            if (theme == null) return;
+            int state = activeTrajectory != null ? (activeTrajectory.kind == LevelObjectKind.Hook ? 4 : 0) : (sliding ? 2 : (grounded ? (beat < 0.01 ? 3 : 0) : 1));
+            int frame = (int)Mathf.Floor((float)(beat / 0.5)) & 1;
+            Sprite sprite = null;
+            if (state == 4 && theme.playerClimb != null && theme.playerClimb.Length > frame) sprite = theme.playerClimb[frame];
+            else if (state == 2) sprite = theme.playerDuck;
+            else if (state == 1) sprite = theme.playerJump;
+            else if (state == 3) sprite = theme.playerIdle;
+            else if (theme.playerRun != null && theme.playerRun.Length > frame) sprite = theme.playerRun[frame];
+            if (sprite == null || (sprite == appliedSprite && frame == appliedFrame && state == appliedState)) return;
+            if (!spriteConfigured)
+            {
+                body.color = theme.spriteTint;
+                float scale = 1.15f / sprite.bounds.size.y;
+                body.transform.localScale = new Vector3(scale, scale, 1f);
+                body.transform.localPosition = new Vector3(body.transform.localPosition.x, 0.575f - spinner.localPosition.y, body.transform.localPosition.z);
+                spriteConfigured = true;
+            }
+            body.sprite = sprite;
+            appliedSprite = sprite;
+            appliedFrame = frame;
+            appliedState = state;
         }
     }
 }

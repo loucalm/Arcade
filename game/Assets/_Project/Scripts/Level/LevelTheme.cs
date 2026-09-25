@@ -22,6 +22,9 @@ namespace RythmeRunner.Level
         public Sprite playerIdle;
         public Sprite playerJump;
         public Sprite playerDuck;
+        public Sprite hookRope;
+        public Sprite hookAnchor;
+        public Sprite[] playerClimb = new Sprite[2];
         public Sprite playerHit;
         public Sprite[] enemyFrames = new Sprite[2];
         public Sprite enemyDead;
