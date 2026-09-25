@@ -21,6 +21,8 @@ namespace RythmeRunner.FX
             public int sortingOrder = -50;
             [HideInInspector] public Transform root;
             [HideInInspector] public SpriteRenderer[] pieces;
+            [HideInInspector] public float[] collapseBaseY;
+            [HideInInspector] public Quaternion[] collapseBaseRotation;
         }
 
         [SerializeField] Sprite square;
@@ -33,6 +35,10 @@ namespace RythmeRunner.FX
         };
 
         float glow;
+        int collapseLayer = -1;
+        float collapseElapsed;
+        float collapseDuration;
+        bool collapsing;
         Conductor subscribed;
 
         void Start()
@@ -43,6 +49,8 @@ namespace RythmeRunner.FX
                 layer.root = new GameObject($"Layer {layer.parallax}").transform;
                 layer.root.SetParent(transform, false);
                 layer.pieces = new SpriteRenderer[layer.count];
+                layer.collapseBaseY = new float[layer.count];
+                layer.collapseBaseRotation = new Quaternion[layer.count];
                 for (int i = 0; i < layer.count; i++)
                 {
                     var go = new GameObject("Column");
@@ -56,8 +64,49 @@ namespace RythmeRunner.FX
                     sr.color = layer.color;
                     sr.sortingOrder = layer.sortingOrder;
                     layer.pieces[i] = sr;
+                    layer.collapseBaseY[i] = go.transform.localPosition.y;
+                    layer.collapseBaseRotation[i] = go.transform.localRotation;
                 }
             }
+        }
+
+        /// <summary>Fait tomber puis remonter les colonnes du calque le plus proche.</summary>
+        public void Collapse(float seconds)
+        {
+            if (collapsing || layers == null || layers.Length == 0) return;
+            collapseLayer = 0;
+            for (int i = 1; i < layers.Length; i++)
+                if (layers[i].parallax > layers[collapseLayer].parallax) collapseLayer = i;
+            if (layers[collapseLayer].pieces == null) return;
+
+            Layer layer = layers[collapseLayer];
+            for (int i = 0; i < layer.pieces.Length; i++)
+            {
+                Transform piece = layer.pieces[i].transform;
+                layer.collapseBaseY[i] = piece.localPosition.y;
+                layer.collapseBaseRotation[i] = piece.localRotation;
+            }
+            collapseElapsed = 0f;
+            collapseDuration = Mathf.Max(0.01f, seconds);
+            collapsing = true;
+        }
+
+        /// <summary>Réinitialise immédiatement l'animation du calque effondré.</summary>
+        public void ResetCollapse()
+        {
+            if (collapseLayer >= 0 && collapseLayer < layers.Length)
+            {
+                Layer layer = layers[collapseLayer];
+                if (layer.pieces != null)
+                    for (int i = 0; i < layer.pieces.Length; i++)
+                    {
+                        Transform piece = layer.pieces[i].transform;
+                        piece.localPosition = new Vector3(piece.localPosition.x, layer.collapseBaseY[i], piece.localPosition.z);
+                        piece.localRotation = layer.collapseBaseRotation[i];
+                    }
+            }
+            collapsing = false;
+            collapseElapsed = 0f;
         }
 
         void OnDestroy()
@@ -76,10 +125,17 @@ namespace RythmeRunner.FX
             }
             if (cameraTransform == null) return;
 
+            if (collapsing)
+            {
+                collapseElapsed += Time.unscaledDeltaTime;
+                if (collapseElapsed >= collapseDuration) ResetCollapse();
+            }
+
             float camX = cameraTransform.position.x;
             glow = Mathf.Lerp(glow, 0f, 1f - Mathf.Exp(-5f * Time.unscaledDeltaTime));
-            foreach (var layer in layers)
+            for (int layerIndex = 0; layerIndex < layers.Length; layerIndex++)
             {
+                Layer layer = layers[layerIndex];
                 if (layer.root == null) continue;
                 // Le calque suit la caméra à (1 - parallax) : il semble défiler plus lentement.
                 float layerX = camX * (1f - layer.parallax);
@@ -95,7 +151,29 @@ namespace RythmeRunner.FX
                     else if (worldX > left + span) t.localPosition -= new Vector3(span, 0f, 0f);
                     piece.color = c;
                 }
+                if (collapsing && collapseLayer == layerIndex)
+                {
+                    float maxDelay = Mathf.Min(0.18f, collapseDuration * 0.12f);
+                    float duration = Mathf.Max(0.01f, collapseDuration - maxDelay);
+                    for (int i = 0; i < layer.pieces.Length; i++)
+                    {
+                        Transform piece = layer.pieces[i].transform;
+                        float delay = (Hash(i * 31 + 7) & 1023) / 1023f * maxDelay;
+                        float t = Mathf.Clamp01((collapseElapsed - delay) / duration);
+                        float amount = t < 0.5f ? t * 2f : (1f - t) * 2f;
+                        float direction = (Hash(i * 17 + 3) & 1) == 0 ? -1f : 1f;
+                        piece.localPosition = new Vector3(piece.localPosition.x, layer.collapseBaseY[i] - amount * 2.2f, piece.localPosition.z);
+                        piece.localRotation = layer.collapseBaseRotation[i] * Quaternion.Euler(0f, 0f, direction * amount * 18f);
+                    }
+                }
             }
+        }
+
+        static int Hash(int value)
+        {
+            value ^= value << 13;
+            value ^= value >> 17;
+            return value ^ (value << 5);
         }
     }
 }
