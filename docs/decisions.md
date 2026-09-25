@@ -38,3 +38,10 @@ Le joueur avance à x = BeatToX(SongBeat) (pas de vélocité physique). Collisio
 
 ## ADR-010 — Démo en autoplay sur l'écran Attract (2026-09-25)
 L'Attract lance le vrai niveau en autoplay (sans perte de cœur), sous le titre. Ça montre le jeu aux passants, et ça réutilise l'autoplay de debug. La boucle de menu `attractSong` ne sert que si le niveau n'a pas de chart.
+
+## ADR-011 — Direction artistique néon procédurale, façon Castle Rock (2026-09-25)
+Tous les visuels sont construits en code à partir des formes de `Theme_Neon` (carré, cercle, halo, triangle, anneau, étincelle, arrondi, dégradé), sans sprites externes : héros « sans membres » (`PlayerRig`), éléments du niveau (`LevelBuilder`), décor (`Backdrop`). Palette de Castle Rock : horizon en feu et château en silhouettes (chaud, derrière), gameplay néon cyan/jaune/rose (froid, devant). Un essai avec le pack Kenney (CC0) a été abandonné : trop éloigné du style. Les champs de sprites du thème restent optionnels pour de futurs dessins maison.
+
+## ADR-012 — Lianes et wall run automatiques (2026-09-25)
+`hook` et `wall_run` sont des trajectoires imposées (y = fonction du beat), sans bouton, comme dans les niveaux musicaux de Rayman Legends. Le joueur garde x = BeatToX(SongBeat). Contraintes de chart dans [chart-format.md](chart-format.md) et vérifiées par `tools/check-chart.py`.
+
