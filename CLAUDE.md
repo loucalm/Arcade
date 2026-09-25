@@ -39,12 +39,14 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 ```bash
 # Borne en local (une fois) : clone du serveur Anatidae
 git clone https://github.com/XariusExcl/anatidae-arcade tools/anatidae-arcade && (cd tools/anatidae-arcade && npm install)
-# Lancer la borne locale → http://localhost:3000 (copier dist/RythmeRunner dans tools/anatidae-arcade/public/)
+# Après chaque build Unity (sortie game/Build) : package → dist/RythmeRunner + borne locale
+tools/package-build.sh
+# Lancer la borne locale → http://localhost:3000 (ou preview "borne-locale" de .claude/launch.json)
 cd tools/anatidae-arcade && node server.js
 # Site + API en local → http://localhost:8080 (VPS plus tard, ADR-006)
 cd web && npm run dev
 ```
-Build Unity : File > Build Profiles > Web, sortie `game/Builds/WebGL`, puis copie vers `dist/RythmeRunner/` avec `game/BuildExtras/{info.json,thumbnail.png}`.
+Build Unity : File > Build Profiles > Web > Build, dans le dossier `game/Build` (gitignoré). Ensuite, `tools/package-build.sh` ajoute `game/BuildExtras/{info.json,thumbnail.png}`.
 
 ## Travail à 3
 - Une branche par feature (`feat/conductor`, `feat/landing`, `fix/…`). PR courtes, merge dans `main` fréquent. Commits en français, à l'impératif.

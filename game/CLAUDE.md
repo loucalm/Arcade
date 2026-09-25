@@ -63,10 +63,11 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 - `Debug/` : overlay de la grille de beats, métronome audible et **autoplay** (joue la chart parfaitement). Activés par le define `RR_DEBUG` ou par F1 en éditeur. Jamais actifs en build de rendu.
 
 ## Build → borne
-1. File > Build Profiles > **Web** → Build dans `game/Builds/WebGL` (gitignoré).
-2. Copier le contenu vers `dist/RythmeRunner/`, puis ajouter `game/BuildExtras/info.json` et `thumbnail.png` (à placer dans `game/BuildExtras/`).
-3. Tester dans `tools/anatidae-arcade/public/RythmeRunner/` avec `node server.js` → `http://localhost:3000`.
-4. Vérifier : bouton blanc, AFK 60 s, saisie du highscore, dead zone, 60 fps.
+1. File > Build Profiles > **Web** → Build dans **`game/Build`** (gitignoré).
+2. `tools/package-build.sh` : copie vers `dist/RythmeRunner/`, ajoute `BuildExtras/{info.json,thumbnail.png,attract.mp4?}` et installe le tout dans la borne locale.
+3. `cd tools/anatidae-arcade && node server.js` → `http://localhost:3000`. Le jeu apparaît dans le menu (Entrée/B1 pour lancer). Accès direct : `http://localhost:3000/RythmeRunner/`.
+4. Vérifier : **Échap maintenu 1,5 s → retour menu** (testé OK le 2026-09-25), AFK 60 s → menu, `GET /api/?game=RythmeRunner` en 200, saisie du highscore, dead zone, 60 fps.
+`thumbnail.png` est une vignette provisoire (dégradé) : à remplacer par la vraie jaquette carrée.
 
 ## MCP Unity
 Package `com.coplaydev.unity-mcp` **figé en `#v10.2.0`** dans `Packages/manifest.json`. On ne pointe jamais sur `#main` : les 3 postes doivent avoir la même version. Pour monter de version, mettre à jour le manifest et la version du serveur MCP dans la même PR.
