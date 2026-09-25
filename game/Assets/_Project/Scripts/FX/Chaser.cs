@@ -11,8 +11,9 @@ namespace RythmeRunner.FX
         [SerializeField] Transform target;
         [SerializeField] Sprite square;
         [SerializeField] Material additive;
-        [SerializeField] Color barColor = new(0.2f, 0.9f, 1f, 0.9f);
-        [SerializeField] Color haloColor = new(0.2f, 0.5f, 1f, 0.2f);
+        [Tooltip("Mur de feu façon Castle Rock : sprite triangle = flammes.")]
+        [SerializeField] Color barColor = new(1f, 0.45f, 0.1f, 0.9f);
+        [SerializeField] Color haloColor = new(1f, 0.2f, 0.05f, 0.35f);
         [SerializeField, Min(1)] int barCount = 12;
         [SerializeField] float wallHeight = 12f;
         [Tooltip("Distance entre le joueur et le front du mur (le bord gauche de l'écran est à ~2,1 u du joueur).")]
@@ -58,7 +59,7 @@ namespace RythmeRunner.FX
                 heights[i] = targetHeights[i] = wallHeight * 0.5f;
             }
             halo = CreatePart("Halo", haloColor, 0.65f, wallHeight * 0.9f, 20);
-            edge = CreatePart("Player Edge", Color.white, 0.16f, wallHeight * 1.05f, 28);
+            edge = CreatePart("Player Edge", new Color(1f, 0.85f, 0.3f, 0.9f), 0.16f, wallHeight * 1.05f, 28);
             TrySubscribeRunManager();
             TrySubscribeConductor();
         }

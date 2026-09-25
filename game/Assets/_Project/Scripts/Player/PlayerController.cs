@@ -18,6 +18,7 @@ namespace RythmeRunner.Player
         [SerializeField] Transform spinner;
         [SerializeField] SpriteRenderer body;
         [SerializeField] SpriteRenderer slash;
+        PlayerRig rig;
 
         [Header("Corps")]
         [SerializeField] float width = 0.7f;
@@ -62,6 +63,14 @@ namespace RythmeRunner.Player
             this.level = level;
             this.run = run;
             this.input = input;
+            if (level.Theme != null && !HasHeroSprite(level.Theme))
+            {
+                rig = GetComponent<PlayerRig>();
+                if (rig == null) rig = gameObject.AddComponent<PlayerRig>();
+                rig.UseParent(spinner);
+                rig.Build(level.Theme);
+                body.enabled = false;
+            }
         }
 
         public void SetInput(IPlayerInput newInput, double beat)
@@ -179,7 +188,7 @@ namespace RythmeRunner.Player
             float sweepFrom = Mathf.Max(prevX, x - maxSweep);
             if (CheckCollisions(x, sweepFrom, beat)) return;
             CollectLums(x, sweepFrom);
-            UpdateVisual(beat, dt);
+            UpdateVisual(beat, dt, jumpVelocity);
             prevX = x;
             prevCenterY = y + (sliding ? slideHeight : standHeight) * 0.5f;
         }
@@ -319,13 +328,22 @@ namespace RythmeRunner.Player
             return (a + ab * t - p).sqrMagnitude;
         }
 
-        void UpdateVisual(double beat, float dt)
+        void UpdateVisual(double beat, float dt, float jumpVelocity)
         {
             var target = sliding ? new Vector3(1.3f, 0.47f, 1f) : Vector3.one;
             squash = Vector3.Lerp(squash, target, 1f - Mathf.Exp(-14f * dt));
             visual.localScale = squash;
 
             ApplyPlayerSprite(beat);
+            if (rig != null)
+            {
+                PlayerPose pose = activeTrajectory != null ? (activeTrajectory.kind == LevelObjectKind.Hook ? PlayerPose.Hook : PlayerPose.WallRun) :
+                    (sliding ? PlayerPose.Slide : (!grounded ? (vy < -jumpVelocity * 0.45f ? PlayerPose.FastFall : PlayerPose.Jump) : PlayerPose.Run));
+                if (beat <= hitUntilBeat) pose = PlayerPose.Hit;
+                Vector2 anchor = activeTrajectory != null && activeTrajectory.kind == LevelObjectKind.Hook ?
+                    transform.InverseTransformPoint(new Vector3(level.BeatToX((activeTrajectory.startBeat + activeTrajectory.endBeat) * 0.5f), 6f, 0f)) : Vector2.zero;
+                rig.Pose(beat, pose, hitUntilBeat > beat ? Mathf.Clamp01((float)((beat - hitUntilBeat + hitActiveBeats) / hitActiveBeats)) : 0f, anchor);
+            }
 
             // Vrille pendant le saut : un tour complet par saut, calé sur sa durée.
             if (spinning)
@@ -377,6 +395,13 @@ namespace RythmeRunner.Player
             appliedSprite = sprite;
             appliedFrame = frame;
             appliedState = state;
+        }
+
+        static bool HasHeroSprite(LevelTheme theme)
+        {
+            return theme.playerIdle != null || theme.playerJump != null || theme.playerDuck != null || theme.playerHit != null ||
+                (theme.playerRun != null && theme.playerRun.Length > 0 && theme.playerRun[0] != null) ||
+                (theme.playerClimb != null && theme.playerClimb.Length > 0 && theme.playerClimb[0] != null);
         }
     }
 }
