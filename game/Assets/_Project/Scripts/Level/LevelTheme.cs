@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace RythmeRunner.Level
 {
@@ -16,11 +17,32 @@ namespace RythmeRunner.Level
         [Tooltip("Matériau additif pour halos et particules.")]
         public Material additive;
 
+        [Header("Sprites (optionnels, sinon formes)")]
+        public Sprite[] playerRun = new Sprite[2];
+        public Sprite playerIdle;
+        public Sprite playerJump;
+        public Sprite playerDuck;
+        public Sprite playerHit;
+        public Sprite[] enemyFrames = new Sprite[2];
+        public Sprite enemyDead;
+        public Sprite[] blockFrames = new Sprite[2];
+        public Sprite wallTile;
+        public Sprite groundTop;
+        public Sprite groundTopLeft;
+        public Sprite groundTopRight;
+        public Sprite groundFill;
+        public Sprite slideBarTile;
+        public Sprite chainTile;
+        public Sprite[] lumFrames = new Sprite[2];
+        public Sprite[] checkpointFrames = new Sprite[2];
+        public Color spriteTint = Color.white;
+
         [Header("Palette")]
         public Color background = new Color(0.05f, 0.03f, 0.1f);
         public Color backgroundFlash = new Color(0.16f, 0.06f, 0.24f);
         public Color groundBody = new Color(0.12f, 0.07f, 0.22f);
-        public Color groundTop = new Color(0.3f, 0.95f, 1f);
+        [FormerlySerializedAs("groundTop")]
+        public Color groundTopColor = new Color(0.3f, 0.95f, 1f);
         public Color beatTick = new Color(0.3f, 0.95f, 1f, 0.35f);
         public Color player = new Color(0.3f, 0.95f, 1f);
         public Color enemy = new Color(1f, 0.3f, 0.35f);
