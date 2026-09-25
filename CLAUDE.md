@@ -31,7 +31,7 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 |---|---|---|
 | `game/` | Projet Unity **6000.3.23f1** (base = anatidae-toolkit) | [game/CLAUDE.md](game/CLAUDE.md) |
 | `web/` | Serveur Node (Express + ws) + site one-page + blog | [web/CLAUDE.md](web/CLAUDE.md) |
-| `docs/` | Références : borne, game design, charts, API, décisions | à lire avant de coder une feature |
+| `docs/` | Références : borne, game design, charts, API, décisions, **[roadmap](docs/roadmap.md)** | à lire avant de coder une feature |
 | `dist/RythmeRunner/` | Build prêt pour la borne (gitignoré) | généré, jamais édité à la main |
 | `tools/anatidae-arcade/` | Clone local du serveur de la borne (gitignoré) | pour tester |
 
@@ -63,10 +63,10 @@ Build Unity : File > Build Profiles > Web > Build, dans le dossier `game/Build` 
 Mettre à jour le CLAUDE.md concerné **dans le même commit** que le changement, dès qu'on a :
 - une décision d'architecture ou de lib → ajouter aussi une entrée datée dans [docs/decisions.md](docs/decisions.md) ;
 - une nouvelle convention, une commande ou un chemin → le CLAUDE.md du dossier ;
-- un piège découvert (bug WebGL, borne, audio…) → la section concernée, en une ligne.
+- un piège découvert (bug WebGL, borne, audio…) → la section concernée, en une ligne ;
+- une feature finie → la cocher dans [docs/roadmap.md](docs/roadmap.md) ; une feature ou un bug repéré mais pas traité → l'y ajouter avec sa priorité. **Ne jamais laisser un « pas encore fait » seulement dans une réponse de chat.**
 Garder ce fichier **court (< 150 lignes)** : le détail va dans `docs/`. Supprimer ce qui devient faux.
 Préférences perso non partagées : `CLAUDE.local.md` (gitignoré).
 
-## Infos manquantes (à compléter)
-- Rôles des 3 membres → [docs/decisions.md](docs/decisions.md) et landing page.
-- VPS (URL, accès) : **plus tard**. Tout tourne en local d'ici là → [web/CLAUDE.md](web/CLAUDE.md) § Déploiement.
+## Prochaines étapes
+Voir **[docs/roadmap.md](docs/roadmap.md)** (P0 d'abord). Encore à fournir par l'équipe : rôles des 3 membres ; VPS **plus tard** (tout en local, ADR-006).
