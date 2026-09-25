@@ -73,3 +73,7 @@ crashlytics-build.properties
 /.vscode
 # IDE (Unity 6.3+)
 *.slnx
+
+# Captures du MCP Unity
+/[Aa]ssets/[Ss]creenshots/
+/[Aa]ssets/[Ss]creenshots.meta
