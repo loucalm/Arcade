@@ -29,7 +29,7 @@ Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en sc
 - Durée cible d'une partie : **2 à 4 min**.
 - **Score** (implémenté dans `RunManager`, réglable dans l'inspecteur) : lum 10, ennemi/bloc cassé 50, obstacle franchi 20, **× multiplicateur** = 1 + combo/8 (max ×8). Le combo gagne +1 par action réussie et retombe à 0 quand on est touché. Bonus : section sans chute +500, niveau terminé +1000 par cœur restant. Au respawn, le score et les lums reviennent à leur valeur du checkpoint (pas de farm en mourant).
 - **Médailles** (ratio de lums) : OR ≥ 90 %, ARGENT ≥ 60 %, sinon BRONZE si le niveau est terminé ; en cas d'échec, BRONZE à partir de 30 %.
-- État actuel de la démo : fin du morceau = fin de partie. Le tour REMIX n'est pas encore fait.
+- État actuel de la démo : fin du morceau = fin de partie. Le tour REMIX est dans [roadmap.md](roadmap.md) (P0).
 - **2 joueurs** : hot-seat en alternance (P1 puis P2 sur le même morceau, comparaison à la fin). À faire **après le MVP**.
 
 ## Écrans (flow imposé par l'enseignant)
