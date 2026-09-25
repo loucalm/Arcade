@@ -1,0 +1,15 @@
+# Perso
+CLAUDE.local.md
+.claude/settings.local.json
+.DS_Store
+.vscode/
+.idea/
+
+# Web
+node_modules/
+.env
+web/data/
+
+# Builds & outils locaux
+dist/
+tools/anatidae-arcade/

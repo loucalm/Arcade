@@ -1,0 +1,74 @@
+# game/ — Projet Unity (Rythme Runner)
+
+Base : clone de [anatidae-toolkit](https://github.com/XariusExcl/anatidae-toolkit) (sans son `.git`).
+Ouvrir **ce dossier `game/`** dans Unity Hub, avec **exactement Unity 6000.3.23f1** (ADR-008). Ne pas changer de version sans décision d'équipe : ça réécrit `ProjectSettings/` et crée des conflits.
+Scène de travail : `Assets/_Project/Scenes/Main.unity`, la seule dans les Build Settings. Plateforme active : **Web**.
+Piège : l'ancien 6000.0.40f1 bloque sur « Initialize Package Manager » sur les Mac Apple Silicon sans Rosetta 2. Ne plus l'utiliser.
+
+## Configuration figée (ne pas changer sans ADR)
+- **Built-in Render Pipeline** (pas d'URP ni de HDRP). Espace couleur Gamma.
+- **Ancien Input Manager** (`activeInputHandler: 0`). Ne pas installer le package Input System.
+- Web : template **Minimal**, compression **Disabled** (le serveur Express de la borne n'envoie pas les en-têtes gzip/brotli), 1920×1080, data caching activé.
+- Mode éditeur par défaut en 3D : on fait de la 2D en sprites et caméra orthographique, sans changer le template.
+
+## Arborescence
+```
+Assets/
+├── Anatidae/            ← TOOLKIT, lecture seule (sauf GameName + style UI)
+├── Plugin/BackToMenu.jslib  ← toolkit, lecture seule
+├── Scenes/InputTester.unity ← scène de test des manettes (toolkit)
+└── _Project/            ← TOUT notre code et nos assets
+    ├── Scripts/{Core,Rhythm,Player,Level,FX,UI,Net,Debug}/
+    ├── Prefabs/  Scenes/  Audio/  Charts/  Art/  Materials/  ScriptableObjects/
+```
+Namespace : `RythmeRunner.<Dossier>` (ex. `RythmeRunner.Rhythm`). Un fichier = une classe. Noms en anglais.
+**Pas d'asmdef** dans `_Project/` : les scripts Anatidae sont dans `Assembly-CSharp`, et un asmdef ne peut pas le référencer.
+Les `.gitkeep` gardent les dossiers vides dans git (Unity ignore les fichiers qui commencent par un point).
+
+## Toolkit Anatidae — ce qu'on réutilise
+- `HighscoreManager.GameName` → **`"RythmeRunner"`** (`Assets/Anatidae/Scripts/HighscoreManager.cs`). Doit être identique au nom du dossier de build.
+- Le prefab **`AnatidaeInterface`** doit être présent dans **chaque scène**. Il contient `MenuManager` (bouton blanc 1,5 s + AFK 60 s), `HighscoreNameInput` et `HighscoreUI`.
+- Au démarrage : `StartCoroutine(HighscoreManager.FetchHighscores())`, **avant** tout `IsHighscore()`.
+- Fin de partie : `if (HighscoreManager.IsHighscore(score)) HighscoreManager.ShowHighscoreInput(score);`. Bloquer nos menus tant que `IsHighscoreInputScreenShown` est vrai.
+- Appels vers notre VPS : **uniquement `AnatidaeProxyWebRequest.Get/Post`**, qui passe par `localhost:3000/proxy`. URL de base dans un ScriptableObject `NetConfig` (en local : `http://localhost:8080/api`). Contrat dans [../docs/api-contract.md](../docs/api-contract.md).
+- Normal en éditeur : `EntryPointNotFoundException: BackToMenu` en sortant du Play mode (ou après 60 s d'AFK, ou avec Échap maintenu). Le `.jslib` n'existe qu'en build Web. À ignorer, ne pas « corriger » le toolkit.
+- `ExtradataManager` sert à stocker des clés/valeurs sur la borne (stats globales, ex. nombre total de morts).
+
+## Flow d'écrans (ADR-007)
+Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine à états : `Attract → Explain → Config (facultatif) → Playing → GameOver → NameEntry (si top 10) → Attract`. Un prefab par écran dans `Prefabs/Screens/`. Détails : [../docs/game-design.md](../docs/game-design.md).
+- Attract : démo en autoplay qui alterne avec `HighscoreUI`. N'importe quel bouton lance la partie (et débloque l'audio).
+- GameOver : score + classement, puis `IsHighscore` → `ShowHighscoreInput`. Attendre que `IsHighscoreInputScreenShown` repasse à faux avant de revenir à Attract.
+
+## Entrées
+- Classe unique `RythmeRunner.Core.ArcadeInput` : lit `P{n}_Horizontal`/`P{n}_Vertical` (dead zone **0,3** sur `GetAxisRaw`) et `P{n}_B1`, `P{n}_B2`, `P{n}_Start`.
+- Mapping de jeu : **B1 = saut** (maintenu = saut plus haut), **B2 = frappe**, **joystick bas = glissade**. Start = valider dans les menus.
+- Clavier de dev (P1, AZERTY) : ZQSD, F = B1, G = B2, X = Start, **Échap = bouton blanc**. Voir [../docs/anatidae.md](../docs/anatidae.md).
+- Axe vertical manette déjà inversé dans l'InputManager : **haut = positif**.
+
+## Rythme (cœur technique)
+- `Conductor` (singleton, `Rhythm/`) : `SongTime` calculé depuis `audioSource.timeSamples / clip.frequency`, interpolé chaque frame avec `Time.unscaledDeltaTime` puis **recalé si la dérive dépasse 20 ms** (l'horloge audio WebGL avance par paquets). Expose `SongBeat`, `BeatToSeconds()`, `SecondsToBeat()`, l'événement `OnBeat(int)`, `Seek(beat)`.
+- Démarrage : `PlayScheduled`. ⚠️ `AudioSettings.dspTime` n'est pas garanti sur WebGL : à valider en build Web (spike), sinon repli sur `timeSamples`.
+- ⚠️ Le navigateur exige une interaction avant de jouer du son. À vérifier **sur la borne** (l'appui sur un bouton de manette compte-t-il ?). Attract = « APPUIE SUR UN BOUTON », et ce premier appui débloque l'audio.
+- `LevelBuilder` : lit la chart JSON (`Charts/*.json` via `TextAsset`) et instancie les prefabs à `x = BeatToSeconds(beat) * runSpeed`. Pooling obligatoire.
+- `ActionSfx` : quantifie les sons d'action à la double-croche (`round(beat * 4) / 4`).
+- Clips musicaux : Vorbis, `Compressed In Memory`, `Preload Audio Data` activé. SFX courts : `Decompress On Load`.
+
+## Juice / perfs (GPU intégré)
+- Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.
+- Juice = screen shake, squash & stretch, hit-stop court, sprites **additifs**, particules légères (< ~300 actives), flash sur `OnBeat`, tweening de l'UI.
+- Sprites en **Sprite Atlas**, textures en puissance de 2 si possible, taille max 2048.
+- Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades.
+
+## Debug
+- `Debug/` : overlay de la grille de beats, métronome audible et **autoplay** (joue la chart parfaitement). Activés par le define `RR_DEBUG` ou par F1 en éditeur. Jamais actifs en build de rendu.
+
+## Build → borne
+1. File > Build Profiles > **Web** → Build dans `game/Builds/WebGL` (gitignoré).
+2. Copier le contenu vers `dist/RythmeRunner/`, puis ajouter `game/BuildExtras/info.json` et `thumbnail.png` (à placer dans `game/BuildExtras/`).
+3. Tester dans `tools/anatidae-arcade/public/RythmeRunner/` avec `node server.js` → `http://localhost:3000`.
+4. Vérifier : bouton blanc, AFK 60 s, saisie du highscore, dead zone, 60 fps.
+
+## MCP Unity
+Package `com.coplaydev.unity-mcp` **figé en `#v10.2.0`** dans `Packages/manifest.json`. On ne pointe jamais sur `#main` : les 3 postes doivent avoir la même version. Pour monter de version, mettre à jour le manifest et la version du serveur MCP dans la même PR.
+Quand il est connecté, s'en servir pour : créer et modifier GameObjects, prefabs et composants, lire la console après compilation, lancer le Play mode. Toujours vérifier la console (0 erreur) avant de rendre la main.
+Sans MCP : écrire le C# et lister les étapes éditeur. **Jamais** de modification manuelle des fichiers YAML (`.unity`, `.prefab`, `.asset`, `.meta`).

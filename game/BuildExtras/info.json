@@ -1,0 +1,13 @@
+{
+  "name": "Rythme Runner",
+  "description": "Cours au rythme de la musique : chaque saut, coup et glissade tombe sur le beat.",
+  "creator": "Lou Calmes, Lucas Corrieras, Jeremy Hordé",
+  "year": 2026,
+  "type": "Runner rythmique",
+  "players": "1-2",
+  "catchphrase": "Joue la musique en courant !",
+  "config": {
+    "scoreType": "score",
+    "scoreSort": "desc"
+  }
+}
