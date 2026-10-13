@@ -18,6 +18,9 @@ namespace RythmeRunner.UI
         [SerializeField] TMP_Text bannerText;
         [SerializeField] TMP_Text feedbackText;
         [SerializeField] Image[] hearts;
+        [Tooltip("Si renseignés, les cœurs changent d'image (néon allumé / éteint) au lieu de changer de couleur.")]
+        [SerializeField] Sprite heartOnSprite;
+        [SerializeField] Sprite heartOffSprite;
         [SerializeField] RectTransform progressFill;
         [SerializeField] Color heartOn = new(1f, 0.25f, 0.75f);
         [SerializeField] Color heartOff = new(1f, 1f, 1f, 0.15f);
@@ -67,8 +70,17 @@ namespace RythmeRunner.UI
             lastMultiplier = multiplier;
             multiplierText.text = $"x{multiplier}";
             lumsText.text = $"LUMS {run.Lums}/{run.TotalLums}";
+            bool sprites = heartOnSprite != null && heartOffSprite != null;
             for (int i = 0; i < hearts.Length; i++)
-                hearts[i].color = i < run.Hearts ? heartOn : heartOff;
+            {
+                bool on = i < run.Hearts;
+                if (sprites)
+                {
+                    hearts[i].sprite = on ? heartOnSprite : heartOffSprite;
+                    hearts[i].color = Color.white;
+                }
+                else hearts[i].color = on ? heartOn : heartOff;
+            }
         }
 
         void HandleSection(ChartSection section, bool perfect, int bonus)

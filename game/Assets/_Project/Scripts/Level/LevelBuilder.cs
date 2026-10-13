@@ -197,20 +197,44 @@ namespace RythmeRunner.Level
                 beatGrid.SetActive(RhythmDebugOverlay.Visible);
         }
 
-        // ---------- Visuels ----------
+        // ---------- Visuels (sprites néon du LevelTheme, voir docs/art-direction.md) ----------
 
-        SpriteRenderer Sprite(Transform parent, string name, Sprite sprite, Color color, Vector2 center, Vector2 size, int order, bool additive = false)
+        // Marge transparente (halo) des sprites 9-slice, en unités : le contour visible est à cette distance du bord.
+        const float WallMargin = 0.30f;
+        const float GroundLineFromCenter = 0.80f;   // ground_top : le trait est 80 px au-dessus du centre de l'image
+        const float GroundSpriteWidthPad = 0.40f;   // le trait commence 20 px après le bord gauche de l'image
+        const float LaserY = SlideBarBottom + 0.04f;
+
+        /// <summary>Sprite simple : l'échelle vaut `scale` (1 = taille native du sprite).</summary>
+        SpriteRenderer Spr(Transform parent, string name, Sprite sprite, Vector2 pos, int order, Color? color = null,
+                           float scale = 1f, bool additive = false)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
-            go.transform.localPosition = center;
+            go.transform.localPosition = pos;
+            go.transform.localScale = new Vector3(scale, scale, 1f);
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
-            sr.color = color;
+            sr.color = color ?? Color.white;
             sr.sortingOrder = order;
             if (additive && theme.additive != null) sr.sharedMaterial = theme.additive;
-            // Les sprites de forme font 1×1 unité : l'échelle = la taille voulue.
-            go.transform.localScale = new Vector3(size.x, size.y, 1f);
+            return sr;
+        }
+
+        /// <summary>Sprite 9-slice : `size` est la taille finale en unités (bords et coins gardent leur taille native).</summary>
+        SpriteRenderer Sliced(Transform parent, string name, Sprite sprite, Vector2 center, Vector2 size, int order, Color? color = null)
+        {
+            var sr = Spr(parent, name, sprite, center, order, color);
+            sr.drawMode = SpriteDrawMode.Sliced;
+            sr.size = size;
+            return sr;
+        }
+
+        /// <summary>Carré teinté (aplats : corps du sol, repères de beat).</summary>
+        SpriteRenderer Box(Transform parent, string name, Color color, Vector2 center, Vector2 size, int order)
+        {
+            var sr = Spr(parent, name, theme.square, center, order, color);
+            sr.transform.localScale = new Vector3(size.x, size.y, 1f);
             return sr;
         }
 
@@ -230,9 +254,9 @@ namespace RythmeRunner.Level
             {
                 if (x1 - x0 < 0.01f) return;
                 float w = x1 - x0, mid = (x0 + x1) * 0.5f;
-                Sprite(g, "Body", theme.square, theme.groundBody, new Vector2(mid, -4f), new Vector2(w, 8f), 0);
-                Sprite(g, "Top", theme.square, theme.groundTop, new Vector2(mid, -0.07f), new Vector2(w, 0.14f), 2);
-                Sprite(g, "TopGlow", theme.glow, new Color(theme.groundTop.r, theme.groundTop.g, theme.groundTop.b, 0.25f), new Vector2(mid, -0.07f), new Vector2(w + 1f, 0.9f), 1, true);
+                Box(g, "Body", theme.groundBody, new Vector2(mid, -4f), new Vector2(w, 8f), 0);
+                Sliced(g, "Line", theme.groundTopSprite, new Vector2(mid, -0.03f - GroundLineFromCenter),
+                       new Vector2(w + GroundSpriteWidthPad, 2.56f), 2);
             }
             foreach (var gap in gaps)
             {
@@ -254,9 +278,9 @@ namespace RythmeRunner.Level
                 if (!IsOverGap(x, 0.05f))
                 {
                     float h = bar ? 0.55f : 0.25f;
-                    Sprite(ticks, "Tick", theme.square, theme.beatTick, new Vector2(x, -0.14f - h * 0.5f), new Vector2(bar ? 0.12f : 0.07f, h), 3);
+                    Box(ticks, "Tick", theme.beatTick, new Vector2(x, -0.14f - h * 0.5f), new Vector2(bar ? 0.1f : 0.06f, h), 3);
                 }
-                Sprite(beatGrid.transform, "Line", theme.square, new Color(1f, 1f, 1f, bar ? 0.12f : 0.05f), new Vector2(x, 3f), new Vector2(0.03f, 10f), 50);
+                Box(beatGrid.transform, "Line", new Color(1f, 1f, 1f, bar ? 0.12f : 0.05f), new Vector2(x, 3f), new Vector2(0.03f, 10f), 50);
             }
             beatGrid.SetActive(RhythmDebugOverlay.Visible);
         }
@@ -265,66 +289,53 @@ namespace RythmeRunner.Level
         {
             var g = Group("Checkpoints", Vector2.zero);
             for (int i = 1; i < Chart.sections.Length; i++)
-            {
-                float x = BeatToX(Chart.sections[i].startBeat);
-                var c = theme.checkpoint;
-                Sprite(g, "Pole", theme.square, new Color(c.r, c.g, c.b, 0.6f), new Vector2(x, 2.5f), new Vector2(0.08f, 5f), 4);
-                Sprite(g, "Flag", theme.square, c, new Vector2(x + 0.3f, 4.8f), new Vector2(0.6f, 0.4f), 4);
-                Sprite(g, "Glow", theme.glow, new Color(c.r, c.g, c.b, 0.35f), new Vector2(x, 2.5f), new Vector2(1.2f, 6f), 3, true);
-            }
+                Spr(g, "Beacon", theme.checkpointSprite, new Vector2(BeatToX(Chart.sections[i].startBeat), 0f), 4);
         }
 
         GameObject MakeWall(Rect r)
         {
-            var t = Group("Wall", new Vector2(r.center.x, 0f));
-            Sprite(t, "Body", theme.square, theme.wall, new Vector2(0f, r.height * 0.5f), new Vector2(r.width, r.height), 10);
-            Sprite(t, "Top", theme.square, Color.white, new Vector2(0f, r.height - 0.05f), new Vector2(r.width, 0.1f), 11);
-            Sprite(t, "Glow", theme.glow, new Color(theme.wall.r, theme.wall.g, theme.wall.b, 0.35f), new Vector2(0f, r.height * 0.5f), new Vector2(r.width + 1.2f, r.height + 1.2f), 9, true);
+            var t = Group("Wall", new Vector2(r.center.x, r.height * 0.5f));
+            Sliced(t, "Sprite", theme.wallSprite, Vector2.zero, new Vector2(r.width + 2f * WallMargin, r.height + 2f * WallMargin), 10);
             return t.gameObject;
         }
 
         GameObject MakeEnemy(float cx)
         {
             var t = Group("Enemy", new Vector2(cx, 0f));
-            Sprite(t, "Glow", theme.glow, new Color(theme.enemy.r, theme.enemy.g, theme.enemy.b, 0.4f), new Vector2(0f, 0.45f), new Vector2(1.8f, 1.8f), 9, true);
-            Sprite(t, "Body", theme.square, theme.enemy, new Vector2(0f, 0.45f), new Vector2(0.9f, 0.9f), 10);
-            Sprite(t, "EyeL", theme.square, Color.white, new Vector2(-0.2f, 0.58f), new Vector2(0.18f, 0.22f), 11);
-            Sprite(t, "EyeR", theme.square, Color.white, new Vector2(0.2f, 0.58f), new Vector2(0.18f, 0.22f), 11);
-            Sprite(t, "PupilL", theme.square, Color.black, new Vector2(-0.24f, 0.56f), new Vector2(0.08f, 0.12f), 12);
-            Sprite(t, "PupilR", theme.square, Color.black, new Vector2(0.16f, 0.56f), new Vector2(0.08f, 0.12f), 12);
-            var pulse = t.gameObject.AddComponent<BeatPulse>();
-            pulse.Configure(0.12f, 0.25f);
+            var sr = Spr(t, "Sprite", theme.enemyFrames[0], Vector2.zero, 10);
+            t.gameObject.AddComponent<BeatFrames>().Setup(sr, theme.enemyFrames);
+            t.gameObject.AddComponent<BeatPulse>().Configure(0.08f, 0.16f);
             return t.gameObject;
         }
 
         GameObject MakeBlock(float cx)
         {
             var t = Group("Block", new Vector2(cx, 0f));
-            Sprite(t, "Body", theme.square, theme.block, new Vector2(0f, 0.47f), new Vector2(0.95f, 0.95f), 10);
-            Sprite(t, "Inner", theme.square, new Color(0f, 0f, 0f, 0.25f), new Vector2(0f, 0.47f), new Vector2(0.6f, 0.6f), 11);
-            Sprite(t, "Glow", theme.glow, new Color(theme.block.r, theme.block.g, theme.block.b, 0.3f), new Vector2(0f, 0.47f), new Vector2(1.8f, 1.8f), 9, true);
+            Spr(t, "Sprite", theme.blockSprite, Vector2.zero, 10);
+            t.gameObject.AddComponent<BeatPulse>().Configure(0.05f, 0.1f);
             return t.gameObject;
         }
 
         GameObject MakeSlideBar(Rect r)
         {
             var t = Group("SlideBar", new Vector2(r.center.x, 0f));
-            Sprite(t, "Body", theme.square, new Color(theme.slideBar.r * 0.55f, theme.slideBar.g * 0.45f, theme.slideBar.b * 0.2f, 1f), new Vector2(0f, r.center.y), new Vector2(r.width, r.height), 10);
-            Sprite(t, "Edge", theme.square, theme.slideBar, new Vector2(0f, r.yMin + 0.08f), new Vector2(r.width, 0.16f), 11);
-            Sprite(t, "Glow", theme.glow, new Color(theme.slideBar.r, theme.slideBar.g, theme.slideBar.b, 0.45f), new Vector2(0f, r.yMin), new Vector2(r.width + 1f, 1f), 12, true);
-            // Hachures d'avertissement
-            for (float x = r.xMin + 0.3f; x < r.xMax - 0.2f; x += 0.7f)
-                Sprite(t, "Stripe", theme.square, new Color(0f, 0f, 0f, 0.35f), new Vector2(x - r.center.x, r.yMin + 0.08f), new Vector2(0.25f, 0.16f), 12);
+            float postH = r.yMax - LaserY;
+            // poteaux (cyan) de chaque côté, du laser jusqu'en haut
+            foreach (float sign in new[] { -1f, 1f })
+            {
+                float px = sign * r.width * 0.5f;
+                Sliced(t, "Post", theme.laserPostSprite, new Vector2(px, LaserY + postH * 0.5f), new Vector2(0.64f, postH + 0.64f), 9);
+                Spr(t, "Node", theme.laserNodeSprite, new Vector2(px, LaserY), 12);
+            }
+            Sliced(t, "Beam", theme.laserBeamSprite, new Vector2(0f, LaserY), new Vector2(r.width, 0.64f), 11);
             return t.gameObject;
         }
 
         GameObject MakeLum(Vector2 center)
         {
             var t = Group("Lum", center);
-            Sprite(t, "Glow", theme.glow, new Color(theme.lum.r, theme.lum.g, theme.lum.b, 0.55f), Vector2.zero, new Vector2(1.2f, 1.2f), 14, true);
-            Sprite(t, "Core", theme.circle, theme.lum, Vector2.zero, new Vector2(0.42f, 0.42f), 15);
-            var pulse = t.gameObject.AddComponent<BeatPulse>();
-            pulse.Configure(0.25f, 0.4f);
+            Spr(t, "Sprite", theme.lumSprite, Vector2.zero, 14);
+            t.gameObject.AddComponent<BeatPulse>().Configure(0.2f, 0.35f);
             return t.gameObject;
         }
     }

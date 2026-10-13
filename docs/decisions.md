@@ -38,3 +38,6 @@ Le joueur avance à x = BeatToX(SongBeat) (pas de vélocité physique). Collisio
 
 ## ADR-010 — Démo en autoplay sur l'écran Attract (2026-09-25)
 L'Attract lance le vrai niveau en autoplay (sans perte de cœur), sous le titre. Ça montre le jeu aux passants, et ça réutilise l'autoplay de debug. La boucle de menu `attractSong` ne sert que si le niveau n'a pas de chart.
+
+## ADR-013 — Direction artistique néon filaire façon Rider, sprites générés (2026-10-13)
+Remplace le style provisoire en carrés teintés. Tous les sprites (héros filaire à 19 images, ennemis, caisse, mur, laser, lums, sol, rochers, cœurs, logo) sont **générés par `tools/gen-neon-sprites.py`** (Pillow + numpy) : traits turquoise et magenta avec cœur blanc et halo, sur fond bleu-vert sombre. Raisons : cohérence totale du style, aucune compétence de dessin requise, modifiable en changeant des paramètres, pas d'asset externe à licencier. Le héros est animé par images (`HeroAnimator`), la foulée calée sur le beat. Sprites et palette référencés par `Theme_Neon`, donc remplaçables par des dessins maison sans toucher au code. Si la branche `feat/niveau-musical-neon` (DA « Castle Rock », ADR-011) est mergée, cette ADR **remplace** l'ADR-011 pour les visuels : `PlayerRig`, `BeatDance`, `GroundWave` et le décor en code de cette branche sont à retirer ou à adapter.

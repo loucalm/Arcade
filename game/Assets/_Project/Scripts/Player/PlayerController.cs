@@ -13,11 +13,17 @@ namespace RythmeRunner.Player
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
-        [Header("Visuel (hiérarchie : Visual (squash) > Spinner (rotation) > Body/Glow)")]
+        [Header("Visuel (hiérarchie : Visual (squash) > Spinner > Sprite ; l'image vient de HeroAnimator)")]
         [SerializeField] Transform visual;
         [SerializeField] Transform spinner;
-        [SerializeField] SpriteRenderer body;
         [SerializeField] SpriteRenderer slash;
+        [SerializeField] NeonTrail trail;
+        [Tooltip("Couleur des gerbes de particules (apparition, mort).")]
+        [SerializeField] Color burstColor = new(0.25f, 0.94f, 1f);
+        [Tooltip("Vrille pendant le saut. Désactivée avec le héros filaire : les poses suffisent.")]
+        [SerializeField] bool spinOnJump;
+        [Tooltip("Étirement (écrasement) aux moments forts : léger, car il épaissit les traits.")]
+        [SerializeField, Range(0f, 1f)] float squashAmount = 0.5f;
 
         [Header("Corps")]
         [SerializeField] float width = 0.7f;
@@ -41,6 +47,11 @@ namespace RythmeRunner.Player
 
         public bool IsSliding => sliding;
         public bool IsGrounded => grounded;
+        public float VelocityY => vy;
+        /// <summary>Le coup de poing est en cours (pose « hit » et croissant visibles).</summary>
+        public bool IsPunching => slashTimer > 0f;
+        /// <summary>Secondes depuis le dernier atterrissage.</summary>
+        public float SinceLanded => Time.time - landedAt;
 
         LevelBuilder level;
         RunManager run;
@@ -54,6 +65,7 @@ namespace RythmeRunner.Player
         float prevX, prevCenterY;
         Vector3 squash = Vector3.one;
         float slashTimer, slashDuration = 0.1f;
+        float landedAt = -99f;
 
         public void Setup(LevelBuilder level, RunManager run, IPlayerInput input)
         {
@@ -86,10 +98,13 @@ namespace RythmeRunner.Player
             input?.ResetAt(beat);
             gameObject.SetActive(true);
             visual.gameObject.SetActive(true);
-            squash = new Vector3(0.6f, 1.5f, 1f);
+            squash = Squash(0.75f, 1.3f);
             spinner.localRotation = Quaternion.identity;
             slash.enabled = false;
-            FxPool.Instance?.Burst(new Vector2(x, 0.5f), body.color, 14, 5f, 0.18f, 0.45f, 4f);
+            slashTimer = 0f;
+            landedAt = -99f;
+            trail?.Restart();
+            FxPool.Instance?.Burst(new Vector2(x, 0.5f), burstColor, 14, 5f, 0.18f, 0.45f, 4f);
         }
 
         public void Die()
@@ -97,8 +112,11 @@ namespace RythmeRunner.Player
             dead = true;
             visual.gameObject.SetActive(false);
             slash.enabled = false;
+            slashTimer = 0f;
+            trail?.Stop();
             var p = (Vector2)transform.position + new Vector2(0f, 0.45f);
-            FxPool.Instance?.Burst(p, body.color, 40, 11f, 0.28f, 0.9f, 10f, 0.6f);
+            FxPool.Instance?.Burst(p, burstColor, 40, 11f, 0.28f, 0.9f, 10f, 0.6f);
+            FxPool.Instance?.Burst(p, new Color(1f, 0.17f, 0.71f), 24, 8f, 0.22f, 0.7f, 8f, 0.4f);
             FxPool.Instance?.Burst(p, Color.white, 16, 7f, 0.18f, 0.5f, 6f);
         }
 
@@ -134,7 +152,7 @@ namespace RythmeRunner.Player
                 hitUntilBeat = beat + hitActiveBeats;
                 slashDuration = slashTimer = hitActiveBeats * spb;
                 ActionSfx.Instance?.Hit();
-                squash = new Vector3(1.3f, 0.85f, 1f);
+                squash = Squash(1.2f, 0.92f);
             }
 
             // Glissade au sol, chute rapide en l'air
@@ -177,8 +195,8 @@ namespace RythmeRunner.Player
             grounded = false;
             jumpBufferBeat = -99;
             jumpStartBeat = beat;
-            spinning = true;
-            squash = new Vector3(0.7f, 1.35f, 1f);
+            spinning = spinOnJump;
+            squash = Squash(0.82f, 1.2f);
             ActionSfx.Instance?.Jump();
             FxPool.Instance?.Burst(new Vector2(x, 0.05f), Color.white, 6, 3f, 0.12f, 0.3f, 2f, 0f);
         }
@@ -190,7 +208,8 @@ namespace RythmeRunner.Player
             grounded = true;
             spinning = false;
             spinner.localRotation = Quaternion.identity;
-            squash = new Vector3(1.35f, 0.7f, 1f);
+            squash = Squash(1.2f, 0.82f);
+            landedAt = Time.time;
             ActionSfx.Instance?.Land();
             FxPool.Instance?.Burst(new Vector2(x, 0.05f), Color.white, 8, 3.5f, 0.12f, 0.35f, 3f, 0f);
         }
@@ -267,10 +286,12 @@ namespace RythmeRunner.Player
             return (a + ab * t - p).sqrMagnitude;
         }
 
+        // Écrasement atténué par squashAmount (1 = valeurs brutes, 0 = aucun).
+        Vector3 Squash(float x, float y) => new Vector3(Mathf.Lerp(1f, x, squashAmount), Mathf.Lerp(1f, y, squashAmount), 1f);
+
         void UpdateVisual(double beat, float dt)
         {
-            var target = sliding ? new Vector3(1.3f, 0.47f, 1f) : Vector3.one;
-            squash = Vector3.Lerp(squash, target, 1f - Mathf.Exp(-14f * dt));
+            squash = Vector3.Lerp(squash, Vector3.one, 1f - Mathf.Exp(-14f * dt));
             visual.localScale = squash;
 
             // Vrille pendant le saut : un tour complet par saut, calé sur sa durée.
@@ -285,7 +306,8 @@ namespace RythmeRunner.Player
                 slashTimer -= dt;
                 float k = Mathf.Clamp01(slashTimer / slashDuration);
                 slash.enabled = true;
-                slash.transform.localScale = new Vector3(hitReach * (1.2f - 0.4f * k), 1.4f * k + 0.2f, 1f);
+                // Le croissant s'ouvre vers l'avant et s'éteint (k : 1 → 0).
+                slash.transform.localScale = Vector3.one * (0.7f + 0.4f * (1f - k));
                 var c = slash.color;
                 c.a = k;
                 slash.color = c;

@@ -31,7 +31,7 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 |---|---|---|
 | `game/` | Projet Unity **6000.3.23f1** (base = anatidae-toolkit) | [game/CLAUDE.md](game/CLAUDE.md) |
 | `web/` | Serveur Node (Express + ws) + site one-page + blog | [web/CLAUDE.md](web/CLAUDE.md) |
-| `docs/` | Références : borne, game design, charts, API, décisions, **[roadmap](docs/roadmap.md)** | à lire avant de coder une feature |
+| `docs/` | Références : borne, game design, charts, API, décisions, [direction artistique](docs/art-direction.md), **[roadmap](docs/roadmap.md)** | à lire avant de coder une feature |
 | `dist/RythmeRunner/` | Build prêt pour la borne (gitignoré) | généré, jamais édité à la main |
 | `tools/anatidae-arcade/` | Clone local du serveur de la borne (gitignoré) | pour tester |
 

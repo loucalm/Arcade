@@ -16,17 +16,39 @@ MonoBehaviour:
   circle: {fileID: 21300000, guid: 360c9e599ce144fa49e6a8e11d82d6e0, type: 3}
   glow: {fileID: 21300000, guid: 38847a6667cb6419a944ea37309cf9c3, type: 3}
   additive: {fileID: 2100000, guid: 0d59fc4c0a6024883989af3b16c4a926, type: 2}
-  background: {r: 0.05, g: 0.03, b: 0.1, a: 1}
-  backgroundFlash: {r: 0.16, g: 0.06, b: 0.24, a: 1}
-  groundBody: {r: 0.12, g: 0.07, b: 0.22, a: 1}
-  groundTop: {r: 0.3, g: 0.95, b: 1, a: 1}
-  beatTick: {r: 0.3, g: 0.95, b: 1, a: 0.35}
-  player: {r: 0.3, g: 0.95, b: 1, a: 1}
-  enemy: {r: 1, g: 0.3, b: 0.35, a: 1}
-  block: {r: 1, g: 0.6, b: 0.2, a: 1}
-  wall: {r: 1, g: 0.25, b: 0.75, a: 1}
-  slideBar: {r: 1, g: 0.85, b: 0.2, a: 1}
-  lum: {r: 1, g: 0.95, b: 0.4, a: 1}
-  checkpoint: {r: 0.4, g: 1, b: 0.6, a: 1}
-  backdropNear: {r: 0.14, g: 0.07, b: 0.26, a: 1}
-  backdropFar: {r: 0.09, g: 0.05, b: 0.18, a: 1}
+  enemyFrames:
+  - {fileID: 21300000, guid: 209de430b561543258e114a3a75874b5, type: 3}
+  - {fileID: 21300000, guid: c2f56f4819a8c47d5a1ea033fcaf6652, type: 3}
+  blockSprite: {fileID: 21300000, guid: f3d6305b1c5814598a42482a22949a28, type: 3}
+  wallSprite: {fileID: 21300000, guid: c500e47d67b2344a0aebc5ef7eb4099f, type: 3}
+  laserBeamSprite: {fileID: 21300000, guid: 3254e714754da4efba1477e022e1522e, type: 3}
+  laserNodeSprite: {fileID: 21300000, guid: 6040704c41670489cb318867ce3c8cb9, type: 3}
+  laserPostSprite: {fileID: 21300000, guid: 93c7ce868d5834769900646bcc654a9a, type: 3}
+  lumSprite: {fileID: 21300000, guid: 9eae589e40bab4f04a53a55eb760bc76, type: 3}
+  checkpointSprite: {fileID: 21300000, guid: d10bb066fe4b643cea9469a7711f5485, type: 3}
+  groundTopSprite: {fileID: 21300000, guid: f124235a3e6964986983e302abf189f5, type: 3}
+  rocks:
+  - {fileID: 21300000, guid: 4946d14557c8440b091e91835a8ca8ae, type: 3}
+  - {fileID: 21300000, guid: 3773b9f95bb9f4e4c9ba18bbfe000b68, type: 3}
+  - {fileID: 21300000, guid: 9c6220c19702a454d9fa1e230a365091, type: 3}
+  - {fileID: 21300000, guid: 2526e8f66ba7a47aa85cb264ff3cd0c5, type: 3}
+  backgroundVeil: {fileID: 21300000, guid: 3b3d19ce642a748288b1879beae953a1, type: 3}
+  slashSprite: {fileID: 21300000, guid: d0cb4f675e45e4c74b87bcd8927ec637, type: 3}
+  sparkSprite: {fileID: 21300000, guid: 5fb2e7ccf61914d569b74da2c24444ea, type: 3}
+  heartOn: {fileID: 21300000, guid: e5075b66761524b7db1ff89bed1e4185, type: 3}
+  heartOff: {fileID: 21300000, guid: 7183e1e14c5d04cf78d8952b75cddd85, type: 3}
+  logoSprite: {fileID: 21300000, guid: 6644c4dee121f424696984d1a8209372, type: 3}
+  background: {r: 0.047, g: 0.145, b: 0.19, a: 1}
+  backgroundFlash: {r: 0.1, g: 0.29, b: 0.37, a: 1}
+  groundBody: {r: 0.03, g: 0.1, b: 0.14, a: 1}
+  groundTop: {r: 0.25, g: 0.94, b: 1, a: 1}
+  beatTick: {r: 0.25, g: 0.94, b: 1, a: 0.28}
+  player: {r: 0.25, g: 0.94, b: 1, a: 1}
+  enemy: {r: 1, g: 0.17, b: 0.71, a: 1}
+  block: {r: 1, g: 0.17, b: 0.71, a: 1}
+  wall: {r: 0.25, g: 0.94, b: 1, a: 1}
+  slideBar: {r: 1, g: 0.69, b: 0.18, a: 1}
+  lum: {r: 1, g: 0.94, b: 0.63, a: 1}
+  checkpoint: {r: 0.25, g: 0.94, b: 1, a: 1}
+  backdropNear: {r: 0.1, g: 0.28, b: 0.36, a: 1}
+  backdropFar: {r: 0.07, g: 0.2, b: 0.27, a: 1}

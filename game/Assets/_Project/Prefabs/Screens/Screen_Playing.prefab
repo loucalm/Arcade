@@ -203,6 +203,8 @@ MonoBehaviour:
   - {fileID: 6320147744873045114}
   - {fileID: 3751136348278477331}
   - {fileID: 6427188813559816596}
+  heartOnSprite: {fileID: 21300000, guid: e5075b66761524b7db1ff89bed1e4185, type: 3}
+  heartOffSprite: {fileID: 21300000, guid: 7183e1e14c5d04cf78d8952b75cddd85, type: 3}
   progressFill: {fileID: 4896381985478191714}
   heartOn: {r: 1, g: 0.25, b: 0.75, a: 1}
   heartOff: {r: 1, g: 1, b: 1, a: 0.15}
@@ -315,8 +317,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -788, y: 436}
-  m_SizeDelta: {x: 56, y: 56}
+  m_AnchoredPosition: {x: -800, y: 430}
+  m_SizeDelta: {x: 76, y: 76}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &937023953839074356
 CanvasRenderer:
@@ -339,16 +341,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.25, b: 0.75, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 360c9e599ce144fa49e6a8e11d82d6e0, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e5075b66761524b7db1ff89bed1e4185, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -877,8 +879,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -860, y: 436}
-  m_SizeDelta: {x: 56, y: 56}
+  m_AnchoredPosition: {x: -870, y: 430}
+  m_SizeDelta: {x: 76, y: 76}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2566173790917523468
 CanvasRenderer:
@@ -901,16 +903,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.25, b: 0.75, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 360c9e599ce144fa49e6a8e11d82d6e0, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e5075b66761524b7db1ff89bed1e4185, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -952,8 +954,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -716, y: 436}
-  m_SizeDelta: {x: 56, y: 56}
+  m_AnchoredPosition: {x: -730, y: 430}
+  m_SizeDelta: {x: 76, y: 76}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5220860166364402228
 CanvasRenderer:
@@ -976,16 +978,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.25, b: 0.75, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 360c9e599ce144fa49e6a8e11d82d6e0, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e5075b66761524b7db1ff89bed1e4185, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1

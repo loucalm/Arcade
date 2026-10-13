@@ -21,7 +21,8 @@ Règles :
 - [ ] **Chart du vrai niveau** pour cette musique, validée en autoplay (0 chute)
 - [ ] **Tour REMIX 8-bit** : à la fin du morceau, on reboucle sur la même chart avec `remixClip` et des perturbations visuelles croissantes, jusqu'à la mort. C'est la « difficulté croissante » exigée. Aujourd'hui, fin du morceau = fin de partie.
 - [ ] **Communication jeu → site** (exigée par le sujet) : `Scripts/Net/` + `NetConfig`, `POST /api/runs/*` et `GET /api/live-config` via `AnatidaeProxyWebRequest`. Contrat : [api-contract.md](api-contract.md)
-- [ ] `thumbnail.png` définitive (carrée), + `attract.mp4` (≤ 20 s, muet) en option
+- [x] `thumbnail.png` néon (512², générée par `tools/gen-neon-sprites.py --only thumbnail`) (2026-10-13)
+- [ ] `attract.mp4` (≤ 20 s, muet) en option : trailer pour le mode attract de la borne
 
 ## Jeu — P1 (gameplay « music level »)
 - [ ] `wall_run` : course sur les murs (automatique, dans la chart)
@@ -34,13 +35,14 @@ Règles :
 - [ ] Stems audio : couches (batterie, mélodie) qui montent selon le combo ou la section
 
 ## Jeu — P2 (juice / direction artistique)
-- [ ] Direction artistique : personnage, ennemis, décor (remplacer les formes de `Theme_Neon`)
-- [ ] Animations du perso (course, saut, glissade, frappe, mort)
+- [x] Direction artistique néon façon Rider : héros, ennemis, obstacles, sol, décor, logo, cœurs, traînée (2026-10-13). Voir [art-direction.md](art-direction.md)
+- [x] Animations du perso : course calée sur le beat, saut en 3 poses, atterrissage, glissade, coup de poing (2026-10-13)
+- [ ] Animation de mort et de victoire du héros ; foule d'ennemis qui dansent en arrière-plan
 - [ ] Textes flottants (+50, PARFAIT) dans le monde, traînée du perso à fort multiplicateur
 - [ ] Mise en scène des drops : effondrement du décor, changement de caméra
 - [ ] Effets remix : brouillage, image inversée, zones sombres (shaders simples, compatibles GPU intégré)
 - [ ] Écran « Comment jouer » animé (pictos des boutons au lieu du texte)
-- [ ] Police et identité visuelle du jeu (titre, HUD)
+- [ ] Police néon pour le HUD et les écrans (le logo est déjà en néon ; le reste utilise la police TextMesh Pro par défaut)
 
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)

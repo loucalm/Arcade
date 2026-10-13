@@ -13,6 +13,8 @@ namespace RythmeRunner.FX
         [SerializeField] Sprite square;
         [SerializeField] Material additive;
         [SerializeField, Min(16)] int capacity = 256;
+        [Tooltip("Les sprites à halo (spark) ont une marge transparente : on grossit d'autant.")]
+        [SerializeField] float sizeMultiplier = 1f;
 
         struct Particle
         {
@@ -25,11 +27,13 @@ namespace RythmeRunner.FX
 
         Particle[] particles;
         int next;
+        float unit = 1f;
 
         void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+            unit = square != null && square.bounds.size.x > 0.0001f ? sizeMultiplier / square.bounds.size.x : sizeMultiplier;
             particles = new Particle[capacity];
             for (int i = 0; i < capacity; i++)
             {
@@ -89,7 +93,7 @@ namespace RythmeRunner.FX
                 p.transform.position += (Vector3)(p.velocity * dt);
                 p.transform.Rotate(0f, 0f, p.spin * dt);
                 float t = p.life / p.maxLife;
-                float s = p.size * t;
+                float s = p.size * t * unit;
                 p.transform.localScale = new Vector3(s, s, 1f);
                 var c = p.color;
                 c.a *= t;

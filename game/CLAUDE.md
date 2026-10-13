@@ -63,14 +63,18 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 | `Core/RunManager` | Une partie : build du niveau, cœurs (3), score/combo/multiplicateur, checkpoints = sections, respawn (seek audio), fin → `GameFlow.EndRun()`. Mode `demo` = autoplay sur l'Attract. |
 | `Level/ChartData` | Parse la chart JSON (`JsonUtility`, champ `@params`). |
 | `Level/LevelBuilder` | Chart → visuels (sprites teintés) + données de collision (`LevelObject`). Géométrie : voir docs/chart-format.md § Placement. |
-| `Level/LevelTheme` (SO `Theme_Neon`) | Sprites de base + palette. Les artistes remplacent ici, sans code. |
+| `Level/LevelTheme` (SO `Theme_Neon`) | Sprites néon + palette Rider. Remplacer un sprite = changer la référence ici, sans code. Voir [../docs/art-direction.md](../docs/art-direction.md). |
 | `Player/PlayerController` | X = `BeatToX(SongBeat)` ; Y = physique maison réglée en beats. Collisions AABB **balayées** entre frames (anti-traversée). |
+| `Player/HeroAnimator`, `Player/HeroSpriteSet` (SO `HeroSprites_Neon`) | Choisit l'image du héros selon l'état (course, saut, glissade, coup…). La foulée est calée sur le beat : 12 images pour 2 beats. |
 | `Player/PlayerInputs` | `IPlayerInput` : `ArcadePlayerInput` (borne) ou `AutoPlayerInput` (joue la chart parfaitement). |
 | `Rhythm/ActionSfx` | Sons d'action quantifiés à la double-croche (`PlayDelayed`), lums = gamme pentatonique. |
-| `FX/CameraRig`, `FX/FxPool`, `FX/Backdrop`, `FX/BeatPulse` | Caméra (suivi, shake, punch, flash du fond), particules en pool, décor en parallaxe, pulsation sur le beat. |
+| `FX/CameraRig`, `FX/FxPool`, `FX/Backdrop`, `FX/BeatPulse`, `FX/BeatFrames`, `FX/NeonTrail` | Caméra (suivi, shake, punch, flash du fond), particules en pool (sprite `spark`), rochers en parallaxe + voile, pulsation sur le beat, images alternées sur le beat (ennemis), traînée néon du héros. |
+| `Editor/NeonSpritePostprocessor` | Règle PPU, pivot et 9-slice des sprites de `Art/Neon` à l'import (table par nom de fichier). |
 | `UI/RunHud` | HUD sur le prefab `Screen_Playing`. |
 - Aucun moteur physique (ADR-009). Aucun `Instantiate` en jeu : le niveau est construit une fois par partie, puis on réactive au respawn.
-- Assets provisoires générés : `tools/gen-shapes.py` (formes), `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py --structure …` (musique de test).
+- **Sprites : générés, jamais dessinés à la main.** `python3 tools/gen-neon-sprites.py` écrit `Art/Neon/*.png` (néon filaire façon Rider). Dépendances : `pip install -r tools/requirements.txt`. Les sprites sont déjà colorés (`color = white` dans Unity). Détails, tailles et pivots : [../docs/art-direction.md](../docs/art-direction.md). Si on change une taille ou un ancrage dans le générateur, mettre à jour `NeonSpritePostprocessor` dans le même commit.
+- Autres assets provisoires générés : `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py --structure …` (musique de test). `Art/Shapes` (formes de base, `tools/gen-shapes.py`) ne sert plus qu'aux aplats (corps du sol, repères de beat).
+- Les champs sprite de `LevelTheme` qui ont le même nom qu'une couleur portent le suffixe `Sprite` (`wallSprite`, `lumSprite`…).
 
 ## Juice / perfs (GPU intégré)
 - Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.
@@ -82,12 +86,14 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 - `Debug/` (namespace **`RythmeRunner.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
 - `GameFlow` (`Core/GameFlow.cs`) : les écrans sont des prefabs `Prefabs/Screens/Screen_*.prefab` sous le canvas `Screens` (sortingOrder −10, sous l'overlay Anatidae). En attendant le gameplay : +10 points par beat, **Start = fin de partie**.
 
+- ⚠️ Piège MCP : chaque `execute_code` compile du C# dans l'éditeur et fige le jeu ~300 ms (`dt` = 0,333). Pendant une partie en autoplay, ça fait rater un saut. Pour valider une chart : lancer l'autoplay, **ne rien appeler** pendant la durée du morceau, puis lire le résultat une seule fois. Même chose pour les captures (`manage_camera screenshot`) et les gros calculs CPU (génération de sprites).
+
 ## Build → borne
 1. File > Build Profiles > **Web** → Build dans **`game/Build`** (gitignoré).
 2. `tools/package-build.sh` : copie vers `dist/RythmeRunner/`, ajoute `BuildExtras/{info.json,thumbnail.png,attract.mp4?}` et installe le tout dans la borne locale.
 3. `cd tools/anatidae-arcade && node server.js` → `http://localhost:3000`. Le jeu apparaît dans le menu (Entrée/B1 pour lancer). Accès direct : `http://localhost:3000/RythmeRunner/`.
 4. Vérifier : **Échap maintenu 1,5 s → retour menu** (testé OK le 2026-09-25), AFK 60 s → menu, `GET /api/?game=RythmeRunner` en 200, saisie du highscore, dead zone, 60 fps.
-`thumbnail.png` est une vignette provisoire (dégradé) : à remplacer par la vraie jaquette carrée.
+`game/BuildExtras/thumbnail.png` est générée : `python3 tools/gen-neon-sprites.py --only thumbnail` (lit les rochers de `Art/Neon`).
 
 ## MCP Unity
 Package `com.coplaydev.unity-mcp` **figé en `#v10.2.0`** dans `Packages/manifest.json`. On ne pointe jamais sur `#main` : les 3 postes doivent avoir la même version. Pour monter de version, mettre à jour le manifest et la version du serveur MCP dans la même PR.
