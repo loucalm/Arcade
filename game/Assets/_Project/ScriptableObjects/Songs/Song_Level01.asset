@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36ff3b5dc283e46f3862081906125f9a, type: 3}
+  m_Name: Song_Level01
+  m_EditorClassIdentifier: Assembly-CSharp::RythmeRunner.Rhythm.SongData
+  title: Main Theme - Shovel Knight
+  clip: {fileID: 8300000, guid: d617f71fc8f9e4ae88592260461eaa21, type: 3}
+  remixClip: {fileID: 0}
+  bpm: 150
+  offsetSeconds: 0.18
+  beatsPerBar: 4
+  chart: {fileID: 4900000, guid: bce24872929b142649b63bf9e80c0d57, type: 3}
