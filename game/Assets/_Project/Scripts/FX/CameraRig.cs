@@ -1,7 +1,7 @@
-using RythmeRunner.Rhythm;
+using Kenta.Rhythm;
 using UnityEngine;
 
-namespace RythmeRunner.FX
+namespace Kenta.FX
 {
     /// <summary>
     /// Caméra du runner : suit le joueur en X sans lissage (calée sur le rythme), lisse en Y,

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace RythmeRunner.FX
+namespace Kenta.FX
 {
     /// <summary>
     /// Traînée lumineuse derrière le héros (signature de Rider) : turquoise → magenta → transparent.

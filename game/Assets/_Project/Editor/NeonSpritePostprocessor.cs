@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace RythmeRunner.EditorTools
+namespace Kenta.EditorTools
 {
     /// <summary>
     /// Règle automatiquement l'import des sprites générés par tools/gen-neon-sprites.py

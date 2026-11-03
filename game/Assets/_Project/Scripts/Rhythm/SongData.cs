@@ -1,12 +1,12 @@
 using UnityEngine;
 
-namespace RythmeRunner.Rhythm
+namespace Kenta.Rhythm
 {
     /// <summary>
     /// Données d'un morceau : clip, tempo, offset. Un asset par morceau dans _Project/ScriptableObjects/Songs.
     /// Le BPM doit être CONSTANT sur tout le morceau.
     /// </summary>
-    [CreateAssetMenu(fileName = "Song_", menuName = "Rythme Runner/Song Data")]
+    [CreateAssetMenu(fileName = "Song_", menuName = "Kenta/Song Data")]
     public class SongData : ScriptableObject
     {
         public string title = "Sans titre";

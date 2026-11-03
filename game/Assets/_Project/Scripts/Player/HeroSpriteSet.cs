@@ -1,9 +1,9 @@
 using UnityEngine;
 
-namespace RythmeRunner.Player
+namespace Kenta.Player
 {
     /// <summary>Les images du héros (générées par tools/gen-neon-sprites.py). Un asset par apparence.</summary>
-    [CreateAssetMenu(fileName = "HeroSprites_", menuName = "Rythme Runner/Hero Sprite Set")]
+    [CreateAssetMenu(fileName = "HeroSprites_", menuName = "Kenta/Hero Sprite Set")]
     public class HeroSpriteSet : ScriptableObject
     {
         [Tooltip("Cycle de course : une foulée complète (jambe gauche + droite). Calé sur le beat par HeroAnimator.")]

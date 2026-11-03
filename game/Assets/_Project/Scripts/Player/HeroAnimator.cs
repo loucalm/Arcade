@@ -1,7 +1,7 @@
-using RythmeRunner.Rhythm;
+using Kenta.Rhythm;
 using UnityEngine;
 
-namespace RythmeRunner.Player
+namespace Kenta.Player
 {
     /// <summary>
     /// Choisit l'image du héros selon son état. La foulée est calée sur la musique : un cycle complet

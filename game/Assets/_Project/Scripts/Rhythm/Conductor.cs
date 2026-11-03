@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace RythmeRunner.Rhythm
+namespace Kenta.Rhythm
 {
     /// <summary>
     /// Horloge maître du jeu : tout ce qui dépend du rythme lit SongTime / SongBeat ou s'abonne à OnBeat.

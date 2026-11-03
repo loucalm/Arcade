@@ -1,4 +1,4 @@
-# Rythme Runner
+# Kenta
 
 Runner/plateformeur rythmique pour la borne d'arcade MMI (**Anatidae**), inspiré des niveaux musicaux de Rayman Legends. Projet BUT MMI 3, S5.
 

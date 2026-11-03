@@ -1,10 +1,10 @@
-using RythmeRunner.Core;
-using RythmeRunner.Level;
+using Kenta.Core;
+using Kenta.Level;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace RythmeRunner.UI
+namespace Kenta.UI
 {
     /// <summary>
     /// HUD de la partie : score (compteur animé), multiplicateur, lums, cœurs, progression du morceau,

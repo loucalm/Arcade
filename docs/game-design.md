@@ -1,4 +1,4 @@
-# Game design — Rythme Runner
+# Game design — Kenta
 
 Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en scrolling horizontal où **toute la traversée est synchronisée sur la musique**. Bien joué, chaque saut, coup, glissade ou collecte tombe sur un temps fort : le joueur a l'impression de **jouer la musique en courant**.
 
@@ -51,7 +51,7 @@ Démarrage → [1 Attract + HighScore] ⟲ (tourne en boucle)
 ```
 > Sur le schéma, les libellés « Oui/Non » du losange « score joueur highScore ? » sont inversés. L'intention est : **si le score entre dans le top 10 → enregistrement**, sinon retour direct à l'attract.
 
-| # | Écran | Contenu Rythme Runner | Toolkit |
+| # | Écran | Contenu Kenta | Toolkit |
 |---|---|---|---|
 | 1 | **Attract + HighScore** | Alternance toutes les ~8 s : démo en **autoplay** du niveau (musique basse, implémentée : `RunManager.BeginRun(song, demo: true)`) ↔ classement top 10. Logo + « APPUIE SUR UN BOUTON » qui pulse sur le beat. N'importe quel bouton → écran 2. Cet appui débloque aussi l'audio du navigateur. | `HighscoreUI` |
 | 2 | **Explain (How to play)** | Une planche animée : joystick bas = glisser, B1 = sauter, B2 = frapper, « suis la musique ». B1/Start pour passer, sinon passage auto après ~6 s. | — |

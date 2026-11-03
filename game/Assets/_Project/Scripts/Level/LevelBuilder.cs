@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using RythmeRunner.DebugTools;
-using RythmeRunner.FX;
+using Kenta.DebugTools;
+using Kenta.FX;
 using UnityEngine;
 
-namespace RythmeRunner.Level
+namespace Kenta.Level
 {
     /// <summary>
     /// Construit le niveau à partir d'une chart : visuels (sprites teintés du LevelTheme) + données de collision.

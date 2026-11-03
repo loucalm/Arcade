@@ -1,4 +1,4 @@
-# game/ — Projet Unity (Rythme Runner)
+# game/ — Projet Unity (Kenta)
 
 Base : clone de [anatidae-toolkit](https://github.com/XariusExcl/anatidae-toolkit) (sans son `.git`).
 Ouvrir **ce dossier `game/`** dans Unity Hub, avec **exactement Unity 6000.3.23f1** (ADR-008). Ne pas changer de version sans décision d'équipe : ça réécrit `ProjectSettings/` et crée des conflits.
@@ -21,12 +21,12 @@ Assets/
     ├── Scripts/{Core,Rhythm,Player,Level,FX,UI,Net,Debug}/
     ├── Prefabs/  Scenes/  Audio/  Charts/  Art/  Materials/  ScriptableObjects/
 ```
-Namespace : `RythmeRunner.<Dossier>` (ex. `RythmeRunner.Rhythm`). Un fichier = une classe. Noms en anglais.
+Namespace : `Kenta.<Dossier>` (ex. `Kenta.Rhythm`). Un fichier = une classe. Noms en anglais.
 **Pas d'asmdef** dans `_Project/` : les scripts Anatidae sont dans `Assembly-CSharp`, et un asmdef ne peut pas le référencer.
 Les `.gitkeep` gardent les dossiers vides dans git (Unity ignore les fichiers qui commencent par un point).
 
 ## Toolkit Anatidae — ce qu'on réutilise
-- `HighscoreManager.GameName` → **`"RythmeRunner"`** (`Assets/Anatidae/Scripts/HighscoreManager.cs`). Doit être identique au nom du dossier de build.
+- `HighscoreManager.GameName` → **`"Kenta"`** (`Assets/Anatidae/Scripts/HighscoreManager.cs`). Doit être identique au nom du dossier de build.
 - Le prefab **`AnatidaeInterface`** doit être présent dans **chaque scène**. Il contient `MenuManager` (bouton blanc 1,5 s + AFK 60 s), `HighscoreNameInput` et `HighscoreUI`.
 - Au démarrage : `StartCoroutine(HighscoreManager.FetchHighscores())`, **avant** tout `IsHighscore()`.
 - Fin de partie : `if (HighscoreManager.IsHighscore(score)) HighscoreManager.ShowHighscoreInput(score);`. Bloquer nos menus tant que `IsHighscoreInputScreenShown` est vrai.
@@ -36,12 +36,12 @@ Les `.gitkeep` gardent les dossiers vides dans git (Unity ignore les fichiers qu
 - `ExtradataManager` sert à stocker des clés/valeurs sur la borne (stats globales, ex. nombre total de morts).
 
 ## Flow d'écrans (ADR-007)
-Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine à états : `Attract → Explain → Config (facultatif) → Playing → GameOver → NameEntry (si top 10) → Attract`. Un prefab par écran dans `Prefabs/Screens/`. Détails : [../docs/game-design.md](../docs/game-design.md).
+Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à états : `Attract → Explain → Config (facultatif) → Playing → GameOver → NameEntry (si top 10) → Attract`. Un prefab par écran dans `Prefabs/Screens/`. Détails : [../docs/game-design.md](../docs/game-design.md).
 - Attract : démo en autoplay qui alterne avec `HighscoreUI`. N'importe quel bouton lance la partie (et débloque l'audio).
 - GameOver : score + classement, puis `IsHighscore` → `ShowHighscoreInput`. Attendre que `IsHighscoreInputScreenShown` repasse à faux avant de revenir à Attract.
 
 ## Entrées
-- Classe unique `RythmeRunner.Core.ArcadeInput` : lit `P{n}_Horizontal`/`P{n}_Vertical` (dead zone **0,3** sur `GetAxisRaw`) et `P{n}_B1`, `P{n}_B2`, `P{n}_Start`.
+- Classe unique `Kenta.Core.ArcadeInput` : lit `P{n}_Horizontal`/`P{n}_Vertical` (dead zone **0,3** sur `GetAxisRaw`) et `P{n}_B1`, `P{n}_B2`, `P{n}_Start`.
 - Mapping de jeu : **B1 = saut** (maintenu = saut plus haut), **B2 = frappe**, **joystick bas = glissade**. Start = valider dans les menus.
 - Clavier de dev (P1, AZERTY) : ZQSD, F = B1, G = B2, X = Start, **Échap = bouton blanc**. Voir [../docs/anatidae.md](../docs/anatidae.md).
 - Axe vertical manette déjà inversé dans l'InputManager : **haut = positif**.
@@ -83,16 +83,16 @@ Scène unique `Scenes/Main.unity`. `RythmeRunner.Core.GameFlow` est une machine 
 - Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades.
 
 ## Debug
-- `Debug/` (namespace **`RythmeRunner.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
+- `Debug/` (namespace **`Kenta.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
 - `GameFlow` (`Core/GameFlow.cs`) : les écrans sont des prefabs `Prefabs/Screens/Screen_*.prefab` sous le canvas `Screens` (sortingOrder −10, sous l'overlay Anatidae). En attendant le gameplay : +10 points par beat, **Start = fin de partie**.
 
 - ⚠️ Piège MCP : chaque `execute_code` compile du C# dans l'éditeur et fige le jeu ~300 ms (`dt` = 0,333). Pendant une partie en autoplay, ça fait rater un saut. Pour valider une chart : lancer l'autoplay, **ne rien appeler** pendant la durée du morceau, puis lire le résultat une seule fois. Même chose pour les captures (`manage_camera screenshot`) et les gros calculs CPU (génération de sprites).
 
 ## Build → borne
 1. File > Build Profiles > **Web** → Build dans **`game/Build`** (gitignoré).
-2. `tools/package-build.sh` : copie vers `dist/RythmeRunner/`, ajoute `BuildExtras/{info.json,thumbnail.png,attract.mp4?}` et installe le tout dans la borne locale.
-3. `cd tools/anatidae-arcade && node server.js` → `http://localhost:3000`. Le jeu apparaît dans le menu (Entrée/B1 pour lancer). Accès direct : `http://localhost:3000/RythmeRunner/`.
-4. Vérifier : **Échap maintenu 1,5 s → retour menu** (testé OK le 2026-09-25), AFK 60 s → menu, `GET /api/?game=RythmeRunner` en 200, saisie du highscore, dead zone, 60 fps.
+2. `tools/package-build.sh` : copie vers `dist/Kenta/`, ajoute `BuildExtras/{info.json,thumbnail.png,attract.mp4?}` et installe le tout dans la borne locale.
+3. `cd tools/anatidae-arcade && node server.js` → `http://localhost:3000`. Le jeu apparaît dans le menu (Entrée/B1 pour lancer). Accès direct : `http://localhost:3000/Kenta/`.
+4. Vérifier : **Échap maintenu 1,5 s → retour menu** (testé OK le 2026-09-25), AFK 60 s → menu, `GET /api/?game=Kenta` en 200, saisie du highscore, dead zone, 60 fps.
 `game/BuildExtras/thumbnail.png` est générée : `python3 tools/gen-neon-sprites.py --only thumbnail` (lit les rochers de `Art/Neon`).
 
 ## MCP Unity

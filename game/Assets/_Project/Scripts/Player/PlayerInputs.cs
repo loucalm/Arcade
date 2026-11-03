@@ -1,7 +1,7 @@
-using RythmeRunner.Core;
-using RythmeRunner.Level;
+using Kenta.Core;
+using Kenta.Level;
 
-namespace RythmeRunner.Player
+namespace Kenta.Player
 {
     public struct PlayerCommands
     {

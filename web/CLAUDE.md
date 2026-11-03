@@ -38,5 +38,5 @@ Contrat complet : [../docs/api-contract.md](../docs/api-contract.md). En résum�
 Reprendre la palette, les polices et les formes du jeu. Tokens CSS dans `public/css/tokens.css` (`--rr-*`), synchronisés avec la direction artistique du jeu. Site responsive, animations sur le beat possibles (BPM du morceau).
 
 ## Déploiement VPS (plus tard : on reste en local pour l'instant)
-- URL : _à renseigner_. Process : `pm2 start server/index.js --name rythme-runner`. Reverse proxy **nginx** avec HTTPS (Let's Encrypt) et upgrade WebSocket (`proxy_set_header Upgrade/Connection`).
+- URL : _à renseigner_. Process : `pm2 start server/index.js --name kenta`. Reverse proxy **nginx** avec HTTPS (Let's Encrypt) et upgrade WebSocket (`proxy_set_header Upgrade/Connection`).
 - Variables : `.env` (`PORT`, `RR_KEY`), avec `.env.example` commité.

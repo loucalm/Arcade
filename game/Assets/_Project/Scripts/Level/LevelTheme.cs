@@ -1,12 +1,12 @@
 using UnityEngine;
 
-namespace RythmeRunner.Level
+namespace Kenta.Level
 {
     /// <summary>
     /// Direction artistique : sprites néon (générés par tools/gen-neon-sprites.py, voir docs/art-direction.md)
     /// et palette façon Rider. Les artistes peuvent remplacer n'importe quel sprite ici sans toucher au code.
     /// </summary>
-    [CreateAssetMenu(fileName = "Theme_", menuName = "Rythme Runner/Level Theme")]
+    [CreateAssetMenu(fileName = "Theme_", menuName = "Kenta/Level Theme")]
     public class LevelTheme : ScriptableObject
     {
         [Header("Formes de base")]

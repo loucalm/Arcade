@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace RythmeRunner.FX
+namespace Kenta.FX
 {
     /// <summary>
     /// Particules légères maison : un pool de SpriteRenderers animés à la main (pas de ParticleSystem,

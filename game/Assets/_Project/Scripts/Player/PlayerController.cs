@@ -1,10 +1,10 @@
-using RythmeRunner.Core;
-using RythmeRunner.FX;
-using RythmeRunner.Level;
-using RythmeRunner.Rhythm;
+using Kenta.Core;
+using Kenta.FX;
+using Kenta.Level;
+using Kenta.Rhythm;
 using UnityEngine;
 
-namespace RythmeRunner.Player
+namespace Kenta.Player
 {
     /// <summary>
     /// Personnage du runner. X vient TOUJOURS du Conductor (x = BeatToX(SongBeat)) : le joueur ne ralentit

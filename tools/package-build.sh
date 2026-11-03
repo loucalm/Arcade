@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Package le build Web Unity au format borne (index.html + Build/ + thumbnail.png + info.json)
-# et le copie dans la borne locale (tools/anatidae-arcade/public/RythmeRunner).
+# et le copie dans la borne locale (tools/anatidae-arcade/public/Kenta).
 # Usage : tools/package-build.sh [dossier_du_build]   (défaut : game/Build)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="${1:-$ROOT/game/Build}"
-GAME=RythmeRunner
+GAME=Kenta
 DIST="$ROOT/dist/$GAME"
 ARCADE="$ROOT/tools/anatidae-arcade/public/$GAME"
 

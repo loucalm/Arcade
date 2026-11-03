@@ -1,7 +1,7 @@
-using RythmeRunner.Rhythm;
+using Kenta.Rhythm;
 using UnityEngine;
 
-namespace RythmeRunner.FX
+namespace Kenta.FX
 {
     /// <summary>Alterne les images d'un SpriteRenderer à chaque beat (ennemis qui « dansent »).</summary>
     public class BeatFrames : MonoBehaviour

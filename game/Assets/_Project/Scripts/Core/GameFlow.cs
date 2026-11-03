@@ -1,10 +1,10 @@
 using System;
 using Anatidae;
-using RythmeRunner.Rhythm;
+using Kenta.Rhythm;
 using TMPro;
 using UnityEngine;
 
-namespace RythmeRunner.Core
+namespace Kenta.Core
 {
     public enum GameState { Attract, Explain, Config, Playing, GameOver, NameEntry }
 

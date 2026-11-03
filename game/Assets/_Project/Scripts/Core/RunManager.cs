@@ -1,12 +1,12 @@
 using System;
 using System.Collections;
-using RythmeRunner.FX;
-using RythmeRunner.Level;
-using RythmeRunner.Player;
-using RythmeRunner.Rhythm;
+using Kenta.FX;
+using Kenta.Level;
+using Kenta.Player;
+using Kenta.Rhythm;
 using UnityEngine;
 
-namespace RythmeRunner.Core
+namespace Kenta.Core
 {
     /// <summary>
     /// Une partie : construit le niveau, lance la musique, gère cœurs, score, combo, checkpoints

@@ -1,7 +1,7 @@
-using RythmeRunner.Rhythm;
+using Kenta.Rhythm;
 using UnityEngine;
 
-namespace RythmeRunner.FX
+namespace Kenta.FX
 {
     /// <summary>
     /// Décor façon Rider : rochers « low poly » bleu-vert en parallaxe infinie (deux calques) qui

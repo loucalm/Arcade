@@ -1,7 +1,7 @@
-using RythmeRunner.Rhythm;
+using Kenta.Rhythm;
 using UnityEngine;
 
-namespace RythmeRunner.FX
+namespace Kenta.FX
 {
     /// <summary>
     /// Fait « pulser » l'échelle d'un objet (sprite ou UI) sur le beat du Conductor.
