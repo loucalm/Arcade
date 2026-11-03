@@ -1,64 +1,46 @@
-# Direction artistique : néon filaire façon Rider
+# Direction artistique : Kenta (pixel art) — mise en œuvre
 
-Référence : le jeu mobile *Rider* (fond bleu-vert sombre, traits lumineux turquoise et magenta, formes simples, halos).
-Principe : **simple mais efficace**. Tout est fait de traits fins et brillants sur un fond sombre. Aucun aplat clair, aucune texture.
+La DA est décrite dans [da-kenta.md](da-kenta.md) (texte) et [DA_KENTA_JEUX_BORNE.pdf](DA_KENTA_JEUX_BORNE.pdf) (**le PDF fait foi** : visuels, palettes, maquettes).
+Ce document explique **comment elle est construite dans le projet** et comment la faire évoluer.
 
-## Palette
-| Rôle | Couleur | Hex | Sert à |
-|---|---|---|---|
-| Fond | bleu-vert très sombre | `#0C2531` | caméra ; s'éclaircit sur les temps forts (`#1A4B5E`) |
-| Turquoise | néon principal | `#3FF0FF` | héros, sol, murs, balises : **le terrain et le joueur** |
-| Magenta | néon d'action | `#FF2BB4` | écharpe et gants du héros, ennemis, caisses, coup de poing, logo : **ce qu'on frappe** |
-| Ambre | danger | `#FFB12E` | lasers (barres à glisser) |
-| Jaune pâle | collectible | `#FFF0A0` | lums |
+## Le principe : tout est en 240 × 135 px, agrandi ×8
+- La caméra de jeu écrit dans une `RenderTexture` de **240 × 135 px** (filtre Point). Une `RawImage` plein écran l'agrandit **×8** sur les 1920 × 1080 de la borne (`Scripts/FX/PixelScreen.cs`). Bandes noires automatiques si la fenêtre n'est pas en 16:9.
+- Monde : **40 px par unité** → l'écran montre 6 × 3,375 unités. Le sol est à 20 px du bas ; le héros est à 40 px du bord gauche ; les obstacles arrivent de la droite.
+- La caméra suit le héros en X seulement et se place toujours sur la grille de pixels (`CameraRig`). Secousses en pixels entiers, parallaxe calée sur la grille.
+- L'interface est un canvas « Screen Space – Camera » rendu dans la même texture (1 unité de canvas = 1 px), `pixelPerfect` activé : **tout** (HUD, menus) est en pixel art. Seule l'UI du toolkit Anatidae (saisie des 3 lettres, classement) reste en pleine définition par-dessus.
+- Le tour REMIX réduira la définition (`PixelScreen.SetDivider(3)` → 80 × 45) : pas encore branché (voir roadmap).
 
-Règle de lecture : **magenta = à frapper (B2)**, **turquoise = on saute par-dessus (B1)**, **ambre = on glisse dessous (joystick bas)**, **jaune = à ramasser**.
+## D'où viennent les sprites
+| Source | Contenu | Où |
+|---|---|---|
+| **PDF de la DA** (`tools/extract-kenta-pdf.py`) | 3 héros × 8 poses + pose d'attente, 8 ennemis, djembé écrasé / étiré / cassé | `Art/Kenta/Pdf/` |
+| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel, 3 calques, sol, trou, mur, bloc, plafond, poteau), pièces, totem, Sourdine, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
 
-## Rendu d'un sprite néon
-Chaque trait est rendu par `tools/neonlib.py` :
-1. **corps** : le trait, de la couleur du néon ;
-2. **cœur** : même trait, plus fin, presque blanc (effet tube) ;
-3. **halo** : trait flouté à trois rayons (serré, moyen, large).
-Les couches s'additionnent comme de la lumière : alpha = canal max, couleur = rgb / alpha. Sur fond sombre, c'est un néon. Les sprites sont donc **déjà colorés** : dans Unity ils restent blancs (`color = white`), on ne les teinte pas.
+Les PNG sont **commités** : inutile de relancer les outils sauf pour modifier un décor ou si le PDF change. Dépendances : `pip install -r tools/requirements.txt` (+ `pymupdf` pour l'extraction du PDF, `librosa` pour la chart).
+- Les sprites du PDF sont recadrés pour que le pivot soit **milieu-bas** (les pieds), sans réglage dans Unity.
+- Les biomes sont décrits dans `tools/kenta_biomes.py` (palettes issues du PDF) et dessinés par `tools/kenta_art.py`. Ajouter un biome = une entrée dans `BIOMES` + éventuellement un nouveau type de calque dans `kenta_art.py`.
+- `tools/pixlib.py` : primitives de dessin sans anti-aliasing, contour noir d'1 px, dégradés en bandes.
+- Chaque héros n'a **qu'une image par pose** (le PDF n'en fournit pas plus). Le PDF prévoit 2 à 4 images par action : à dessiner (voir roadmap).
 
-## Les sprites (`game/Assets/_Project/Art/Neon/`)
-Tous générés par **`python3 tools/gen-neon-sprites.py`** (dépendances : `pip install -r tools/requirements.txt`). Ne jamais les retoucher à la main : modifier le générateur et relancer. Options : `--only hero,enemy` pour n'en regénérer que certains, `--sheet planche.png` pour une planche de contact.
+## Import Unity
+`Editor/KentaSpritePostprocessor.cs` règle tout automatiquement, par chemin : filtre Point, aucune compression, PPU **40** (monde) ou **100** (interface : un sprite fait sa taille en px dans le canvas), pivot, bordures du cadre 9-slice. **Si on change la taille d'un sprite (mur, bloc, totem), mettre à jour ses pivots dans ce fichier.**
 
-| Fichier | Taille | Pivot / 9-slice | Usage |
-|---|---|---|---|
-| `hero_run_00…11` | 224² | pivot aux pieds (108, 176) | cycle de course, 1 foulée = 2 beats |
-| `hero_jump_up / jump_apex / jump_fall / land / slide / hit / hurt` | 224² | idem | poses |
-| `enemy_0`, `enemy_1` | 160² | pivot bas de la gemme | 2 images qui alternent à chaque beat |
-| `block` | 160² | pivot bas de la caisse | caisse à frapper |
-| `wall` | 128² | 9-slice, bordure 44 | mur ; marge de halo 0,30 u |
-| `laser_beam` / `laser_node` / `laser_post` | 128×64 / 64² / 64×128 | 9-slice L-R 24 / centre / 9-slice H-B 32 | barre à glisser |
-| `lum` | 96² | centre | collectible |
-| `checkpoint` | 128×512 | pivot au pied du mât | balise de section |
-| `ground_top` | 64×256 | 9-slice L-R 24 | trait de sol, dégradé, filets de fuite |
-| `rock_0…3` | 256×384 | pivot bas | rochers du décor |
-| `bg_gradient` | 4×256 | centre | voile : vignette + lueur d'horizon |
-| `slash` | 224×192 | pivot au centre de l'arc | coup de poing |
-| `spark` | 48² | centre | particules |
-| `heart_on` / `heart_off` | 96² | centre | cœurs du HUD |
-| `logo` | 1152×224 | centre | titre de l'écran Attract |
+## Reconstruire le projet après un changement d'assets
+Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.cs`) : recrée la police (`PixelFont`), les 3 héros, les 8 `BiomeTheme`, `Theme_Kenta`, les 5 prefabs d'écran et recâble la scène `Main` (affichage pixel, canvas, Sourdine, flash, héros, décor, particules). Reproductible : on le relance sans crainte.
 
-PPU = 100 partout (1 u = 100 px). Les pivots et bordures sont appliqués **automatiquement** à l'import par `Assets/_Project/Editor/NeonSpritePostprocessor.cs` (table par nom de fichier). **Si on change une taille ou un point d'ancrage dans le générateur, mettre à jour cette table dans le même commit.**
+## Dans le code
+| Élément | Script |
+|---|---|
+| 8 mondes | `Level/BiomeTheme` (SO) ; un biome = une section de la chart ; `LevelBuilder.BiomeAt(beat)` |
+| Décor | `FX/BiomeBackdrop` : ciel fixe (avec le gardien) + 3 calques de 480 px qui bouclent |
+| Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO) ; `HeroAnimator` choisit la pose ; la course rebondit d'1 px sur chaque demi-temps |
+| Bandeau (traînée de combo) | `FX/BandanaTrail` : 8 à 48 px selon le multiplicateur ×1 → ×8 |
+| La Sourdine | `FX/Sourdine` (interface) : avance quand on est touché, recule avec le combo, recouvre l'écran au game over |
+| Ennemis | djembé : 2 images alternées sur le temps (`BeatFrames`) ; les autres : saut d'1 px (`BeatHop`) |
+| Texte | `UI/PixelText` + `PixelFontData` : une image par caractère, entiers seulement |
+| Flash des drops | `FX/ScreenFx` |
 
-## Dans Unity
-- `Theme_Neon` (`LevelTheme`) référence tous les sprites et la palette. Remplacer un sprite = changer la référence là, sans toucher au code.
-- `HeroSprites_Neon` (`HeroSpriteSet`) : les images du héros ; `HeroAnimator` choisit l'image selon l'état et cale la foulée sur le beat (12 images par cycle de 2 beats, soit 12 images/s à 120 BPM).
-- `NeonTrail` : traînée turquoise → magenta derrière le héros, matériau additif.
-- `Backdrop` : deux calques de rochers en parallaxe + voile collé à la caméra.
-- `LevelBuilder` : construit les obstacles à partir des sprites (9-slice pour les murs, lasers et sol).
-- Particules : `FxPool` avec le sprite `spark` (additif).
-
-## Ajouter ou modifier un élément
-1. Ajouter une fonction `gen_xxx` dans `tools/gen-neon-sprites.py` et l'enregistrer dans `GENERATORS`.
-2. Ajouter son entrée (pivot, bordure) dans `NeonSpritePostprocessor.TryGetSpec`.
-3. Ajouter un champ dans `LevelTheme` (suffixe `Sprite` si le nom existe déjà comme couleur) et l'utiliser dans `LevelBuilder`.
-4. Régénérer : `python3 tools/gen-neon-sprites.py`, puis vérifier dans Unity.
-
-## Ce qui reste à faire (voir [roadmap.md](roadmap.md))
-- Effets du tour REMIX (brouillage, image inversée…) dans le même style.
-- Textes du HUD en police néon (aujourd'hui police TextMesh Pro par défaut).
-- Animations supplémentaires du héros (mort, victoire).
+## Règles
+- Pas de rotation ni d'échelle fractionnaire d'un sprite : tout reste à l'échelle 1:1 (les agrandissements d'interface sont des **entiers**).
+- Le contour noir d'1 px est dans les sprites ; ne pas en ajouter côté Unity.
+- Lisibilité d'abord : sur la borne, vu debout à 2 m (point à tester, voir roadmap).

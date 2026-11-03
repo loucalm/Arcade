@@ -1,6 +1,6 @@
 # Kenta — CLAUDE.md (racine)
 
-Jeu d'arcade **runner/plateformeur rythmique** (façon « music levels » de Rayman Legends) pour la borne MMI **Anatidae**, plus un **site one-page** sur VPS qui communique avec le jeu.
+Jeu d'arcade **Kenta** : runner/plateformeur rythmique en **pixel art** (façon « music levels » de Rayman Legends × Geometry Dash) pour la borne MMI **Anatidae**, plus un **site one-page** sur VPS qui communique avec le jeu. DA : [docs/da-kenta.md](docs/da-kenta.md) (le PDF fait foi) ; mise en œuvre : [docs/art-direction.md](docs/art-direction.md).
 Équipe : **Lou Calmes, Lucas Corrieras, Jeremy Hordé** (rôles : voir [docs/decisions.md](docs/decisions.md)), tous sous Claude Code. Langue du projet : **français** (docs, commits, UI). Code : identifiants en anglais.
 
 Livrables : 1) le jeu Unity WebGL déposé sur la borne, 2) le site (présentation, lore, mini-blog, lien live avec la borne).
@@ -25,13 +25,14 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 5. Tout ce qui réagit au tempo s'abonne à `Conductor.OnBeat(int beat)`. Pas de minuteries locales.
 6. Checkpoint = `{beat, x}`. Respawn = seek audio sur `BeatToSeconds(beat)`, puis reprise.
 7. Sur WebGL, l'AudioMixer ne gère que le volume : **aucun effet DSP**. Le remix 8-bit est un clip séparé.
+8. **Pixel art 240×135 agrandi ×8** : monde à 40 px/unité, tout sur la grille de pixels, pas de rotation ni d'échelle fractionnaire. Un biome (8 au total) = une section de la chart.
 
 ## Carte du repo
 | Chemin | Contenu | Règles |
 |---|---|---|
 | `game/` | Projet Unity **6000.3.23f1** (base = anatidae-toolkit) | [game/CLAUDE.md](game/CLAUDE.md) |
 | `web/` | Serveur Node (Express + ws) + site one-page + blog | [web/CLAUDE.md](web/CLAUDE.md) |
-| `docs/` | Références : borne, game design, charts, API, décisions, **[roadmap](docs/roadmap.md)**, **DA « Kenta » : [da-kenta.md](docs/da-kenta.md)** (version texte du PDF) | à lire avant de coder une feature ; la DA avant tout travail visuel, UI ou niveau |
+| `docs/` | Références : borne, game design, charts, API, décisions, **[roadmap](docs/roadmap.md)**, **DA « Kenta » : [da-kenta.md](docs/da-kenta.md)** (version texte du PDF), [mise en œuvre de la DA](docs/art-direction.md) | à lire avant de coder une feature ; la DA avant tout travail visuel, UI ou niveau |
 | `dist/Kenta/` | Build prêt pour la borne (gitignoré) | généré, jamais édité à la main |
 | `tools/anatidae-arcade/` | Clone local du serveur de la borne (gitignoré) | pour tester |
 
@@ -41,6 +42,7 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 git clone https://github.com/XariusExcl/anatidae-arcade tools/anatidae-arcade && (cd tools/anatidae-arcade && npm install)
 # Après chaque build Unity (sortie game/Build) : package → dist/Kenta + borne locale
 tools/package-build.sh
+# Après un changement de sprites : python3 tools/gen-kenta-assets.py puis, dans Unity, menu Kenta > Reconstruire thèmes, prefabs et scène
 # Lancer la borne locale → http://localhost:3000 (ou preview "borne-locale" de .claude/launch.json)
 cd tools/anatidae-arcade && node server.js
 # Site + API en local → http://localhost:8080 (VPS plus tard, ADR-006)

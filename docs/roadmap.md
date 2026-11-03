@@ -22,7 +22,7 @@ Règles :
 - [ ] **Vérifier à l'oreille** que le niveau colle à la musique (offset 0,18 s : sinon essayer 0,38 s dans `SongData` et `tools/gen-level-chart.py`)
 - [ ] **Tour REMIX 8-bit** : à la fin du morceau, on reboucle sur la même chart avec `remixClip` et des perturbations visuelles croissantes, jusqu'à la mort. C'est la « difficulté croissante » exigée. Aujourd'hui, fin du morceau = fin de partie.
 - [ ] **Communication jeu → site** (exigée par le sujet) : `Scripts/Net/` + `NetConfig`, `POST /api/runs/*` et `GET /api/live-config` via `AnatidaeProxyWebRequest`. Contrat : [api-contract.md](api-contract.md)
-- [x] `thumbnail.png` néon (512², générée par `tools/gen-neon-sprites.py --only thumbnail`) (2026-10-13)
+- [x] `thumbnail.png` Kenta (la Sylve, le héros et le logo ; `tools/gen-kenta-assets.py --only thumbnail`) (2026-11-03)
 - [ ] `attract.mp4` (≤ 20 s, muet) en option : trailer pour le mode attract de la borne
 
 ## Jeu — P1 (gameplay « music level »)
@@ -36,14 +36,22 @@ Règles :
 - [ ] Stems audio : couches (batterie, mélodie) qui montent selon le combo ou la section
 
 ## Jeu — P2 (juice / direction artistique)
-- [x] Direction artistique néon façon Rider : héros, ennemis, obstacles, sol, décor, logo, cœurs, traînée (2026-10-13). Voir [art-direction.md](art-direction.md)
+- [x] DA Kenta intégrée : rendu pixel 240×135 ×8, 8 biomes, 3 héros, 8 ennemis, Sourdine, bandeau de combo, interface pixel, écrans accueil / choix du héros / consignes / game over (2026-11-03). Voir [art-direction.md](art-direction.md)
 - [x] Animations du perso : course calée sur le beat, saut en 3 poses, atterrissage, glissade, coup de poing (2026-10-13)
 - [ ] Animation de mort et de victoire du héros ; foule d'ennemis qui dansent en arrière-plan
 - [ ] Textes flottants (+50, PARFAIT) dans le monde, traînée du perso à fort multiplicateur
 - [ ] Mise en scène des drops : effondrement du décor, changement de caméra
 - [ ] Effets remix : brouillage, image inversée, zones sombres (shaders simples, compatibles GPU intégré)
 - [ ] Écran « Comment jouer » animé (pictos des boutons au lieu du texte)
-- [ ] Police néon pour le HUD et les écrans (le logo est déjà en néon ; le reste utilise la police TextMesh Pro par défaut)
+- [ ] **DA Kenta, à finir** (voir [da-kenta.md](da-kenta.md)) :
+  - 2 à 4 images par pose du héros (le PDF n'en fournit qu'une) ; poses liane et course sur mur (déjà extraites : `vine`, `wall`) à brancher avec les mécaniques correspondantes
+  - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : gardiens animés, éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
+  - scènes de drop entre biomes (tronc qui frappe, chute vers le marais, éruption, avalanche…) : aujourd'hui flash + secousse + changement de décor
+  - ennemis : variante « cassé » (pièces qui s'échappent) pour les 8, comme le djembé
+  - tour REMIX : `PixelScreen.SetDivider(3)` (80×45), palette 4 tons, perturbations (voir § 9) ; il manque la version 8-bit du morceau
+  - mode 2 joueurs : le joueur 2 rejoint à l'écran de choix du héros (cadre turquoise)
+  - écran « Continuer ? » : la borne n'a pas de crédit (point à trancher, § 11 de la DA)
+  - tester la lisibilité des obstacles sur la borne, debout à 2 m
 
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)

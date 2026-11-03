@@ -323,7 +323,7 @@ namespace Kenta.EditorTools
             var root = ScreenRoot("Screen_HeroSelect");
             var tr = root.transform;
             AddText(tr, font, "Title", "CHOISIS TON HÉROS", new Vector2(0, 54), Gold, 2);
-            var timer = AddText(tr, font, "Timer", "12", new Vector2(106, 60), Color.white);
+            var timer = AddText(tr, font, "Timer", "12", new Vector2(112, 28), Gold);
             var portraits = new Image[3];
             var frames = new Image[3];
             var names = new PixelText[3];
@@ -333,9 +333,9 @@ namespace Kenta.EditorTools
                 frames[i] = AddImage(tr, $"Frame{i}", Spr("Gen/ui/panel.png"), new Vector2(x, -4), Dim, new Vector2(64, 84), false);
                 frames[i].type = Image.Type.Sliced;
                 portraits[i] = AddImage(tr, $"Portrait{i}", theme.heroes[i].sprites.idle, new Vector2(x, -38), null, null, true, new Vector2(0.5f, 0f));
-                names[i] = AddText(tr, font, $"Name{i}", theme.heroes[i].displayName, new Vector2(x, -54), Color.white);
+                names[i] = AddText(tr, font, $"Name{i}", theme.heroes[i].displayName, new Vector2(x, -53), Color.white);
             }
-            AddText(tr, font, "Hint", "◄ ►  CHOISIR      BOUTON 1  VALIDER", new Vector2(0, -64), Dim);
+            AddText(tr, font, "Hint", "◄ ► CHOISIR   1 VALIDER", new Vector2(0, -63), Color.white);
             var comp = root.AddComponent<HeroSelectScreen>();
             Set(comp, "theme", theme);
             Set(comp, "timerText", timer);
@@ -354,7 +354,7 @@ namespace Kenta.EditorTools
             var hearts = new Image[3];
             for (int i = 0; i < 3; i++)
                 hearts[i] = AddImage(tr, $"Heart{i}", Spr("Gen/ui/heart_full.png"), new Vector2(88 + i * 14, 61));
-            AddImage(tr, "CoinIcon", theme.coinFrames[0], new Vector2(76, 36));
+            AddImage(tr, "CoinIcon", theme.coinFrames[0], new Vector2(70, 36));
             var coins = AddText(tr, font, "Coins", "0/0", new Vector2(116, 36), Color.white, 1, PixelText.Align.Right);
             var friezeBack = new Image[8];
             var friezeFill = new Image[8];
@@ -478,9 +478,13 @@ namespace Kenta.EditorTools
                 var r = (RectTransform)im.transform;
                 r.anchorMin = r.anchorMax = new Vector2(0f, 0.5f);
             }
+            var fill = AddImage(sourdineRoot, "VeilFill", Spr("Gen/ui/pixel.png"), Vector2.zero, new Color(92f / 255f, 98f / 255f, 108f / 255f, 150f / 255f), new Vector2(0, 135), false, new Vector2(0f, 0.5f));
+            var fillRt = (RectTransform)fill.transform;
+            fillRt.anchorMin = fillRt.anchorMax = new Vector2(0f, 0.5f);
             var sourdine = sourdineRoot.gameObject.AddComponent<Sourdine>();
             Set(sourdine, "body", (RectTransform)body.transform);
             Set(sourdine, "veil", (RectTransform)veil.transform);
+            Set(sourdine, "veilFill", fillRt);
 
             var screens = prefabs.Select(p => (GameObject)PrefabUtility.InstantiatePrefab(p, uiGo.transform)).ToArray();
             foreach (var s in screens) { var r = (RectTransform)s.transform; r.anchoredPosition = Vector2.zero; s.SetActive(false); }

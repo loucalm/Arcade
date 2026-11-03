@@ -12,14 +12,16 @@ namespace Kenta.FX
     {
         [SerializeField] RectTransform body;     // 104 px de large, bord droit à x = 100
         [SerializeField] RectTransform veil;     // 56 px de large, collé à droite du corps
+        [Tooltip("Aplat gris translucide qui prolonge le calque tramé jusqu'au bord droit, en fin de partie.")]
+        [SerializeField] RectTransform veilFill;
         [SerializeField] float hiddenX = -60f;
         [SerializeField] float speed = 36f;
-        [SerializeField] float coverSpeed = 300f;
+        [SerializeField] float coverSpeed = 220f;
 
         float edge;
         bool covering;
 
-        public bool Covered => covering && edge > 250f;
+        public bool Covered => covering && edge >= 99f;
 
         void OnEnable() => ResetPosition();
 
@@ -35,7 +37,7 @@ namespace Kenta.FX
 
         float Target()
         {
-            if (covering) return 330f;
+            if (covering) return 100f;                 // la masse recouvre les 100 px de gauche, le gris prend tout le reste
             var run = RunManager.Instance;
             if (run == null || !run.IsRunning) return hiddenX;
             float combo = (8 - run.Multiplier) * 5f;
@@ -54,6 +56,12 @@ namespace Kenta.FX
             float e = Mathf.Round(edge);
             if (body != null) body.anchoredPosition = new Vector2(e - 100f, 0f);
             if (veil != null) veil.anchoredPosition = new Vector2(e, 0f);
+            if (veilFill != null)
+            {
+                float x = e + 56f;
+                veilFill.anchoredPosition = new Vector2(x, 0f);
+                veilFill.sizeDelta = new Vector2(covering ? Mathf.Max(0f, 240f - x) : 0f, 135f);
+            }
         }
     }
 }

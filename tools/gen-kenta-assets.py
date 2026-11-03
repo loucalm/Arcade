@@ -76,7 +76,30 @@ def gen_font(out, sheet):
         sheet.append(line)
 
 
-GENERATORS = {"biomes": gen_biomes, "ui": gen_ui, "font": gen_font}
+def gen_thumbnail(out, sheet):
+    """Jaquette carrée de la borne (game/BuildExtras/thumbnail.png) : la Sylve, Kenta en pleine course et le logo."""
+    b = BIOMES[0]
+    scene = art.draw_sky(b)
+    for layer, off in ((art.draw_far(b), 120), (art.draw_mid(b), 150), (art.draw_near(b), 230)):
+        scene.im.alpha_composite(layer.im.crop((off, 0, off + 240, 135)))
+    ground = art.draw_ground(b)
+    for x in range(0, 240, 32):
+        scene.im.alpha_composite(ground.im, (x, 115))
+    hero = Image.open(os.path.join(ROOT, "game", "Assets", "_Project", "Art", "Kenta", "Pdf", "hero_kenta_run.png")).convert("RGBA")
+    scene.im.alpha_composite(hero, (116 - hero.width // 2, 116 - hero.height))
+    for i, (x, y) in enumerate(((150, 95), (162, 92), (174, 94))):
+        scene.im.alpha_composite(ui.draw_coin(i % 2).im, (x, y))
+    sq = scene.im.crop((52, 0, 187, 135))
+    logo = ui.draw_logo().im
+    sq.alpha_composite(logo, ((135 - logo.width) // 2, 8))
+    big = sq.resize((135 * 4, 135 * 4), Image.NEAREST)
+    path = os.path.join(ROOT, "game", "BuildExtras", "thumbnail.png")
+    big.convert("RGB").save(path, optimize=True)
+    if sheet is not None:
+        sheet.append(sq)
+
+
+GENERATORS = {"biomes": gen_biomes, "ui": gen_ui, "font": gen_font, "thumbnail": gen_thumbnail}
 
 
 def contact_sheet(imgs, path, width=1500, scale=2, bg=(60, 60, 80)):

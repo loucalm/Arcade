@@ -32,7 +32,7 @@ Un fichier par niveau dans `game/Assets/_Project/Charts/<id>.json`, chargé comm
 - `runSpeed` : unités Unity par seconde. Position : `x = BeatToSeconds(beat) * runSpeed`, avec `BeatToSeconds(b) = b * 60 / bpm` (relatif au beat 0, donc x = 0 au beat 0). L'offset ne sert qu'à caler l'audio : position dans le fichier = `BeatToSeconds(b) + offsetMs / 1000`.
 - `lane` : hauteur/étage (0 = sol, 1 = hauteur de saut, 2 = haut/plafond).
 - `beat` : en temps (float). Granularité minimale : **0,25** (double-croche).
-- Les `sections` servent aussi de **checkpoints**.
+- Les `sections` servent aussi de **checkpoints** et de **biomes** : la section n° i charge le `BiomeTheme` n° i de `Theme_Kenta` (8 sections de 32 beats pour le niveau 01).
 
 ## Placement (important)
 Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (appuyer). L'obstacle est placé juste après par `LevelBuilder` (constantes en tête de fichier) :
