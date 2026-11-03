@@ -34,7 +34,7 @@ Règles :
 - [ ] Stems audio : couches (batterie, mélodie) qui montent selon le combo ou la section
 
 ## Jeu — P2 (juice / direction artistique)
-- [ ] Direction artistique : personnage, ennemis, décor (remplacer les formes de `Theme_Neon`)
+- [ ] Direction artistique : personnage, ennemis, décor (remplacer les formes de `Theme_Neon`). Proposition « Kenta » (pixel art, 8 biomes) : [da-kenta.md](da-kenta.md), à valider en équipe (points à trancher § 10 et § 11)
 - [ ] Animations du perso (course, saut, glissade, frappe, mort)
 - [ ] Textes flottants (+50, PARFAIT) dans le monde, traînée du perso à fort multiplicateur
 - [ ] Mise en scène des drops : effondrement du décor, changement de caméra
