@@ -1,7 +1,9 @@
 using System;
 using Anatidae;
+using Kenta.FX;
+using Kenta.Level;
 using Kenta.Rhythm;
-using TMPro;
+using Kenta.UI;
 using UnityEngine;
 
 namespace Kenta.Core
@@ -10,8 +12,8 @@ namespace Kenta.Core
 
     /// <summary>
     /// Machine à états du flow d'écrans imposé (docs/game-design.md) :
-    /// Attract+HighScore → Explain → (Config) → Playing → GameOver → NameEntry si top 10 → Attract.
-    /// Un GameObject « écran » par état, activé/désactivé ici. Scène unique Main (ADR-007).
+    /// Attract+HighScore → Explain → Config (choix du héros) → Playing → GameOver → NameEntry si top 10 → Attract.
+    /// Un GameObject « écran » par état, dans le canvas pixel 240×135. Scène unique Main (ADR-007).
     /// </summary>
     public class GameFlow : MonoBehaviour
     {
@@ -23,25 +25,27 @@ namespace Kenta.Core
         [SerializeField] GameObject configScreen;
         [SerializeField] GameObject playingScreen;
         [SerializeField] GameObject gameOverScreen;
+        [SerializeField] HeroSelectScreen heroSelect;
+
+        [Header("Monde et effets")]
+        [SerializeField] LevelTheme theme;
+        [SerializeField] BiomeBackdrop backdrop;
+        [SerializeField] Sourdine sourdine;
 
         [Header("Musique")]
-        [Tooltip("Boucle de menu, utilisée seulement si le niveau n'a pas de chart (sinon : démo en autoplay).")]
-        [SerializeField] SongData attractSong;
         [SerializeField] SongData levelSong;
+        [Tooltip("Boucle de menu ; si vide, le morceau du niveau tourne en boucle, plus bas.")]
+        [SerializeField] SongData attractSong;
         [SerializeField, Range(0f, 1f)] float attractVolume = 0.5f;
 
         [Header("Durées (s)")]
-        [SerializeField] float attractHighscoreSwap = 8f;
+        [SerializeField] float attractHighscoreSwap = 10f;
         [SerializeField] float explainDuration = 6f;
-        [SerializeField] float gameOverDuration = 3f;
+        [SerializeField] float gameOverDuration = 5.5f;
         [SerializeField] float gameOverHighscoreDuration = 4f;
         [Tooltip("Délai avant d'accepter une validation, pour éviter qu'un appui en rafale saute un écran.")]
         [SerializeField] float inputGuard = 0.5f;
-
-        [Header("Écran Game Over")]
-        [SerializeField] TMP_Text gameOverTitleText;
-        [SerializeField] TMP_Text gameOverScoreText;
-        [SerializeField] TMP_Text gameOverDetailText;
+        [SerializeField] float attractScroll = 1.4f;
 
         public GameState State { get; private set; }
         public int Score => RunManager.Instance != null ? RunManager.Instance.Score : 0;
@@ -76,19 +80,17 @@ namespace Kenta.Core
             switch (State)
             {
                 case GameState.Attract:
-                    if (stateTimer >= attractHighscoreSwap)
-                        ToggleAttractHighscores();
+                    if (stateTimer >= attractHighscoreSwap) ToggleAttractHighscores();
                     if (ArcadeInput.AnyButtonDown()) Enter(GameState.Explain);
                     break;
 
                 case GameState.Explain:
                     if (stateTimer >= explainDuration || (guardPassed && ArcadeInput.ConfirmDown()))
-                        Enter(configScreen != null ? GameState.Config : GameState.Playing);
+                        Enter(GameState.Config);
                     break;
 
                 case GameState.Config:
-                    // TODO : choix 1P / 2P (hot-seat). Pour l'instant : validation → 1 joueur.
-                    if (guardPassed && ArcadeInput.ConfirmDown()) Enter(GameState.Playing);
+                    if (heroSelect == null || heroSelect.Done) Enter(GameState.Playing);
                     break;
 
                 case GameState.Playing:
@@ -126,33 +128,36 @@ namespace Kenta.Core
 
             var conductor = Conductor.Instance;
             var run = RunManager.Instance;
+            var rig = CameraRig.Instance;
             switch (next)
             {
                 case GameState.Attract:
-                    if (conductor != null) conductor.SetVolume(attractVolume);
-                    if (run != null && levelSong != null && levelSong.chart != null)
-                        run.BeginRun(levelSong, demo: true); // démo en autoplay derrière le titre
-                    else if (conductor != null && attractSong != null)
-                        conductor.Play(attractSong, 0, loop: true);
+                    GameSession.HeroIndex = 0;
+                    GameSession.Hero = theme != null && theme.heroes.Length > 0 ? theme.heroes[0] : null;
+                    run?.StopRun(hideWorld: true, stopMusic: false);
+                    if (sourdine != null) sourdine.ResetPosition();
+                    if (PixelScreen.Instance != null) PixelScreen.Instance.SetDivider(1);
+                    if (backdrop != null && theme != null) { backdrop.SetBiome(theme.biomes[0]); backdrop.SetGroundVisible(true); }
+                    if (rig != null) { rig.Target = null; rig.AutoScroll = attractScroll; }
+                    PlayMenuMusic();
                     break;
 
                 case GameState.Explain:
-                    run?.StopRun(hideWorld: true);
-                    conductor?.Stop();
-                    break;
-
                 case GameState.Config:
+                    run?.StopRun(hideWorld: true, stopMusic: false);
                     break;
 
                 case GameState.Playing:
+                    if (rig != null) rig.AutoScroll = 0f;
+                    if (backdrop != null) backdrop.SetGroundVisible(false);
                     conductor?.SetVolume(1f);
+                    if (sourdine != null) sourdine.ResetPosition();
                     run?.BeginRun(levelSong, demo: false);
                     break;
 
                 case GameState.GameOver:
-                    // Le monde reste affiché, figé, derrière le récapitulatif.
                     conductor?.Stop();
-                    UpdateGameOverTexts();
+                    if (sourdine != null) sourdine.Cover();
                     break;
 
                 case GameState.NameEntry:
@@ -163,12 +168,21 @@ namespace Kenta.Core
             OnStateChanged?.Invoke(next);
         }
 
-        /// <summary>Fin de partie (mort ou fin des tours de remix).</summary>
+        void PlayMenuMusic()
+        {
+            var conductor = Conductor.Instance;
+            if (conductor == null) return;
+            var song = attractSong != null ? attractSong : levelSong;
+            if (song == null) return;
+            conductor.SetVolume(attractVolume);
+            if (!(conductor.IsPlaying && conductor.Song == song)) conductor.Play(song, 0, loop: true);
+        }
+
+        /// <summary>Fin de partie (plus de cœurs, ou niveau terminé).</summary>
         public void EndRun()
         {
             if (State == GameState.Playing) Enter(GameState.GameOver);
         }
-
 
         void ToggleAttractHighscores()
         {
@@ -176,16 +190,6 @@ namespace Kenta.Core
             stateTimer = 0f;
             if (showingHighscores) HighscoreManager.ShowHighscores();
             else HighscoreManager.HideHighscores();
-        }
-
-        void UpdateGameOverTexts()
-        {
-            var run = RunManager.Instance;
-            if (run == null) return;
-            if (gameOverTitleText != null) gameOverTitleText.text = run.Completed ? "NIVEAU TERMINÉ !" : "GAME OVER";
-            if (gameOverScoreText != null) gameOverScoreText.text = $"SCORE  {run.Score:N0}";
-            if (gameOverDetailText != null)
-                gameOverDetailText.text = $"LUMS {run.Lums}/{run.TotalLums}     MÉDAILLE {run.Medal}     CHUTES {run.Deaths}";
         }
 
         static bool IsTopTen(int score) =>

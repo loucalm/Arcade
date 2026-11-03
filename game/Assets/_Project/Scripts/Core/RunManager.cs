@@ -19,6 +19,9 @@ namespace Kenta.Core
 
         [SerializeField] LevelBuilder level;
         [SerializeField] PlayerController player;
+        [SerializeField] HeroAnimator heroAnimator;
+        [SerializeField] BandanaTrail bandana;
+        [SerializeField] BiomeBackdrop backdrop;
         [Tooltip("Racine du monde de jeu (niveau + joueur), masquée hors partie.")]
         [SerializeField] GameObject world;
 
@@ -47,7 +50,10 @@ namespace Kenta.Core
         public bool IsDemo { get; private set; }
         public bool Completed { get; private set; }
         public bool Autoplay { get; private set; }
+        public double SongLengthSeconds => song != null && song.clip != null ? song.clip.length - song.offsetSeconds : 1.0;
         public ChartData Chart { get; private set; }
+        /// <summary>Biome en cours (un par section de la chart).</summary>
+        public BiomeTheme CurrentBiome => level.Theme != null && Chart != null ? level.BiomeAt(Chart.sections[SectionIndex].startBeat) : null;
         public int SectionIndex { get; private set; }
         public string SectionName => Chart != null ? Chart.sections[SectionIndex].name : "";
 
@@ -135,6 +141,8 @@ namespace Kenta.Core
             fxCursor = 0;
 
             world.SetActive(true);
+            ApplyHero();
+            ApplyBiome(0);
             player.Setup(level, this, CreateInput());
             player.Spawn(0);
             if (CameraRig.Instance != null)
@@ -149,12 +157,27 @@ namespace Kenta.Core
             OnStatsChanged?.Invoke();
         }
 
+        void ApplyHero()
+        {
+            var hero = GameSession.Hero != null ? GameSession.Hero : (level.Theme.heroes != null && level.Theme.heroes.Length > 0 ? level.Theme.heroes[0] : null);
+            if (hero == null) return;
+            if (heroAnimator != null) heroAnimator.Sprites = hero.sprites;
+            if (bandana != null) bandana.Color = hero.accent;
+        }
+
+        void ApplyBiome(int index)
+        {
+            var biomes = level.Theme.biomes;
+            if (backdrop != null && biomes != null && biomes.Length > 0)
+                backdrop.SetBiome(biomes[Mathf.Clamp(index, 0, biomes.Length - 1)]);
+        }
+
         /// <summary>Arrête la partie (changement d'écran). hideWorld = masquer et vider le niveau.</summary>
-        public void StopRun(bool hideWorld)
+        public void StopRun(bool hideWorld, bool stopMusic = true)
         {
             StopAllCoroutines();
             IsRunning = false;
-            Conductor.Instance?.Stop();
+            if (stopMusic) Conductor.Instance?.Stop();
             if (hideWorld)
             {
                 level.Clear();
@@ -195,7 +218,7 @@ namespace Kenta.Core
             Combo++;
             Score += lumPoints * Multiplier;
             ActionSfx.Instance?.Lum(lum.sequenceIndex);
-            FxPool.Instance?.Burst(lum.bounds.center, level.Theme.lum, 8, 4f, 0.14f, 0.35f, 0f, 0f);
+            FxPool.Instance?.Burst(lum.bounds.center, new Color(1f, 0.82f, 0.23f), 8, 4f, 0.14f, 0.35f, 0f, 0f);
             if (lum.view != null) lum.view.SetActive(false);
             OnLumPicked?.Invoke(lum);
             OnStatsChanged?.Invoke();
@@ -206,7 +229,8 @@ namespace Kenta.Core
             Combo++;
             Score += enemyPoints * Multiplier;
             ActionSfx.Instance?.Kill();
-            var color = enemy.kind == LevelObjectKind.Enemy ? level.Theme.enemy : level.Theme.block;
+            var biome = level.BiomeAt(enemy.beat);
+            var color = biome != null ? biome.spark : Color.white;
             FxPool.Instance?.Burst(enemy.bounds.center, color, 26, 10f, 0.26f, 0.7f, 14f, 0.5f);
             FxPool.Instance?.Burst(enemy.bounds.center, Color.white, 10, 6f, 0.15f, 0.35f, 0f, 0f);
             CameraRig.Instance?.Shake(0.18f, 0.15f);
@@ -234,7 +258,7 @@ namespace Kenta.Core
             player.Die();
             ActionSfx.Instance?.Hurt();
             CameraRig.Instance?.Shake(0.6f, 0.5f);
-            CameraRig.Instance?.Flash(level.Theme.enemy, 1f);
+            CameraRig.Instance?.Flash(new Color(0.88f, 0.14f, 0.27f), 0.8f);
             Conductor.Instance.Stop();
 
             OnDamaged?.Invoke();
@@ -277,8 +301,12 @@ namespace Kenta.Core
             sectionClean = true;
 
             ActionSfx.Instance?.Checkpoint();
-            CameraRig.Instance?.Flash(level.Theme.checkpoint, 0.8f);
-            FxPool.Instance?.Burst(new Vector2(level.BeatToX(Chart.sections[index].startBeat), 4.8f), level.Theme.checkpoint, 20, 7f, 0.2f, 0.6f, 8f, 0.5f);
+            // Le drop : flash, secousse, et le décor change de monde pendant que l'écran est blanc.
+            var biomeNow = level.BiomeAt(Chart.sections[index].startBeat);
+            ApplyBiome(index);
+            CameraRig.Instance?.Flash(biomeNow != null ? biomeNow.flash : Color.white, 1f);
+            CameraRig.Instance?.Shake(0.35f, 0.45f);
+            FxPool.Instance?.Burst(new Vector2(level.BeatToX(Chart.sections[index].startBeat), 1.2f), biomeNow != null ? biomeNow.spark : Color.white, 24, 7f, 0.2f, 0.6f, 8f, 0.5f);
 
             OnSectionChanged?.Invoke(Chart.sections[index], perfect, bonus);
             OnStatsChanged?.Invoke();
@@ -292,7 +320,7 @@ namespace Kenta.Core
             switch (e.type)
             {
                 case "fx_flash":
-                    rig.Flash(level.Theme.backgroundFlash * 2f, intensity);
+                    rig.Flash(Color.white, 0.45f * intensity);
                     break;
                 case "camera_shake":
                     float duration = (float)(Conductor.Instance.SecondsPerBeat * (e.@params.length > 0 ? e.@params.length : 0.5f));
@@ -304,7 +332,7 @@ namespace Kenta.Core
                 case "section_change":
                     rig.Shake(0.35f * intensity, 0.3f);
                     rig.Punch(0.4f * intensity);
-                    rig.Flash(level.Theme.wall, intensity);
+                    rig.Flash(Color.white, 0.7f * intensity);
                     break;
             }
         }

@@ -20,7 +20,7 @@ namespace Kenta.Level
         const float SlideStartBeats = 0.1f;
         const float SlideDefaultLength = 1f;
         const float SlideBarBottom = 0.62f;
-        static readonly float[] LumLaneY = { 0.45f, 2.0f, 3.1f };
+        static readonly float[] LumLaneY = { 0.45f, 1.9f, 2.4f };
 
         [SerializeField] LevelTheme theme;
 
@@ -74,10 +74,9 @@ namespace Kenta.Level
                     }
                     case "wall":
                     {
-                        float h = p.height > 0 ? p.height : 0.8f;
-                        float x0 = BeatToX(e.beat + WallStartBeats);
-                        var o = new LevelObject { kind = LevelObjectKind.Wall, beat = e.beat, bounds = new Rect(x0, 0f, 0.9f, h) };
-                        o.view = MakeWall(o.bounds);
+                        float x0 = BeatToX(e.beat + WallStartBeats);   // le sprite du mur fait 36×32 px : hauteur fixe de 0,8 u
+                        var o = new LevelObject { kind = LevelObjectKind.Wall, beat = e.beat, bounds = new Rect(x0, 0f, 0.9f, 0.8f) };
+                        o.view = MakeWall(o.bounds, BiomeAt(e.beat));
                         Obstacles.Add(o);
                         AutoJumpBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
@@ -92,9 +91,9 @@ namespace Kenta.Level
                         {
                             kind = enemy ? LevelObjectKind.Enemy : LevelObjectKind.Block,
                             beat = e.beat,
-                            bounds = new Rect(cx - 0.35f, 0f, 0.7f, 0.8f),
+                            bounds = enemy ? new Rect(cx - 0.4f, 0f, 0.8f, 0.9f) : new Rect(cx - 0.45f, 0f, 0.9f, 0.95f),
                         };
-                        o.view = enemy ? MakeEnemy(cx) : MakeBlock(cx);
+                        o.view = enemy ? MakeEnemy(cx, BiomeAt(e.beat)) : MakeBlock(cx, BiomeAt(e.beat));
                         Obstacles.Add(o);
                         AutoHitBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
@@ -105,7 +104,7 @@ namespace Kenta.Level
                         float len = p.length > 0 ? p.length : SlideDefaultLength;
                         float x0 = BeatToX(e.beat + SlideStartBeats), x1 = BeatToX(e.beat + SlideStartBeats + len);
                         var o = new LevelObject { kind = LevelObjectKind.SlideBar, beat = e.beat, bounds = Rect.MinMaxRect(x0, SlideBarBottom, x1, 8f) };
-                        o.view = MakeSlideBar(o.bounds);
+                        o.view = MakeSlideBar(o.bounds, BiomeAt(e.beat));
                         Obstacles.Add(o);
                         AutoSlideSpans.Add(new Vector2(e.beat - 0.05f, e.beat + SlideStartBeats + len + 0.35f));
                         lastX = Mathf.Max(lastX, x1);
@@ -146,7 +145,7 @@ namespace Kenta.Level
 
             float lastBeat = chart.events.Length > 0 ? chart.events[^1].beat : 0f;
             BuildGround(lastX + 60f);
-            BuildBeatTicks(Mathf.CeilToInt(lastBeat) + 16);
+            BuildBeatGrid(Mathf.CeilToInt(lastBeat) + 16);
             BuildCheckpoints();
         }
 
@@ -197,17 +196,23 @@ namespace Kenta.Level
                 beatGrid.SetActive(RhythmDebugOverlay.Visible);
         }
 
-        // ---------- Visuels (sprites néon du LevelTheme, voir docs/art-direction.md) ----------
+        // ---------- Visuels (pixel art : sprites des biomes, 40 px par unité) ----------
 
-        // Marge transparente (halo) des sprites 9-slice, en unités : le contour visible est à cette distance du bord.
-        const float WallMargin = 0.30f;
-        const float GroundLineFromCenter = 0.80f;   // ground_top : le trait est 80 px au-dessus du centre de l'image
-        const float GroundSpriteWidthPad = 0.40f;   // le trait commence 20 px après le bord gauche de l'image
-        const float LaserY = SlideBarBottom + 0.04f;
+        const float TileHeight = 0.5f;          // tuile de sol de 32×20 px
+        const float CeilingBottom = SlideBarBottom;
 
-        /// <summary>Sprite simple : l'échelle vaut `scale` (1 = taille native du sprite).</summary>
-        SpriteRenderer Spr(Transform parent, string name, Sprite sprite, Vector2 pos, int order, Color? color = null,
-                           float scale = 1f, bool additive = false)
+        /// <summary>Biome de la section qui contient ce beat (un biome par section de la chart).</summary>
+        public BiomeTheme BiomeAt(double beat)
+        {
+            int i = Chart != null ? Chart.SectionIndexAt(beat) : 0;
+            return theme.biomes[Mathf.Clamp(i, 0, theme.biomes.Length - 1)];
+        }
+
+        public int BiomeIndexAt(double beat) => Chart != null ? Mathf.Clamp(Chart.SectionIndexAt(beat), 0, theme.biomes.Length - 1) : 0;
+
+        BiomeTheme BiomeAtX(float x) => BiomeAt(x / (secondsPerBeat * RunSpeed));
+
+        SpriteRenderer Spr(Transform parent, string name, Sprite sprite, Vector2 pos, int order, float scale = 1f)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -215,26 +220,25 @@ namespace Kenta.Level
             go.transform.localScale = new Vector3(scale, scale, 1f);
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
-            sr.color = color ?? Color.white;
             sr.sortingOrder = order;
-            if (additive && theme.additive != null) sr.sharedMaterial = theme.additive;
             return sr;
         }
 
-        /// <summary>Sprite 9-slice : `size` est la taille finale en unités (bords et coins gardent leur taille native).</summary>
-        SpriteRenderer Sliced(Transform parent, string name, Sprite sprite, Vector2 center, Vector2 size, int order, Color? color = null)
+        /// <summary>Sprite répété (tuile) sur `size` unités : sol, trous, poutres.</summary>
+        SpriteRenderer Tiled(Transform parent, string name, Sprite sprite, Vector2 center, Vector2 size, int order)
         {
-            var sr = Spr(parent, name, sprite, center, order, color);
-            sr.drawMode = SpriteDrawMode.Sliced;
+            var sr = Spr(parent, name, sprite, center, order);
+            sr.drawMode = SpriteDrawMode.Tiled;
+            sr.tileMode = SpriteTileMode.Continuous;
             sr.size = size;
             return sr;
         }
 
-        /// <summary>Carré teinté (aplats : corps du sol, repères de beat).</summary>
         SpriteRenderer Box(Transform parent, string name, Color color, Vector2 center, Vector2 size, int order)
         {
-            var sr = Spr(parent, name, theme.square, center, order, color);
-            sr.transform.localScale = new Vector3(size.x, size.y, 1f);
+            var sr = Spr(parent, name, theme.pixel, center, order);
+            sr.color = color;
+            sr.transform.localScale = new Vector3(size.x * PixelScreen.Ppu, size.y * PixelScreen.Ppu, 1f);
             return sr;
         }
 
@@ -249,93 +253,99 @@ namespace Kenta.Level
         void BuildGround(float endX)
         {
             var g = Group("Ground", Vector2.zero);
-            float cursor = -40f;
-            void Segment(float x0, float x1)
+            // intervalles de sol plein, coupés aux frontières de biome pour changer de tuile
+            var cuts = new List<float>();
+            for (int i = 1; i < Chart.sections.Length; i++) cuts.Add(BeatToX(Chart.sections[i].startBeat));
+            void Piece(float x0, float x1)
+            {
+                var from = x0;
+                foreach (float c in cuts)
+                {
+                    if (c <= from || c >= x1) continue;
+                    Emit(from, c);
+                    from = c;
+                }
+                Emit(from, x1);
+            }
+            void Emit(float x0, float x1)
             {
                 if (x1 - x0 < 0.01f) return;
-                float w = x1 - x0, mid = (x0 + x1) * 0.5f;
-                Box(g, "Body", theme.groundBody, new Vector2(mid, -4f), new Vector2(w, 8f), 0);
-                Sliced(g, "Line", theme.groundTopSprite, new Vector2(mid, -0.03f - GroundLineFromCenter),
-                       new Vector2(w + GroundSpriteWidthPad, 2.56f), 2);
+                var biome = BiomeAtX((x0 + x1) * 0.5f);
+                Tiled(g, "Ground", biome.ground, new Vector2((x0 + x1) * 0.5f, -TileHeight * 0.5f), new Vector2(x1 - x0, TileHeight), 0);
             }
+            float cursor = -40f;
             foreach (var gap in gaps)
             {
-                Segment(cursor, gap.x);
+                Piece(cursor, gap.x);
                 cursor = Mathf.Max(cursor, gap.y);
+                var biome = BiomeAtX((gap.x + gap.y) * 0.5f);
+                Tiled(g, "Hazard", biome.hazard, new Vector2((gap.x + gap.y) * 0.5f, -TileHeight * 0.5f), new Vector2(gap.y - gap.x, TileHeight), 0);
             }
-            Segment(cursor, endX);
+            Piece(cursor, endX);
         }
 
-        void BuildBeatTicks(int lastBeat)
+        void BuildBeatGrid(int lastBeat)
         {
-            var ticks = Group("BeatTicks", Vector2.zero);
+            // Grille de beats : uniquement pour le debug (F9), comme les repères de la maquette n'existent pas dans la DA.
             beatGrid = Group("BeatGrid (debug)", Vector2.zero).gameObject;
             int perBar = Chart.beatsPerBar > 0 ? Chart.beatsPerBar : 4;
             for (int b = 0; b <= lastBeat; b++)
             {
-                float x = BeatToX(b);
                 bool bar = b % perBar == 0;
-                if (!IsOverGap(x, 0.05f))
-                {
-                    float h = bar ? 0.55f : 0.25f;
-                    Box(ticks, "Tick", theme.beatTick, new Vector2(x, -0.14f - h * 0.5f), new Vector2(bar ? 0.1f : 0.06f, h), 3);
-                }
-                Box(beatGrid.transform, "Line", new Color(1f, 1f, 1f, bar ? 0.12f : 0.05f), new Vector2(x, 3f), new Vector2(0.03f, 10f), 50);
+                Box(beatGrid.transform, "Line", new Color(1f, 1f, 1f, bar ? 0.35f : 0.15f), new Vector2(BeatToX(b), 1.2f), new Vector2(0.025f, 3.4f), 50);
             }
             beatGrid.SetActive(RhythmDebugOverlay.Visible);
         }
 
         void BuildCheckpoints()
         {
-            var g = Group("Checkpoints", Vector2.zero);
+            // Au début de chaque biome : le gardien miniature, qui « s'éveille » à la frontière (drop).
+            var g = Group("Totems", Vector2.zero);
             for (int i = 1; i < Chart.sections.Length; i++)
-                Spr(g, "Beacon", theme.checkpointSprite, new Vector2(BeatToX(Chart.sections[i].startBeat), 0f), 4);
+                Spr(g, "Totem", theme.totem, new Vector2(BeatToX(Chart.sections[i].startBeat) - 0.6f, 0f), 4);
         }
 
-        GameObject MakeWall(Rect r)
+        GameObject MakeWall(Rect r, BiomeTheme biome)
         {
-            var t = Group("Wall", new Vector2(r.center.x, r.height * 0.5f));
-            Sliced(t, "Sprite", theme.wallSprite, Vector2.zero, new Vector2(r.width + 2f * WallMargin, r.height + 2f * WallMargin), 10);
+            var t = Group("Wall", new Vector2(r.center.x, 0f));
+            Spr(t, "Sprite", biome.wall, Vector2.zero, 10);
             return t.gameObject;
         }
 
-        GameObject MakeEnemy(float cx)
+        GameObject MakeEnemy(float cx, BiomeTheme biome)
         {
             var t = Group("Enemy", new Vector2(cx, 0f));
-            var sr = Spr(t, "Sprite", theme.enemyFrames[0], Vector2.zero, 10);
-            t.gameObject.AddComponent<BeatFrames>().Setup(sr, theme.enemyFrames);
-            t.gameObject.AddComponent<BeatPulse>().Configure(0.08f, 0.16f);
+            var frames = biome.enemyFrames;
+            var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
+            if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);   // djembé : écrasé / étiré
+            else sr.gameObject.AddComponent<BeatHop>().Configure(1);                           // les autres sautillent d'1 px
             return t.gameObject;
         }
 
-        GameObject MakeBlock(float cx)
+        GameObject MakeBlock(float cx, BiomeTheme biome)
         {
             var t = Group("Block", new Vector2(cx, 0f));
-            Spr(t, "Sprite", theme.blockSprite, Vector2.zero, 10);
-            t.gameObject.AddComponent<BeatPulse>().Configure(0.05f, 0.1f);
+            Spr(t, "Sprite", biome.block, Vector2.zero, 10);
             return t.gameObject;
         }
 
-        GameObject MakeSlideBar(Rect r)
+        GameObject MakeSlideBar(Rect r, BiomeTheme biome)
         {
-            var t = Group("SlideBar", new Vector2(r.center.x, 0f));
-            float postH = r.yMax - LaserY;
-            // poteaux (cyan) de chaque côté, du laser jusqu'en haut
+            var t = Group("Ceiling", new Vector2(r.center.x, 0f));
+            const float beam = 0.4f;                                  // tuile de 16 px
+            float postTop = 3.0f;
+            float postBottom = CeilingBottom + beam;
             foreach (float sign in new[] { -1f, 1f })
-            {
-                float px = sign * r.width * 0.5f;
-                Sliced(t, "Post", theme.laserPostSprite, new Vector2(px, LaserY + postH * 0.5f), new Vector2(0.64f, postH + 0.64f), 9);
-                Spr(t, "Node", theme.laserNodeSprite, new Vector2(px, LaserY), 12);
-            }
-            Sliced(t, "Beam", theme.laserBeamSprite, new Vector2(0f, LaserY), new Vector2(r.width, 0.64f), 11);
+                Tiled(t, "Post", biome.post, new Vector2(sign * (r.width * 0.5f - 0.1f), (postTop + postBottom) * 0.5f), new Vector2(0.2f, postTop - postBottom), 9);
+            Tiled(t, "Beam", biome.ceiling, new Vector2(0f, CeilingBottom + beam * 0.5f), new Vector2(r.width, beam), 11);
             return t.gameObject;
         }
 
         GameObject MakeLum(Vector2 center)
         {
-            var t = Group("Lum", center);
-            Spr(t, "Sprite", theme.lumSprite, Vector2.zero, 14);
-            t.gameObject.AddComponent<BeatPulse>().Configure(0.2f, 0.35f);
+            var t = Group("Coin", center);
+            var sr = Spr(t, "Sprite", theme.coinFrames[0], Vector2.zero, 14);
+            sr.gameObject.AddComponent<SpriteCycle>().Setup(theme.coinFrames);
             return t.gameObject;
         }
     }

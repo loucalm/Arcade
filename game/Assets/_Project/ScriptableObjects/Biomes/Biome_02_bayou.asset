@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53b196c791744c4918ceff7c60ec08, type: 3}
+  m_Name: Biome_02_bayou
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.BiomeTheme
+  label: LE BAYOU
+  sectionName: COUPLET A
+  guardianName: GRENOUILLE-LUNE
+  sky: {fileID: 21300000, guid: 5cd1e78cdeb0c419ba0e0a5f2eec6e72, type: 3}
+  far: {fileID: 21300000, guid: 180c8ce3bb318436dbd5a17dd1545a96, type: 3}
+  mid: {fileID: 21300000, guid: a98d4d64afb344e9cb12164b42ab9589, type: 3}
+  near: {fileID: 21300000, guid: 9ba9271873d0449488453dd55c426f58, type: 3}
+  ground: {fileID: 21300000, guid: 25c087d8e9bd149f49251a2505780da3, type: 3}
+  hazard: {fileID: 21300000, guid: 50bcaea73ad4841eeab72f2eea1a665a, type: 3}
+  wall: {fileID: 21300000, guid: c722b92575ec9443f80487e03ceaa101, type: 3}
+  block: {fileID: 21300000, guid: 01f9284c8cfd5433cb48bfc8c9c0a8f8, type: 3}
+  ceiling: {fileID: 21300000, guid: 0b30ce55ea8e84732aa00e9daf3b901f, type: 3}
+  post: {fileID: 21300000, guid: 03ae52bbd5bc54cec84419d21f9c374b, type: 3}
+  enemyFrames:
+  - {fileID: 21300000, guid: 9fabd497a35314aaf92010f34036c721, type: 3}
+  enemyBroken: {fileID: 0}
+  spark: {r: 1, g: 0.8235294, b: 0.627451, a: 1}
+  flash: {r: 1, g: 0.9019608, b: 0.8156863, a: 1}

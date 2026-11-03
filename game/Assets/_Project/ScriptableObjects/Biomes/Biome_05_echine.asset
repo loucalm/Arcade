@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53b196c791744c4918ceff7c60ec08, type: 3}
+  m_Name: Biome_05_echine
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.BiomeTheme
+  label: "L'\xC9CHINE"
+  sectionName: BREAK
+  guardianName: CHAT-MONTAGNE
+  sky: {fileID: 21300000, guid: 15f51d8b45b054a619085b15a50c370e, type: 3}
+  far: {fileID: 21300000, guid: f10035ebf3fef4123b6583b6b4d4eb53, type: 3}
+  mid: {fileID: 21300000, guid: 21c225c7d160c4f20af6c656e576da95, type: 3}
+  near: {fileID: 21300000, guid: 1dd9b533963884ef5b242955d8536526, type: 3}
+  ground: {fileID: 21300000, guid: 7edf0d7d6254c4da694d7dd703bf3ff9, type: 3}
+  hazard: {fileID: 21300000, guid: a07b59952781a4b61b62d88594e8e71b, type: 3}
+  wall: {fileID: 21300000, guid: e37aa88689bd54504a72fa0805c1c91c, type: 3}
+  block: {fileID: 21300000, guid: 50819839b447d402d958483af0201807, type: 3}
+  ceiling: {fileID: 21300000, guid: 67155459546764e82a92cac8c8c86a32, type: 3}
+  post: {fileID: 21300000, guid: f271ce4a5ec2c472781dbe6ba1335ab8, type: 3}
+  enemyFrames:
+  - {fileID: 21300000, guid: 6586393c7178c4a7f989fbf481584047, type: 3}
+  enemyBroken: {fileID: 0}
+  spark: {r: 1, g: 0.8156863, b: 0.3764706, a: 1}
+  flash: {r: 1, g: 1, b: 1, a: 1}

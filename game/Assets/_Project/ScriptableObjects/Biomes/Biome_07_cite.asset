@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53b196c791744c4918ceff7c60ec08, type: 3}
+  m_Name: Biome_07_cite
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.BiomeTheme
+  label: "LA CIT\xC9 SOURDE"
+  sectionName: "PR\xC9-FINAL"
+  guardianName: "LAPIN DE GR\xC8S"
+  sky: {fileID: 21300000, guid: 06a27c815242f4aa7bcacf999d503a5c, type: 3}
+  far: {fileID: 21300000, guid: 04660a3f3299849c2ac33e1657667d1c, type: 3}
+  mid: {fileID: 21300000, guid: b05a9bc2c9098424db58e7bca3985349, type: 3}
+  near: {fileID: 21300000, guid: 3ba10e4369de441bf96838ac8700e79b, type: 3}
+  ground: {fileID: 21300000, guid: 414ab6473285b4f218e0cec40ce63834, type: 3}
+  hazard: {fileID: 21300000, guid: 8bd50d49214214b12b585d24a903db9a, type: 3}
+  wall: {fileID: 21300000, guid: a28b4caec908c42dcad9a792b91215c7, type: 3}
+  block: {fileID: 21300000, guid: 55642d0d2f8a848348274ccb0a00506f, type: 3}
+  ceiling: {fileID: 21300000, guid: 2160f3928cad447a1b9714959b756332, type: 3}
+  post: {fileID: 21300000, guid: 059ad85997d0c4908bc0a80dbd644507, type: 3}
+  enemyFrames:
+  - {fileID: 21300000, guid: 0a5c2a627a27441db8a2f87ebc9f0180, type: 3}
+  enemyBroken: {fileID: 0}
+  spark: {r: 0.92941177, g: 0.72156864, b: 0.5411765, a: 1}
+  flash: {r: 1, g: 0.9490196, b: 0.8627451, a: 1}

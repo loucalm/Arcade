@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53b196c791744c4918ceff7c60ec08, type: 3}
+  m_Name: Biome_08_orage
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.BiomeTheme
+  label: LE GRAND ORAGE
+  sectionName: FINAL
+  guardianName: OISEAU-TONNERRE
+  sky: {fileID: 21300000, guid: 6a80a71fa14fb4e8e8d37aa8a5285369, type: 3}
+  far: {fileID: 21300000, guid: c6a6fc82e468940c59c17fa4049c07b2, type: 3}
+  mid: {fileID: 21300000, guid: 83988e54a105844e997ea47dd5cd410d, type: 3}
+  near: {fileID: 21300000, guid: e0ead944634bb4a3b86eb0c590aea0b6, type: 3}
+  ground: {fileID: 21300000, guid: 2ffe8fcbcd27e420ba5000541a02e0ba, type: 3}
+  hazard: {fileID: 21300000, guid: 6a4560b600f124d0abe93e6578d730f3, type: 3}
+  wall: {fileID: 21300000, guid: b2997d496d19643efbef99935d9e341a, type: 3}
+  block: {fileID: 21300000, guid: 060c84652c9c14739ac1bce11fb2072c, type: 3}
+  ceiling: {fileID: 21300000, guid: dad6f328784394619973b552b99c8222, type: 3}
+  post: {fileID: 21300000, guid: 9ccf764a0499b4382ab580b812cab888, type: 3}
+  enemyFrames:
+  - {fileID: 21300000, guid: cf4a92c3020a54321b3cc2af3ca2ea81, type: 3}
+  enemyBroken: {fileID: 0}
+  spark: {r: 0.8784314, g: 0.6901961, b: 0.2509804, a: 1}
+  flash: {r: 1, g: 1, b: 1, a: 1}

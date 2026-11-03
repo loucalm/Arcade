@@ -16,26 +16,27 @@ namespace Kenta.Player
         [Header("Visuel (hiérarchie : Visual (squash) > Spinner > Sprite ; l'image vient de HeroAnimator)")]
         [SerializeField] Transform visual;
         [SerializeField] Transform spinner;
+        [Tooltip("Optionnel : l'arc de frappe est déjà dessiné dans la pose « frappe » des héros.")]
         [SerializeField] SpriteRenderer slash;
-        [SerializeField] NeonTrail trail;
+        [SerializeField] BandanaTrail trail;
         [Tooltip("Couleur des gerbes de particules (apparition, mort).")]
-        [SerializeField] Color burstColor = new(0.25f, 0.94f, 1f);
-        [Tooltip("Vrille pendant le saut. Désactivée avec le héros filaire : les poses suffisent.")]
+        [SerializeField] Color burstColor = new(1f, 0.42f, 0.19f);
+        [Tooltip("Vrille pendant le saut. Désactivée : la pose de saut contient déjà l'arc de la vrille.")]
         [SerializeField] bool spinOnJump;
         [Tooltip("Étirement (écrasement) aux moments forts : léger, car il épaissit les traits.")]
-        [SerializeField, Range(0f, 1f)] float squashAmount = 0.5f;
+        [SerializeField, Range(0f, 1f)] float squashAmount = 0f;
 
         [Header("Corps")]
-        [SerializeField] float width = 0.7f;
-        [SerializeField] float standHeight = 0.85f;
-        [SerializeField] float slideHeight = 0.4f;
+        [SerializeField] float width = 0.5f;
+        [SerializeField] float standHeight = 1.0f;
+        [SerializeField] float slideHeight = 0.5f;
         [SerializeField] float pickupRadius = 0.7f;
         [SerializeField] float fallDeathY = -2.5f;
         [Tooltip("Collisions balayées entre deux frames (à-coup du navigateur) jusqu'à cette distance max.")]
         [SerializeField] float maxSweep = 3f;
 
         [Header("Saut (hauteur fixe, durée en beats)")]
-        [SerializeField] float jumpHeight = 2.2f;
+        [SerializeField] float jumpHeight = 1.5f;
         [SerializeField] float jumpAirBeats = 1f;
         [SerializeField] float coyoteBeats = 0.12f;
         [SerializeField] float jumpBufferBeats = 0.2f;
@@ -45,6 +46,7 @@ namespace Kenta.Player
         [SerializeField] float hitHeight = 2.1f;
         [SerializeField] float hitActiveBeats = 0.3f;
 
+        public bool IsDead => dead;
         public bool IsSliding => sliding;
         public bool IsGrounded => grounded;
         public float VelocityY => vy;
@@ -100,20 +102,19 @@ namespace Kenta.Player
             visual.gameObject.SetActive(true);
             squash = Squash(0.75f, 1.3f);
             spinner.localRotation = Quaternion.identity;
-            slash.enabled = false;
+            if (slash != null) slash.enabled = false;
             slashTimer = 0f;
             landedAt = -99f;
-            trail?.Restart();
+            if (trail != null) trail.Clear();
             FxPool.Instance?.Burst(new Vector2(x, 0.5f), burstColor, 14, 5f, 0.18f, 0.45f, 4f);
         }
 
         public void Die()
         {
-            dead = true;
-            visual.gameObject.SetActive(false);
-            slash.enabled = false;
+            dead = true;                       // HeroAnimator montre la pose « mort »
+            if (slash != null) slash.enabled = false;
             slashTimer = 0f;
-            trail?.Stop();
+            if (trail != null) trail.Clear();
             var p = (Vector2)transform.position + new Vector2(0f, 0.45f);
             FxPool.Instance?.Burst(p, burstColor, 40, 11f, 0.28f, 0.9f, 10f, 0.6f);
             FxPool.Instance?.Burst(p, new Color(1f, 0.17f, 0.71f), 24, 8f, 0.22f, 0.7f, 8f, 0.4f);
@@ -294,25 +295,27 @@ namespace Kenta.Player
             squash = Vector3.Lerp(squash, Vector3.one, 1f - Mathf.Exp(-14f * dt));
             visual.localScale = squash;
 
-            // Vrille pendant le saut : un tour complet par saut, calé sur sa durée.
+            // Vrille pendant le saut (désactivée par défaut) : un tour complet par saut, par crans de 45° pour rester pixel art.
             if (spinning)
             {
                 float t = Mathf.Clamp01((float)((beat - jumpStartBeat) / jumpAirBeats));
-                spinner.localRotation = Quaternion.Euler(0f, 0f, -360f * Mathf.SmoothStep(0f, 1f, t));
+                spinner.localRotation = Quaternion.Euler(0f, 0f, -Mathf.Round(360f * t / 45f) * 45f);
             }
 
             if (slashTimer > 0f)
             {
                 slashTimer -= dt;
-                float k = Mathf.Clamp01(slashTimer / slashDuration);
-                slash.enabled = true;
-                // Le croissant s'ouvre vers l'avant et s'éteint (k : 1 → 0).
-                slash.transform.localScale = Vector3.one * (0.7f + 0.4f * (1f - k));
-                var c = slash.color;
-                c.a = k;
-                slash.color = c;
+                if (slash != null)
+                {
+                    float k = Mathf.Clamp01(slashTimer / slashDuration);
+                    slash.enabled = true;
+                    slash.transform.localScale = Vector3.one * (0.7f + 0.4f * (1f - k));
+                    var c = slash.color;
+                    c.a = k;
+                    slash.color = c;
+                }
             }
-            else if (slash.enabled) slash.enabled = false;
+            else if (slash != null && slash.enabled) slash.enabled = false;
         }
     }
 }

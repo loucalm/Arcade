@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53b196c791744c4918ceff7c60ec08, type: 3}
+  m_Name: Biome_03_echos
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.BiomeTheme
+  label: "LES \xC9CHOS"
+  sectionName: COUPLET B
+  guardianName: CHAUVE-SOURIS DE CRISTAL
+  sky: {fileID: 21300000, guid: 36cdd2438922a4239a4584c9bd112fa3, type: 3}
+  far: {fileID: 21300000, guid: b17c9a5f76ab3455f997a304a0b8ffc0, type: 3}
+  mid: {fileID: 21300000, guid: 3288e789047c3443b89024ea3356fff3, type: 3}
+  near: {fileID: 21300000, guid: b9260e2c7cd9b4f7085d99e6d913e1d5, type: 3}
+  ground: {fileID: 21300000, guid: e893dcfa029ed431dbbb571e63fb0110, type: 3}
+  hazard: {fileID: 21300000, guid: f3fcb4f7fd514499aa7132428c5bed1d, type: 3}
+  wall: {fileID: 21300000, guid: dd028fa7e0be34960a49f028c2e5ec5d, type: 3}
+  block: {fileID: 21300000, guid: a1c152458cf224b76b3729693d1c7963, type: 3}
+  ceiling: {fileID: 21300000, guid: 45613ec27c62b45789e6e23bd0fdeab5, type: 3}
+  post: {fileID: 21300000, guid: 238b6a8f7a8b14b019f758064e517f6f, type: 3}
+  enemyFrames:
+  - {fileID: 21300000, guid: eb31e0c5a6b944ac48d031beeac3108c, type: 3}
+  enemyBroken: {fileID: 0}
+  spark: {r: 0.30980393, g: 0.78431374, b: 0.7529412, a: 1}
+  flash: {r: 0.8117647, g: 0.9098039, b: 1, a: 1}

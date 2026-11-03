@@ -104,7 +104,7 @@ def glyph_image(ch, color=WHITE, outline=INK):
         for x, c in enumerate(r):
             if c == "#":
                 p.px(x, y, color)
-    return outlined(p, outline)
+    return outlined(p, outline, 1, outer_only=True)
 
 
 ALL_CHARS = list(_G.keys()) + list(ACCENTS.keys())

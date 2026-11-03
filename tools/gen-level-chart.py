@@ -43,9 +43,8 @@ PLAN = [
 # Passage 2 : la musique de [32,128) revient en [152,248) (décalage de 120 beats).
 REPEAT_FROM, REPEAT_TO, REPEAT_SHIFT = 32, 128, 120
 
-SECTIONS = [  # (nom, beat de début) : un checkpoint par section
-    ("intro", 0), ("couplet", 32), ("pont", 64), ("roulement", 80), ("refrain", 96), ("final", 128),
-    ("couplet 2", 152), ("pont 2", 184), ("roulement 2", 200), ("refrain 2", 216), ("outro", 248),
+SECTIONS = [  # un biome par section, 32 beats (8 mesures) chacun : même ordre que BIOMES (tools/kenta_biomes.py)
+    ("sylve", 0), ("bayou", 32), ("echos", 64), ("forge", 96), ("echine", 128), ("givre", 160), ("cite", 192), ("orage", 224),
 ]
 
 
@@ -183,15 +182,10 @@ def lums_for(actions, grids):
 def fx_events():
     ev = []
     for name, beat in SECTIONS:
-        if beat > 0:
-            ev.append({"beat": beat, "type": "section_change", "lane": 0, "params": {"intensity": 1.5 if name.startswith(("refrain", "final")) else 0.8}})
-    for b in (32, 152):
-        ev.append({"beat": b, "type": "camera_shake", "lane": 0, "params": {"intensity": 1.3, "length": 1}})
-    for b in (96, 216):
-        ev.append({"beat": b, "type": "camera_zoom", "lane": 0, "params": {"intensity": 1.5, "length": 1}})
+        if beat > 0:   # le drop vers le biome suivant (flash, secousse, changement de décor) est géré par le RunManager
+            ev.append({"beat": beat, "type": "section_change", "lane": 0, "params": {"intensity": 1.5 if name in ("forge", "orage") else 0.8}})
     for b in list(range(80, 96, 4)) + list(range(128, 150, 4)) + list(range(200, 216, 4)):
         ev.append({"beat": b, "type": "fx_flash", "lane": 0, "params": {"intensity": 1}})
-    ev.append({"beat": 128, "type": "camera_shake", "lane": 0, "params": {"intensity": 1.5, "length": 1}})
     return ev
 
 

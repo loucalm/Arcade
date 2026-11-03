@@ -1,35 +1,36 @@
 using Kenta.Core;
 using Kenta.Level;
-using TMPro;
+using Kenta.Rhythm;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Kenta.UI
 {
     /// <summary>
-    /// HUD de la partie : score (compteur animé), multiplicateur, lums, cœurs, progression du morceau,
-    /// bannière de section et messages courts (PARFAIT !, AÏE !…).
+    /// HUD de la partie (docs/da-kenta.md § 7) : tout en haut, rien au milieu.
+    /// Gauche : score et multiplicateur. Centre : frise des 8 biomes (barre de progression) et son intitulé.
+    /// Droite : 3 cœurs et pièces ramassées. Dans le monde : « PRÊT ? 1 2 3 GO ! », +points, PARFAIT !, CHECKPOINT.
     /// </summary>
     public class RunHud : MonoBehaviour
     {
-        [SerializeField] TMP_Text scoreText;
-        [SerializeField] TMP_Text multiplierText;
-        [SerializeField] TMP_Text lumsText;
-        [SerializeField] TMP_Text bannerText;
-        [SerializeField] TMP_Text feedbackText;
+        [SerializeField] PixelText scoreText;
+        [SerializeField] PixelText multiplierText;
+        [SerializeField] PixelText coinsText;
+        [SerializeField] PixelText biomeText;
+        [SerializeField] PixelText bannerText;
+        [SerializeField] PixelText feedbackText;
         [SerializeField] Image[] hearts;
-        [Tooltip("Si renseignés, les cœurs changent d'image (néon allumé / éteint) au lieu de changer de couleur.")]
-        [SerializeField] Sprite heartOnSprite;
-        [SerializeField] Sprite heartOffSprite;
-        [SerializeField] RectTransform progressFill;
-        [SerializeField] Color heartOn = new(1f, 0.25f, 0.75f);
-        [SerializeField] Color heartOff = new(1f, 1f, 1f, 0.15f);
+        [SerializeField] Sprite heartFull, heartEmpty;
+        [Tooltip("8 segments de la frise (un par biome) : fond ; le remplissage est un enfant nommé « Fill ».")]
+        [SerializeField] Image[] friezeBack;
+        [SerializeField] Image[] friezeFill;
 
         RunManager run;
         float shownScore;
         int lastMultiplier = 1;
-        float multiplierPulse, lumsPulse, bannerTimer, feedbackTimer;
-        const float BannerDuration = 1.6f, FeedbackDuration = 1.2f;
+        float multiplierPulse, bannerTimer, feedbackTimer;
+        const float BannerDuration = 1.8f, FeedbackDuration = 1.2f;
+        Color feedbackColor = Color.white;
 
         void OnEnable()
         {
@@ -40,8 +41,8 @@ namespace Kenta.UI
             run.OnSectionChanged += HandleSection;
             run.OnDamaged += HandleDamaged;
             run.OnRespawned += HandleRespawned;
-            run.OnLumPicked += HandleLum;
             shownScore = run.Score;
+            bannerTimer = feedbackTimer = 0f;
             HandleStats();
         }
 
@@ -53,56 +54,45 @@ namespace Kenta.UI
             run.OnSectionChanged -= HandleSection;
             run.OnDamaged -= HandleDamaged;
             run.OnRespawned -= HandleRespawned;
-            run.OnLumPicked -= HandleLum;
         }
 
-        void HandleRunStarted()
-        {
-            shownScore = 0;
-            ShowBanner("C'EST PARTI !");
-        }
+        void HandleRunStarted() => shownScore = 0;
 
         void HandleStats()
         {
             if (run == null) return;
-            int multiplier = run.Multiplier;
-            if (multiplier > lastMultiplier) multiplierPulse = 1f;
-            lastMultiplier = multiplier;
-            multiplierText.text = $"x{multiplier}";
-            lumsText.text = $"LUMS {run.Lums}/{run.TotalLums}";
-            bool sprites = heartOnSprite != null && heartOffSprite != null;
+            int m = run.Multiplier;
+            if (m > lastMultiplier) multiplierPulse = 1f;
+            lastMultiplier = m;
+            multiplierText.Text = $"×{m}";
+            coinsText.Text = $"{run.Lums}/{run.TotalLums}";
             for (int i = 0; i < hearts.Length; i++)
-            {
-                bool on = i < run.Hearts;
-                if (sprites)
-                {
-                    hearts[i].sprite = on ? heartOnSprite : heartOffSprite;
-                    hearts[i].color = Color.white;
-                }
-                else hearts[i].color = on ? heartOn : heartOff;
-            }
+                hearts[i].sprite = i < run.Hearts ? heartFull : heartEmpty;
+            var biome = run.CurrentBiome;
+            if (biome != null) biomeText.Text = $"{biome.sectionName} · {biome.label} · TOUR 1";
         }
 
         void HandleSection(ChartSection section, bool perfect, int bonus)
         {
-            ShowBanner(section.name.ToUpperInvariant());
-            if (perfect) ShowFeedback($"PARFAIT !  +{bonus}", new Color(0.4f, 1f, 0.6f));
+            var biome = run.CurrentBiome;
+            if (biome != null) ShowBanner(biome.label);
+            if (perfect) ShowFeedback($"PARFAIT ! +{bonus}", new Color(1f, 0.82f, 0.23f));
         }
 
-        void HandleDamaged() => ShowFeedback(run.Hearts > 0 ? "AÏE !" : "PLUS DE CŒURS…", new Color(1f, 0.3f, 0.35f));
-        void HandleRespawned() => ShowBanner("CHECKPOINT");
-        void HandleLum(LevelObject lum) => lumsPulse = 1f;
+        void HandleDamaged() => ShowFeedback(run.Hearts > 0 ? "AÏE !" : "SILENCE…", new Color(1f, 0.35f, 0.4f));
+        void HandleRespawned() => ShowFeedback("CHECKPOINT", new Color(0.5f, 0.95f, 0.6f));
 
-        void ShowBanner(string text)
+        void ShowBanner(string t)
         {
-            bannerText.text = text;
+            bannerText.Text = t;
             bannerTimer = BannerDuration;
         }
 
-        void ShowFeedback(string text, Color color)
+        void ShowFeedback(string t, Color c)
         {
-            feedbackText.text = text;
-            feedbackText.color = color;
+            feedbackText.Text = t;
+            feedbackText.Color = c;
+            feedbackColor = c;
             feedbackTimer = FeedbackDuration;
         }
 
@@ -110,25 +100,57 @@ namespace Kenta.UI
         {
             if (run == null) return;
             float dt = Time.unscaledDeltaTime;
-
-            // Le score « compte » jusqu'à sa valeur : plus satisfaisant qu'un saut sec.
             shownScore = Mathf.MoveTowards(shownScore, run.Score, Mathf.Max(60f, Mathf.Abs(run.Score - shownScore) * 8f) * dt);
-            scoreText.text = Mathf.RoundToInt(shownScore).ToString("N0");
+            scoreText.Text = Mathf.RoundToInt(shownScore).ToString("D6");
 
             multiplierPulse = Mathf.MoveTowards(multiplierPulse, 0f, dt * 3f);
-            multiplierText.transform.localScale = Vector3.one * (1f + 0.5f * multiplierPulse);
-            lumsPulse = Mathf.MoveTowards(lumsPulse, 0f, dt * 5f);
-            lumsText.transform.localScale = Vector3.one * (1f + 0.15f * lumsPulse);
+            multiplierText.Scale = multiplierPulse > 0.3f ? 3 : 2;
 
-            progressFill.anchorMax = new Vector2(run.Progress, 1f);
+            UpdateFrieze();
+            UpdateCountdown();
 
             bannerTimer = Mathf.Max(0f, bannerTimer - dt);
-            float bannerT = bannerTimer / BannerDuration;
-            bannerText.alpha = Mathf.Clamp01(bannerT * 3f);
-            bannerText.transform.localScale = Vector3.one * (1f + 0.4f * Mathf.Pow(bannerT, 6f));
-
+            if (bannerTimer <= 0f && !countdownActive) bannerText.Text = "";
             feedbackTimer = Mathf.Max(0f, feedbackTimer - dt);
-            feedbackText.alpha = Mathf.Clamp01(feedbackTimer / FeedbackDuration * 2f);
+            if (feedbackTimer <= 0f) feedbackText.Text = "";
+            else if (feedbackTimer < 0.3f) feedbackText.Color = new Color(feedbackColor.r, feedbackColor.g, feedbackColor.b, 0.6f);
+        }
+
+        bool countdownActive;
+
+        /// <summary>« PRÊT ? 1 2 3 GO ! » : le décompte suit les 4 temps de la mesure d'intro.</summary>
+        void UpdateCountdown()
+        {
+            var c = Conductor.Instance;
+            countdownActive = false;
+            if (run == null || c == null || !run.IsRunning || run.IsDemo || run.SectionIndex != 0) return;
+            double beat = c.SongBeat;
+            if (beat < 0 || beat >= 5.2) return;
+            string[] steps = { "PRÊT ?", "1", "2", "3", "GO !" };
+            countdownActive = true;
+            bannerText.Text = steps[Mathf.Clamp((int)beat, 0, 4)];
+            bannerText.Scale = 3;
+            bannerTimer = 0.05f;
+        }
+
+        void UpdateFrieze()
+        {
+            var c = Conductor.Instance;
+            if (c == null || run.Chart == null || friezeBack == null) return;
+            var sections = run.Chart.sections;
+            double totalBeats = c.SecondsToBeat(run.SongLengthSeconds);
+            for (int i = 0; i < friezeBack.Length; i++)
+            {
+                if (i >= sections.Length) { friezeBack[i].enabled = false; continue; }
+                double start = sections[i].startBeat;
+                double end = i + 1 < sections.Length ? sections[i + 1].startBeat : totalBeats;
+                float f = Mathf.Clamp01((float)((c.SongBeat - start) / Mathf.Max(1f, (float)(end - start))));
+                var fill = (RectTransform)friezeFill[i].transform;
+                fill.anchorMax = new Vector2(f, 1f);
+                bool current = run.SectionIndex == i;
+                friezeFill[i].color = current ? new Color(1f, 0.82f, 0.23f) : new Color(0.75f, 0.72f, 0.9f);
+                friezeBack[i].color = current ? new Color(0.35f, 0.3f, 0.5f) : new Color(0.18f, 0.15f, 0.28f);
+            }
         }
     }
 }

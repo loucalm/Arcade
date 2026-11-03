@@ -58,7 +58,8 @@ def gen_ui(out, sheet):
     put(out, "ui", "stick", ui.draw_stick(), sheet)
     put(out, "ui", "pixel", Pix(1, 1, "#FFFFFF"))
     put(out, "ui", "veil", ui.draw_veil())
-    put(out, "world", "sourdine", ui.draw_sourdine(), sheet)
+    put(out, "ui", "sourdine", ui.draw_sourdine(), sheet)
+    put(out, "world", "px", Pix(1, 1, "#FFFFFF"))
     put(out, "world", "totem", ui.draw_totem(), sheet)
     for f in range(4):
         put(out, "world", f"coin_{f}", ui.draw_coin(f), sheet)

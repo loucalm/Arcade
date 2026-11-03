@@ -66,8 +66,9 @@ class Pix:
         self.im.save(path, optimize=True)
 
 
-def outlined(img, color="#14101C", thickness=1):
-    """Ajoute un contour noir d'un pixel (4-voisinage) autour des pixels opaques."""
+def outlined(img, color="#14101C", thickness=1, outer_only=False):
+    """Ajoute un contour noir d'un pixel (4-voisinage) autour des pixels opaques.
+    outer_only : ignore les trous intérieurs (le centre des « 0 » reste vide, la police reste lisible)."""
     im = img.im if isinstance(img, Pix) else img
     a = np.asarray(im)
     pad = thickness
@@ -83,6 +84,21 @@ def outlined(img, color="#14101C", thickness=1):
         g[:, :-1] |= grown[:, 1:]
         grown = g
     ring = grown & ~solid
+    if outer_only:
+        outside = np.zeros_like(solid)
+        outside[0, :] = outside[-1, :] = outside[:, 0] = outside[:, -1] = True
+        outside &= ~solid
+        while True:                                   # remplissage du vide extérieur (4-voisinage)
+            n = outside.copy()
+            n[1:, :] |= outside[:-1, :]
+            n[:-1, :] |= outside[1:, :]
+            n[:, 1:] |= outside[:, :-1]
+            n[:, :-1] |= outside[:, 1:]
+            n &= ~solid
+            if (n == outside).all():
+                break
+            outside = n
+        ring &= outside
     out = big.copy()
     out[ring] = col(color)
     res = Pix(out.shape[1], out.shape[0])

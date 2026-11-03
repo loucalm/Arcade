@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ad704ae6a597477e841225aab965a68, type: 3}
+  m_Name: Theme_Kenta
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.LevelTheme
+  biomes:
+  - {fileID: 11400000, guid: babbf7734508742ccbf9b4935175b60e, type: 2}
+  - {fileID: 11400000, guid: aeb1270e64e3140b593291c124f62c39, type: 2}
+  - {fileID: 11400000, guid: a524e3d16a49a43d9b6f3acc9b47708e, type: 2}
+  - {fileID: 11400000, guid: 959fe6bafa6f24380ac5ff003436afe2, type: 2}
+  - {fileID: 11400000, guid: 82f1064527a5e443aba522239a509306, type: 2}
+  - {fileID: 11400000, guid: 177a5f1cf9cf3414fb0edd8a1354d6ab, type: 2}
+  - {fileID: 11400000, guid: f032c48912aed45beb5f11139baad463, type: 2}
+  - {fileID: 11400000, guid: f43f6be179ea94b57b6913ff6a8d71ec, type: 2}
+  heroes:
+  - {fileID: 11400000, guid: 85ab974306f3349508aa60f8ac14e841, type: 2}
+  - {fileID: 11400000, guid: f15b5bb701f1f45f899b5243c3f1cded, type: 2}
+  - {fileID: 11400000, guid: 7db321c85fe4d4f7abf116f39de060b8, type: 2}
+  coinFrames:
+  - {fileID: 21300000, guid: 3a9258a52c5114d4da535eecbde2bc4f, type: 3}
+  - {fileID: 21300000, guid: b179717355ca54a6596fadaef4031ca7, type: 3}
+  - {fileID: 21300000, guid: abf328de7a82b4b2fbbac634d54fbba8, type: 3}
+  - {fileID: 21300000, guid: 9e7a4bd6f38a148af9c50f15f4e4a4fb, type: 3}
+  totem: {fileID: 21300000, guid: 168c43d81541a4aeab4206e8a914aa13, type: 3}
+  pixel: {fileID: 21300000, guid: 629e8e2125bc942ba8bb6e02d25d6ce3, type: 3}
+  sourdine: {fileID: 21300000, guid: 6b406dbc2de904e0ab5ad84904a8a45a, type: 3}
+  sourdineVeil: {fileID: 21300000, guid: ffaeab15ec6544b8b9a3ded7b961d5c1, type: 3}
