@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace RythmeRunner.Core
+namespace Kenta.Core
 {
     /// <summary>
     /// Point d'entrée UNIQUE pour lire la borne (manettes + clavier de dev).

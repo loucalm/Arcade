@@ -17,11 +17,13 @@ Règles :
 - [ ] **Tester sur la vraie borne** : 60 fps dans Firefox ESR, manettes et dead zone, bouton blanc, AFK 60 s, et surtout **l'audio démarre-t-il après un appui manette ?** (politique d'autoplay du navigateur)
 - [ ] **Tester le ressenti dans Firefox** : durée et hauteur du saut, fenêtres de tolérance, latence des sons quantifiés (jusqu'à ~60 ms)
 - [ ] **Réduire le build** (`Build.wasm` ≈ 31 Mo) : Managed Stripping Level = High, IL2CPP « Optimize Size », retirer les packages inutiles (navigation, multiplayer center, timeline, modules VR/XR…)
-- [ ] **Vraie musique** originale ou libre de droits (110–160 BPM, sections marquées), avec sa **version 8-bit** au même BPM + licence dans `Audio/LICENSES.md`
-- [ ] **Chart du vrai niveau** pour cette musique, validée en autoplay (0 chute)
+- [ ] **Musique libre de droits** : le niveau utilise provisoirement « Main Theme » de Shovel Knight (protégé, voir `Audio/LICENSES.md`) ; la remplacer par un morceau original ou libre (110–160 BPM, sections marquées), avec sa **version 8-bit** au même BPM + licence dans `Audio/LICENSES.md`
+- [x] Chart recalée sur la structure réelle de « Main Theme » : obstacles posés sur les attaques de la musique, sections alignées, `tools/gen-level-chart.py` (2026-11-03)
+- [ ] **Vérifier à l'oreille** que le niveau colle à la musique (offset 0,18 s : sinon essayer 0,38 s dans `SongData` et `tools/gen-level-chart.py`)
 - [ ] **Tour REMIX 8-bit** : à la fin du morceau, on reboucle sur la même chart avec `remixClip` et des perturbations visuelles croissantes, jusqu'à la mort. C'est la « difficulté croissante » exigée. Aujourd'hui, fin du morceau = fin de partie.
 - [ ] **Communication jeu → site** (exigée par le sujet) : `Scripts/Net/` + `NetConfig`, `POST /api/runs/*` et `GET /api/live-config` via `AnatidaeProxyWebRequest`. Contrat : [api-contract.md](api-contract.md)
-- [ ] `thumbnail.png` définitive (carrée), + `attract.mp4` (≤ 20 s, muet) en option
+- [x] `thumbnail.png` Kenta (la Sylve, le héros et le logo ; `tools/gen-kenta-assets.py --only thumbnail`) (2026-11-03)
+- [ ] `attract.mp4` (≤ 20 s, muet) en option : trailer pour le mode attract de la borne
 
 ## Jeu — P1 (gameplay « music level »)
 - [ ] `wall_run` : course sur les murs (automatique, dans la chart)
@@ -34,13 +36,22 @@ Règles :
 - [ ] Stems audio : couches (batterie, mélodie) qui montent selon le combo ou la section
 
 ## Jeu — P2 (juice / direction artistique)
-- [ ] Direction artistique : personnage, ennemis, décor (remplacer les formes de `Theme_Neon`). Proposition « Kenta » (pixel art, 8 biomes) : [da-kenta.md](da-kenta.md), à valider en équipe (points à trancher § 10 et § 11)
-- [ ] Animations du perso (course, saut, glissade, frappe, mort)
+- [x] DA Kenta intégrée : rendu pixel 240×135 ×8, 8 biomes, 3 héros, 8 ennemis, Sourdine, bandeau de combo, interface pixel, écrans accueil / choix du héros / consignes / game over (2026-11-03). Voir [art-direction.md](art-direction.md)
+- [x] Animations du perso : course calée sur le beat, saut en 3 poses, atterrissage, glissade, coup de poing (2026-10-13)
+- [ ] Animation de mort et de victoire du héros ; foule d'ennemis qui dansent en arrière-plan
 - [ ] Textes flottants (+50, PARFAIT) dans le monde, traînée du perso à fort multiplicateur
 - [ ] Mise en scène des drops : effondrement du décor, changement de caméra
 - [ ] Effets remix : brouillage, image inversée, zones sombres (shaders simples, compatibles GPU intégré)
 - [ ] Écran « Comment jouer » animé (pictos des boutons au lieu du texte)
-- [ ] Police et identité visuelle du jeu (titre, HUD)
+- [ ] **DA Kenta, à finir** (voir [da-kenta.md](da-kenta.md)) :
+  - 2 à 4 images par pose du héros (le PDF n'en fournit qu'une) ; poses liane et course sur mur (déjà extraites : `vine`, `wall`) à brancher avec les mécaniques correspondantes
+  - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : gardiens animés, éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
+  - scènes de drop entre biomes (tronc qui frappe, chute vers le marais, éruption, avalanche…) : aujourd'hui flash + secousse + changement de décor
+  - ennemis : variante « cassé » (pièces qui s'échappent) pour les 8, comme le djembé
+  - tour REMIX : `PixelScreen.SetDivider(3)` (80×45), palette 4 tons, perturbations (voir § 9) ; il manque la version 8-bit du morceau
+  - mode 2 joueurs : le joueur 2 rejoint à l'écran de choix du héros (cadre turquoise)
+  - écran « Continuer ? » : la borne n'a pas de crédit (point à trancher, § 11 de la DA)
+  - tester la lisibilité des obstacles sur la borne, debout à 2 m
 
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)

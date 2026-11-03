@@ -1,9 +1,9 @@
-using RythmeRunner.Core;
-using RythmeRunner.Rhythm;
+using Kenta.Core;
+using Kenta.Rhythm;
 using UnityEngine;
 
-// Namespace « DebugTools » et pas « Debug » : sinon `Debug.Log` ne compile plus dans les autres namespaces RythmeRunner.*
-namespace RythmeRunner.DebugTools
+// Namespace « DebugTools » et pas « Debug » : sinon `Debug.Log` ne compile plus dans les autres namespaces Kenta.*
+namespace Kenta.DebugTools
 {
     /// <summary>
     /// Overlay de synchro : état du flow, temps/beat du Conductor, dérive audio, FPS, et un carré

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace RythmeRunner.Level
+namespace Kenta.Level
 {
     /// <summary>Paramètres optionnels d'un événement (JsonUtility : champs fixes, 0/null si absents).</summary>
     [Serializable]

@@ -19,7 +19,7 @@ En cas de doute, **ces repos font foi**. Relire leur README si un comportement s
 ## info.json
 ```json
 {
-  "name": "Rythme Runner",
+  "name": "Kenta",
   "description": "Cours au rythme de la musique : chaque saut tombe sur le beat.",
   "creator": "Lou Calmes, Lucas Corrieras, Jeremy Hordé",
   "year": 2026,
@@ -76,6 +76,6 @@ Les erreurs renvoient `400 {error}`.
 ```bash
 git clone https://github.com/XariusExcl/anatidae-arcade tools/anatidae-arcade
 cd tools/anatidae-arcade && npm install
-cp -R ../../dist/RythmeRunner public/
+cp -R ../../dist/Kenta public/
 node server.js   # → http://localhost:3000
 ```

@@ -1,11 +1,12 @@
-using RythmeRunner.Rhythm;
+using Kenta.Rhythm;
 using UnityEngine;
 
-namespace RythmeRunner.FX
+namespace Kenta.FX
 {
     /// <summary>
-    /// Caméra du runner : suit le joueur en X sans lissage (calée sur le rythme), lisse en Y,
-    /// screen shake, « zoom punch » et flash du fond sur les temps forts.
+    /// Caméra du runner en pixel art : suit le héros en X sans lissage (calée sur le rythme), reste fixe en Y,
+    /// et se place toujours sur la grille de pixels (1/40 u) pour que rien ne scintille. Secousses en pixels entiers.
+    /// Le flash d'écran est délégué à ScreenFx (calque d'interface).
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public class CameraRig : MonoBehaviour
@@ -13,37 +14,33 @@ namespace RythmeRunner.FX
         public static CameraRig Instance { get; private set; }
 
         [SerializeField] Transform target;
-        [Tooltip("Position du joueur à l'écran : il est à gauche pour voir arriver les obstacles.")]
-        [SerializeField] Vector2 offset = new(6f, 2.4f);
-        [SerializeField] float ySmoothing = 4f;
-        [SerializeField] float yFollow = 0.35f;
-        [SerializeField] float downbeatPunch = 0.08f;
-        [SerializeField] Color background = new(0.05f, 0.03f, 0.1f);
-        [SerializeField] Color backgroundFlash = new(0.16f, 0.06f, 0.24f);
+        [Tooltip("Décalage du héros : il est à 1 u du bord gauche (40 px sur 240), pour voir arriver les obstacles.")]
+        [SerializeField] float offsetX = 2.0f;
+        [Tooltip("Hauteur de la caméra : le haut du sol est à 20 px du bas de l'écran.")]
+        [SerializeField] float cameraY = 1.1875f;
 
-        Camera cam;
-        float baseSize;
-        float punch;
         float shakeAmplitude, shakeDuration, shakeTime;
-        float flash;
-        Color flashColor;
-        float smoothY;
-        Conductor subscribed;
+        float bump;
+        float freeX;
 
         public Transform Target { get => target; set => target = value; }
+        /// <summary>Défilement automatique hors partie (accueil) : unités par seconde.</summary>
+        public float AutoScroll { get; set; }
 
         void Awake()
         {
             Instance = this;
-            cam = GetComponent<Camera>();
-            baseSize = cam.orthographicSize;
-            smoothY = offset.y;
-            flashColor = backgroundFlash;
+            var cam = GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = PixelScreen.Height / (2f * PixelScreen.Ppu);
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            cam.allowHDR = false;
+            cam.allowMSAA = false;
         }
 
         void OnDestroy()
         {
-            if (subscribed != null) subscribed.OnBeat -= OnBeat;
             if (Instance == this) Instance = null;
         }
 
@@ -55,59 +52,35 @@ namespace RythmeRunner.FX
             shakeTime = 0f;
         }
 
-        public void Punch(float amount) => punch = Mathf.Max(punch, amount);
+        /// <summary>Petit coup vers le haut (en pixels), à la place du zoom de l'ancienne caméra.</summary>
+        public void Punch(float amount) => bump = Mathf.Max(bump, amount);
 
-        public void Flash(Color color, float intensity = 1f)
-        {
-            flashColor = color;
-            flash = Mathf.Max(flash, intensity);
-        }
+        public void Flash(Color color, float intensity = 1f) => ScreenFx.Instance?.Flash(color, intensity);
 
         /// <summary>Recentre immédiatement (respawn, début de partie).</summary>
         public void Snap()
         {
-            if (target == null) return;
-            smoothY = target.position.y * yFollow + offset.y;
-        }
-
-        void OnBeat(int beat)
-        {
-            if (beat % subscribed.BeatsPerBar != 0) return;
-            Punch(downbeatPunch);
-            Flash(backgroundFlash, 0.6f);
+            if (target != null) freeX = target.position.x + offsetX;
         }
 
         void LateUpdate()
         {
-            if (subscribed == null && Conductor.Instance != null)
-            {
-                subscribed = Conductor.Instance;
-                subscribed.OnBeat += OnBeat;
-            }
-
             float dt = Time.unscaledDeltaTime;
-            Vector3 pos = transform.position;
-            if (target != null && target.gameObject.activeInHierarchy)
-            {
-                smoothY = Mathf.Lerp(smoothY, target.position.y * yFollow + offset.y, 1f - Mathf.Exp(-ySmoothing * dt));
-                pos.x = target.position.x + offset.x;
-                pos.y = smoothY;
-            }
+            if (target != null && target.gameObject.activeInHierarchy) freeX = target.position.x + offsetX;
+            else freeX += AutoScroll * dt;
 
             Vector2 shake = Vector2.zero;
             if (shakeTime < shakeDuration)
             {
                 shakeTime += dt;
                 float k = shakeAmplitude * (1f - shakeTime / shakeDuration);
-                shake = new Vector2(Mathf.PerlinNoise(Time.time * 40f, 0f) - 0.5f, Mathf.PerlinNoise(0f, Time.time * 40f) - 0.5f) * 2f * k;
+                // amplitude en unités, ramenée à des pixels entiers : le tremblement reste « pixel art »
+                shake = new Vector2(Mathf.Round((Mathf.PerlinNoise(Time.time * 40f, 0f) - 0.5f) * 2f * k * PixelScreen.Ppu),
+                                    Mathf.Round((Mathf.PerlinNoise(0f, Time.time * 40f) - 0.5f) * 2f * k * PixelScreen.Ppu)) / PixelScreen.Ppu;
             }
-            transform.position = new Vector3(pos.x, pos.y, -10f) + (Vector3)shake;
-
-            punch = Mathf.Lerp(punch, 0f, 1f - Mathf.Exp(-10f * dt));
-            cam.orthographicSize = baseSize - punch;
-
-            flash = Mathf.Lerp(flash, 0f, 1f - Mathf.Exp(-6f * dt));
-            cam.backgroundColor = Color.Lerp(background, flashColor, flash);
+            bump = Mathf.MoveTowards(bump, 0f, dt * 3f);
+            float y = cameraY + Mathf.Round(bump * 4f) / PixelScreen.Ppu;
+            transform.position = new Vector3(PixelScreen.Snap(freeX) + shake.x, PixelScreen.Snap(y) + shake.y, -10f);
         }
     }
 }

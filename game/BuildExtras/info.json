@@ -1,11 +1,11 @@
 {
-  "name": "Rythme Runner",
-  "description": "Cours au rythme de la musique : chaque saut, coup et glissade tombe sur le beat.",
+  "name": "Kenta",
+  "description": "Cours au rythme de la musique à travers huit mondes : chaque saut, coup et glissade tombe sur le beat. Ne laisse pas la Sourdine avaler le son !",
   "creator": "Lou Calmes, Lucas Corrieras, Jeremy Hordé",
   "year": 2026,
   "type": "Runner rythmique",
-  "players": "1-2",
-  "catchphrase": "Joue la musique en courant !",
+  "players": "1",
+  "catchphrase": "La course en rythme",
   "config": {
     "scoreType": "score",
     "scoreSort": "desc"

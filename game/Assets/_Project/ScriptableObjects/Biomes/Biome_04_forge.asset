@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53b196c791744c4918ceff7c60ec08, type: 3}
+  m_Name: Biome_04_forge
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.BiomeTheme
+  label: LA FORGE
+  sectionName: REFRAIN
+  guardianName: TAUREAU-ENCLUME
+  sky: {fileID: 21300000, guid: 13b38d1ae8872442997ef97899ad1992, type: 3}
+  far: {fileID: 21300000, guid: 0844cebfd22804a12bf42d3a369d24fc, type: 3}
+  mid: {fileID: 21300000, guid: 5c6bab164f9c649b3ab4941fb168ce8a, type: 3}
+  near: {fileID: 21300000, guid: 6e4d41d1de0524ed7b587548c1818a09, type: 3}
+  ground: {fileID: 21300000, guid: 8a65a1f17cbf441aab714fd11e6953b1, type: 3}
+  hazard: {fileID: 21300000, guid: 765d50b3d31fe4d97b65b79bc401f937, type: 3}
+  wall: {fileID: 21300000, guid: abf44a64eee1f4a6bb8934880412a1f3, type: 3}
+  block: {fileID: 21300000, guid: a257d7269c72349058ecfc5f8d0ac9c7, type: 3}
+  ceiling: {fileID: 21300000, guid: 1c00b8a5948d841198d3b3d2e61b800d, type: 3}
+  post: {fileID: 21300000, guid: ec2c205f35d7e4463bbb09b3d4677770, type: 3}
+  enemyFrames:
+  - {fileID: 21300000, guid: c9f6a745e762e4dad914c09a14b2e115, type: 3}
+  enemyBroken: {fileID: 0}
+  spark: {r: 1, g: 0.627451, b: 0.2509804, a: 1}
+  flash: {r: 1, g: 0.84705883, b: 0.65882355, a: 1}

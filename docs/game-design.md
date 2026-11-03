@@ -1,9 +1,11 @@
-# Game design — Rythme Runner
+# Game design — Kenta
 
 Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en scrolling horizontal où **toute la traversée est synchronisée sur la musique**. Bien joué, chaque saut, coup, glissade ou collecte tombe sur un temps fort : le joueur a l'impression de **jouer la musique en courant**.
 
 ## Pitch arcade (lisible en 10 s)
-« Cours, saute et frappe en rythme. Ne te fais pas toucher. Ramasse les lums pour faire monter le score. »
+« Cours, saute et frappe en rythme. Ne te fais pas toucher. Ramasse les pièces pour faire monter le score. Ne laisse pas la Sourdine te rattraper. »
+
+**Univers, héros, huit mondes, ennemis, écrans** : voir [da-kenta.md](da-kenta.md). Les « pièces » du PDF sont les `lum` / `lum_line` du code et des charts.
 
 ## Commandes (3 boutons max)
 | Action | Entrée | Son |
@@ -51,11 +53,11 @@ Démarrage → [1 Attract + HighScore] ⟲ (tourne en boucle)
 ```
 > Sur le schéma, les libellés « Oui/Non » du losange « score joueur highScore ? » sont inversés. L'intention est : **si le score entre dans le top 10 → enregistrement**, sinon retour direct à l'attract.
 
-| # | Écran | Contenu Rythme Runner | Toolkit |
+| # | Écran | Contenu Kenta | Toolkit |
 |---|---|---|---|
 | 1 | **Attract + HighScore** | Alternance toutes les ~8 s : démo en **autoplay** du niveau (musique basse, implémentée : `RunManager.BeginRun(song, demo: true)`) ↔ classement top 10. Logo + « APPUIE SUR UN BOUTON » qui pulse sur le beat. N'importe quel bouton → écran 2. Cet appui débloque aussi l'audio du navigateur. | `HighscoreUI` |
 | 2 | **Explain (How to play)** | Une planche animée : joystick bas = glisser, B1 = sauter, B2 = frapper, « suis la musique ». B1/Start pour passer, sinon passage auto après ~6 s. | — |
-| 3 | **Config** *(facultatif)* | 1 joueur / 2 joueurs (hot-seat), plus tard le choix du morceau. Si on ne le fait pas, on passe directement en 1P. | — |
+| 3 | **Config** : choix du héros | Kenta, Aiko ou Ryo (joystick gauche/droite, bouton 1). 12 s, sinon Kenta. Le 2e joueur (hot-seat) viendra plus tard. | — |
 | 4 | **Game** | HUD : score, multiplicateur, cœurs, progression du morceau, section, tour de remix. | — |
 | 5 | **Game Over + score + liste** | Animation « GAME OVER » sur le beat, puis score final, lums, médaille, tours de remix et classement actuel avec la place du joueur mise en évidence. | `HighscoreUI` |
 | 6 | **Enregistrement** | Seulement si `HighscoreManager.IsHighscore(score)` : saisie du nom sur 3 caractères, puis retour à l'écran 1. | `HighscoreNameInput` |

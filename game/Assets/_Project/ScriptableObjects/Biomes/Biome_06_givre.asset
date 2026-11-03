@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53b196c791744c4918ceff7c60ec08, type: 3}
+  m_Name: Biome_06_givre
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.BiomeTheme
+  label: LE GIVRE
+  sectionName: COUPLET C
+  guardianName: RENARD DE GLACE
+  sky: {fileID: 21300000, guid: efa8adf1ff8cf4176a353214638d8ece, type: 3}
+  far: {fileID: 21300000, guid: 121e9e36b05234eeb87d0ea5cc6c71fd, type: 3}
+  mid: {fileID: 21300000, guid: 9085fb6b147c84d1bbeec6fa1f998e17, type: 3}
+  near: {fileID: 21300000, guid: 89e925a87a8ac4231983d18701a2eea7, type: 3}
+  ground: {fileID: 21300000, guid: 3728303b78d8a4212bcba1b67e6b5418, type: 3}
+  hazard: {fileID: 21300000, guid: d4fb01460cb53422aab7a79c4fa11b45, type: 3}
+  wall: {fileID: 21300000, guid: 310b1a14ae337471f8a902e971c4ad78, type: 3}
+  block: {fileID: 21300000, guid: 5f0e32574bf8840ba8428fff7586c76a, type: 3}
+  ceiling: {fileID: 21300000, guid: 0eb6bba82d57c4178a86bf4f711f470b, type: 3}
+  post: {fileID: 21300000, guid: 70bd8661287f641ec9807fbd0e572095, type: 3}
+  enemyFrames:
+  - {fileID: 21300000, guid: 9c8d2726c518b4a3cb28799ff3b25784, type: 3}
+  enemyBroken: {fileID: 0}
+  spark: {r: 1, g: 1, b: 1, a: 1}
+  flash: {r: 1, g: 1, b: 1, a: 1}

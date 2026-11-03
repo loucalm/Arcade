@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace RythmeRunner.Level
+namespace Kenta.Level
 {
     public enum LevelObjectKind { Gap, Wall, Enemy, Block, SlideBar, Lum }
 

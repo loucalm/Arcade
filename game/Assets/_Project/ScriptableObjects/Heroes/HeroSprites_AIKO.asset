@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e47d9c09f9964a5e84c640397542cd6, type: 3}
+  m_Name: HeroSprites_AIKO
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Player.HeroSpriteSet
+  idle: {fileID: 21300000, guid: 3e39f56a4f25c4c1c9487d29a6328ddf, type: 3}
+  run: {fileID: 21300000, guid: 81b5a591b1ebe48ff8cf93df69ee6959, type: 3}
+  jump: {fileID: 21300000, guid: 27b4ef05b21714a599635e24b1206bbe, type: 3}
+  slide: {fileID: 21300000, guid: a4551c1aaad0442168d751e3731a6eef, type: 3}
+  hit: {fileID: 21300000, guid: a46675d7f84af48e696bface57931f3a, type: 3}
+  vine: {fileID: 21300000, guid: 5705fb55824eb4ab7957e56eddba828b, type: 3}
+  wall: {fileID: 21300000, guid: 9efaf794e3efe44fe80ca4afd244179e, type: 3}
+  hurt: {fileID: 21300000, guid: 49f9095851ce4487eacb5a82ec976a8b, type: 3}
+  death: {fileID: 21300000, guid: 151bb53e95c834c21a76439800448551, type: 3}

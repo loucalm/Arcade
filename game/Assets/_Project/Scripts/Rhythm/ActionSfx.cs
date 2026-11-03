@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace RythmeRunner.Rhythm
+namespace Kenta.Rhythm
 {
     /// <summary>
     /// Sons d'action quantifiés à la double-croche (invariant n°4) : un son déclenché un peu avant

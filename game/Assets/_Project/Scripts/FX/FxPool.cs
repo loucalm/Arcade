@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace RythmeRunner.FX
+namespace Kenta.FX
 {
     /// <summary>
     /// Particules légères maison : un pool de SpriteRenderers animés à la main (pas de ParticleSystem,
@@ -13,23 +13,29 @@ namespace RythmeRunner.FX
         [SerializeField] Sprite square;
         [SerializeField] Material additive;
         [SerializeField, Min(16)] int capacity = 256;
+        [Tooltip("Les sprites à halo (spark) ont une marge transparente : on grossit d'autant.")]
+        [SerializeField] float sizeMultiplier = 1f;
+        [Tooltip("Les vitesses des appels sont réglées pour un écran de 10 u ; l'écran de Kenta fait 3,4 u de haut.")]
+        [SerializeField] float worldScale = 0.35f;
 
         struct Particle
         {
             public Transform transform;
             public SpriteRenderer renderer;
-            public Vector2 velocity;
+            public Vector2 velocity, pos;
             public float life, maxLife, size, spin, gravity;
             public Color color;
         }
 
         Particle[] particles;
         int next;
+        float unit = 1f;
 
         void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+            unit = square != null && square.bounds.size.x > 0.0001f ? sizeMultiplier / square.bounds.size.x : sizeMultiplier;
             particles = new Particle[capacity];
             for (int i = 0; i < capacity; i++)
             {
@@ -59,14 +65,15 @@ namespace RythmeRunner.FX
                 next = (next + 1) % particles.Length;
                 Vector2 dir = Random.insideUnitCircle.normalized;
                 dir.y += upBias;
-                p.velocity = dir.normalized * speed * Random.Range(0.4f, 1f);
+                p.velocity = dir.normalized * speed * worldScale * Random.Range(0.4f, 1f);
                 p.maxLife = p.life = life * Random.Range(0.6f, 1.1f);
                 p.size = size * Random.Range(0.6f, 1.3f);
                 p.spin = Random.Range(-720f, 720f);
-                p.gravity = gravity;
+                p.gravity = gravity * worldScale;
                 p.color = color;
-                p.transform.position = new Vector3(position.x, position.y, 0f);
-                p.transform.localRotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
+                p.pos = position;
+                p.transform.position = new Vector3(PixelScreen.Snap(position.x), PixelScreen.Snap(position.y), 0f);
+                p.transform.localRotation = Quaternion.identity;
                 p.transform.gameObject.SetActive(true);
             }
         }
@@ -86,10 +93,10 @@ namespace RythmeRunner.FX
                 }
                 p.velocity.y -= p.gravity * dt;
                 p.velocity *= 1f - 1.5f * dt;
-                p.transform.position += (Vector3)(p.velocity * dt);
-                p.transform.Rotate(0f, 0f, p.spin * dt);
+                p.pos += p.velocity * dt;
+                p.transform.position = new Vector3(PixelScreen.Snap(p.pos.x), PixelScreen.Snap(p.pos.y), 0f);
                 float t = p.life / p.maxLife;
-                float s = p.size * t;
+                float s = p.size * t * unit;
                 p.transform.localScale = new Vector3(s, s, 1f);
                 var c = p.color;
                 c.a *= t;

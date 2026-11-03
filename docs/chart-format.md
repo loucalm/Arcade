@@ -32,7 +32,7 @@ Un fichier par niveau dans `game/Assets/_Project/Charts/<id>.json`, chargé comm
 - `runSpeed` : unités Unity par seconde. Position : `x = BeatToSeconds(beat) * runSpeed`, avec `BeatToSeconds(b) = b * 60 / bpm` (relatif au beat 0, donc x = 0 au beat 0). L'offset ne sert qu'à caler l'audio : position dans le fichier = `BeatToSeconds(b) + offsetMs / 1000`.
 - `lane` : hauteur/étage (0 = sol, 1 = hauteur de saut, 2 = haut/plafond).
 - `beat` : en temps (float). Granularité minimale : **0,25** (double-croche).
-- Les `sections` servent aussi de **checkpoints**.
+- Les `sections` servent aussi de **checkpoints** et de **biomes** : la section n° i charge le `BiomeTheme` n° i de `Theme_Kenta` (8 sections de 32 beats pour le niveau 01).
 
 ## Placement (important)
 Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (appuyer). L'obstacle est placé juste après par `LevelBuilder` (constantes en tête de fichier) :
@@ -72,4 +72,4 @@ Ajouter un type = mettre à jour **ce tableau**, `LevelBuilder` et l'autoplay de
 - Télégraphier chaque obstacle **1 mesure avant** (`beatsPerBar` beats).
 - Au moins **1 beat** entre deux actions dans l'intro. Les croches (0,5) seulement à partir du refrain, les syncopes au final.
 - Valider chaque chart avec l'**autoplay** avant de merger : F9 (overlay), puis F10 (autoplay) en partie. L'overlay doit afficher **0 chute** en fin de morceau.
-- Exemple complet : `game/Assets/_Project/Charts/test_level_120.json` (128 beats, 5 sections, densité croissante).
+- Exemples : `game/Assets/_Project/Charts/test_level_120.json` (test à la main, 128 beats) et `level01_shovel_knight.json` (**générée** par `tools/gen-level-chart.py` depuis la musique : ne pas l'éditer à la main, modifier le plan du script).
