@@ -129,6 +129,7 @@ namespace Kenta.EditorTools
                 string n = ids[i];
                 set.idle = Spr($"Pdf/hero_{n}_idle.png");
                 set.run = Spr($"Pdf/hero_{n}_run.png");
+                set.runCycle = Enumerable.Range(0, 6).Select(k => Spr($"Gen/heroes/hero_{n}_run_{k}.png")).ToArray();
                 set.jump = Spr($"Pdf/hero_{n}_jump.png");
                 set.slide = Spr($"Pdf/hero_{n}_slide.png");
                 set.hit = Spr($"Pdf/hero_{n}_hit.png");
@@ -268,23 +269,10 @@ namespace Kenta.EditorTools
             var logo = AddImage(tr, "Logo", Spr("Gen/ui/logo.png"), new Vector2(0, 16));
             AddText(tr, font, "Subtitle", "LA COURSE EN RYTHME", new Vector2(0, -12), Color.white);
             var press = AddText(tr, font, "PressStart", "APPUIE SUR START", new Vector2(0, -42), Gold, 2);
-            var coins = new RectTransform[6];
-            for (int i = 0; i < coins.Length; i++)
-            {
-                var c = AddImage(tr, $"Coin{i}", theme.coinFrames[0], Vector2.zero);
-                ((RectTransform)c.transform).sizeDelta = theme.coinFrames[0].rect.size;
-                c.gameObject.AddComponent<UiSpriteCycle>().Setup(theme.coinFrames, 8f, i * 0.7f);
-                coins[i] = (RectTransform)c.transform;
-            }
             var comp = root.AddComponent<AttractScreen>();
             Set(comp, "pressStart", press);
             Set(comp, "hiScore", hi);
             Set(comp, "logo", (RectTransform)logo.transform);
-            var so = new SerializedObject(comp);
-            var p = so.FindProperty("orbitCoins");
-            p.arraySize = coins.Length;
-            for (int i = 0; i < coins.Length; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = coins[i];
-            so.ApplyModifiedPropertiesWithoutUndo();
             return SavePrefab(root, "Screen_Attract");
         }
 

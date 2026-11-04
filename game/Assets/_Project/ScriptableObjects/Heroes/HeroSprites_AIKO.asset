@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.Player.HeroSpriteSet
   idle: {fileID: 21300000, guid: 3e39f56a4f25c4c1c9487d29a6328ddf, type: 3}
   run: {fileID: 21300000, guid: 81b5a591b1ebe48ff8cf93df69ee6959, type: 3}
+  runCycle:
+  - {fileID: 21300000, guid: f8195cf30113445fdb4dbdcc698f98ee, type: 3}
+  - {fileID: 21300000, guid: a3b4bfcc970de4ddbad4815b4ab8fae8, type: 3}
+  - {fileID: 21300000, guid: 23bc712df091a42d8accba21c8314ba8, type: 3}
+  - {fileID: 21300000, guid: ba329e0f80b75420b81487538abd2c11, type: 3}
+  - {fileID: 21300000, guid: ea89ab850452a49b8a96a001327309ec, type: 3}
+  - {fileID: 21300000, guid: 1bef66b2098494df6b2ded6f2d771b16, type: 3}
   jump: {fileID: 21300000, guid: 27b4ef05b21714a599635e24b1206bbe, type: 3}
   slide: {fileID: 21300000, guid: a4551c1aaad0442168d751e3731a6eef, type: 3}
   hit: {fileID: 21300000, guid: a46675d7f84af48e696bface57931f3a, type: 3}

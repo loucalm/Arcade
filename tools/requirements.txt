@@ -2,3 +2,7 @@ pillow>=10
 numpy>=1.26
 # Optionnel : analyse audio pour tools/gen-level-chart.py
 librosa>=0.10
+# Tests des générateurs : pytest tools/tests
+pytest>=8
+# Extraction des sprites du PDF de la DA (tools/extract-kenta-pdf.py)
+pymupdf>=1.24

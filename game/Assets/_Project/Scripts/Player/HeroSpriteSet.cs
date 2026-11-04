@@ -8,6 +8,8 @@ namespace Kenta.Player
     {
         public Sprite idle;
         public Sprite run;
+        [Tooltip("Cycle de course (6 images générées par tools/gen-hero-run.py).")]
+        public Sprite[] runCycle;
         public Sprite jump;
         public Sprite slide;
         public Sprite hit;

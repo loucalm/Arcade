@@ -26,7 +26,8 @@ Les PNG sont **commités** : inutile de relancer les outils sauf pour modifier u
 - Les sprites du PDF sont recadrés pour que le pivot soit **milieu-bas** (les pieds), sans réglage dans Unity.
 - Les biomes sont décrits dans `tools/kenta_biomes.py` (palettes issues du PDF) et dessinés par `tools/kenta_art.py`. Ajouter un biome = une entrée dans `BIOMES` + éventuellement un nouveau type de calque dans `kenta_art.py`.
 - `tools/pixlib.py` : primitives de dessin sans anti-aliasing, contour noir d'1 px, dégradés en bandes.
-- Chaque héros n'a **qu'une image par pose** (le PDF n'en fournit pas plus). Le PDF prévoit 2 à 4 images par action : à dessiner (voir roadmap).
+- Chaque héros n'a **qu'une image par pose** dans le PDF. La **course** a 6 images générées (`tools/gen-hero-run.py`, appelé par `gen-kenta-assets.py --only heroes`) : haut du corps du PDF, jambes redessinées à 6 phases avec les couleurs du sprite ; l'image suit la distance parcourue (une foulée = 1,6 u). Les autres poses (2 à 4 images prévues par le PDF) restent à dessiner (voir roadmap).
+- **Aucune animation par crans sur le temps** (rebond d'1 px au beat, texte qui saute) : ça se lit comme un tremblement. Mouvements continus (sinus lents, fondus) ou cycles d'images.
 
 ## Import Unity
 `Editor/KentaSpritePostprocessor.cs` règle tout automatiquement, par chemin : filtre Point, aucune compression, PPU **40** (monde) ou **100** (interface : un sprite fait sa taille en px dans le canvas), pivot, bordures du cadre 9-slice. **Si on change la taille d'un sprite (mur, bloc, totem), mettre à jour ses pivots dans ce fichier.**
@@ -39,10 +40,10 @@ Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.c
 |---|---|
 | 8 mondes | `Level/BiomeTheme` (SO) ; un biome = une section de la chart ; `LevelBuilder.BiomeAt(beat)` |
 | Décor | `FX/BiomeBackdrop` : ciel fixe (avec le gardien) + 3 calques de 480 px qui bouclent |
-| Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO) ; `HeroAnimator` choisit la pose ; la course rebondit d'1 px sur chaque demi-temps |
+| Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO, dont `runCycle` : 6 images) ; `HeroAnimator` choisit la pose et l'image de course selon la distance |
 | Bandeau (traînée de combo) | `FX/BandanaTrail` : 8 à 48 px selon le multiplicateur ×1 → ×8 |
 | La Sourdine | `FX/Sourdine` (interface) : avance quand on est touché, recule avec le combo, recouvre l'écran au game over |
-| Ennemis | djembé : 2 images alternées sur le temps (`BeatFrames`) ; les autres : saut d'1 px (`BeatHop`) |
+| Ennemis | djembé : 2 images alternées sur le temps (`BeatFrames`) ; les autres : immobiles (le sautillement au beat a été retiré) |
 | Texte | `UI/PixelText` + `PixelFontData` : une image par caractère, entiers seulement |
 | Flash des drops | `FX/ScreenFx` |
 

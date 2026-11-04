@@ -318,7 +318,6 @@ namespace Kenta.Level
             var frames = biome.enemyFrames;
             var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
             if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);   // djembé : écrasé / étiré
-            else sr.gameObject.AddComponent<BeatHop>().Configure(1);                           // les autres sautillent d'1 px
             return t.gameObject;
         }
 

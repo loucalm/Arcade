@@ -7,8 +7,8 @@ namespace Kenta.EditorTools
     /// <summary>
     /// Règle automatiquement l'import des sprites pixel art de Art/Kenta (générés par tools/gen-kenta-assets.py
     /// ou extraits du PDF par tools/extract-kenta-pdf.py) : filtre Point, aucune compression, PPU, pivot, 9-slice.
-    /// Monde : 40 px par unité (l'écran de 240×135 px montre 6 × 3,375 unités). Interface : 100 px par unité,
-    /// donc un sprite fait sa taille en pixels dans le canvas de 240×135.
+    /// Monde : 40 px par unité (l'écran de 320×180 px montre 8 × 4,5 unités). Interface : 100 px par unité,
+    /// donc un sprite fait sa taille en pixels dans le canvas de 320×180.
     /// </summary>
     public class KentaSpritePostprocessor : AssetPostprocessor
     {
@@ -26,7 +26,7 @@ namespace Kenta.EditorTools
             var pivot = new Vector2(0.5f, 0.5f);
             var border = Vector4.zero;
 
-            if (rel.StartsWith("Pdf/")) pivot = new Vector2(0.5f, 0f);                         // pieds en bas
+            if (rel.StartsWith("Pdf/") || rel.StartsWith("Gen/heroes/")) pivot = new Vector2(0.5f, 0f);                         // pieds en bas
             else if (name.StartsWith("wall_")) pivot = new Vector2(0.5f, 1f / 34f);              // 36×32 + contour d'1 px
             else if (name.StartsWith("block_")) pivot = new Vector2(0.5f, 1f / 40f);             // 38×38 + contour
             else if (name == "totem") pivot = new Vector2(0.5f, 1f / 48f);                       // 20×46 + contour

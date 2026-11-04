@@ -67,7 +67,7 @@ Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteu
 | `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par section de la chart : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |
 | `Level/LevelBuilder` | Chart → obstacles + collisions, visuels du biome du beat. Géométrie : docs/chart-format.md. |
 | `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu 320×180 en 3 calques (couche Unity `Actors` pour le héros), caméra au sous-pixel qui suit aussi en hauteur, ciel + 3 calques en parallaxe. |
-| `FX/BandanaTrail`, `FX/Sourdine`, `FX/ScreenFx`, `FX/FxPool`, `FX/BeatFrames`, `FX/BeatHop` | Traînée du bandeau, mur de silence, flash, particules en pixels, ennemis qui dansent. |
+| `FX/BandanaTrail`, `FX/Sourdine`, `FX/ScreenFx`, `FX/FxPool`, `FX/BeatFrames` | Traînée du bandeau, mur de silence, flash, particules en pixels, djembé qui change d'image sur le temps. |
 | `Player/PlayerController`, `HeroAnimator`, `HeroProfile`, `HeroSpriteSet` | Physique maison réglée en beats ; pose du héros (8 poses du PDF) ; 3 héros. |
 | `UI/PixelText`, `PixelFontData`, `RunHud`, `AttractScreen`, `HeroSelectScreen`, `ExplainScreen`, `GameOverScreen` | Interface en pixels. |
 | `Editor/KentaSpritePostprocessor`, `Editor/KentaBuilder` | Import des sprites ; menu **Kenta > Reconstruire thèmes, prefabs et scène**. |
@@ -78,7 +78,7 @@ Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteu
 
 ## Juice / perfs (GPU intégré)
 - Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.
-- Juice = secousses en pixels entiers, flash des drops, particules en pixels (< ~300 actives), ennemis qui sautillent sur le temps, texte qui rebondit sur le temps.
+- Juice = secousses en pixels entiers, flash des drops, particules en pixels (< ~300 actives). **Pas d'animation par crans sur le beat** (lu comme un tremblement) : mouvements continus ou cycles d'images.
 - Sprites pixel art : filtre Point, aucune compression (réglé par `KentaSpritePostprocessor`).
 - Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades.
 

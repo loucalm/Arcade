@@ -99,7 +99,16 @@ def gen_thumbnail(out, sheet):
         sheet.append(sq)
 
 
-GENERATORS = {"biomes": gen_biomes, "ui": gen_ui, "font": gen_font, "thumbnail": gen_thumbnail}
+def gen_heroes(out, sheet):
+    """Cycles de course à 6 images (tools/gen-hero-run.py), à partir des sprites du PDF."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("gen_hero_run", os.path.join(ROOT, "tools", "gen-hero-run.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.main()
+
+
+GENERATORS = {"biomes": gen_biomes, "ui": gen_ui, "font": gen_font, "heroes": gen_heroes, "thumbnail": gen_thumbnail}
 
 
 def contact_sheet(imgs, path, width=1500, scale=2, bg=(60, 60, 80)):
