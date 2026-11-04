@@ -43,7 +43,7 @@ namespace Kenta.UI
             {
                 title.gameObject.SetActive(true);
                 float k = Mathf.Clamp01((t - dropDelay) / 0.35f);
-                title.anchoredPosition = new Vector2(0f, Mathf.Round(Mathf.Lerp(90f, 38f, k * k)));
+                title.anchoredPosition = new Vector2(0f, Mathf.Round(Mathf.Lerp(110f, 48f, k * k)));
             }
             if (t >= panelDelay) panel.SetActive(true);
         }

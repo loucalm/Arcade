@@ -31,6 +31,7 @@ namespace Kenta.EditorTools
             else if (name.StartsWith("block_")) pivot = new Vector2(0.5f, 1f / 40f);             // 38×38 + contour
             else if (name == "totem") pivot = new Vector2(0.5f, 1f / 48f);                       // 20×46 + contour
             else if (name == "panel") border = new Vector4(4, 4, 4, 4);
+            else if (name == "plate") border = new Vector4(3, 3, 3, 3);
 
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Sprite;

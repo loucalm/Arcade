@@ -53,6 +53,7 @@ def gen_ui(out, sheet):
     put(out, "ui", "heart_full", ui.draw_heart(True), sheet)
     put(out, "ui", "heart_empty", ui.draw_heart(False), sheet)
     put(out, "ui", "panel", ui.draw_panel(), sheet)
+    put(out, "ui", "plate", ui.draw_plate(), sheet)
     put(out, "ui", "button_red", ui.draw_button("#E03A58"), sheet)
     put(out, "ui", "button_blue", ui.draw_button("#4A90D8"), sheet)
     put(out, "ui", "stick", ui.draw_stick(), sheet)

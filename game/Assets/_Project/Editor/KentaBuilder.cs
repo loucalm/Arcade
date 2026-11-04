@@ -112,6 +112,7 @@ namespace Kenta.EditorTools
             }
             font.chars = sb.ToString();
             font.sprites = sprites;
+            font.plate = Spr("Gen/ui/plate.png");
             EditorUtility.SetDirty(font);
             return font;
         }
@@ -228,7 +229,7 @@ namespace Kenta.EditorTools
         }
 
         static PixelText AddText(Transform parent, PixelFontData font, string name, string text, Vector2 pos, Color color,
-                                 int scale = 1, PixelText.Align align = PixelText.Align.Center)
+                                 int scale = 1, PixelText.Align align = PixelText.Align.Center, bool plate = false)
         {
             var rt = NewRect(name, parent, pos, new Vector2(2, 2));
             var pt = rt.gameObject.AddComponent<PixelText>();
@@ -237,6 +238,7 @@ namespace Kenta.EditorTools
             Set(pt, "color", color);
             Set(pt, "align", align);
             Set(pt, "scale", scale);
+            Set(pt, "plate", plate);
             return pt;
         }
 
@@ -254,7 +256,7 @@ namespace Kenta.EditorTools
             var go = new GameObject(name, typeof(RectTransform));
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(240, 135);
+            rt.sizeDelta = new Vector2(PixelScreen.Width, PixelScreen.Height);
             return go;
         }
 
@@ -262,17 +264,15 @@ namespace Kenta.EditorTools
         {
             var root = ScreenRoot("Screen_Attract");
             var tr = root.transform;
-            AddText(tr, font, "OneUp", "1UP 000000", new Vector2(-116, 60), Color.white, 1, PixelText.Align.Left);
-            var hi = AddText(tr, font, "HiScore", "HI-SCORE 000000", new Vector2(0, 60), Gold);
-            AddText(tr, font, "TwoUp", "2UP", new Vector2(49, 60), Dim, 1, PixelText.Align.Left);
-            AddText(tr, font, "Credit", "CRÉD 00", new Vector2(116, 60), Color.white, 1, PixelText.Align.Right);
-            var logo = AddImage(tr, "Logo", Spr("Gen/ui/logo.png"), new Vector2(0, 16));
-            AddText(tr, font, "Subtitle", "LA COURSE EN RYTHME", new Vector2(0, -12), Color.white);
-            var press = AddText(tr, font, "PressStart", "APPUIE SUR START", new Vector2(0, -42), Gold, 2);
+            var hi = AddText(tr, font, "HiScore", "HI-SCORE 000000", new Vector2(0, 76), Gold, 1, PixelText.Align.Center, true);
+            var logo = AddImage(tr, "Logo", Spr("Gen/ui/logo.png"), new Vector2(0, 26));
+            AddText(tr, font, "Subtitle", "LA COURSE EN RYTHME", new Vector2(0, -2), Color.white, 1, PixelText.Align.Center, true);
+            var press = AddText(tr, font, "PressStart", "APPUIE SUR START", new Vector2(0, -46), Gold, 2, PixelText.Align.Center, true);
             var comp = root.AddComponent<AttractScreen>();
             Set(comp, "pressStart", press);
             Set(comp, "hiScore", hi);
             Set(comp, "logo", (RectTransform)logo.transform);
+            Set(comp, "logoY", 26f);
             return SavePrefab(root, "Screen_Attract");
         }
 
@@ -280,21 +280,21 @@ namespace Kenta.EditorTools
         {
             var root = ScreenRoot("Screen_Explain");
             var tr = root.transform;
-            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(0, -4), null, new Vector2(224, 100), false);
+            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(14, -6), null, new Vector2(232, 118), false);
             panel.type = Image.Type.Sliced;
-            AddText(tr, font, "Title", "COMMENT JOUER", new Vector2(0, 52), Gold, 2);
-            var hero = AddImage(tr, "Hero", theme.heroes[0].sprites.run, new Vector2(-88, -42), null, null, true, new Vector2(0.5f, 0f));
-            string[] lines = { "SAUTE : TROUS, ROCHERS", "FRAPPE : LES INSTRUMENTS", "GLISSE : SOUS LA BRANCHE", "RAMASSE LES PIÈCES", "NE T'ARRÊTE JAMAIS :", "LA SOURDINE TE SUIT" };
+            AddText(tr, font, "Title", "COMMENT JOUER", new Vector2(0, 70), Gold, 2, PixelText.Align.Center, true);
+            var hero = AddImage(tr, "Hero", theme.heroes[0].sprites.run, new Vector2(-122, -62), null, null, true, new Vector2(0.5f, 0f));
+            string[] lines = { "SAUTE : TROUS, MURS, MARCHES", "FRAPPE : LES INSTRUMENTS", "GLISSE : SOUS LA BRANCHE", "RAMASSE LES PIÈCES", "SUIS LE RYTHME : PARFAIT !", "UN SEUL COUP ET C'EST FINI" };
             var texts = new PixelText[lines.Length];
             for (int i = 0; i < lines.Length; i++)
-                texts[i] = AddText(tr, font, $"Line{i}", lines[i], new Vector2(-38, 30 - i * 14), Color.white, 1, PixelText.Align.Left);
-            AddImage(tr, "Btn1", Spr("Gen/ui/button_red.png"), new Vector2(-50, 30));
-            AddText(tr, font, "Btn1Label", "1", new Vector2(-50, 30), Color.white);
-            AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-50, 16));
-            AddText(tr, font, "Btn2Label", "2", new Vector2(-50, 16), Color.white);
-            AddImage(tr, "Stick", Spr("Gen/ui/stick.png"), new Vector2(-50, 2));
-            AddImage(tr, "Coin", theme.coinFrames[0], new Vector2(-50, -12));
-            AddText(tr, font, "Hint", "BOUTON 1 POUR CONTINUER", new Vector2(0, -60), Color.white);
+                texts[i] = AddText(tr, font, $"Line{i}", lines[i], new Vector2(-62, 38 - i * 16), Color.white, 1, PixelText.Align.Left);
+            AddImage(tr, "Btn1", Spr("Gen/ui/button_red.png"), new Vector2(-76, 38));
+            AddText(tr, font, "Btn1Label", "1", new Vector2(-76, 38), Color.white);
+            AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-76, 22));
+            AddText(tr, font, "Btn2Label", "2", new Vector2(-76, 22), Color.white);
+            AddImage(tr, "Stick", Spr("Gen/ui/stick.png"), new Vector2(-76, 6));
+            AddImage(tr, "Coin", theme.coinFrames[0], new Vector2(-76, -10));
+            AddText(tr, font, "Hint", "BOUTON 1 POUR CONTINUER", new Vector2(0, -80), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<ExplainScreen>();
             Set(comp, "theme", theme);
             Set(comp, "hero", hero);
@@ -310,20 +310,20 @@ namespace Kenta.EditorTools
         {
             var root = ScreenRoot("Screen_HeroSelect");
             var tr = root.transform;
-            AddText(tr, font, "Title", "CHOISIS TON HÉROS", new Vector2(0, 54), Gold, 2);
-            var timer = AddText(tr, font, "Timer", "12", new Vector2(112, 28), Gold);
+            AddText(tr, font, "Title", "CHOISIS TON HÉROS", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
+            var timer = AddText(tr, font, "Timer", "12", new Vector2(146, 72), Color.white, 1, PixelText.Align.Center, true);
             var portraits = new Image[3];
             var frames = new Image[3];
             var names = new PixelText[3];
             for (int i = 0; i < 3; i++)
             {
-                float x = -72 + i * 72;
-                frames[i] = AddImage(tr, $"Frame{i}", Spr("Gen/ui/panel.png"), new Vector2(x, -4), Dim, new Vector2(64, 84), false);
+                float x = -96 + i * 96;
+                frames[i] = AddImage(tr, $"Frame{i}", Spr("Gen/ui/panel.png"), new Vector2(x, -2), Dim, new Vector2(84, 108), false);
                 frames[i].type = Image.Type.Sliced;
-                portraits[i] = AddImage(tr, $"Portrait{i}", theme.heroes[i].sprites.idle, new Vector2(x, -38), null, null, true, new Vector2(0.5f, 0f));
-                names[i] = AddText(tr, font, $"Name{i}", theme.heroes[i].displayName, new Vector2(x, -53), Color.white);
+                portraits[i] = AddImage(tr, $"Portrait{i}", theme.heroes[i].sprites.idle, new Vector2(x, -46), null, null, true, new Vector2(0.5f, 0f));
+                names[i] = AddText(tr, font, $"Name{i}", theme.heroes[i].displayName, new Vector2(x, -66), Color.white, 1, PixelText.Align.Center, true);
             }
-            AddText(tr, font, "Hint", "◄ ► CHOISIR   1 VALIDER", new Vector2(0, -63), Color.white);
+            AddText(tr, font, "Hint", "◄ ► CHOISIR    1 VALIDER", new Vector2(0, -82), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<HeroSelectScreen>();
             Set(comp, "theme", theme);
             Set(comp, "timerText", timer);
@@ -337,19 +337,16 @@ namespace Kenta.EditorTools
         {
             var root = ScreenRoot("Screen_Playing");
             var tr = root.transform;
-            var score = AddText(tr, font, "Score", "000000", new Vector2(-116, 61), Color.white, 1, PixelText.Align.Left);
-            var mult = AddText(tr, font, "Multiplier", "×1", new Vector2(-116, 40), Gold, 2, PixelText.Align.Left);
-            var hearts = new Image[3];
-            for (int i = 0; i < 3; i++)
-                hearts[i] = AddImage(tr, $"Heart{i}", Spr("Gen/ui/heart_full.png"), new Vector2(88 + i * 14, 61));
-            AddImage(tr, "CoinIcon", theme.coinFrames[0], new Vector2(70, 36));
-            var coins = AddText(tr, font, "Coins", "0/0", new Vector2(116, 36), Color.white, 1, PixelText.Align.Right);
+            var score = AddText(tr, font, "Score", "000000", new Vector2(-154, 80), Color.white, 1, PixelText.Align.Left, true);
+            var mult = AddText(tr, font, "Multiplier", "×1", new Vector2(-154, 62), Gold, 2, PixelText.Align.Left, true);
+            AddImage(tr, "CoinIcon", theme.coinFrames[0], new Vector2(96, 80));     // « 252/252 » commence vers x = 117
+            var coins = AddText(tr, font, "Coins", "0/0", new Vector2(154, 80), Color.white, 1, PixelText.Align.Right, true);
             var friezeBack = new Image[8];
             var friezeFill = new Image[8];
             for (int i = 0; i < 8; i++)
             {
-                float x = -56 + i * 16 + 7;
-                var back = AddImage(tr, $"Seg{i}", Spr("Gen/ui/pixel.png"), new Vector2(x, 61), new Color(0.18f, 0.15f, 0.28f), new Vector2(14, 4), false);
+                float x = -72 + i * 18 + 8;
+                var back = AddImage(tr, $"Seg{i}", Spr("Gen/ui/pixel.png"), new Vector2(x, 82), new Color(0.18f, 0.15f, 0.28f), new Vector2(16, 3), false);
                 var fill = AddImage(back.transform, "Fill", Spr("Gen/ui/pixel.png"), Vector2.zero, Gold, null, false);
                 var frt = (RectTransform)fill.transform;
                 frt.anchorMin = new Vector2(0, 0);
@@ -359,9 +356,9 @@ namespace Kenta.EditorTools
                 friezeBack[i] = back;
                 friezeFill[i] = fill;
             }
-            var biome = AddText(tr, font, "BiomeLabel", "INTRO · LA SYLVE · TOUR 1", new Vector2(0, 49), Color.white);
-            var banner = AddText(tr, font, "Banner", "", new Vector2(0, 14), Color.white, 2);
-            var feedback = AddText(tr, font, "Feedback", "", new Vector2(0, -4), Gold);
+            var biome = AddText(tr, font, "BiomeLabel", "INTRO · LA SYLVE", new Vector2(0, 70), Color.white, 1, PixelText.Align.Center, true);
+            var banner = AddText(tr, font, "Banner", "", new Vector2(0, 24), Color.white, 2, PixelText.Align.Center, true);
+            var feedback = AddText(tr, font, "Feedback", "", new Vector2(0, 4), Gold, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<RunHud>();
             Set(comp, "scoreText", score);
             Set(comp, "multiplierText", mult);
@@ -371,7 +368,7 @@ namespace Kenta.EditorTools
             Set(comp, "feedbackText", feedback);
             Set(comp, "heartFull", Spr("Gen/ui/heart_full.png"));
             Set(comp, "heartEmpty", Spr("Gen/ui/heart_empty.png"));
-            SetArray(comp, "hearts", hearts);
+            SetArray(comp, "hearts", new Image[0]);
             SetArray(comp, "friezeBack", friezeBack);
             SetArray(comp, "friezeFill", friezeFill);
             return SavePrefab(root, "Screen_Playing");
@@ -381,15 +378,15 @@ namespace Kenta.EditorTools
         {
             var root = ScreenRoot("Screen_GameOver");
             var tr = root.transform;
-            var titleT = AddText(tr, font, "Title", "GAME OVER", new Vector2(0, 38), Color.white, 3);
-            var panel = NewRect("Panel", tr, new Vector2(0, -22), new Vector2(170, 56));
+            var titleT = AddText(tr, font, "Title", "GAME OVER", new Vector2(0, 48), Color.white, 3, PixelText.Align.Center, true);
+            var panel = NewRect("Panel", tr, new Vector2(0, -24), new Vector2(200, 64));
             var bg = panel.gameObject.AddComponent<Image>();
             bg.sprite = Spr("Gen/ui/panel.png");
             bg.type = Image.Type.Sliced;
             bg.raycastTarget = false;
-            var score = AddText(panel, font, "Score", "SCORE 000000", new Vector2(0, 14), Gold, 1);
+            var score = AddText(panel, font, "Score", "SCORE 000000", new Vector2(0, 16), Gold, 1);
             var coins = AddText(panel, font, "Coins", "PIÈCES 0/0", new Vector2(0, 0), Color.white);
-            var biome = AddText(panel, font, "Biome", "MONDE LA SYLVE", new Vector2(0, -14), Color.white);
+            var biome = AddText(panel, font, "Biome", "MONDE LA SYLVE", new Vector2(0, -16), Color.white);
             var comp = root.AddComponent<GameOverScreen>();
             Set(comp, "title", (RectTransform)titleT.transform);
             Set(comp, "titleText", titleT);
@@ -522,7 +519,7 @@ namespace Kenta.EditorTools
                 var r = (RectTransform)im.transform;
                 r.anchorMin = r.anchorMax = new Vector2(0f, 0.5f);
             }
-            var fill = AddImage(sourdineRoot, "VeilFill", Spr("Gen/ui/pixel.png"), Vector2.zero, new Color(92f / 255f, 98f / 255f, 108f / 255f, 150f / 255f), new Vector2(0, 135), false, new Vector2(0f, 0.5f));
+            var fill = AddImage(sourdineRoot, "VeilFill", Spr("Gen/ui/pixel.png"), Vector2.zero, new Color(92f / 255f, 98f / 255f, 108f / 255f, 150f / 255f), new Vector2(0, PixelScreen.Height), false, new Vector2(0f, 0.5f));
             var fillRt = (RectTransform)fill.transform;
             fillRt.anchorMin = fillRt.anchorMax = new Vector2(0f, 0.5f);
             var sourdine = sourdineRoot.gameObject.AddComponent<Sourdine>();

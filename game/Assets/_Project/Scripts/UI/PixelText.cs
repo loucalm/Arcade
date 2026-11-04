@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace Kenta.UI
 {
     /// <summary>
-    /// Texte en police pixel : une Image par caractère, alignée sur la grille de pixels du canvas 240×135.
+    /// Texte en police pixel : une Image par caractère (police proportionnelle), alignée sur la grille de pixels du canvas 320×180.
     /// `scale` entier = texte agrandi sans flou. L'origine est le centre du RectTransform.
     /// </summary>
     public class PixelText : MonoBehaviour
@@ -17,6 +17,11 @@ namespace Kenta.UI
         [SerializeField] Color color = Color.white;
         [SerializeField] Align align = Align.Center;
         [SerializeField, Min(1)] int scale = 1;
+        [Tooltip("Plaque sombre derrière le texte : lisible sur n'importe quel décor.")]
+        [SerializeField] bool plate;
+
+        const int PlatePadX = 3, PlatePadY = 2;
+        Image plateImage;
 
         readonly List<Image> glyphs = new();
         string built;
@@ -43,6 +48,7 @@ namespace Kenta.UI
             // Les glyphs sont recréés à chaque activation : on retire d'abord ceux qu'un prefab aurait pu garder.
             for (int i = transform.childCount - 1; i >= 0; i--) Destroy(transform.GetChild(i).gameObject);
             glyphs.Clear();
+            plateImage = null;
             built = null;
             Rebuild();
         }
@@ -60,28 +66,71 @@ namespace Kenta.UI
             built = text; builtColor = color; builtAlign = align; builtScale = scale;
 
             int n = text.Length;
-            float adv = PixelFontData.Advance * scale;
+            int total = MeasureWidth(font, text, scale);
+            float cursor = align switch
+            {
+                Align.Left => 0f,
+                Align.Right => -total,
+                _ => -Mathf.Floor(total * 0.5f),
+            };
+            UpdatePlate(cursor, total);
             for (int i = 0; i < Mathf.Max(n, glyphs.Count); i++)
             {
                 if (i >= glyphs.Count) glyphs.Add(NewGlyph());
                 var img = glyphs[i];
                 if (i >= n) { img.gameObject.SetActive(false); continue; }
                 var sprite = font.Get(text[i]);
+                int adv = font.AdvanceOf(text[i]) * scale;
                 img.gameObject.SetActive(sprite != null);
-                if (sprite == null) continue;
-                img.sprite = sprite;
-                img.color = color;
-                var rt = (RectTransform)img.transform;
-                rt.sizeDelta = sprite.rect.size * scale;
-                float w = sprite.rect.width * scale;
-                float x = align switch
+                if (sprite != null)
                 {
-                    Align.Left => i * adv + w * 0.5f,
-                    Align.Right => -((n - 1 - i) * adv + w * 0.5f),
-                    _ => (i - (n - 1) * 0.5f) * adv,
-                };
-                rt.anchoredPosition = new Vector2(Mathf.Round(x), 0f);
+                    img.sprite = sprite;
+                    img.color = color;
+                    var rt = (RectTransform)img.transform;
+                    rt.sizeDelta = sprite.rect.size * scale;
+                    rt.anchoredPosition = new Vector2(cursor, -Mathf.Floor(sprite.rect.height * scale * 0.5f));   // pivot bas-gauche : pixels entiers
+                }
+                cursor += adv;
             }
+        }
+
+        void UpdatePlate(float left, int total)
+        {
+            if (!plate || font.plate == null)
+            {
+                if (plateImage != null) plateImage.gameObject.SetActive(false);
+                return;
+            }
+            if (plateImage == null)
+            {
+                plateImage = NewGlyph();
+                plateImage.name = "plate";
+                plateImage.transform.SetAsFirstSibling();       // derrière les glyphes
+                plateImage.sprite = font.plate;
+                plateImage.type = Image.Type.Sliced;
+            }
+            var size = PlateSize(font, text, scale);
+            plateImage.gameObject.SetActive(size.x > 0f);
+            var rt = (RectTransform)plateImage.transform;
+            rt.sizeDelta = size;
+            rt.anchoredPosition = new Vector2(left - PlatePadX, -Mathf.Floor(font.LineHeight * scale * 0.5f) - PlatePadY);
+        }
+
+        /// <summary>Taille de la plaque : texte + 3 px de chaque côté, + 2 px en haut et en bas (marges non agrandies).</summary>
+        public static Vector2 PlateSize(PixelFontData font, string value, int scale)
+        {
+            int w = MeasureWidth(font, value, scale);
+            if (w <= 0) return Vector2.zero;
+            return new Vector2(w + 2 * PlatePadX, font.LineHeight * Mathf.Max(1, scale) + 2 * PlatePadY);
+        }
+
+        /// <summary>Largeur en pixels d'un texte (sans l'espace après la dernière lettre).</summary>
+        public static int MeasureWidth(PixelFontData font, string value, int scale)
+        {
+            if (font == null || string.IsNullOrEmpty(value)) return 0;
+            int w = 0;
+            for (int i = 0; i < value.Length; i++) w += font.AdvanceOf(value[i]);
+            return (w - 1) * Mathf.Max(1, scale);
         }
 
         Image NewGlyph()
@@ -92,7 +141,7 @@ namespace Kenta.UI
             img.raycastTarget = false;
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.pivot = Vector2.zero;
             return img;
         }
     }

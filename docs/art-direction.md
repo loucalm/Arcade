@@ -44,10 +44,12 @@ Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.c
 | Bandeau (traînée de combo) | `FX/BandanaTrail` : 8 à 48 px selon le multiplicateur ×1 → ×8 |
 | La Sourdine | `FX/Sourdine` (interface) : avance quand on est touché, recule avec le combo, recouvre l'écran au game over |
 | Ennemis | djembé : 2 images alternées sur le temps (`BeatFrames`) ; les autres : immobiles (le sautillement au beat a été retiré) |
-| Texte | `UI/PixelText` + `PixelFontData` : une image par caractère, entiers seulement |
+| Texte | `UI/PixelText` + `PixelFontData` : police 5×7 **proportionnelle**, ombre d'1 px vers le bas, une image par caractère ; `plate` = plaque sombre arrondie (9-slice) sous les textes posés sur le décor ; agrandissements entiers |
+| Cadres | `Gen/ui/panel.png` (9-slice, coins arrondis, liseré clair) ; `Gen/ui/plate.png` (plaque de texte) |
 | Flash des drops | `FX/ScreenFx` |
 
 ## Règles
 - Pas de rotation ni d'échelle fractionnaire d'un sprite : tout reste à l'échelle 1:1 (les agrandissements d'interface sont des **entiers**).
 - Le contour noir d'1 px est dans les sprites ; ne pas en ajouter côté Unity.
-- Lisibilité d'abord : sur la borne, vu debout à 2 m (point à tester, voir roadmap).
+- Lisibilité d'abord : tout texte posé sur le décor a sa plaque (`plate`) ; sur la borne, vu debout à 2 m (point à tester, voir roadmap).
+- Pendant le classement du toolkit (accueil, fin de partie), nos écrans sont masqués pour qu'il ne chevauche pas le logo.

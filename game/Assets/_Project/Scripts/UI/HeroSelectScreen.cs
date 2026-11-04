@@ -70,7 +70,7 @@ namespace Kenta.UI
                 portraits[i].sprite = sel ? hero.sprites.run : hero.sprites.idle;
                 ((RectTransform)portraits[i].transform).sizeDelta = portraits[i].sprite.rect.size;
                 var rt = (RectTransform)portraits[i].transform;
-                rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, sel ? -32f : -38f);
+                rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, sel ? -42f : -46f);
                 frames[i].color = sel ? hero.accent : new Color(0.35f, 0.3f, 0.5f);
                 names[i].Color = sel ? Color.white : new Color(0.6f, 0.58f, 0.75f);
             }

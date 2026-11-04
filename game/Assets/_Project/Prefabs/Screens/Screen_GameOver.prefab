@@ -37,8 +37,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -22}
-  m_SizeDelta: {x: 170, y: 56}
+  m_AnchoredPosition: {x: 0, y: -24}
+  m_SizeDelta: {x: 200, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3005184371842285056
 CanvasRenderer:
@@ -131,6 +131,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 1
+  plate: 0
 --- !u!1 &2359775681225079254
 GameObject:
   m_ObjectHideFlags: 0
@@ -167,7 +168,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 240, y: 135}
+  m_SizeDelta: {x: 320, y: 180}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4569363313826248242
 MonoBehaviour:
@@ -222,7 +223,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -14}
+  m_AnchoredPosition: {x: 0, y: -16}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8601000184416906664
@@ -242,6 +243,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 1
+  plate: 0
 --- !u!1 &6131769924079312428
 GameObject:
   m_ObjectHideFlags: 0
@@ -275,7 +277,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 14}
+  m_AnchoredPosition: {x: 0, y: 16}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &725123353605119589
@@ -295,6 +297,7 @@ MonoBehaviour:
   color: {r: 1, g: 0.82, b: 0.23, a: 1}
   align: 1
   scale: 1
+  plate: 0
 --- !u!1 &8522038202763350912
 GameObject:
   m_ObjectHideFlags: 0
@@ -328,7 +331,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 38}
+  m_AnchoredPosition: {x: 0, y: 48}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2334414883511734692
@@ -348,3 +351,4 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 3
+  plate: 1

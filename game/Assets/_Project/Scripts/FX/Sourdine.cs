@@ -60,7 +60,7 @@ namespace Kenta.FX
             {
                 float x = e + 56f;
                 veilFill.anchoredPosition = new Vector2(x, 0f);
-                veilFill.sizeDelta = new Vector2(covering ? Mathf.Max(0f, 240f - x) : 0f, 135f);
+                veilFill.sizeDelta = new Vector2(covering ? Mathf.Max(0f, PixelScreen.Width - x) : 0f, PixelScreen.Height);
             }
         }
     }

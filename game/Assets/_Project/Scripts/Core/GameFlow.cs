@@ -13,7 +13,7 @@ namespace Kenta.Core
     /// <summary>
     /// Machine à états du flow d'écrans imposé (docs/game-design.md) :
     /// Attract+HighScore → Explain → Config (choix du héros) → Playing → GameOver → NameEntry si top 10 → Attract.
-    /// Un GameObject « écran » par état, dans le canvas pixel 240×135. Scène unique Main (ADR-007).
+    /// Un GameObject « écran » par état, dans le canvas pixel 320×180. Scène unique Main (ADR-007).
     /// </summary>
     public class GameFlow : MonoBehaviour
     {
@@ -102,6 +102,7 @@ namespace Kenta.Core
                     {
                         showingHighscores = true;
                         HighscoreManager.ShowHighscores();
+                        SetActive(gameOverScreen, false);
                     }
                     if (stateTimer >= gameOverDuration + gameOverHighscoreDuration)
                         Enter(IsTopTen(Score) ? GameState.NameEntry : GameState.Attract);
@@ -190,6 +191,7 @@ namespace Kenta.Core
             stateTimer = 0f;
             if (showingHighscores) HighscoreManager.ShowHighscores();
             else HighscoreManager.HideHighscores();
+            SetActive(attractScreen, !showingHighscores);   // le classement du toolkit ne doit pas chevaucher le logo
         }
 
         static bool IsTopTen(int score) =>

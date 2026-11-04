@@ -82,3 +82,4 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 506ab238f413740cf9ee991a7138f366, type: 3}
   - {fileID: 21300000, guid: f95ffe2f88dab4b93bc0eb53328ffb13, type: 3}
   - {fileID: 21300000, guid: 1d0982c2027bf4e1f9474831d06a1aab, type: 3}
+  plate: {fileID: 21300000, guid: 63c36ee2261414d18b049cf0d5dbc7ec, type: 3}

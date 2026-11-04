@@ -33,7 +33,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -38, y: 16}
+  m_AnchoredPosition: {x: -62, y: 22}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &191530573723780167
@@ -53,6 +53,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 0
   scale: 1
+  plate: 0
 --- !u!1 &962945160224494761
 GameObject:
   m_ObjectHideFlags: 0
@@ -87,7 +88,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -50, y: -12}
+  m_AnchoredPosition: {x: -76, y: -10}
   m_SizeDelta: {x: 15, y: 15}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3602943710354622786
@@ -162,7 +163,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -50, y: 30}
+  m_AnchoredPosition: {x: -76, y: 38}
   m_SizeDelta: {x: 14, y: 14}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7509798049668542858
@@ -236,7 +237,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -60}
+  m_AnchoredPosition: {x: 0, y: -80}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5627827482998177695
@@ -256,6 +257,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 1
+  plate: 1
 --- !u!1 &3050787864959134243
 GameObject:
   m_ObjectHideFlags: 0
@@ -289,7 +291,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -38, y: 30}
+  m_AnchoredPosition: {x: -62, y: 38}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5247513233668666736
@@ -305,10 +307,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: 'SAUTE : TROUS, ROCHERS'
+  text: 'SAUTE : TROUS, MURS, MARCHES'
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 0
   scale: 1
+  plate: 0
 --- !u!1 &3162328713387594765
 GameObject:
   m_ObjectHideFlags: 0
@@ -343,7 +346,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -50, y: 16}
+  m_AnchoredPosition: {x: -76, y: 22}
   m_SizeDelta: {x: 14, y: 14}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &328244843471489106
@@ -417,7 +420,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -38, y: -40}
+  m_AnchoredPosition: {x: -62, y: -42}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4964005948353478179
@@ -433,10 +436,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: LA SOURDINE TE SUIT
+  text: UN SEUL COUP ET C'EST FINI
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 0
   scale: 1
+  plate: 0
 --- !u!1 &3930354332352824257
 GameObject:
   m_ObjectHideFlags: 0
@@ -471,7 +475,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -88, y: -42}
+  m_AnchoredPosition: {x: -122, y: -62}
   m_SizeDelta: {x: 60, y: 51}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &8621768722035325190
@@ -546,8 +550,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -4}
-  m_SizeDelta: {x: 224, y: 100}
+  m_AnchoredPosition: {x: 14, y: -6}
+  m_SizeDelta: {x: 232, y: 118}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8283653754730343751
 CanvasRenderer:
@@ -620,7 +624,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 52}
+  m_AnchoredPosition: {x: 0, y: 70}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1604708501649699899
@@ -640,6 +644,7 @@ MonoBehaviour:
   color: {r: 1, g: 0.82, b: 0.23, a: 1}
   align: 1
   scale: 2
+  plate: 1
 --- !u!1 &6935788627409869625
 GameObject:
   m_ObjectHideFlags: 0
@@ -673,7 +678,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -38, y: -12}
+  m_AnchoredPosition: {x: -62, y: -10}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4492677982137375347
@@ -693,6 +698,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 0
   scale: 1
+  plate: 0
 --- !u!1 &6996908018516913388
 GameObject:
   m_ObjectHideFlags: 0
@@ -726,7 +732,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -50, y: 16}
+  m_AnchoredPosition: {x: -76, y: 22}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3860263841971031248
@@ -746,6 +752,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 1
+  plate: 0
 --- !u!1 &7501014962169367631
 GameObject:
   m_ObjectHideFlags: 0
@@ -779,7 +786,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -38, y: 2}
+  m_AnchoredPosition: {x: -62, y: 6}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &7553380287804791483
@@ -799,6 +806,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 0
   scale: 1
+  plate: 0
 --- !u!1 &7648704451574459039
 GameObject:
   m_ObjectHideFlags: 0
@@ -833,7 +841,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -50, y: 2}
+  m_AnchoredPosition: {x: -76, y: 6}
   m_SizeDelta: {x: 16, y: 16}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3783206927393123642
@@ -924,7 +932,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 240, y: 135}
+  m_SizeDelta: {x: 320, y: 180}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4590483536121070720
 MonoBehaviour:
@@ -981,7 +989,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -50, y: 30}
+  m_AnchoredPosition: {x: -76, y: 38}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8897493379028385530
@@ -1001,6 +1009,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 1
+  plate: 0
 --- !u!1 &8768448508613789546
 GameObject:
   m_ObjectHideFlags: 0
@@ -1034,7 +1043,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -38, y: -26}
+  m_AnchoredPosition: {x: -62, y: -26}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &494248499594209794
@@ -1050,7 +1059,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: "NE T'ARR\xCATE JAMAIS :"
+  text: 'SUIS LE RYTHME : PARFAIT !'
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 0
   scale: 1
+  plate: 0

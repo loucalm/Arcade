@@ -97,14 +97,29 @@ def glyph_rows(ch):
     raise KeyError(ch)
 
 
-def glyph_image(ch, color=WHITE, outline=INK):
+SHADOW = "#1A1426"
+
+
+def glyph_image(ch, color=WHITE, shadow=SHADOW):
+    """Glyphe proportionnel : colonnes vides retirées (espace = 3 px), ombre portée d'1 px vers le bas
+    (lisible même agrandi). L'avance du texte = largeur de l'image + 1 px (PixelFontData.AdvanceOf)."""
     rows = glyph_rows(ch)
-    p = Pix(CELL_W, CELL_H)
+    cols = [x for x in range(len(rows[0])) if any(r[x] == "#" for r in rows)]
+    if cols:
+        x0, x1 = min(cols), max(cols)
+    else:
+        x0, x1 = 0, 2
+    w = x1 - x0 + 1
+    p = Pix(w, len(rows) + 1)
     for y, r in enumerate(rows):
-        for x, c in enumerate(r):
-            if c == "#":
-                p.px(x, y, color)
-    return outlined(p, outline, 1, outer_only=True)
+        for x in range(x0, x1 + 1):
+            if r[x] == "#":
+                p.px(x - x0, y + 1, shadow)
+    for y, r in enumerate(rows):
+        for x in range(x0, x1 + 1):
+            if r[x] == "#":
+                p.px(x - x0, y, color)
+    return p
 
 
 ALL_CHARS = list(_G.keys()) + list(ACCENTS.keys())
@@ -160,14 +175,26 @@ def draw_heart(full=True):
 
 
 def draw_panel():
-    """Cadre 16×16 (9-slice, bordure 4) : fond sombre, contour clair, coins coupés."""
+    """Cadre 16×16 (9-slice, bordure 4) : fond sombre, coins arrondis de 2 px, contour fin, liseré clair en haut."""
     p = Pix(16, 16)
-    p.rect(1, 0, 15, 16, INK)
-    p.rect(0, 1, 16, 15, INK)
-    p.rect(1, 1, 15, 15, "#8A84B0")
-    p.rect(2, 2, 14, 14, "#231E3C")
-    p.rect(2, 2, 14, 3, "#322C54")
-    for x, y in ((0, 0), (15, 0), (0, 15), (15, 15)):
+    bg, edge, hi, ink = "#1D1830", "#5A5088", "#9A90C8", INK
+    p.rect(0, 0, 16, 16, ink)
+    p.rect(1, 1, 15, 15, edge)
+    p.rect(2, 2, 14, 14, bg)
+    p.rect(2, 2, 14, 3, hi)                      # liseré clair
+    p.rect(2, 13, 14, 14, "#16122A")             # ombre interne en bas
+    for (x, y) in ((0, 0), (1, 0), (0, 1), (15, 0), (14, 0), (15, 1), (0, 15), (1, 15), (0, 14), (15, 15), (14, 15), (15, 14)):
+        p.px(x, y, (0, 0, 0, 0))                 # coins arrondis
+    for (x, y) in ((1, 1), (14, 1), (1, 14), (14, 14)):
+        p.px(x, y, ink)
+    return p
+
+
+def draw_plate():
+    """Plaque 8×8 (9-slice, bordure 3) : fond sombre translucide aux coins arrondis, sous les textes posés sur le décor."""
+    p = Pix(8, 8)
+    p.rect(0, 0, 8, 8, (20, 16, 28, 190))
+    for (x, y) in ((0, 0), (7, 0), (0, 7), (7, 7)):
         p.px(x, y, (0, 0, 0, 0))
     return p
 
@@ -234,15 +261,15 @@ def draw_totem():
 def draw_sourdine():
     """Mur de silence : masse noire à deux grands yeux blancs (pupille rouge) et un sourire, bord droit en grumeaux."""
     rng = random.Random("sourdine")
-    p = Pix(104, 135)
+    p = Pix(104, 180)
     body, edge = "#14101C", "#1C1830"
-    p.rect(0, 0, 80, 135, body)
+    p.rect(0, 0, 80, 180, body)
     y = -6
     while y < 140:
         r = rng.randint(14, 22)
         p.circle(80 + rng.randint(-2, 6), y + r // 2, r, body)
         y += r + rng.randint(-2, 6)
-    for i in range(0, 135, 9):                      # rayures de pluie
+    for i in range(0, 180, 9):                      # rayures de pluie
         p.line((10 + (i * 3) % 70, i), (22 + (i * 3) % 70, i + 22), "#262240", 1)
     # yeux
     for ex in (30, 62):
@@ -259,7 +286,7 @@ def draw_sourdine():
 
 def draw_veil():
     """Calque gris « sans shader » : la couleur disparaît près de la Sourdine, tramage ordonné sur 4 niveaux."""
-    w, h = 56, 135
+    w, h = 56, 180
     p = Pix(w, h)
     bayer = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
     for x in range(w):

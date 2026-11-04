@@ -69,7 +69,7 @@ namespace Kenta.UI
             for (int i = 0; i < hearts.Length; i++)
                 hearts[i].sprite = i < run.Hearts ? heartFull : heartEmpty;
             var biome = run.CurrentBiome;
-            if (biome != null) biomeText.Text = $"{biome.sectionName} · {biome.label} · TOUR 1";
+            if (biome != null) biomeText.Text = $"{biome.sectionName} · {biome.label}";
         }
 
         void HandleSection(ChartSection section, bool perfect, int bonus)

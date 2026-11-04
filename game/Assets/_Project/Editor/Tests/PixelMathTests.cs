@@ -14,6 +14,16 @@ namespace Kenta.EditorTests
             Assert.AreEqual(expected, PixelMath.IntegerScale(w, h, 320, 180));
         }
 
+        [TestCase(991, 682, 960, 540, 0.5f, 0f)]
+        [TestCase(1920, 1080, 1920, 1080, 0f, 0f)]
+        [TestCase(1366, 767, 1280, 720, 0f, 0.5f)]
+        public void PixelMath_CenterCorrection_AlignsOddWindows(int sw, int sh, int w, int h, float ex, float ey)
+        {
+            var c = PixelMath.CenterCorrection(sw, sh, w, h);
+            Assert.AreEqual(ex, c.x, 1e-6f);
+            Assert.AreEqual(ey, c.y, 1e-6f);
+        }
+
         [Test]
         public void PixelMath_Split_RoundsToNearestPixel()
         {

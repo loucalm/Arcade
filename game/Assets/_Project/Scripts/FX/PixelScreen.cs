@@ -54,7 +54,12 @@ namespace Kenta.FX
             lastH = Screen.height;
             int w = Width / Divider, h = Height / Divider;
             Scale = PixelMath.IntegerScale(Screen.width, Screen.height, w, h);
-            if (frame != null) frame.sizeDelta = new Vector2(w * Scale, h * Scale);
+            if (frame != null)
+            {
+                frame.sizeDelta = new Vector2(w * Scale, h * Scale);
+                // fenêtre de taille impaire : le cadre centré tomberait sur un demi-pixel d'écran (colonnes perdues)
+                frame.anchoredPosition = PixelMath.CenterCorrection(Screen.width, Screen.height, w * Scale, h * Scale);
+            }
             world.Bind(w, h, Scale);
             actors.Bind(w, h, Scale);
             ui.Bind(Width, Height, PixelMath.IntegerScale(Screen.width, Screen.height, Width, Height));

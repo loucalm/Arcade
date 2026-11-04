@@ -9,6 +9,10 @@ namespace Kenta.FX
         public static int IntegerScale(int screenW, int screenH, int w, int h)
             => Mathf.Max(1, Mathf.Min(screenW / w, screenH / h));
 
+        /// <summary>Décalage (0 ou 0,5 px) qui place un rectangle centré de w×h sur des pixels d'écran entiers.</summary>
+        public static Vector2 CenterCorrection(int screenW, int screenH, int w, int h)
+            => new(((screenW - w) & 1) * 0.5f, ((screenH - h) & 1) * 0.5f);
+
         /// <summary>
         /// Découpe une position monde en une position calée sur la grille (multiple de 1/ppu) et le reste,
         /// en pixels, dans [−0,5 ; 0,5). position = snapped + fracPx / ppu.

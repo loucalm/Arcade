@@ -1,11 +1,13 @@
-"""Dessin des décors, du sol et des obstacles de chaque biome (pixel art 240×135). Utilisé par gen-kenta-assets.py."""
+"""Dessin des décors, du sol et des obstacles de chaque biome (pixel art 320×180). Utilisé par gen-kenta-assets.py."""
 import math
 import random
 
 from pixlib import Pix, banded_gradient, blob, col, mix, outlined, shade, tile_wrap
 
-W_SCREEN, H_SCREEN, GROUND_Y = 240, 135, 115
-STRIP_W = 480
+W_SCREEN, H_SCREEN, GROUND_Y = 320, 180, 132     # le sol de référence est à 48 px du bas (CameraRig.baseY)
+STRIP_W = 640
+# les palettes de kenta_biomes.py donnent les positions (soleil) pour l'ancien écran de 240×135 au sol à 115
+SX, SY = W_SCREEN / 240, GROUND_Y / 115
 
 
 def rng_for(biome, salt):
@@ -13,7 +15,7 @@ def rng_for(biome, salt):
 
 
 # ============================================================================
-# CIEL (240×135, fixe) : bandes, soleil / étoiles, nuages, gardien
+# CIEL (320×180, fixe) : bandes, soleil / étoiles, nuages, gardien
 # ============================================================================
 def draw_sky(b):
     rng = rng_for(b, "sky")
@@ -21,17 +23,18 @@ def draw_sky(b):
     p.rect(0, GROUND_Y, W_SCREEN, H_SCREEN, b["sky"][-1])
     if b["sun"]:
         c, x, y, r = b["sun"]
+        x, y = round(x * SX), round(y * SY)
         p.circle(x, y, r + 5, mix(c, b["sky"][2], 0.7))
         p.circle(x, y, r + 2, mix(c, b["sky"][2], 0.4))
         p.circle(x, y, r, c)
     if b["stars"]:
         for _ in range(46):
-            x, y = rng.randrange(W_SCREEN), rng.randrange(0, 95)
+            x, y = rng.randrange(W_SCREEN), rng.randrange(0, GROUND_Y - 20)
             p.px(x, y, b["stars"])
             if rng.random() < 0.18:
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     p.px(x + dx, y + dy, mix(b["stars"], b["sky"][1], 0.5))
-    draw_statue(p, b, 172, GROUND_Y)
+    draw_statue(p, b, round(172 * SX), GROUND_Y)
     if b["clouds"] and b["id"] not in ("forge", "echine", "givre", "cite", "orage"):
         pass
     return p
@@ -105,7 +108,7 @@ def draw_statue(p, b, cx, base):
 
 
 # ============================================================================
-# CALQUES EN PARALLAXE (480×135, boucle sans couture)
+# CALQUES EN PARALLAXE (640×180, boucle sans couture)
 # ============================================================================
 def pine(p, x, base, h, c, snow=None):
     w = int(h * 0.62)
