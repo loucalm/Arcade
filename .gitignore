@@ -17,3 +17,4 @@ tools/anatidae-arcade/
 # Python
 __pycache__/
 *.pyc
+.superpowers/
