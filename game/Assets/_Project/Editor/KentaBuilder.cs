@@ -440,7 +440,32 @@ namespace Kenta.EditorTools
             foreach (Transform t in go.transform) SetLayerRecursive(t.gameObject, layer);
         }
 
-        static string BuildScene(LevelTheme theme, PixelFontData font, GameObject[] prefabs)
+        /// <summary>Un niveau par biome ; pour l'instant tous sur le même morceau et la même chart (le thème change).</summary>
+        static LevelCatalog BuildLevels(BiomeTheme[] biomes)
+        {
+            int[] stars = { 1, 1, 2, 3, 3, 4, 4, 5 };
+            var song = AssetDatabase.LoadAssetAtPath<SongData>(SoDir + "Songs/Song_Level01.asset");
+            EnsureFolder(SoDir + "Levels");
+            var levels = new LevelDef[biomes.Length];
+            for (int i = 0; i < biomes.Length; i++)
+            {
+                var l = Asset<LevelDef>(SoDir + $"Levels/Level_{i + 1:00}_{BiomeIds[i]}.asset");
+                l.id = BiomeIds[i];
+                l.number = i + 1;
+                l.biome = biomes[i];
+                l.song = song;
+                l.chart = null;                        // celle du morceau
+                l.stars = stars[Mathf.Min(i, stars.Length - 1)];
+                EditorUtility.SetDirty(l);
+                levels[i] = l;
+            }
+            var catalog = Asset<LevelCatalog>(SoDir + "LevelCatalog.asset");
+            catalog.levels = levels;
+            EditorUtility.SetDirty(catalog);
+            return catalog;
+        }
+
+        static string BuildScene(LevelTheme theme, PixelFontData font, GameObject[] prefabs, LevelCatalog catalog)
         {
             var scene = EditorSceneManager.GetActiveScene();
             if (scene.path != "Assets/_Project/Scenes/Main.unity")
@@ -624,7 +649,8 @@ namespace Kenta.EditorTools
             Set(flow, "theme", theme);
             Set(flow, "backdrop", backdrop);
             Set(flow, "sourdine", sourdine);
-            Set(flow, "gameOverDuration", 6f);          // titre, note puis panneau : le temps de lire
+            Set(flow, "gameOverDuration", 6f);
+            Set(flow, "catalog", catalog);          // titre, note puis panneau : le temps de lire
             Set(flow, "attractSong", null);
 
             cam.backgroundColor = Color.black;
@@ -645,15 +671,16 @@ namespace Kenta.EditorTools
             var heroes = BuildHeroes();
             var biomes = BuildBiomes();
             var theme = BuildTheme(biomes, heroes);
+            var catalog = BuildLevels(biomes);
             AssetDatabase.SaveAssets();
             var prefabs = new[]
             {
                 BuildAttract(font, theme), BuildExplain(font, theme), BuildHeroSelect(font, theme), BuildHud(font, theme), BuildGameOver(font),
             };
             AssetDatabase.SaveAssets();
-            string result = BuildScene(theme, font, prefabs);
+            string result = BuildScene(theme, font, prefabs, catalog);
             AssetDatabase.SaveAssets();
-            return $"{result} ; {biomes.Length} biomes, {heroes.Length} héros, {font.sprites.Length} glyphes";
+            return $"{result} ; {catalog.levels.Length} niveaux, {biomes.Length} biomes, {heroes.Length} héros, {font.sprites.Length} glyphes";
         }
     }
 }

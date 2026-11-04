@@ -49,7 +49,7 @@ namespace Kenta.Core
         public bool Autoplay { get; private set; }
         public double SongLengthSeconds => song != null && song.clip != null ? song.clip.length - song.offsetSeconds : 1.0;
         public ChartData Chart { get; private set; }
-        /// <summary>Biome en cours (un par section de la chart).</summary>
+        /// <summary>Biome en cours : celui du niveau (ou de la section, sans niveau).</summary>
         public BiomeTheme CurrentBiome => level.Theme != null && Chart != null ? level.BiomeAt(Chart.sections[SectionIndex].startBeat) : null;
         public int SectionIndex { get; private set; }
         public string SectionName => Chart != null ? Chart.sections[SectionIndex].name : "";
@@ -119,19 +119,40 @@ namespace Kenta.Core
             if (Instance == this) Instance = null;
         }
 
+        /// <summary>Niveau en cours (monde, morceau, chart).</summary>
+        public LevelDef Level { get; private set; }
+
+        /// <summary>Lance un niveau : son monde, son morceau, sa chart.</summary>
+        public void BeginRun(LevelDef def, bool demo)
+        {
+            if (def == null || def.song == null || def.Chart == null)
+            {
+                Debug.LogError("RunManager: niveau sans morceau ou sans chart.");
+                return;
+            }
+            Level = def;
+            StartRun(def.song, def.Chart, def.biome, demo);
+        }
+
+        /// <summary>Lance un morceau seul (tests, ancienne démo) : un biome par section.</summary>
         public void BeginRun(SongData songData, bool demo)
         {
-            StopAllCoroutines();
             if (songData == null || songData.chart == null)
             {
                 Debug.LogError("RunManager: SongData sans chart.");
                 return;
             }
+            Level = null;
+            StartRun(songData, songData.chart, null, demo);
+        }
 
+        void StartRun(SongData songData, TextAsset chart, BiomeTheme biome, bool demo)
+        {
+            StopAllCoroutines();
             song = songData;
             IsDemo = demo;
-            Chart = ChartData.Parse(song.chart);
-            level.Build(Chart, song.bpm);
+            Chart = ChartData.Parse(chart);
+            level.Build(Chart, song.bpm, biome);
 
             TotalLums = level.Lums.Count;
             Score = Combo = Lums = 0;
@@ -169,6 +190,11 @@ namespace Kenta.Core
 
         void ApplyBiome(int index)
         {
+            if (level.LevelBiome != null)
+            {
+                if (backdrop != null) backdrop.SetBiome(level.LevelBiome);
+                return;
+            }
             var biomes = level.Theme.biomes;
             if (backdrop != null && biomes != null && biomes.Length > 0)
                 backdrop.SetBiome(biomes[Mathf.Clamp(index, 0, biomes.Length - 1)]);
@@ -362,7 +388,8 @@ namespace Kenta.Core
         IEnumerator RestartDemo()
         {
             yield return new WaitForSecondsRealtime(1.5f);
-            BeginRun(song, demo: true);
+            if (Level != null) BeginRun(Level, demo: true);
+            else BeginRun(song, demo: true);
         }
     }
 }

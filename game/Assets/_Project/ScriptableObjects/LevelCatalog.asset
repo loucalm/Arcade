@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54d5ffd0d4bca46dba663ea688c0a810, type: 3}
+  m_Name: LevelCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.LevelCatalog
+  levels:
+  - {fileID: 11400000, guid: a2420f322a411484ca452a3b7220c438, type: 2}
+  - {fileID: 11400000, guid: fc7b96544ad514072817f66f43d7a619, type: 2}
+  - {fileID: 11400000, guid: 9501688555fdc49bfa0ab0376c5fe015, type: 2}
+  - {fileID: 11400000, guid: 606820d6f98e84a259f836c11def43f5, type: 2}
+  - {fileID: 11400000, guid: 818ed15ae6f5b487ca4b3fbce1b631b1, type: 2}
+  - {fileID: 11400000, guid: b12f71d91bfca446fa39ef9448985a9e, type: 2}
+  - {fileID: 11400000, guid: b2b33300d067440edb6171846d1d24d3, type: 2}
+  - {fileID: 11400000, guid: cb3d6c5af18da4c3692d188abb689fff, type: 2}

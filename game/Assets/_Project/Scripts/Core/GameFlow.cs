@@ -34,6 +34,8 @@ namespace Kenta.Core
 
         [Header("Musique")]
         [SerializeField] SongData levelSong;
+        [Tooltip("Niveaux proposés ; le niveau joué vient de GameSession.Level (écran de sélection), sinon le premier.")]
+        [SerializeField] LevelCatalog catalog;
         [Tooltip("Boucle de menu ; si vide, le morceau du niveau tourne en boucle, plus bas.")]
         [SerializeField] SongData attractSong;
         [SerializeField, Range(0f, 1f)] float attractVolume = 0.5f;
@@ -153,7 +155,10 @@ namespace Kenta.Core
                     if (backdrop != null) backdrop.SetGroundVisible(false);
                     conductor?.SetVolume(1f);
                     if (sourdine != null) sourdine.ResetPosition();
-                    run?.BeginRun(levelSong, demo: false);
+                    var lvl = GameSession.Level != null ? GameSession.Level
+                            : (catalog != null && catalog.levels != null && catalog.levels.Length > 0 ? catalog.levels[0] : null);
+                    if (lvl != null) run?.BeginRun(lvl, demo: false);
+                    else run?.BeginRun(levelSong, demo: false);
                     break;
 
                 case GameState.GameOver:

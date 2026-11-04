@@ -126,21 +126,17 @@ namespace Kenta.UI
             bannerTimer = 0.05f;
         }
 
+        /// <summary>Barre de progression du niveau en 8 segments égaux (le segment en cours est doré).</summary>
         void UpdateFrieze()
         {
-            var c = Conductor.Instance;
-            if (c == null || run.Chart == null || friezeBack == null) return;
-            var sections = run.Chart.sections;
-            double totalBeats = c.SecondsToBeat(run.SongLengthSeconds);
+            if (friezeBack == null || friezeBack.Length == 0) return;
+            float progress = run.Progress * friezeBack.Length;
             for (int i = 0; i < friezeBack.Length; i++)
             {
-                if (i >= sections.Length) { friezeBack[i].enabled = false; continue; }
-                double start = sections[i].startBeat;
-                double end = i + 1 < sections.Length ? sections[i + 1].startBeat : totalBeats;
-                float f = Mathf.Clamp01((float)((c.SongBeat - start) / Mathf.Max(1f, (float)(end - start))));
+                float f = Mathf.Clamp01(progress - i);
                 var fill = (RectTransform)friezeFill[i].transform;
                 fill.anchorMax = new Vector2(f, 1f);
-                bool current = run.SectionIndex == i;
+                bool current = f > 0f && f < 1f;
                 friezeFill[i].color = current ? new Color(1f, 0.82f, 0.23f) : new Color(0.75f, 0.72f, 0.9f);
                 friezeBack[i].color = current ? new Color(0.35f, 0.3f, 0.5f) : new Color(0.18f, 0.15f, 0.28f);
             }

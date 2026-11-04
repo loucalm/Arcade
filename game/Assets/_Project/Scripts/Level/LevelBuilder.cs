@@ -56,10 +56,14 @@ namespace Kenta.Level
 
         public float BeatToX(double beat) => (float)(beat * secondsPerBeat * RunSpeed);
 
-        public void Build(ChartData chart, float bpm)
+        /// <summary>Biome du niveau (un niveau = un monde) ; null = un biome par section (ancien fonctionnement).</summary>
+        public BiomeTheme LevelBiome { get; private set; }
+
+        public void Build(ChartData chart, float bpm, BiomeTheme biome = null)
         {
             Clear();
             Chart = chart;
+            LevelBiome = biome;
             secondsPerBeat = 60f / bpm;
             if (!Mathf.Approximately(chart.bpm, bpm))
                 Debug.LogWarning($"LevelBuilder: BPM de la chart ({chart.bpm}) ≠ BPM du SongData ({bpm}). Le SongData fait foi.");
@@ -264,6 +268,7 @@ namespace Kenta.Level
         /// <summary>Biome de la section qui contient ce beat (un biome par section de la chart).</summary>
         public BiomeTheme BiomeAt(double beat)
         {
+            if (LevelBiome != null) return LevelBiome;
             int i = Chart != null ? Chart.SectionIndexAt(beat) : 0;
             return theme.biomes[Mathf.Clamp(i, 0, theme.biomes.Length - 1)];
         }

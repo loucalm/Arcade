@@ -9,6 +9,9 @@ fortes, avec des règles de faisabilité (espacement minimal entre actions). Les
 Le morceau se répète : la musique de [32, 128) revient à [152, 248). Le niveau reprend donc le même dessin
 pour que les mêmes sons déclenchent les mêmes actions.
 
+Verticalité : les hauteurs sont écrites à la main (STEPS, PLATFORMS), section par section ; la musique ne fixe que
+le moment des autres actions. validate() vérifie la faisabilité (montée ≤ 1,0 u, sauts espacés d'1 beat…).
+
 Usage (dépendances en plus : librosa, voir tools/requirements.txt) :
   python3 tools/gen-level-chart.py chemin/vers/morceau.wav [sortie.json] [--table]
 """
@@ -24,7 +27,8 @@ SPB = 60.0 / BPM
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUT = os.path.join(ROOT, "game", "Assets", "_Project", "Charts", "level01_shovel_knight.json")
 
-JUMPS = {"gap", "wall"}
+JUMPS = {"gap", "wall", "platform"}
+JUMP_HEIGHT, MAX_RISE, MAX_HEIGHT, STEP_FACE = 1.5, 1.0, 2.0, 0.25
 HITS = {"enemy", "block"}
 
 # Plan : (nom, début, fin, espacement visé en beats, motif de types)
@@ -43,8 +47,24 @@ PLAN = [
 # Passage 2 : la musique de [32,128) revient en [152,248) (décalage de 120 beats).
 REPEAT_FROM, REPEAT_TO, REPEAT_SHIFT = 32, 128, 120
 
-SECTIONS = [  # un biome par section, 32 beats (8 mesures) chacun : même ordre que BIOMES (tools/kenta_biomes.py)
-    ("sylve", 0), ("bayou", 32), ("echos", 64), ("forge", 96), ("echine", 128), ("givre", 160), ("cite", 192), ("orage", 224),
+# Marches (beat, hauteur du sol après) : écrites à la main sur les phrases du morceau. Le sol revient à 0 avant 128
+# pour que la reprise [152, 248) reparte de la même hauteur.
+STEPS = [
+    (36, 0.5), (44, 1.0), (52, 0.5), (60, 0.0),                    # couplet : on grimpe puis on redescend
+    (98, 0.5), (102, 1.0), (108, 2.0), (114, 1.0), (118, 0.0),     # refrain : jusqu'en haut
+    (134, 0.5), (142, 1.0), (148, 0.0),                            # final
+]
+# Plateformes (beat, longueur, hauteur, trou dessous ?)
+PLATFORMS = [
+    (68, 2.0, 1.0, True),       # pont : au-dessus d'un trou
+    (74, 3.0, 1.0, False),      # pont : chemin haut avec pièces
+    (130, 2.0, 1.0, True),      # final
+]
+
+# Sections : repères musicaux (drops, nom affiché) ; un niveau = un biome.
+SECTIONS = [
+    ("intro", 0), ("couplet", 32), ("pont", 64), ("roulement", 80), ("refrain", 96), ("final", 128),
+    ("couplet 2", 152), ("pont 2", 184), ("roulement 2", 200), ("refrain 2", 216), ("fin", 248),
 ]
 
 
@@ -100,10 +120,36 @@ def make(t, beat):
     return {"beat": beat, "type": t, "lane": 0}
 
 
+def fixed_actions():
+    """Marches et plateformes (+ trou dessous), et les fenêtres où aucune autre action ne doit tomber."""
+    acts, blocked = [], []
+    h = 0.0
+    for beat, height in STEPS:
+        acts.append({"beat": float(beat), "type": "step", "lane": 0, "params": {"height": height}})
+        if height - h > STEP_FACE:
+            blocked.append((beat - 1.0, beat + 1.0))       # saut sur la marche
+        else:
+            blocked.append((beat - 0.5, beat + 1.2))       # on tombe de la marche
+        h = height
+    for beat, length, height, hole in PLATFORMS:
+        acts.append({"beat": float(beat), "type": "platform", "lane": 0, "params": {"length": length, "height": height}})
+        if hole:
+            acts.append({"beat": float(beat), "type": "gap", "lane": 0, "params": {"length": round(length - 0.6, 2)}})
+        blocked.append((beat - 1.0, beat + 0.3 + length + 0.8))
+    return acts, blocked
+
+
 def build(grids):
     actions = []
+    fixed, blocked = fixed_actions()
+
+    fixed_jumps = jump_beats(fixed)
 
     def feasible(a):
+        if any(lo < a["beat"] < hi for lo, hi in blocked):
+            return False
+        if a["type"] == "slide_bar" and any(a["beat"] - 1.2 < j < action_end(a) + 0.5 for j in fixed_jumps):
+            return False
         if not actions:
             return True
         prev = actions[-1]
@@ -131,6 +177,7 @@ def build(grids):
                 break
     # laser long dans le silence (le morceau retient son souffle)
     actions.append({"beat": 25.0, "type": "slide_bar", "lane": 0, "params": {"length": 2.0}})
+    actions += fixed
     actions.sort(key=lambda a: a["beat"])
     # le passage 2 est une copie du passage 1 : sans risque d'incohérence aux jonctions
     first = [a for a in actions if REPEAT_FROM <= a["beat"] < REPEAT_TO]
@@ -139,10 +186,62 @@ def build(grids):
         b["beat"] += REPEAT_SHIFT
         actions.append(b)
     actions.sort(key=lambda a: a["beat"])
-    # vérification dure : jamais deux actions trop proches
-    for p, c in zip(actions, actions[1:]):
-        assert c["beat"] - p["beat"] >= min_gap(p, c) - 1e-9, (p, c)
+    problems = validate(actions)
+    assert not problems, problems
     return actions
+
+
+def jump_beats(events):
+    """Beats où il faut sauter (trou, mur, plateforme, marche montante)."""
+    out, h = [], 0.0
+    for e in sorted(events, key=lambda e: e["beat"]):
+        t = e["type"]
+        if t == "step":
+            nh = e["params"].get("height", 0.0)
+            if nh - h > STEP_FACE:
+                out.append(e["beat"])
+            h = nh
+        elif t in JUMPS:
+            out.append(e["beat"])
+    return sorted(set(out))
+
+
+def validate(events, jump_height=JUMP_HEIGHT):
+    """Liste des problèmes de faisabilité (vide si la chart est jouable)."""
+    problems = []
+    h = 0.0
+    for e in sorted(events, key=lambda e: e["beat"]):
+        t, p, b = e["type"], e.get("params") or {}, e["beat"]
+        if t == "step":
+            nh = p.get("height", 0.0)
+            if not 0.0 <= nh <= MAX_HEIGHT:
+                problems.append(f"hauteur {nh} hors de [0 ; {MAX_HEIGHT}] (beat {b})")
+            if nh - h > MAX_RISE + 1e-9:
+                problems.append(f"montée de {nh - h:.2f} u au beat {b} (max {MAX_RISE})")
+            h = nh
+        elif t == "platform":
+            ph = p.get("height", 0.0)
+            if not 0.0 <= ph <= MAX_HEIGHT:
+                problems.append(f"hauteur {ph} hors de [0 ; {MAX_HEIGHT}] (beat {b})")
+            if ph - h > MAX_RISE + 1e-9:
+                problems.append(f"montée de {ph - h:.2f} u vers la plateforme du beat {b} (max {MAX_RISE})")
+            if p.get("length", 1.0) < 1.0:
+                problems.append(f"plateforme trop courte au beat {b}")
+    jumps = jump_beats(events)
+    for a, c in zip(jumps, jumps[1:]):
+        if c - a < 1.0 - 1e-9:
+            problems.append(f"sauts trop proches : {a} et {c}")
+    for e in events:
+        if e["type"] in HITS:
+            for j in jumps:
+                if j < e["beat"] < j + 1.0 - 1e-9:
+                    problems.append(f"ennemi au beat {e['beat']} pendant le saut du beat {j}")
+        if e["type"] == "slide_bar":
+            end = e["beat"] + 0.1 + (e.get("params") or {}).get("length", 1.0)
+            for j in jumps:
+                if e["beat"] - 1.2 < j < end:
+                    problems.append(f"saut au beat {j} sous le plafond du beat {e['beat']}")
+    return problems
 
 
 def lums_for(actions, grids):
@@ -151,9 +250,14 @@ def lums_for(actions, grids):
     occupied = []
     for a in actions:
         end = action_end(a)
-        occupied.append((a["beat"] - 0.9, end + (1.0 if a["type"] in JUMPS else 0.9)))
-        if a["type"] in JUMPS:
+        if a["type"] == "platform":
+            end = a["beat"] + 0.3 + a["params"]["length"]
+        occupied.append((a["beat"] - 0.9, end + (1.0 if a["type"] in JUMPS or a["type"] == "step" else 0.9)))
+        if a["type"] in ("gap", "wall"):
             ev.append({"beat": a["beat"] + 0.25, "type": "lum_line", "lane": 1, "params": {"count": 3, "step": 0.25}})
+        if a["type"] == "platform":
+            n = int(a["params"]["length"] * 2)
+            ev.append({"beat": a["beat"] + 0.75, "type": "lum_line", "lane": 0, "params": {"count": n, "step": 0.5}})
     occupied.sort()
     # espaces libres entre actions
     cursor = 1.0
@@ -182,8 +286,8 @@ def lums_for(actions, grids):
 def fx_events():
     ev = []
     for name, beat in SECTIONS:
-        if beat > 0:   # le drop vers le biome suivant (flash, secousse, changement de décor) est géré par le RunManager
-            ev.append({"beat": beat, "type": "section_change", "lane": 0, "params": {"intensity": 1.5 if name in ("forge", "orage") else 0.8}})
+        if beat > 0:   # le drop (flash, secousse) est géré par le RunManager ; plus fort sur les refrains
+            ev.append({"beat": beat, "type": "section_change", "lane": 0, "params": {"intensity": 1.5 if "refrain" in name else 0.8}})
     for b in list(range(80, 96, 4)) + list(range(128, 150, 4)) + list(range(200, 216, 4)):
         ev.append({"beat": b, "type": "fx_flash", "lane": 0, "params": {"intensity": 1}})
     return ev
@@ -191,7 +295,7 @@ def fx_events():
 
 def table(events):
     rows = {}
-    sym = {"gap": "G", "wall": "W", "enemy": "E", "block": "B", "slide_bar": "S", "lum_line": "·"}
+    sym = {"gap": "G", "wall": "W", "enemy": "E", "block": "B", "slide_bar": "S", "lum_line": "·", "step": "^", "platform": "P"}
     for e in events:
         if e["type"] in sym:
             bar, pos = divmod(e["beat"], 4)
