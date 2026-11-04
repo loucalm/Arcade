@@ -38,6 +38,7 @@ Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.c
 ## Dans le code
 | Élément | Script |
 |---|---|
+| Sol à hauteur variable | `fill_<biome>` (flanc en briques), `cliff_<biome>` (dessus herbu), `platform_<biome>` (plateforme suspendue) ; la rivière continue en bas |
 | 8 mondes | `Level/BiomeTheme` (SO) ; un biome = une section de la chart ; `LevelBuilder.BiomeAt(beat)` |
 | Décor | `FX/BiomeBackdrop` : ciel fixe (avec le gardien) + 3 calques de 480 px qui bouclent |
 | Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO, dont `runCycle` : 6 images) ; `HeroAnimator` choisit la pose et l'image de course selon la distance |

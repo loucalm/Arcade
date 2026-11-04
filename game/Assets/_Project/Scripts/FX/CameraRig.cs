@@ -79,8 +79,8 @@ namespace Kenta.FX
         public void Snap()
         {
             if (target != null) freeX = target.position.x + offsetX;
-            anchorY = 0f;
-            camY = baseY;
+            anchorY = target != null ? target.position.y : 0f;
+            camY = baseY + anchorY;
             camYVelocity = 0f;
         }
 

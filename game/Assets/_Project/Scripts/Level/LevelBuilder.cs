@@ -20,6 +20,9 @@ namespace Kenta.Level
         const float SlideStartBeats = 0.1f;
         const float SlideDefaultLength = 1f;
         const float SlideBarBottom = 0.62f;
+        const float StepStartBeats = 0.3f;          // marche et plateforme : comme un mur
+        const float MaxHeight = 2.0f;
+        const float StepFaceMin = 0.25f;            // une montée plus haute que ça se saute (face mortelle)
         static readonly float[] LumLaneY = { 0.45f, 1.9f, 2.4f };
 
         [SerializeField] LevelTheme theme;
@@ -31,6 +34,8 @@ namespace Kenta.Level
         /// <summary>Obstacles (tout sauf les lums), triés par bounds.xMin.</summary>
         public readonly List<LevelObject> Obstacles = new();
         public readonly List<LevelObject> Lums = new();
+        /// <summary>Plateformes (jugées à l'atterrissage, pas de collision de côté).</summary>
+        public readonly List<LevelObject> Platforms = new();
         /// <summary>Événements visuels de la chart (fx_flash, camera_shake, camera_zoom, section_change), triés par beat.</summary>
         public readonly List<ChartEvent> FxEvents = new();
         // Données d'autoplay (debug + démo de l'écran Attract).
@@ -39,6 +44,12 @@ namespace Kenta.Level
         public readonly List<Vector2> AutoSlideSpans = new();
 
         readonly List<Vector2> gaps = new();
+        /// <summary>Profil du sol principal : (x de début, hauteur), trié par x.</summary>
+        readonly List<Vector2> steps = new();
+        readonly List<GroundSpan> platforms = new();
+
+        /// <summary>Sol du niveau (marches, trous, plateformes) : lu par le joueur et la caméra.</summary>
+        public LevelTerrain Ground { get; } = new LevelTerrain();
         float secondsPerBeat = 0.5f;
         Transform root;
         GameObject beatGrid;
@@ -56,6 +67,22 @@ namespace Kenta.Level
             root = new GameObject("Built").transform;
             root.SetParent(transform, false);
 
+            // 1er passage : le profil du sol (marches), pour poser les obstacles à la bonne hauteur
+            float h0 = 0f;
+            foreach (var e in chart.events)
+            {
+                if (e.type != "step") continue;
+                float h = Mathf.Clamp(e.@params.height, 0f, MaxHeight);
+                float x = BeatToX(e.beat + StepStartBeats);
+                steps.Add(new Vector2(x, h));
+                if (h - h0 > StepFaceMin)
+                {
+                    Obstacles.Add(new LevelObject { kind = LevelObjectKind.StepFace, beat = e.beat, bounds = new Rect(x, h0, 0.05f, h - h0) });
+                    AutoJumpBeats.Add(e.beat);
+                }
+                h0 = h;
+            }
+
             float lastX = 0f;
             foreach (var e in chart.events)
             {
@@ -67,7 +94,8 @@ namespace Kenta.Level
                         float len = p.length > 0 ? p.length : GapDefaultLength;
                         float x0 = BeatToX(e.beat + GapStartBeats), x1 = BeatToX(e.beat + GapStartBeats + len);
                         gaps.Add(new Vector2(x0, x1));
-                        Obstacles.Add(new LevelObject { kind = LevelObjectKind.Gap, beat = e.beat, bounds = Rect.MinMaxRect(x0, -50f, x1, -1f) });
+                        float gh = HeightAt(x0);
+                        Obstacles.Add(new LevelObject { kind = LevelObjectKind.Gap, beat = e.beat, bounds = Rect.MinMaxRect(x0, gh - 50f, x1, gh - 1f) });
                         AutoJumpBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, x1);
                         break;
@@ -75,7 +103,7 @@ namespace Kenta.Level
                     case "wall":
                     {
                         float x0 = BeatToX(e.beat + WallStartBeats);   // le sprite du mur fait 36×32 px : hauteur fixe de 0,8 u
-                        var o = new LevelObject { kind = LevelObjectKind.Wall, beat = e.beat, bounds = new Rect(x0, 0f, 0.9f, 0.8f) };
+                        var o = new LevelObject { kind = LevelObjectKind.Wall, beat = e.beat, bounds = new Rect(x0, HeightAt(x0 + 0.45f), 0.9f, 0.8f) };
                         o.view = MakeWall(o.bounds, BiomeAt(e.beat));
                         Obstacles.Add(o);
                         AutoJumpBeats.Add(e.beat);
@@ -87,13 +115,14 @@ namespace Kenta.Level
                     {
                         bool enemy = e.type == "enemy";
                         float cx = BeatToX(e.beat + EnemyCenterBeats);
+                        float ey = HeightAt(cx);
                         var o = new LevelObject
                         {
                             kind = enemy ? LevelObjectKind.Enemy : LevelObjectKind.Block,
                             beat = e.beat,
-                            bounds = enemy ? new Rect(cx - 0.4f, 0f, 0.8f, 0.9f) : new Rect(cx - 0.45f, 0f, 0.9f, 0.95f),
+                            bounds = enemy ? new Rect(cx - 0.4f, ey, 0.8f, 0.9f) : new Rect(cx - 0.45f, ey, 0.9f, 0.95f),
                         };
-                        o.view = enemy ? MakeEnemy(cx, BiomeAt(e.beat)) : MakeBlock(cx, BiomeAt(e.beat));
+                        o.view = enemy ? MakeEnemy(new Vector2(cx, ey), BiomeAt(e.beat)) : MakeBlock(new Vector2(cx, ey), BiomeAt(e.beat));
                         Obstacles.Add(o);
                         AutoHitBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
@@ -103,7 +132,8 @@ namespace Kenta.Level
                     {
                         float len = p.length > 0 ? p.length : SlideDefaultLength;
                         float x0 = BeatToX(e.beat + SlideStartBeats), x1 = BeatToX(e.beat + SlideStartBeats + len);
-                        var o = new LevelObject { kind = LevelObjectKind.SlideBar, beat = e.beat, bounds = Rect.MinMaxRect(x0, SlideBarBottom, x1, 8f) };
+                        float sh = HeightAt(x0);
+                        var o = new LevelObject { kind = LevelObjectKind.SlideBar, beat = e.beat, bounds = Rect.MinMaxRect(x0, sh + SlideBarBottom, x1, sh + 8f) };
                         o.view = MakeSlideBar(o.bounds, BiomeAt(e.beat));
                         Obstacles.Add(o);
                         AutoSlideSpans.Add(new Vector2(e.beat - 0.05f, e.beat + SlideStartBeats + len + 0.35f));
@@ -118,11 +148,27 @@ namespace Kenta.Level
                         for (int i = 0; i < count; i++)
                         {
                             float x = BeatToX(e.beat + i * step);
-                            var o = new LevelObject { kind = LevelObjectKind.Lum, beat = e.beat + i * step, sequenceIndex = i, bounds = new Rect(x - 0.3f, y - 0.3f, 0.6f, 0.6f) };
-                            o.view = MakeLum(new Vector2(x, y));
+                            float ly = y + LumBaseAt(x);
+                            var o = new LevelObject { kind = LevelObjectKind.Lum, beat = e.beat + i * step, sequenceIndex = i, bounds = new Rect(x - 0.3f, ly - 0.3f, 0.6f, 0.6f) };
+                            o.view = MakeLum(new Vector2(x, ly));
                             Lums.Add(o);
                             lastX = Mathf.Max(lastX, x);
                         }
+                        break;
+                    }
+                    case "step":
+                        lastX = Mathf.Max(lastX, BeatToX(e.beat + StepStartBeats));
+                        break;
+                    case "platform":
+                    {
+                        float len = p.length > 0 ? p.length : 1f;
+                        float x0 = BeatToX(e.beat + StepStartBeats), x1 = BeatToX(e.beat + StepStartBeats + len);
+                        float top = Mathf.Clamp(p.height, 0f, MaxHeight);
+                        platforms.Add(new GroundSpan(x0, x1, top, true));
+                        Platforms.Add(new LevelObject { kind = LevelObjectKind.Platform, beat = e.beat, bounds = Rect.MinMaxRect(x0, top, x1, top) });
+                        MakePlatform(x0, x1, top, BiomeAt(e.beat));
+                        AutoJumpBeats.Add(e.beat);
+                        lastX = Mathf.Max(lastX, x1);
                         break;
                     }
                     case "fx_flash":
@@ -145,6 +191,7 @@ namespace Kenta.Level
 
             float lastBeat = chart.events.Length > 0 ? chart.events[^1].beat : 0f;
             BuildGround(lastX + 60f);
+            BuildTerrain(lastX + 60f);
             BuildBeatGrid(Mathf.CeilToInt(lastBeat) + 16);
             BuildCheckpoints();
         }
@@ -156,11 +203,15 @@ namespace Kenta.Level
             beatGrid = null;
             Obstacles.Clear();
             Lums.Clear();
+            Platforms.Clear();
             FxEvents.Clear();
             AutoJumpBeats.Clear();
             AutoHitBeats.Clear();
             AutoSlideSpans.Clear();
             gaps.Clear();
+            steps.Clear();
+            platforms.Clear();
+            Ground.Clear();
         }
 
         /// <summary>Respawn : réactive tout ce qui est après le checkpoint.</summary>
@@ -170,16 +221,25 @@ namespace Kenta.Level
             foreach (var o in Lums) if (o.beat >= beat) o.ResetState();
         }
 
-        /// <summary>Vrai si le corps du joueur (x ± halfWidth) est entièrement au-dessus d'un trou.</summary>
-        public bool IsOverGap(float x, float halfWidth)
+        /// <summary>Hauteur du sol principal en x (marches de la chart ; 0 avant la première).</summary>
+        public float HeightAt(float x)
         {
-            for (int i = 0; i < gaps.Count; i++)
+            float h = 0f;
+            for (int i = 0; i < steps.Count; i++)
             {
-                var g = gaps[i];
-                if (g.x > x) break;
-                if (x - halfWidth >= g.x && x + halfWidth <= g.y) return true;
+                if (steps[i].x > x) break;
+                h = steps[i].y;
             }
-            return false;
+            return h;
+        }
+
+        /// <summary>Base des pièces en x : le dessus d'une plateforme si elle est là, sinon le sol principal.</summary>
+        float LumBaseAt(float x)
+        {
+            float h = HeightAt(x);
+            foreach (var pl in platforms)
+                if (x >= pl.x0 && x <= pl.x1) h = Mathf.Max(h, pl.top);
+            return h;
         }
 
         /// <summary>Premier index de la liste dont le bord droit est après x (pour repositionner les curseurs).</summary>
@@ -250,38 +310,86 @@ namespace Kenta.Level
             return t;
         }
 
+        /// <summary>Segments de sol principal (profil des marches, moins les trous) puis plateformes.</summary>
+        void BuildTerrain(float endX)
+        {
+            foreach (var span in MainSpans(endX)) Ground.Add(span);
+            foreach (var pl in platforms) Ground.Add(pl);
+            Ground.Build();
+        }
+
+        IEnumerable<GroundSpan> MainSpans(float endX)
+        {
+            // intervalles de hauteur constante
+            var bounds = new List<(float x0, float x1, float h)>();
+            float from = -40f, h = 0f;
+            foreach (var st in steps)
+            {
+                if (st.x > from) bounds.Add((from, st.x, h));
+                from = Mathf.Max(from, st.x);
+                h = st.y;
+            }
+            bounds.Add((from, endX, h));
+            // on retire les trous
+            foreach (var (x0, x1, top) in bounds)
+            {
+                float cursor = x0;
+                foreach (var g in gaps)
+                {
+                    if (g.y <= cursor || g.x >= x1) continue;
+                    if (g.x > cursor) yield return new GroundSpan(cursor, g.x, top, false);
+                    cursor = Mathf.Max(cursor, g.y);
+                }
+                if (x1 > cursor) yield return new GroundSpan(cursor, x1, top, false);
+            }
+        }
+
         void BuildGround(float endX)
         {
             var g = Group("Ground", Vector2.zero);
-            // intervalles de sol plein, coupés aux frontières de biome pour changer de tuile
-            var cuts = new List<float>();
-            for (int i = 1; i < Chart.sections.Length; i++) cuts.Add(BeatToX(Chart.sections[i].startBeat));
-            void Piece(float x0, float x1)
+            foreach (var s in MainSpans(endX))
             {
-                var from = x0;
-                foreach (float c in cuts)
+                // découpe aux frontières de section pour suivre le biome
+                float from = s.x0;
+                for (int i = 1; i < Chart.sections.Length; i++)
                 {
-                    if (c <= from || c >= x1) continue;
-                    Emit(from, c);
+                    float c = BeatToX(Chart.sections[i].startBeat);
+                    if (c <= from || c >= s.x1) continue;
+                    EmitGround(g, from, c, s.top);
                     from = c;
                 }
-                Emit(from, x1);
+                EmitGround(g, from, s.x1, s.top);
             }
-            void Emit(float x0, float x1)
-            {
-                if (x1 - x0 < 0.01f) return;
-                var biome = BiomeAtX((x0 + x1) * 0.5f);
-                Tiled(g, "Ground", biome.ground, new Vector2((x0 + x1) * 0.5f, -TileHeight * 0.5f), new Vector2(x1 - x0, TileHeight), 0);
-            }
-            float cursor = -40f;
             foreach (var gap in gaps)
             {
-                Piece(cursor, gap.x);
-                cursor = Mathf.Max(cursor, gap.y);
                 var biome = BiomeAtX((gap.x + gap.y) * 0.5f);
                 Tiled(g, "Hazard", biome.hazard, new Vector2((gap.x + gap.y) * 0.5f, -TileHeight * 0.5f), new Vector2(gap.y - gap.x, TileHeight), 0);
             }
-            Piece(cursor, endX);
+        }
+
+        void EmitGround(Transform g, float x0, float x1, float top)
+        {
+            if (x1 - x0 < 0.01f) return;
+            var biome = BiomeAtX((x0 + x1) * 0.5f);
+            float cx = (x0 + x1) * 0.5f, w = x1 - x0;
+            if (top <= 0.001f || biome.fill == null || biome.cliff == null)
+            {
+                Tiled(g, "Ground", biome.ground, new Vector2(cx, top - TileHeight * 0.5f), new Vector2(w, TileHeight), 0);
+                return;
+            }
+            // sol surélevé : la rivière continue en bas, flanc de terre, dessus herbu
+            Tiled(g, "Ground", biome.ground, new Vector2(cx, -TileHeight * 0.5f), new Vector2(w, TileHeight), 0);
+            const float cliff = 0.2f;                                   // 8 px
+            float fillTop = top - cliff;
+            Tiled(g, "Fill", biome.fill, new Vector2(cx, fillTop * 0.5f), new Vector2(w, fillTop), 1);
+            Tiled(g, "Cliff", biome.cliff, new Vector2(cx, top - cliff * 0.5f), new Vector2(w, cliff), 2);
+        }
+
+        void MakePlatform(float x0, float x1, float top, BiomeTheme biome)
+        {
+            if (biome.platform == null) return;
+            var g = Group("Platform", Vector2.zero);
+            Tiled(g, "Slab", biome.platform, new Vector2((x0 + x1) * 0.5f, top - 0.125f), new Vector2(x1 - x0, 0.25f), 3);
         }
 
         void BuildBeatGrid(int lastBeat)
@@ -307,30 +415,30 @@ namespace Kenta.Level
 
         GameObject MakeWall(Rect r, BiomeTheme biome)
         {
-            var t = Group("Wall", new Vector2(r.center.x, 0f));
+            var t = Group("Wall", new Vector2(r.center.x, r.yMin));
             Spr(t, "Sprite", biome.wall, Vector2.zero, 10);
             return t.gameObject;
         }
 
-        GameObject MakeEnemy(float cx, BiomeTheme biome)
+        GameObject MakeEnemy(Vector2 pos, BiomeTheme biome)
         {
-            var t = Group("Enemy", new Vector2(cx, 0f));
+            var t = Group("Enemy", pos);
             var frames = biome.enemyFrames;
             var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
             if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);   // djembé : écrasé / étiré
             return t.gameObject;
         }
 
-        GameObject MakeBlock(float cx, BiomeTheme biome)
+        GameObject MakeBlock(Vector2 pos, BiomeTheme biome)
         {
-            var t = Group("Block", new Vector2(cx, 0f));
+            var t = Group("Block", pos);
             Spr(t, "Sprite", biome.block, Vector2.zero, 10);
             return t.gameObject;
         }
 
         GameObject MakeSlideBar(Rect r, BiomeTheme biome)
         {
-            var t = Group("Ceiling", new Vector2(r.center.x, 0f));
+            var t = Group("Ceiling", new Vector2(r.center.x, r.yMin - SlideBarBottom));
             const float beam = 0.4f;                                  // tuile de 16 px
             float postTop = 3.0f;
             float postBottom = CeilingBottom + beam;

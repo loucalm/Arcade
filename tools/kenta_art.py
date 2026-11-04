@@ -313,6 +313,54 @@ def draw_ground(b):
     return p
 
 
+def draw_fill(b):
+    """Flanc d'un sol surélevé (marche) : 32×32, terre en briques irrégulières, se répète en hauteur et en largeur."""
+    g = b["ground"]
+    rng = rng_for(b, "fill")
+    p = Pix(32, 32)
+    p.rect(0, 0, 32, 32, g["dirt"])
+    for row in range(0, 32, 8):
+        off = 0 if (row // 8) % 2 == 0 else 8
+        p.rect(0, row + 7, 32, row + 8, g["dirt2"])
+        for x in range(off, 32 + 16, 16):
+            p.rect((x - 1) % 32, row, (x - 1) % 32 + 1, row + 7, g["dirt2"])
+    for _ in range(18):
+        p.px(rng.randrange(32), rng.randrange(32), shade(g["dirt"], 0.12))
+    return p
+
+
+def draw_cliff_top(b):
+    """Dessus d'un sol surélevé : 32×8, herbe puis terre (même tête que la tuile de sol, sans la rivière)."""
+    g = b["ground"]
+    rng = rng_for(b, "cliff")
+    p = Pix(32, 8)
+    p.rect(0, 0, 32, 8, g["dirt"])
+    for _ in range(10):
+        p.px(rng.randrange(32), rng.randrange(3, 7), g["dirt2"])
+    p.rect(0, 7, 32, 8, g["dirt2"])
+    p.rect(0, 0, 32, 3, g["grass"])
+    p.rect(0, 2, 32, 3, g["grass2"])
+    for x in range(0, 32, 4):
+        if rng.random() < 0.6:
+            p.px(x + rng.randrange(3), 3, g["grass2"])
+    return p
+
+
+def draw_platform(b):
+    """Plateforme suspendue (traversable par en dessous) : 32×10, herbe, planche de terre, dessous sombre, contour."""
+    g = b["ground"]
+    p = Pix(32, 10)
+    p.rect(0, 1, 32, 9, g["dirt"])
+    p.rect(0, 1, 32, 3, g["grass"])
+    p.rect(0, 3, 32, 4, g["grass2"])
+    p.rect(0, 7, 32, 9, g["dirt2"])
+    for x in range(3, 32, 8):
+        p.px(x, 5, g["dirt2"])
+    p.rect(0, 0, 32, 1, "#14101C")
+    p.rect(0, 9, 32, 10, "#14101C")
+    return p
+
+
 def draw_hazard(b):
     h = b["hazard"]
     rng = rng_for(b, "hazard")

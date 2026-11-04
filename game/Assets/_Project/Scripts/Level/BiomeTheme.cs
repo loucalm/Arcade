@@ -34,6 +34,12 @@ namespace Kenta.Level
         public Sprite ceiling;
         [Tooltip("Tuile 8×16 des poteaux du plafond.")]
         public Sprite post;
+        [Tooltip("Flanc d'un sol surélevé (marche), 32×32, répété.")]
+        public Sprite fill;
+        [Tooltip("Dessus d'un sol surélevé, 32×8.")]
+        public Sprite cliff;
+        [Tooltip("Plateforme suspendue (traversable par en dessous), 32×10.")]
+        public Sprite platform;
 
         [Header("Ennemi local (instrument détraqué)")]
         [Tooltip("Une image = il sautille d'un pixel sur le temps ; deux images = elles alternent sur le temps (djembé).")]

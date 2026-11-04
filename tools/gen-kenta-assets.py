@@ -46,6 +46,9 @@ def gen_biomes(out, sheet):
         put(out, "biomes", f"block_{i}", art.draw_block(b), sheet)
         put(out, "biomes", f"ceil_{i}", art.draw_ceil(b))
         put(out, "biomes", f"post_{i}", art.draw_post(b))
+        put(out, "biomes", f"fill_{i}", art.draw_fill(b))
+        put(out, "biomes", f"cliff_{i}", art.draw_cliff_top(b))
+        put(out, "biomes", f"platform_{i}", art.draw_platform(b), sheet)
 
 
 def gen_ui(out, sheet):

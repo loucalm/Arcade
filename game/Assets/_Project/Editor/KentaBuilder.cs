@@ -170,6 +170,9 @@ namespace Kenta.EditorTools
                 b.block = Spr($"Gen/biomes/block_{id}.png");
                 b.ceiling = Spr($"Gen/biomes/ceil_{id}.png");
                 b.post = Spr($"Gen/biomes/post_{id}.png");
+                b.fill = Spr($"Gen/biomes/fill_{id}.png");
+                b.cliff = Spr($"Gen/biomes/cliff_{id}.png");
+                b.platform = Spr($"Gen/biomes/platform_{id}.png");
                 if (Enemies[i] == "djembe")
                 {
                     b.enemyFrames = new[] { Spr("Pdf/enemy_djembe_squash.png"), Spr("Pdf/enemy_djembe_stretch.png") };
@@ -580,6 +583,8 @@ namespace Kenta.EditorTools
             bandanaGo.layer = actorsLayer;
             var rig = cam.GetComponent<CameraRig>();
             Set(rig, "actorVisual", visual);
+            Set(rig, "offsetX", 2.6f);          // héros à 56 px du bord gauche (sur 320)
+            Set(rig, "baseY", 1.05f);           // sol de référence à 48 px du bas
             Set(player, "visual", visual);
             Set(player, "spinner", spinner);
             Set(player, "slash", null);

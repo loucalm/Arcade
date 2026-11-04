@@ -25,6 +25,9 @@ MonoBehaviour:
   block: {fileID: 21300000, guid: 55642d0d2f8a848348274ccb0a00506f, type: 3}
   ceiling: {fileID: 21300000, guid: 2160f3928cad447a1b9714959b756332, type: 3}
   post: {fileID: 21300000, guid: 059ad85997d0c4908bc0a80dbd644507, type: 3}
+  fill: {fileID: 21300000, guid: 409db5bff87e44742b35503354b7dee8, type: 3}
+  cliff: {fileID: 21300000, guid: 7c4cda9a4385144c3a57f040861e0af5, type: 3}
+  platform: {fileID: 21300000, guid: 121af47a197044728aafc160c56d1eb3, type: 3}
   enemyFrames:
   - {fileID: 21300000, guid: 0a5c2a627a27441db8a2f87ebc9f0180, type: 3}
   enemyBroken: {fileID: 0}

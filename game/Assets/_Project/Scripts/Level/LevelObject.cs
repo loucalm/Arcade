@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Kenta.Level
 {
-    public enum LevelObjectKind { Gap, Wall, Enemy, Block, SlideBar, Lum }
+    public enum LevelObjectKind { Gap, Wall, Enemy, Block, SlideBar, Lum, StepFace, Platform }
 
     /// <summary>
     /// Donnée runtime d'un élément du niveau (collision gérée à la main, pas de moteur physique : ADR-009).

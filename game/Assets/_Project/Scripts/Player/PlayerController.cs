@@ -66,6 +66,7 @@ namespace Kenta.Player
         IPlayerInput input;
 
         float y, vy;
+        float groundTop;                      // dessus du dernier sol touché
         bool grounded, sliding, dead;
         double lastGroundedBeat, jumpBufferBeat = -99, hitUntilBeat = -99, jumpStartBeat;
         bool spinning;
@@ -91,7 +92,7 @@ namespace Kenta.Player
         public void Spawn(double beat)
         {
             dead = false;
-            y = vy = 0f;
+            vy = 0f;
             grounded = true;
             sliding = false;
             spinning = false;
@@ -99,9 +100,11 @@ namespace Kenta.Player
             LastJumpPressBeat = LastHitPressBeat = SlideStartBeat = -99;
             lastGroundedBeat = beat;
             float x = level.BeatToX(beat);
-            transform.position = new Vector3(x, 0f, 0f);
+            y = groundTop = level.HeightAt(x);
+            transform.position = new Vector3(x, y, 0f);
+            CameraRig.Instance?.SetGroundAnchor(groundTop);
             prevX = x;
-            prevCenterY = standHeight * 0.5f;
+            prevCenterY = y + standHeight * 0.5f;
             obstacleCursor = LevelBuilder.FirstIndexAfter(level.Obstacles, x - 4f);
             lumCursor = LevelBuilder.FirstIndexAfter(level.Lums, x - 4f);
             input?.ResetAt(beat);
@@ -144,14 +147,16 @@ namespace Kenta.Player
             float airTime = jumpAirBeats * spb;
             float gravity = 8f * jumpHeight / (airTime * airTime);
             float jumpVelocity = 4f * jumpHeight / airTime;
-            bool overGap = level.IsOverGap(x, width * 0.5f);
+            var ground = level.Ground;
+            float half = width * 0.5f;
 
-            if (grounded && overGap) { grounded = false; vy = 0f; }
+            // plus rien sous les pieds (trou, bord d'une marche ou d'une plateforme) : on tombe
+            if (grounded && float.IsNegativeInfinity(ground.SupportTop(x, half, y))) { grounded = false; vy = 0f; }
             if (grounded) lastGroundedBeat = beat;
 
             // Saut (avec buffer et coyote time)
             if (cmd.jumpDown) jumpBufferBeat = beat;
-            bool coyote = !grounded && vy <= 0f && y > -0.2f && beat - lastGroundedBeat <= coyoteBeats;
+            bool coyote = !grounded && vy <= 0f && y > groundTop - 0.2f && beat - lastGroundedBeat <= coyoteBeats;
             if (beat - jumpBufferBeat <= jumpBufferBeats && (grounded || coyote)) Jump(jumpVelocity, beat, x);
 
             // Frappe
@@ -171,22 +176,21 @@ namespace Kenta.Player
             {
                 SlideStartBeat = beat;
                 ActionSfx.Instance?.Slide();
-                FxPool.Instance?.Burst(new Vector2(x - 0.3f, 0.05f), Color.white, 6, 3f, 0.12f, 0.3f, 2f, -0.2f);
+                FxPool.Instance?.Burst(new Vector2(x - 0.3f, y + 0.05f), Color.white, 6, 3f, 0.12f, 0.3f, 2f, -0.2f);
             }
             sliding = nowSliding;
 
             // Intégration verticale
             if (!grounded)
             {
+                float yPrev = y;
                 vy -= gravity * dt;
                 y += vy * dt;
-                if (vy <= 0f && y <= 0f && !overGap)
-                {
-                    if (y > -0.4f) Land(x);
-                    else { run.Damage(); return; } // tombé dans le trou, cogne le bord opposé
-                }
+                // atterrissage balayé : même un à-coup ne fait pas traverser une plateforme
+                if (vy <= 0f && ground.TryLand(x, half, yPrev, y, out float top)) Land(x, top);
+                else if (ground.HitsSide(x, half, y)) { run.Damage(); return; }   // tombé dans un trou, cogne le bord opposé
             }
-            if (y < fallDeathY) { run.Damage(); return; }
+            if (y < ground.LowestTop + fallDeathY) { run.Damage(); return; }
 
             transform.position = new Vector3(x, y, 0f);
 
@@ -209,12 +213,20 @@ namespace Kenta.Player
             spinning = spinOnJump;
             squash = Squash(0.82f, 1.2f);
             ActionSfx.Instance?.Jump();
-            FxPool.Instance?.Burst(new Vector2(x, 0.05f), Color.white, 6, 3f, 0.12f, 0.3f, 2f, 0f);
+            FxPool.Instance?.Burst(new Vector2(x, y + 0.05f), Color.white, 6, 3f, 0.12f, 0.3f, 2f, 0f);
         }
 
-        void Land(float x)
+        void Land(float x, float top)
         {
-            y = 0f;
+            // atterrir sur une plateforme valide le saut (jugé une seule fois)
+            foreach (var p in level.Platforms)
+            {
+                if (p.passed || x < p.bounds.xMin || x > p.bounds.xMax || Mathf.Abs(top - p.bounds.yMin) > 0.02f) continue;
+                p.passed = true;
+                run.OnObstacleCleared(p, LastJumpPressBeat);
+            }
+            y = groundTop = top;
+            CameraRig.Instance?.SetGroundAnchor(top);
             vy = 0f;
             grounded = true;
             spinning = false;
@@ -222,7 +234,7 @@ namespace Kenta.Player
             squash = Squash(1.2f, 0.82f);
             landedAt = Time.time;
             ActionSfx.Instance?.Land();
-            FxPool.Instance?.Burst(new Vector2(x, 0.05f), Color.white, 8, 3.5f, 0.12f, 0.35f, 3f, 0f);
+            FxPool.Instance?.Burst(new Vector2(x, y + 0.05f), Color.white, 8, 3.5f, 0.12f, 0.35f, 3f, 0f);
         }
 
         /// <summary>Retourne vrai si le joueur a été touché (la frame s'arrête là).</summary>
@@ -243,7 +255,7 @@ namespace Kenta.Player
 
                 if (o.kind == LevelObjectKind.Gap)
                 {
-                    if (!o.passed && x - width * 0.5f > o.bounds.xMax && y > -0.4f)
+                    if (!o.passed && x - width * 0.5f > o.bounds.xMax && y > o.bounds.yMax + 0.6f)
                     {
                         o.passed = true;
                         run.OnObstacleCleared(o, LastJumpPressBeat);

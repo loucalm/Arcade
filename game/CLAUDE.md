@@ -66,13 +66,14 @@ Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteu
 | `Core/GameSession` | Héros choisi (statique). |
 | `Core/TimingJudge`, `Core/GradeCalculator`, `UI/JudgePopup` | Jugement PARFAIT / BIEN / BOF de chaque action (score, combo) et note de fin S+ … D (règles : docs/game-design.md). |
 | `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par section de la chart : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |
-| `Level/LevelBuilder` | Chart → obstacles + collisions, visuels du biome du beat. Géométrie : docs/chart-format.md. |
+| `Level/LevelBuilder`, `Level/LevelTerrain` | Chart → obstacles + collisions, sol à hauteur variable (`step`, `platform`, trous) lu par le joueur et la caméra. Géométrie : docs/chart-format.md. |
 | `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu 320×180 en 3 calques (couche Unity `Actors` pour le héros), caméra au sous-pixel qui suit aussi en hauteur, ciel + 3 calques en parallaxe. |
 | `FX/BandanaTrail`, `FX/Sourdine`, `FX/ScreenFx`, `FX/FxPool`, `FX/BeatFrames` | Traînée du bandeau, mur de silence, flash, particules en pixels, djembé qui change d'image sur le temps. |
 | `Player/PlayerController`, `HeroAnimator`, `HeroProfile`, `HeroSpriteSet` | Physique maison réglée en beats ; pose du héros (8 poses du PDF) ; 3 héros. |
 | `UI/PixelText`, `PixelFontData`, `RunHud`, `AttractScreen`, `HeroSelectScreen`, `ExplainScreen`, `GameOverScreen` | Interface en pixels (canvas 320×180) : police proportionnelle à ombre, plaques sous les textes posés sur le décor. |
 | `Editor/KentaSpritePostprocessor`, `Editor/KentaBuilder` | Import des sprites ; menu **Kenta > Reconstruire thèmes, prefabs et scène**. |
 - Aucun moteur physique (ADR-009). Aucun `Instantiate` en jeu : le niveau est construit une fois par partie, puis on réactive au respawn.
+- ⚠️ Après une modification de `KentaSpritePostprocessor` (pivot, bordure), **forcer le réimport** des sprites concernés (sinon ils gardent l'ancien réglage : héros enfoncé dans le sol, plaques sans 9-slice).
 - **Sprites : jamais dessinés dans Unity.** Héros et ennemis viennent du PDF (`tools/extract-kenta-pdf.py`), le reste est généré (`tools/gen-kenta-assets.py`). Après toute régénération : menu Kenta > Reconstruire.
 - Pas de rotation ni d'échelle fractionnaire d'un sprite ; l'interface utilise des agrandissements **entiers** (`PixelText.scale`). En code UI, ne pas utiliser `SetNativeSize()` (il applique le PPU du monde) : `sizeDelta = sprite.rect.size`.
 - Autres assets générés : `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py` (musique de test). La chart du niveau vient de `tools/gen-level-chart.py`.

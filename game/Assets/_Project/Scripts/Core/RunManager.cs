@@ -149,6 +149,7 @@ namespace Kenta.Core
             if (CameraRig.Instance != null)
             {
                 CameraRig.Instance.Target = player.transform;
+                CameraRig.Instance.MinAnchor = level.Ground.LowestTop;
                 CameraRig.Instance.Snap();
             }
             Conductor.Instance.Play(song, 0, loop: false);

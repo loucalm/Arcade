@@ -1,0 +1,168 @@
+{
+ "id": "test_vertical",
+ "title": "Test verticalité",
+ "bpm": 150,
+ "offsetMs": 180,
+ "beatsPerBar": 4,
+ "runSpeed": 8.0,
+ "sections": [
+  {
+   "name": "intro",
+   "startBeat": 0
+  },
+  {
+   "name": "marches",
+   "startBeat": 8
+  },
+  {
+   "name": "plateformes",
+   "startBeat": 20
+  },
+  {
+   "name": "en haut",
+   "startBeat": 36
+  }
+ ],
+ "events": [
+  {
+   "beat": 4,
+   "type": "lum_line",
+   "lane": 0,
+   "params": {
+    "count": 4,
+    "step": 0.5
+   }
+  },
+  {
+   "beat": 8,
+   "type": "step",
+   "lane": 0,
+   "params": {
+    "height": 0.5
+   }
+  },
+  {
+   "beat": 12,
+   "type": "step",
+   "lane": 0,
+   "params": {
+    "height": 1.0
+   }
+  },
+  {
+   "beat": 13,
+   "type": "lum_line",
+   "lane": 0,
+   "params": {
+    "count": 4,
+    "step": 0.5
+   }
+  },
+  {
+   "beat": 16,
+   "type": "step",
+   "lane": 0,
+   "params": {
+    "height": 0.0
+   }
+  },
+  {
+   "beat": 20,
+   "type": "gap",
+   "lane": 0,
+   "params": {
+    "length": 1.5
+   }
+  },
+  {
+   "beat": 20,
+   "type": "platform",
+   "lane": 0,
+   "params": {
+    "length": 2,
+    "height": 1.0
+   }
+  },
+  {
+   "beat": 20.5,
+   "type": "lum_line",
+   "lane": 0,
+   "params": {
+    "count": 4,
+    "step": 0.5
+   }
+  },
+  {
+   "beat": 26,
+   "type": "gap",
+   "lane": 0,
+   "params": {
+    "length": 0.6
+   }
+  },
+  {
+   "beat": 30,
+   "type": "platform",
+   "lane": 0,
+   "params": {
+    "length": 3,
+    "height": 1.0
+   }
+  },
+  {
+   "beat": 30.5,
+   "type": "lum_line",
+   "lane": 0,
+   "params": {
+    "count": 5,
+    "step": 0.5
+   }
+  },
+  {
+   "beat": 36,
+   "type": "step",
+   "lane": 0,
+   "params": {
+    "height": 1.0
+   }
+  },
+  {
+   "beat": 40,
+   "type": "wall",
+   "lane": 0,
+   "params": {
+    "height": 0.8
+   }
+  },
+  {
+   "beat": 44,
+   "type": "enemy",
+   "lane": 0,
+   "params": {}
+  },
+  {
+   "beat": 48,
+   "type": "slide_bar",
+   "lane": 0,
+   "params": {
+    "length": 1
+   }
+  },
+  {
+   "beat": 52,
+   "type": "step",
+   "lane": 0,
+   "params": {
+    "height": 0.0
+   }
+  },
+  {
+   "beat": 56,
+   "type": "gap",
+   "lane": 0,
+   "params": {
+    "length": 0.6
+   }
+  }
+ ]
+}

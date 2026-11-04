@@ -42,9 +42,14 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `wall` | bloc de 0,9 u à `beat+0,3`, hauteur `height` (défaut 0,8) | −0,29 … +0,11 |
 | `enemy` / `block` | centre à `beat+0,4` | −0,46 … +0,22 |
 | `slide_bar` | plafond de `beat+0,1` à `beat+0,1+length` (défaut 1), bas à 0,62 u | tenir le bas tout du long |
-| `lum_line` | lums aux beats `beat + i×step`, hauteur selon `lane` : 0 → 0,45 u (au sol), 1 → 2,0 u (sommet d'un saut lancé 0,5 beat avant), 2 → 3,1 u | — |
+| `lum_line` | lums aux beats `beat + i×step`, hauteur selon `lane` **au-dessus du sol en x** (ou d'une plateforme) : 0 → 0,45 u, 1 → 1,9 u, 2 → 2,4 u | — |
+| `step` | à partir de `beat+0,3`, le sol principal passe à `height` (0 … 2,0 u). Montée de plus de 0,25 u = face de marche mortelle : sauter sur `beat` | comme `wall` |
+| `platform` | plateforme de `beat+0,3` à `beat+0,3+length` (défaut 1) à `height`, traversable par en dessous ; sauter sur `beat` | sommet du saut au-dessus de `height` avant `beat+0,3` |
 
-Contraintes de faisabilité (le saut dure 1 beat, sommet à 2,2 u) :
+Tous les obstacles (mur, ennemi, bloc, plafond, pièces) se posent **sur le sol principal à leur x** : un mur après une marche est posé en haut de la marche.
+
+Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus du point de départ) :
+- une montée (`step` ou `platform`) ne dépasse jamais **+1,0 u** par rapport au sol d'où l'on saute ;
 - deux sauts (gap/wall) espacés d'**au moins 1 beat** ;
 - pas d'ennemi pendant un saut (entre `j` et `j+1`), sauf pile à l'atterrissage `j+1` ;
 - pas de saut entre `slide_bar.beat − 1,2` et la fin de la barre ;
@@ -58,6 +63,8 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à 2,2 u) :
 | `block` | frapper (cassable) | `variant` |
 | `slide_bar` | glisser | `length` |
 | `wall` | sauter (mur à franchir) | `height` |
+| `step` | sauter si ça monte (marche) ; rien si ça descend | `height` |
+| `platform` | sauter dessus | `length`, `height` |
 | `wall_run` | automatique (**pas encore implémenté**) | `length` |
 | `hook` | automatique, liane/crochet (**pas encore implémenté**) | `length` |
 | `lum_line` | collecter | `count`, `step` (beats entre lums) |
@@ -72,4 +79,4 @@ Ajouter un type = mettre à jour **ce tableau**, `LevelBuilder` et l'autoplay de
 - Télégraphier chaque obstacle **1 mesure avant** (`beatsPerBar` beats).
 - Au moins **1 beat** entre deux actions dans l'intro. Les croches (0,5) seulement à partir du refrain, les syncopes au final.
 - Valider chaque chart avec l'**autoplay** avant de merger : F9 (overlay), puis F10 (autoplay) en partie. L'overlay doit afficher **0 chute** en fin de morceau.
-- Exemples : `game/Assets/_Project/Charts/test_level_120.json` (test à la main, 128 beats) et `level01_shovel_knight.json` (**générée** par `tools/gen-level-chart.py` depuis la musique : ne pas l'éditer à la main, modifier le plan du script).
+- Exemples : `game/Assets/_Project/Charts/test_level_120.json` (test à la main, 128 beats), `test_vertical.json` (marches et plateformes, à la main) et `level01_shovel_knight.json` (**générée** par `tools/gen-level-chart.py` depuis la musique : ne pas l'éditer à la main, modifier le plan du script).
