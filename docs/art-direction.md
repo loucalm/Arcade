@@ -3,12 +3,18 @@
 La DA est décrite dans [da-kenta.md](da-kenta.md) (texte) et [DA_KENTA_JEUX_BORNE.pdf](DA_KENTA_JEUX_BORNE.pdf) (**le PDF fait foi** : visuels, palettes, maquettes).
 Ce document explique **comment elle est construite dans le projet** et comment la faire évoluer.
 
-## Le principe : tout est en 240 × 135 px, agrandi ×8
-- La caméra de jeu écrit dans une `RenderTexture` de **240 × 135 px** (filtre Point). Une `RawImage` plein écran l'agrandit **×8** sur les 1920 × 1080 de la borne (`Scripts/FX/PixelScreen.cs`). Bandes noires automatiques si la fenêtre n'est pas en 16:9.
-- Monde : **40 px par unité** → l'écran montre 6 × 3,375 unités. Le sol est à 20 px du bas ; le héros est à 40 px du bord gauche ; les obstacles arrivent de la droite.
-- La caméra suit le héros en X seulement et se place toujours sur la grille de pixels (`CameraRig`). Secousses en pixels entiers, parallaxe calée sur la grille.
-- L'interface est un canvas « Screen Space – Camera » rendu dans la même texture (1 unité de canvas = 1 px), `pixelPerfect` activé : **tout** (HUD, menus) est en pixel art. Seule l'UI du toolkit Anatidae (saisie des 3 lettres, classement) reste en pleine définition par-dessus.
-- Le tour REMIX réduira la définition (`PixelScreen.SetDivider(3)` → 80 × 45) : pas encore branché (voir roadmap).
+## Le principe : tout est en 320 × 180 px, agrandi ×6
+- Trois calques (`Scripts/FX/PixelLayer.cs`), chacun une caméra qui écrit dans sa `RenderTexture` au filtre Point, affichée par une `RawImage` agrandie d'un facteur **entier** (×6 sur les 1920 × 1080 de la borne ; sinon le plus grand entier qui tient, avec bandes noires) :
+  - **monde** (décor, obstacles, pièces, particules) : 322 × 182 px (1 px de marge) ;
+  - **acteurs** (héros et bandeau, couche Unity `Actors`) : même taille ;
+  - **interface** (canvas `PixelUI`, couche `UI`) : 320 × 180 px, fixe.
+- Monde : **40 px par unité** → l'écran montre 8 × 4,5 unités. Le héros est à 56 px du bord gauche, le sol de référence à 48 px du bas.
+- **Défilement au sous-pixel** : `CameraRig` calcule une position exacte, place les caméras sur la grille (`PixelMath.Split`) et passe la fraction restante à `PixelScreen`, qui décale les images agrandies du monde (X et Y) et des acteurs (Y seulement). Le décor glisse donc au pixel d'écran près, sans à-coups de 6 px.
+- Le héros et son bandeau sont recalés sur la grille de la caméra (`CameraRig.ActorShift`) : ils restent parfaitement immobiles horizontalement.
+- La caméra suit le héros en hauteur : ancrage sur le dernier sol touché, zone morte, amorti (`SmoothDamp`).
+- L'affichage utilise le shader `Kenta/PixelDisplay` (textures déjà prémultipliées : pas de double prémultiplication des éléments semi-transparents).
+- Seule l'UI du toolkit Anatidae (saisie des 3 lettres, classement) reste en pleine définition par-dessus.
+- Tour REMIX : `PixelScreen.SetDivider(4)` (80 × 45), pas encore branché.
 
 ## D'où viennent les sprites
 | Source | Contenu | Où |

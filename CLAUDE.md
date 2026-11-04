@@ -25,7 +25,7 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 5. Tout ce qui réagit au tempo s'abonne à `Conductor.OnBeat(int beat)`. Pas de minuteries locales.
 6. Checkpoint = `{beat, x}`. Respawn = seek audio sur `BeatToSeconds(beat)`, puis reprise.
 7. Sur WebGL, l'AudioMixer ne gère que le volume : **aucun effet DSP**. Le remix 8-bit est un clip séparé.
-8. **Pixel art 240×135 agrandi ×8** : monde à 40 px/unité, tout sur la grille de pixels, pas de rotation ni d'échelle fractionnaire. Un biome (8 au total) = une section de la chart.
+8. **Pixel art 320×180 agrandi ×6** (entier, bandes noires sinon) : monde à 40 px/unité, tout sur la grille de pixels, pas de rotation ni d'échelle fractionnaire. Défilement au sous-pixel par le décalage de l'image agrandie (`PixelScreen`, `CameraRig`).
 
 ## Carte du repo
 | Chemin | Contenu | Règles |

@@ -31,6 +31,7 @@ namespace Kenta.FX
             for (int i = 0; i < segs.Length; i++)
             {
                 var go = new GameObject("B");
+                go.layer = gameObject.layer;   // calque acteurs
                 go.transform.SetParent(transform, false);
                 var sr = go.AddComponent<SpriteRenderer>();
                 sr.sprite = pixel;
@@ -61,6 +62,7 @@ namespace Kenta.FX
             count = Mathf.Min(count + 1, Capacity);
 
             int mult = RunManager.Instance != null ? RunManager.Instance.Multiplier : 1;
+            Vector2 shift = CameraRig.Instance != null ? CameraRig.Instance.ActorShift : Vector2.zero;
             int length = Mathf.Min(maxSegments, 8 + mult * 5);
             for (int pan = 0; pan < 2; pan++)
             {
@@ -72,7 +74,8 @@ namespace Kenta.FX
                     Vector2 p = SampleAt(wanted);
                     float wave = Mathf.Sin(Time.time * 14f - i * 0.18f) * 0.035f * (i / (float)maxSegments);
                     float tilt = pan == 0 ? 0.045f : -0.02f;
-                    var pos = new Vector3(PixelScreen.Snap(p.x + anchor.x), PixelScreen.Snap(p.y + anchor.y + tilt + wave), 0f);
+                    // calque acteurs : recalé sur la grille de l'écran comme le héros (CameraRig.ActorShift)
+                    var pos = new Vector3(PixelScreen.Snap(p.x + anchor.x + shift.x), PixelScreen.Snap(p.y + anchor.y + tilt + wave), 0f);
                     sr.transform.position = pos;
                     float fade = 1f - i / (float)maxSegments * 0.7f;
                     sr.color = new Color(color.r, color.g, color.b, fade);

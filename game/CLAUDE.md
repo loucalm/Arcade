@@ -58,7 +58,7 @@ Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à éta
 - Clips musicaux : Vorbis, `Compressed In Memory`, `Preload Audio Data` activé. SFX courts : `Decompress On Load`.
 
 ## Gameplay et DA Kenta (voir [../docs/art-direction.md](../docs/art-direction.md))
-Le jeu est en **pixel art 240 × 135 px, agrandi ×8** (ADR-016). Monde : 40 px/unité. Hitbox héros 0,5 × 1,0 u (glissade 0,5 u), saut 1,5 u en 1 beat, vitesse 8 u/s.
+Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteurs, interface ; défilement au sous-pixel, voir docs/art-direction.md). Monde : 40 px/unité. Hitbox héros 0,5 × 1,0 u (glissade 0,5 u), saut 1,5 u en 1 beat, vitesse 8 u/s.
 | Script | Rôle |
 |---|---|
 | `Core/RunManager` | Une partie : build du niveau, cœurs (3), score/combo, checkpoints = biomes, drops (flash, secousse, changement de décor), respawn (seek audio). |
@@ -66,7 +66,7 @@ Le jeu est en **pixel art 240 × 135 px, agrandi ×8** (ADR-016). Monde : 40 px/
 | `Core/GameSession` | Héros choisi (statique). |
 | `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par section de la chart : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |
 | `Level/LevelBuilder` | Chart → obstacles + collisions, visuels du biome du beat. Géométrie : docs/chart-format.md. |
-| `FX/PixelScreen`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu 240×135, caméra sur la grille de pixels, ciel + 3 calques en parallaxe. |
+| `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu 320×180 en 3 calques (couche Unity `Actors` pour le héros), caméra au sous-pixel qui suit aussi en hauteur, ciel + 3 calques en parallaxe. |
 | `FX/BandanaTrail`, `FX/Sourdine`, `FX/ScreenFx`, `FX/FxPool`, `FX/BeatFrames`, `FX/BeatHop` | Traînée du bandeau, mur de silence, flash, particules en pixels, ennemis qui dansent. |
 | `Player/PlayerController`, `HeroAnimator`, `HeroProfile`, `HeroSpriteSet` | Physique maison réglée en beats ; pose du héros (8 poses du PDF) ; 3 héros. |
 | `UI/PixelText`, `PixelFontData`, `RunHud`, `AttractScreen`, `HeroSelectScreen`, `ExplainScreen`, `GameOverScreen` | Interface en pixels. |
@@ -86,6 +86,8 @@ Le jeu est en **pixel art 240 × 135 px, agrandi ×8** (ADR-016). Monde : 40 px/
 - `Debug/` (namespace **`Kenta.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
 - `GameFlow` (`Core/GameFlow.cs`) : les écrans sont des prefabs `Prefabs/Screens/Screen_*.prefab` sous le canvas `Screens` (sortingOrder −10, sous l'overlay Anatidae). En attendant le gameplay : +10 points par beat, **Start = fin de partie**.
 
+- **Tests** : Unity Test Framework, tests EditMode sans asmdef dans `Assets/_Project/Editor/Tests/` (MCP `run_tests`, mode EditMode). Tests Python des générateurs : `pytest tools/tests`.
+- ⚠️ Piège MCP : `manage_camera screenshot` recompose mal les calques pixel (image fausse). Pour voir le vrai rendu : `ScreenCapture.CaptureScreenshot("Temp/gv.png")` via `execute_code`, puis lire le fichier.
 - ⚠️ Piège MCP : chaque `execute_code` compile du C# dans l'éditeur et fige le jeu ~300 ms (`dt` = 0,333). Pendant une partie en autoplay, ça fait rater un saut. Pour valider une chart : lancer l'autoplay, **ne rien appeler** pendant la durée du morceau, puis lire le résultat une seule fois. Même chose pour les captures (`manage_camera screenshot`) et les gros calculs CPU (génération de sprites).
 
 ## Build → borne

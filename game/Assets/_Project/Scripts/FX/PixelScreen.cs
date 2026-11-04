@@ -1,23 +1,29 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Kenta.FX
 {
     /// <summary>
-    /// Tout le jeu est rendu en 240×135 px puis agrandi ×8 (entier) sur l'écran de 1920×1080 de la borne :
-    /// la caméra de jeu écrit dans une RenderTexture au filtre Point, affichée en plein écran par une RawImage.
-    /// Le tour REMIX réduit encore la définition (SetDivider).
+    /// Le jeu est rendu en 320×180 px puis agrandi d'un facteur entier (×6 sur les 1920×1080 de la borne),
+    /// par trois calques : monde (suit la fraction de pixel de la caméra en X et Y), acteurs (héros et bandeau :
+    /// suivent seulement Y, pour rester immobiles à l'écran) et interface (fixe). Si la fenêtre n'est pas un
+    /// multiple, bandes noires (jamais d'agrandissement non entier). Le tour REMIX réduit la définition (SetDivider).
     /// </summary>
     public class PixelScreen : MonoBehaviour
     {
-        public const int Width = 240, Height = 135, Ppu = 40;
+        public const int Width = 320, Height = 180, Ppu = 40;
         public static PixelScreen Instance { get; private set; }
 
-        [SerializeField] Camera gameCamera;
-        [SerializeField] RawImage display;
+        [SerializeField] PixelLayer world;
+        [SerializeField] PixelLayer actors;
+        [SerializeField] PixelLayer ui;
+        [Tooltip("Cadre masqué (RectMask2D) de la taille de l'écran agrandi.")]
+        [SerializeField] RectTransform frame;
+        [Tooltip("Canvas de l'interface (Screen Space - Camera sur la caméra du calque UI).")]
+        [SerializeField] Canvas uiCanvas;
 
-        RenderTexture rt;
         public int Divider { get; private set; } = 1;
+        public int Scale { get; private set; } = 1;
+        int lastW, lastH;
 
         void Awake()
         {
@@ -35,28 +41,39 @@ namespace Kenta.FX
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            if (rt != null) rt.Release();
+        }
+
+        void Update()
+        {
+            if (Screen.width != lastW || Screen.height != lastH) Build();
         }
 
         void Build()
         {
-            if (rt != null) rt.Release();
-            rt = new RenderTexture(Width / Divider, Height / Divider, 24, RenderTextureFormat.ARGB32)
+            lastW = Screen.width;
+            lastH = Screen.height;
+            int w = Width / Divider, h = Height / Divider;
+            Scale = PixelMath.IntegerScale(Screen.width, Screen.height, w, h);
+            if (frame != null) frame.sizeDelta = new Vector2(w * Scale, h * Scale);
+            world.Bind(w, h, Scale);
+            actors.Bind(w, h, Scale);
+            ui.Bind(Width, Height, PixelMath.IntegerScale(Screen.width, Screen.height, Width, Height));
+            // piège : un canvas « Screen Space - Camera » ne recalcule pas sa taille quand la caméra change de texture
+            if (uiCanvas != null)
             {
-                filterMode = FilterMode.Point,
-                antiAliasing = 1,
-                useMipMap = false,
-                wrapMode = TextureWrapMode.Clamp,
-                name = "PixelScreen",
-            };
-            rt.Create();
-            gameCamera.targetTexture = rt;
-            gameCamera.orthographic = true;
-            gameCamera.orthographicSize = Height / (2f * Ppu);
-            display.texture = rt;
+                uiCanvas.worldCamera = null;
+                uiCanvas.worldCamera = ui.LayerCamera;
+            }
         }
 
-        /// <summary>1 = 240×135 ; 3 = 80×45 (tour REMIX) ; 4 = 60×33.</summary>
+        /// <summary>Fraction de pixel (−0,5 … 0,5) de la caméra, rattrapée par le décalage des calques monde et acteurs.</summary>
+        public void SetFraction(Vector2 fracPx)
+        {
+            world.SetFraction(fracPx);
+            actors.SetFraction(fracPx);
+        }
+
+        /// <summary>1 = 320×180 ; 4 = 80×45 (tour REMIX).</summary>
         public void SetDivider(int divider)
         {
             divider = Mathf.Max(1, divider);

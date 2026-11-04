@@ -425,39 +425,94 @@ namespace Kenta.EditorTools
             return t != null ? t.GetComponent<T>() : null;
         }
 
+        static Camera NewLayerCamera(string name, Transform parent, int mask, int depth)
+        {
+            var go = new GameObject(name);
+            if (parent != null) go.transform.SetParent(parent, false);
+            var c = go.AddComponent<Camera>();
+            c.orthographic = true;
+            c.clearFlags = CameraClearFlags.SolidColor;
+            c.backgroundColor = new Color(0f, 0f, 0f, 0f);
+            c.cullingMask = mask;
+            c.depth = depth;
+            c.allowHDR = false;
+            c.allowMSAA = false;
+            c.nearClipPlane = 0.1f;
+            c.farClipPlane = 100f;
+            return c;
+        }
+
+        static void SetLayerRecursive(GameObject go, int layer)
+        {
+            go.layer = layer;
+            foreach (Transform t in go.transform) SetLayerRecursive(t.gameObject, layer);
+        }
+
         static string BuildScene(LevelTheme theme, PixelFontData font, GameObject[] prefabs)
         {
             var scene = EditorSceneManager.GetActiveScene();
             if (scene.path != "Assets/_Project/Scenes/Main.unity")
                 scene = EditorSceneManager.OpenScene("Assets/_Project/Scenes/Main.unity");
 
-            foreach (var n in new[] { "Screens", "Backdrop", "PixelScreen", "PixelUI", "PixelDisplay", "Bandana" }) Destroy(n);
+            foreach (var n in new[] { "Screens", "Backdrop", "PixelScreen", "PixelUI", "PixelDisplay", "Bandana", "PixelUICamera" }) Destroy(n);
+
+            int actorsLayer = LayerMask.NameToLayer("Actors");
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (actorsLayer < 0) throw new System.Exception("Couche « Actors » absente (Project Settings > Tags and Layers).");
 
             var cam = Camera.main;
             if (cam.GetComponent<CameraRig>() == null) cam.gameObject.AddComponent<CameraRig>();
+            cam.cullingMask = ~((1 << actorsLayer) | (1 << uiLayer));
+            cam.depth = 0;
+            for (int i = cam.transform.childCount - 1; i >= 0; i--)
+                if (cam.transform.GetChild(i).name == "ActorCamera") UnityEngine.Object.DestroyImmediate(cam.transform.GetChild(i).gameObject);
+            var actorCam = NewLayerCamera("ActorCamera", cam.transform, 1 << actorsLayer, 1);
+            var uiCam = NewLayerCamera("PixelUICamera", null, 1 << uiLayer, 2);
+            uiCam.transform.position = new Vector3(0f, -500f, -10f);
 
-            // affichage 240×135 → écran
+            // affichage : 3 calques 320×180 agrandis d'un facteur entier, dans un cadre masqué
+            var displayMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/PixelDisplay.mat");
+            if (displayMat == null)
+            {
+                EnsureFolder("Assets/_Project/Materials");
+                displayMat = new Material(Shader.Find("Kenta/PixelDisplay"));
+                AssetDatabase.CreateAsset(displayMat, "Assets/_Project/Materials/PixelDisplay.mat");
+            }
             var psGo = new GameObject("PixelScreen");
             var ps = psGo.AddComponent<PixelScreen>();
             var dispGo = new GameObject("PixelDisplay", typeof(Canvas), typeof(CanvasScaler));
             var dc = dispGo.GetComponent<Canvas>();
             dc.renderMode = RenderMode.ScreenSpaceOverlay;
             dc.sortingOrder = -100;
-            var rawGo = new GameObject("Display", typeof(RectTransform), typeof(RawImage), typeof(AspectRatioFitter));
-            rawGo.transform.SetParent(dispGo.transform, false);
-            var rawRt = (RectTransform)rawGo.transform;
-            rawRt.anchorMin = rawRt.anchorMax = new Vector2(0.5f, 0.5f);
-            var fitter = rawGo.GetComponent<AspectRatioFitter>();
-            fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-            fitter.aspectRatio = 16f / 9f;
-            Set(ps, "gameCamera", cam);
-            Set(ps, "display", rawGo.GetComponent<RawImage>());
+            dc.pixelPerfect = true;
+            var frame = NewRect("Frame", dispGo.transform, Vector2.zero);
+            frame.anchorMin = frame.anchorMax = new Vector2(0.5f, 0.5f);
+            frame.gameObject.AddComponent<RectMask2D>();
+            PixelLayer Layer(string n, Camera c, bool fx, bool fy, int margin)
+            {
+                var go = new GameObject(n, typeof(RectTransform), typeof(RawImage), typeof(PixelLayer));
+                go.transform.SetParent(frame, false);
+                var raw = go.GetComponent<RawImage>();
+                raw.material = displayMat;
+                raw.raycastTarget = false;
+                var l = go.GetComponent<PixelLayer>();
+                Set(l, "layerCamera", c);
+                Set(l, "followX", fx);
+                Set(l, "followY", fy);
+                Set(l, "margin", margin);
+                return l;
+            }
+            Set(ps, "world", Layer("World", cam, true, true, 1));
+            Set(ps, "actors", Layer("Actors", actorCam, false, true, 1));
+            Set(ps, "ui", Layer("UI", uiCam, false, false, 0));
+            Set(ps, "frame", frame);
 
-            // interface en pixels, rendue par la caméra de jeu dans la texture
+            // interface en pixels, rendue par sa propre caméra (fixe) dans son calque
             var uiGo = new GameObject("PixelUI", typeof(Canvas), typeof(CanvasScaler));
+            uiGo.layer = uiLayer;
             var canvas = uiGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = cam;
+            canvas.worldCamera = uiCam;
             canvas.planeDistance = 5f;
             canvas.sortingOrder = 0;
             canvas.pixelPerfect = true;               // les éléments d'interface tombent toujours sur des pixels entiers
@@ -465,6 +520,7 @@ namespace Kenta.EditorTools
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
             scaler.scaleFactor = 1f;
             scaler.referencePixelsPerUnit = 100f;
+            Set(ps, "uiCanvas", canvas);
 
             // la Sourdine est sous les écrans
             var sourdineRoot = NewRect("Sourdine", uiGo.transform, Vector2.zero);
@@ -531,6 +587,10 @@ namespace Kenta.EditorTools
             Set(bandana, "pixel", theme.pixel);
             Set(bandana, "color", theme.heroes[0].accent);
 
+            SetLayerRecursive(visual.gameObject, actorsLayer);
+            bandanaGo.layer = actorsLayer;
+            var rig = cam.GetComponent<CameraRig>();
+            Set(rig, "actorVisual", visual);
             Set(player, "visual", visual);
             Set(player, "spinner", spinner);
             Set(player, "slash", null);
@@ -573,6 +633,7 @@ namespace Kenta.EditorTools
             Set(flow, "attractSong", null);
 
             cam.backgroundColor = Color.black;
+            SetLayerRecursive(uiGo, uiLayer);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             return "scène câblée";
