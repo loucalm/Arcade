@@ -71,7 +71,7 @@ namespace Kenta.DebugTools
             string state = GameFlow.Instance != null ? GameFlow.Instance.State.ToString() : "-";
             var run = RunManager.Instance;
             if (run != null && run.Chart != null)
-                state += $" [{run.SectionName} cœurs {run.Hearts} x{run.Multiplier} chutes {run.Deaths}{(run.Autoplay || run.IsDemo ? " AUTO" : "")}]";
+                state += $" [{run.SectionName} x{run.Multiplier}{(run.Autoplay || run.IsDemo ? " AUTO" : "")}]";
             infoText = c == null
                 ? $"{state} | pas de Conductor | {fpsText}"
                 : $"{state} | {(c.IsPlaying ? "▶" : "■")} {c.Bpm:0} BPM | t {c.SongTime:0.000}s | beat {c.SongBeat:0.00} | dérive {c.LastDrift * 1000:0.0} ms | {fpsText}";

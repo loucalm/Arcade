@@ -39,6 +39,9 @@ namespace Kenta.FX
         /// <summary>Décalage (unités) à appliquer aux éléments du calque acteurs pour qu'ils tombent sur la grille de l'écran.</summary>
         public Vector2 ActorShift { get; private set; }
 
+        /// <summary>Sol le plus bas du niveau : la caméra ne descend pas plus bas (on ne suit pas une chute dans un trou).</summary>
+        public float MinAnchor { get; set; }
+
         /// <summary>Sol sur lequel le héros s'est posé en dernier : la caméra s'y ancre verticalement.</summary>
         public void SetGroundAnchor(float top) => anchorY = top;
 
@@ -90,10 +93,14 @@ namespace Kenta.FX
                 freeX = target.position.x + offsetX;
                 // zone morte : on ne suit une chute ou une montée que si le héros sort franchement de son sol d'ancrage
                 float ty = target.position.y;
-                if (ty < anchorY - deadZoneDown) anchorY = ty + deadZoneDown;
+                if (ty < anchorY - deadZoneDown) anchorY = Mathf.Max(MinAnchor, ty + deadZoneDown);
                 else if (ty > anchorY + deadZoneUp + 1.5f) anchorY = ty - deadZoneUp - 1.5f;
             }
-            else freeX += AutoScroll * dt;
+            else
+            {
+                freeX += AutoScroll * dt;
+                anchorY = 0f;          // hors partie (accueil, menus) : retour à la hauteur de référence
+            }
 
             camY = Mathf.SmoothDamp(camY, baseY + anchorY, ref camYVelocity, smoothTime, Mathf.Infinity, dt);
             bump = Mathf.MoveTowards(bump, 0f, dt * 3f);

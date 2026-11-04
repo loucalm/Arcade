@@ -9,8 +9,8 @@ using UnityEngine;
 namespace Kenta.Core
 {
     /// <summary>
-    /// Une partie : construit le niveau, lance la musique, gère cœurs, score, combo, checkpoints
-    /// (une section de la chart = un checkpoint) et respawn resynchronisé sur l'audio.
+    /// Une partie : construit le niveau, lance la musique, gère score et combo. Mort subite : un coup
+    /// (obstacle, chute) termine la partie.
     /// Mode démo = autoplay sans perte de cœur (écran Attract).
     /// </summary>
     public class RunManager : MonoBehaviour
@@ -25,9 +25,9 @@ namespace Kenta.Core
         [Tooltip("Racine du monde de jeu (niveau + joueur), masquée hors partie.")]
         [SerializeField] GameObject world;
 
-        [Header("Règles")]
-        [SerializeField] int startHearts = 3;
-        [SerializeField] float respawnDelay = 1.3f;
+        [Header("Règles (mort subite : un coup suffit)")]
+        [Tooltip("Temps (s) pendant lequel on voit la pose de mort avant l'écran de fin.")]
+        [SerializeField] float deathDelay = 0.8f;
         [SerializeField] int comboPerMultiplier = 8;
         [SerializeField] int maxMultiplier = 8;
 
@@ -36,16 +36,13 @@ namespace Kenta.Core
         [SerializeField] int enemyPoints = 50;
         [SerializeField] int obstaclePoints = 20;
         [SerializeField] int perfectSectionBonus = 500;
-        [SerializeField] int completionBonusPerHeart = 1000;
+        [SerializeField] int completionBonus = 2000;
 
         public int Score { get; private set; }
-        public int Hearts { get; private set; }
         public int Combo { get; private set; }
         public int Lums { get; private set; }
         public int TotalLums { get; private set; }
-        public int Deaths { get; private set; }
         public int Multiplier => Mathf.Min(1 + Combo / Mathf.Max(1, comboPerMultiplier), maxMultiplier);
-        public int StartHearts => startHearts;
         public bool IsRunning { get; private set; }
         public bool IsDemo { get; private set; }
         public bool Completed { get; private set; }
@@ -84,13 +81,11 @@ namespace Kenta.Core
         /// <summary>(section, parfaite, bonus)</summary>
         public event Action<ChartSection, bool, int> OnSectionChanged;
         public event Action OnDamaged;
-        public event Action OnRespawned;
         public event Action<LevelObject> OnLumPicked;
-        /// <summary>vrai = niveau terminé, faux = plus de cœurs.</summary>
+        /// <summary>vrai = niveau terminé, faux = mort.</summary>
         public event Action<bool> OnFinished;
 
         SongData song;
-        int checkpointScore, checkpointLums;
         bool sectionClean;
         int fxCursor;
         Conductor subscribed;
@@ -132,11 +127,9 @@ namespace Kenta.Core
             level.Build(Chart, song.bpm);
 
             TotalLums = level.Lums.Count;
-            Score = Combo = Lums = Deaths = 0;
-            Hearts = startHearts;
+            Score = Combo = Lums = 0;
             Completed = false;
             SectionIndex = 0;
-            checkpointScore = checkpointLums = 0;
             sectionClean = true;
             fxCursor = 0;
 
@@ -246,12 +239,11 @@ namespace Kenta.Core
             OnStatsChanged?.Invoke();
         }
 
+        /// <summary>Mort subite : pose de mort, la Sourdine se referme, puis l'écran de fin.</summary>
         public void Damage()
         {
             if (!IsRunning) return;
             IsRunning = false;
-            Deaths++;
-            if (!IsDemo) Hearts--;
             Combo = 0;
             sectionClean = false;
 
@@ -263,31 +255,13 @@ namespace Kenta.Core
 
             OnDamaged?.Invoke();
             OnStatsChanged?.Invoke();
-            StartCoroutine(RespawnAfterDelay());
+            StartCoroutine(FinishAfterDeath());
         }
 
-        IEnumerator RespawnAfterDelay()
+        IEnumerator FinishAfterDeath()
         {
-            yield return new WaitForSecondsRealtime(respawnDelay);
-            if (Hearts <= 0)
-            {
-                Finish(false);
-                yield break;
-            }
-
-            float checkpointBeat = Chart.sections[SectionIndex].startBeat;
-            Score = checkpointScore;
-            Lums = checkpointLums;
-            level.ResetFrom(checkpointBeat);
-            player.Spawn(checkpointBeat);
-            fxCursor = 0;
-            while (fxCursor < level.FxEvents.Count && level.FxEvents[fxCursor].beat < checkpointBeat) fxCursor++;
-            Conductor.Instance.Play(song, checkpointBeat, loop: false);
-            CameraRig.Instance?.Snap();
-            IsRunning = true;
-
-            OnRespawned?.Invoke();
-            OnStatsChanged?.Invoke();
+            yield return new WaitForSecondsRealtime(deathDelay);
+            Finish(false);
         }
 
         void EnterSection(int index)
@@ -296,8 +270,6 @@ namespace Kenta.Core
             int bonus = perfect ? perfectSectionBonus : 0;
             Score += bonus;
             SectionIndex = index;
-            checkpointScore = Score;
-            checkpointLums = Lums;
             sectionClean = true;
 
             ActionSfx.Instance?.Checkpoint();
@@ -341,7 +313,7 @@ namespace Kenta.Core
         {
             if (!IsRunning) return;
             Completed = true;
-            if (!IsDemo) Score += Hearts * completionBonusPerHeart;
+            if (!IsDemo) Score += completionBonus;
             OnStatsChanged?.Invoke();
             Finish(true);
         }

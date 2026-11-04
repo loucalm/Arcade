@@ -9,7 +9,7 @@ namespace Kenta.UI
     /// <summary>
     /// HUD de la partie (docs/da-kenta.md § 7) : tout en haut, rien au milieu.
     /// Gauche : score et multiplicateur. Centre : frise des 8 biomes (barre de progression) et son intitulé.
-    /// Droite : 3 cœurs et pièces ramassées. Dans le monde : « PRÊT ? 1 2 3 GO ! », +points, PARFAIT !, CHECKPOINT.
+    /// Droite : pièces ramassées. Mort subite : pas de cœurs. Dans le monde : « PRÊT ? 1 2 3 GO ! », PARFAIT !
     /// </summary>
     public class RunHud : MonoBehaviour
     {
@@ -19,8 +19,6 @@ namespace Kenta.UI
         [SerializeField] PixelText biomeText;
         [SerializeField] PixelText bannerText;
         [SerializeField] PixelText feedbackText;
-        [SerializeField] Image[] hearts;
-        [SerializeField] Sprite heartFull, heartEmpty;
         [Tooltip("8 segments de la frise (un par biome) : fond ; le remplissage est un enfant nommé « Fill ».")]
         [SerializeField] Image[] friezeBack;
         [SerializeField] Image[] friezeFill;
@@ -40,7 +38,6 @@ namespace Kenta.UI
             run.OnStatsChanged += HandleStats;
             run.OnSectionChanged += HandleSection;
             run.OnDamaged += HandleDamaged;
-            run.OnRespawned += HandleRespawned;
             shownScore = run.Score;
             bannerTimer = feedbackTimer = 0f;
             HandleStats();
@@ -53,7 +50,6 @@ namespace Kenta.UI
             run.OnStatsChanged -= HandleStats;
             run.OnSectionChanged -= HandleSection;
             run.OnDamaged -= HandleDamaged;
-            run.OnRespawned -= HandleRespawned;
         }
 
         void HandleRunStarted() => shownScore = 0;
@@ -66,8 +62,6 @@ namespace Kenta.UI
             lastMultiplier = m;
             multiplierText.Text = $"×{m}";
             coinsText.Text = $"{run.Lums}/{run.TotalLums}";
-            for (int i = 0; i < hearts.Length; i++)
-                hearts[i].sprite = i < run.Hearts ? heartFull : heartEmpty;
             var biome = run.CurrentBiome;
             if (biome != null) biomeText.Text = $"{biome.sectionName} · {biome.label}";
         }
@@ -79,8 +73,7 @@ namespace Kenta.UI
             if (perfect) ShowFeedback($"PARFAIT ! +{bonus}", new Color(1f, 0.82f, 0.23f));
         }
 
-        void HandleDamaged() => ShowFeedback(run.Hearts > 0 ? "AÏE !" : "SILENCE…", new Color(1f, 0.35f, 0.4f));
-        void HandleRespawned() => ShowFeedback("CHECKPOINT", new Color(0.5f, 0.95f, 0.6f));
+        void HandleDamaged() => ShowFeedback("SILENCE…", new Color(1f, 0.35f, 0.4f));
 
         void ShowBanner(string t)
         {

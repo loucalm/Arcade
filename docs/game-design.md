@@ -25,11 +25,11 @@ Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en sc
 - Une **menace poursuit le joueur** (mur de son / créature) pour justifier la vitesse imposée.
 
 ## Adaptation arcade (score, fin, difficulté)
-- **3 cœurs.** Être touché fait perdre un cœur et respawn au **checkpoint de section** (audio resynchronisé). À 0 cœur, c'est **game over**.
+- **Mort subite** (2026-11-04) : toucher un obstacle ou tomber dans un trou termine la partie (pose de mort ~0,8 s, la Sourdine recouvre l'écran, puis Game Over). Pas de cœurs, pas de checkpoint.
 - Morceau d'environ 1 min 30 à 2 min, découpé en sections (intro, montée, refrain, break, final), avec une densité d'actions croissante (noires → croches → syncopes).
 - Fin du morceau → **tour REMIX 8-bit** : même chart, clip chiptune séparé, perturbations visuelles croissantes (brouillage, zoom, tremblements, zones sombres, image inversée). On boucle en ajoutant une perturbation à chaque tour, jusqu'à la mort.
 - Durée cible d'une partie : **2 à 4 min**.
-- **Score** (implémenté dans `RunManager`, réglable dans l'inspecteur) : lum 10, ennemi/bloc cassé 50, obstacle franchi 20, **× multiplicateur** = 1 + combo/8 (max ×8). Le combo gagne +1 par action réussie et retombe à 0 quand on est touché. Bonus : section sans chute +500, niveau terminé +1000 par cœur restant. Au respawn, le score et les lums reviennent à leur valeur du checkpoint (pas de farm en mourant).
+- **Score** (implémenté dans `RunManager`, réglable dans l'inspecteur) : lum 10, ennemi/bloc cassé 50, obstacle franchi 20, **× multiplicateur** = 1 + combo/8 (max ×8). Le combo gagne +1 par action réussie et retombe à 0 quand on est touché. Bonus : section sans faute +500, niveau terminé +2000.
 - **Médailles** (ratio de lums) : OR ≥ 90 %, ARGENT ≥ 60 %, sinon BRONZE si le niveau est terminé ; en cas d'échec, BRONZE à partir de 30 %.
 - État actuel de la démo : fin du morceau = fin de partie. Le tour REMIX est dans [roadmap.md](roadmap.md) (P0).
 - **2 joueurs** : hot-seat en alternance (P1 puis P2 sur le même morceau, comparaison à la fin). À faire **après le MVP**.

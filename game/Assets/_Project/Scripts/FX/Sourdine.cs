@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Kenta.FX
 {
     /// <summary>
-    /// La Sourdine (docs/da-kenta.md § 5) : un mur de silence au bord gauche de l'écran. Il avance quand le héros est touché
-    /// et recule quand le multiplicateur monte : sa distance montre l'état du combo. Tout ce qu'elle couvre perd sa couleur
+    /// La Sourdine (docs/da-kenta.md § 5) : un mur de silence au bord gauche de l'écran. Il recule quand le multiplicateur
+    /// monte et revient quand le combo casse : sa distance montre l'état du combo (mort subite : pas de cœurs). Tout ce qu'elle couvre perd sa couleur
     /// (calque gris tramé, sans shader). En fin de partie elle recouvre l'écran.
     /// </summary>
     public class Sourdine : MonoBehaviour
@@ -40,10 +40,11 @@ namespace Kenta.FX
             if (covering) return 100f;                 // la masse recouvre les 100 px de gauche, le gris prend tout le reste
             var run = RunManager.Instance;
             if (run == null || !run.IsRunning) return hiddenX;
-            float combo = (8 - run.Multiplier) * 5f;
-            float hits = (run.StartHearts - run.Hearts) * 16f;
-            return Mathf.Clamp(10f + combo + hits, 4f, 140f);
+            return TargetEdge(run.Multiplier);
         }
+
+        /// <summary>Bord droit de la Sourdine (px depuis la gauche) pour un multiplicateur ×1 … ×8.</summary>
+        public static float TargetEdge(int multiplier) => Mathf.Clamp(10f + (8 - multiplier) * 5f, 4f, 140f);
 
         void Update()
         {

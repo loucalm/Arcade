@@ -58,10 +58,10 @@ Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à éta
 - Clips musicaux : Vorbis, `Compressed In Memory`, `Preload Audio Data` activé. SFX courts : `Decompress On Load`.
 
 ## Gameplay et DA Kenta (voir [../docs/art-direction.md](../docs/art-direction.md))
-Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteurs, interface ; défilement au sous-pixel, voir docs/art-direction.md). Monde : 40 px/unité. Hitbox héros 0,5 × 1,0 u (glissade 0,5 u), saut 1,5 u en 1 beat, vitesse 8 u/s.
+Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteurs, interface ; défilement au sous-pixel, voir docs/art-direction.md). Monde : 40 px/unité. Hitbox héros 0,5 × 1,0 u (glissade 0,5 u), saut 1,5 u en 1 beat, vitesse 8 u/s. Mort subite.
 | Script | Rôle |
 |---|---|
-| `Core/RunManager` | Une partie : build du niveau, cœurs (3), score/combo, checkpoints = biomes, drops (flash, secousse, changement de décor), respawn (seek audio). |
+| `Core/RunManager` | Une partie : build du niveau, score/combo, drops (flash, secousse), **mort subite** (un coup = fin de partie, pas de cœurs ni de checkpoint). |
 | `Core/GameFlow` | Flow d'écrans imposé : Attract → Explain → Config (choix du héros) → Playing → GameOver → NameEntry. |
 | `Core/GameSession` | Héros choisi (statique). |
 | `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par section de la chart : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |

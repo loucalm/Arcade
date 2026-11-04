@@ -366,9 +366,6 @@ namespace Kenta.EditorTools
             Set(comp, "biomeText", biome);
             Set(comp, "bannerText", banner);
             Set(comp, "feedbackText", feedback);
-            Set(comp, "heartFull", Spr("Gen/ui/heart_full.png"));
-            Set(comp, "heartEmpty", Spr("Gen/ui/heart_empty.png"));
-            SetArray(comp, "hearts", new Image[0]);
             SetArray(comp, "friezeBack", friezeBack);
             SetArray(comp, "friezeFill", friezeFill);
             return SavePrefab(root, "Screen_Playing");
