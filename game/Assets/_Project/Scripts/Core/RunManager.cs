@@ -76,6 +76,12 @@ namespace Kenta.Core
             }
         }
 
+        public RunJudgeStats JudgeStats => judgeStats;
+        /// <summary>Note de fin de niveau (S+ … D).</summary>
+        public string Grade => GradeCalculator.Grade(judgeStats.perfect, judgeStats.good, judgeStats.meh, Lums, TotalLums, Completed);
+
+        /// <summary>(jugement, position monde) : mot PARFAIT / BIEN / BOF près du héros.</summary>
+        public event Action<Judgement, Vector2> OnJudged;
         public event Action OnRunStarted;
         public event Action OnStatsChanged;
         /// <summary>(section, parfaite, bonus)</summary>
@@ -86,6 +92,7 @@ namespace Kenta.Core
         public event Action<bool> OnFinished;
 
         SongData song;
+        RunJudgeStats judgeStats;
         bool sectionClean;
         int fxCursor;
         Conductor subscribed;
@@ -128,6 +135,7 @@ namespace Kenta.Core
 
             TotalLums = level.Lums.Count;
             Score = Combo = Lums = 0;
+            judgeStats = default;
             Completed = false;
             SectionIndex = 0;
             sectionClean = true;
@@ -217,10 +225,9 @@ namespace Kenta.Core
             OnStatsChanged?.Invoke();
         }
 
-        public void OnEnemyKilled(LevelObject enemy)
+        public void OnEnemyKilled(LevelObject enemy, double actionBeat)
         {
-            Combo++;
-            Score += enemyPoints * Multiplier;
+            ScoreAction(enemy, actionBeat, enemyPoints);
             ActionSfx.Instance?.Kill();
             var biome = level.BiomeAt(enemy.beat);
             var color = biome != null ? biome.spark : Color.white;
@@ -232,11 +239,36 @@ namespace Kenta.Core
             OnStatsChanged?.Invoke();
         }
 
-        public void OnObstacleCleared(LevelObject obstacle)
+        public void OnObstacleCleared(LevelObject obstacle, double actionBeat)
         {
-            Combo++;
-            Score += obstaclePoints * Multiplier;
+            ScoreAction(obstacle, actionBeat, obstaclePoints);
             OnStatsChanged?.Invoke();
+        }
+
+        /// <summary>Juge l'action (écart appui ↔ beat de l'obstacle), ajoute les points et règle le combo.</summary>
+        void ScoreAction(LevelObject o, double actionBeat, int basePoints)
+        {
+            double offset = (actionBeat - o.beat) * Conductor.Instance.SecondsPerBeat;
+            var j = TimingJudge.Judge(offset);
+            if (!ApplyJudgement(ref judgeStats, o, j)) return;
+            if (j == Judgement.Meh) Combo = 0;
+            else Combo++;
+            Score += Mathf.RoundToInt(basePoints * TimingJudge.Factor(j) * Multiplier);
+            OnJudged?.Invoke(j, new Vector2(player.transform.position.x, player.transform.position.y + 1.4f));
+        }
+
+        /// <summary>Compte un jugement ; faux si l'objet était déjà jugé (jamais deux fois).</summary>
+        public static bool ApplyJudgement(ref RunJudgeStats stats, LevelObject o, Judgement j)
+        {
+            if (o.judged) return false;
+            o.judged = true;
+            switch (j)
+            {
+                case Judgement.Perfect: stats.perfect++; break;
+                case Judgement.Good: stats.good++; break;
+                default: stats.meh++; break;
+            }
+            return true;
         }
 
         /// <summary>Mort subite : pose de mort, la Sourdine se referme, puis l'écran de fin.</summary>

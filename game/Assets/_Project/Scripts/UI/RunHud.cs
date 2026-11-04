@@ -70,7 +70,7 @@ namespace Kenta.UI
         {
             var biome = run.CurrentBiome;
             if (biome != null) ShowBanner(biome.label);
-            if (perfect) ShowFeedback($"PARFAIT ! +{bonus}", new Color(1f, 0.82f, 0.23f));
+            if (perfect) ShowFeedback($"SANS FAUTE +{bonus}", new Color(1f, 0.82f, 0.23f));
         }
 
         void HandleDamaged() => ShowFeedback("SILENCE…", new Color(1f, 0.35f, 0.4f));

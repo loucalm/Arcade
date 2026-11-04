@@ -18,6 +18,8 @@ namespace Kenta.Level
         public int sequenceIndex;
         public bool alive = true;
         public bool passed;
+        /// <summary>Déjà jugé (PARFAIT/BIEN/BOF) : un obstacle ne compte qu'une fois.</summary>
+        public bool judged;
         public GameObject view;
 
         public bool IsHittable => kind == LevelObjectKind.Enemy || kind == LevelObjectKind.Block;
@@ -26,6 +28,7 @@ namespace Kenta.Level
         {
             alive = true;
             passed = false;
+            judged = false;
             if (view != null)
             {
                 view.SetActive(true);

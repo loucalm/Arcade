@@ -52,6 +52,12 @@ namespace Kenta.Player
         public float VelocityY => vy;
         /// <summary>Le coup de poing est en cours (pose « hit » et croissant visibles).</summary>
         public bool IsPunching => slashTimer > 0f;
+        /// <summary>Beat de l'appui qui a déclenché le dernier saut (buffer compris) : sert au jugement.</summary>
+        public double LastJumpPressBeat { get; private set; } = -99;
+        /// <summary>Beat du dernier appui sur « frappe ».</summary>
+        public double LastHitPressBeat { get; private set; } = -99;
+        /// <summary>Beat du début de la glissade en cours.</summary>
+        public double SlideStartBeat { get; private set; } = -99;
         /// <summary>Secondes depuis le dernier atterrissage.</summary>
         public float SinceLanded => Time.time - landedAt;
 
@@ -90,6 +96,7 @@ namespace Kenta.Player
             sliding = false;
             spinning = false;
             jumpBufferBeat = hitUntilBeat = -99;
+            LastJumpPressBeat = LastHitPressBeat = SlideStartBeat = -99;
             lastGroundedBeat = beat;
             float x = level.BeatToX(beat);
             transform.position = new Vector3(x, 0f, 0f);
@@ -150,6 +157,7 @@ namespace Kenta.Player
             // Frappe
             if (cmd.hitDown)
             {
+                LastHitPressBeat = beat;
                 hitUntilBeat = beat + hitActiveBeats;
                 slashDuration = slashTimer = hitActiveBeats * spb;
                 ActionSfx.Instance?.Hit();
@@ -161,6 +169,7 @@ namespace Kenta.Player
             bool nowSliding = cmd.slideHeld && grounded;
             if (nowSliding && !sliding)
             {
+                SlideStartBeat = beat;
                 ActionSfx.Instance?.Slide();
                 FxPool.Instance?.Burst(new Vector2(x - 0.3f, 0.05f), Color.white, 6, 3f, 0.12f, 0.3f, 2f, -0.2f);
             }
@@ -192,6 +201,7 @@ namespace Kenta.Player
 
         void Jump(float velocity, double beat, float x)
         {
+            LastJumpPressBeat = jumpBufferBeat;     // l'appui (éventuellement en avance, mis en mémoire)
             vy = velocity;
             grounded = false;
             jumpBufferBeat = -99;
@@ -236,14 +246,14 @@ namespace Kenta.Player
                     if (!o.passed && x - width * 0.5f > o.bounds.xMax && y > -0.4f)
                     {
                         o.passed = true;
-                        run.OnObstacleCleared(o);
+                        run.OnObstacleCleared(o, LastJumpPressBeat);
                     }
                     continue;
                 }
                 if (o.IsHittable && hitting && hitRect.Overlaps(o.bounds))
                 {
                     o.alive = false;
-                    run.OnEnemyKilled(o);
+                    run.OnEnemyKilled(o, LastHitPressBeat);
                     continue;
                 }
                 if (bodyRect.Overlaps(o.bounds))
@@ -254,7 +264,7 @@ namespace Kenta.Player
                 if (!o.passed && x - width * 0.5f > o.bounds.xMax)
                 {
                     o.passed = true;
-                    run.OnObstacleCleared(o);
+                    run.OnObstacleCleared(o, o.kind == LevelObjectKind.SlideBar ? SlideStartBeat : LastJumpPressBeat);
                 }
             }
             return false;

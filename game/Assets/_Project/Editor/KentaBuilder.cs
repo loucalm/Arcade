@@ -359,6 +359,9 @@ namespace Kenta.EditorTools
             var biome = AddText(tr, font, "BiomeLabel", "INTRO · LA SYLVE", new Vector2(0, 70), Color.white, 1, PixelText.Align.Center, true);
             var banner = AddText(tr, font, "Banner", "", new Vector2(0, 24), Color.white, 2, PixelText.Align.Center, true);
             var feedback = AddText(tr, font, "Feedback", "", new Vector2(0, 4), Gold, 1, PixelText.Align.Center, true);
+            var judgeLabel = AddText(tr, font, "Judge", "", Vector2.zero, Gold, 1, PixelText.Align.Center, true);
+            var popup = root.AddComponent<JudgePopup>();
+            Set(popup, "label", judgeLabel);
             var comp = root.AddComponent<RunHud>();
             Set(comp, "scoreText", score);
             Set(comp, "multiplierText", mult);
@@ -376,14 +379,16 @@ namespace Kenta.EditorTools
             var root = ScreenRoot("Screen_GameOver");
             var tr = root.transform;
             var titleT = AddText(tr, font, "Title", "GAME OVER", new Vector2(0, 48), Color.white, 3, PixelText.Align.Center, true);
-            var panel = NewRect("Panel", tr, new Vector2(0, -24), new Vector2(200, 64));
+            var grade = AddText(tr, font, "Grade", "S+", new Vector2(-98, -20), Gold, 5, PixelText.Align.Center, true);
+            var panel = NewRect("Panel", tr, new Vector2(30, -20), new Vector2(196, 76));
             var bg = panel.gameObject.AddComponent<Image>();
             bg.sprite = Spr("Gen/ui/panel.png");
             bg.type = Image.Type.Sliced;
             bg.raycastTarget = false;
-            var score = AddText(panel, font, "Score", "SCORE 000000", new Vector2(0, 16), Gold, 1);
-            var coins = AddText(panel, font, "Coins", "PIÈCES 0/0", new Vector2(0, 0), Color.white);
-            var biome = AddText(panel, font, "Biome", "MONDE LA SYLVE", new Vector2(0, -16), Color.white);
+            var score = AddText(panel, font, "Score", "SCORE 000000", new Vector2(0, 24), Gold, 1);
+            var judge = AddText(panel, font, "Judge", "PARFAIT 0  BIEN 0  BOF 0", new Vector2(0, 8), Color.white);
+            var coins = AddText(panel, font, "Coins", "PIÈCES 0/0", new Vector2(0, -8), Color.white);
+            var biome = AddText(panel, font, "Biome", "MONDE LA SYLVE", new Vector2(0, -24), Dim);
             var comp = root.AddComponent<GameOverScreen>();
             Set(comp, "title", (RectTransform)titleT.transform);
             Set(comp, "titleText", titleT);
@@ -391,6 +396,8 @@ namespace Kenta.EditorTools
             Set(comp, "scoreText", score);
             Set(comp, "coinsText", coins);
             Set(comp, "biomeText", biome);
+            Set(comp, "gradeText", grade);
+            Set(comp, "judgeText", judge);
             return SavePrefab(root, "Screen_GameOver");
         }
 
@@ -612,6 +619,7 @@ namespace Kenta.EditorTools
             Set(flow, "theme", theme);
             Set(flow, "backdrop", backdrop);
             Set(flow, "sourdine", sourdine);
+            Set(flow, "gameOverDuration", 6f);          // titre, note puis panneau : le temps de lire
             Set(flow, "attractSong", null);
 
             cam.backgroundColor = Color.black;

@@ -64,6 +64,7 @@ Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteu
 | `Core/RunManager` | Une partie : build du niveau, score/combo, drops (flash, secousse), **mort subite** (un coup = fin de partie, pas de cœurs ni de checkpoint). |
 | `Core/GameFlow` | Flow d'écrans imposé : Attract → Explain → Config (choix du héros) → Playing → GameOver → NameEntry. |
 | `Core/GameSession` | Héros choisi (statique). |
+| `Core/TimingJudge`, `Core/GradeCalculator`, `UI/JudgePopup` | Jugement PARFAIT / BIEN / BOF de chaque action (score, combo) et note de fin S+ … D (règles : docs/game-design.md). |
 | `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par section de la chart : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |
 | `Level/LevelBuilder` | Chart → obstacles + collisions, visuels du biome du beat. Géométrie : docs/chart-format.md. |
 | `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu 320×180 en 3 calques (couche Unity `Actors` pour le héros), caméra au sous-pixel qui suit aussi en hauteur, ciel + 3 calques en parallaxe. |
