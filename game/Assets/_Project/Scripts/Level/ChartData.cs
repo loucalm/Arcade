@@ -13,6 +13,15 @@ namespace Kenta.Level
         public string variant;
         public float intensity;
         public float height;
+        /// <summary>camera : largeur de la vue en px de jeu (320, 384, 480 ou 640 : agrandissement entier ×6, ×5, ×4, ×3).</summary>
+        public int zoom;
+        /// <summary>camera : position du héros à l'écran, de gauche (0) à droite (1).</summary>
+        public float frameX;
+        /// <summary>camera : hauteur du sol sous le héros à l'écran, du bas (0) au haut (1).</summary>
+        public float frameY;
+        /// <summary>lum_at : la pièce joue une note (demi-tons par rapport au son de pièce, un la).</summary>
+        public bool hasNote;
+        public int note;
     }
 
     [Serializable]
@@ -43,6 +52,14 @@ namespace Kenta.Level
         public float runSpeed = 8f;
         public ChartSection[] sections;
         public ChartEvent[] events;
+        /// <summary>
+        /// Rail de caméra (optionnel) : hauteur du centre de la caméra tous les `railStep` beats, précalculée par le
+        /// générateur (trajectoire idéale lissée dans les deux sens, héros toujours dans l'image).
+        /// </summary>
+        public float[] rail;
+        public float railStep = 0.25f;
+        /// <summary>Largeur de vue (px de jeu) pour laquelle le rail a été calculé (0 = défaut de la caméra).</summary>
+        public int zoom;
 
         public static ChartData Parse(TextAsset asset)
         {

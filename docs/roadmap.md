@@ -26,8 +26,14 @@ Règles :
 - [ ] `attract.mp4` (≤ 20 s, muet) en option : trailer pour le mode attract de la borne
 
 ## Jeu — P1 (gameplay « music level »)
-- [ ] `wall_run` : course sur les murs (automatique, dans la chart)
-- [ ] `hook` : lianes / crochets (automatique)
+- [x] **Niveau vertical** (ADR-018) : hauteur libre, rampes et course sur le mur (`ramp`), tambours-tremplins (`bounce`), caméra par plans (zoom ×3 à ×6, cadrage), niveau 01 réécrit scène par scène avec simulateur de l'autoplay (2026-11-24)
+- [ ] (Lucas) **Tester le niveau vertical à la main** (clavier puis borne) : lisibilité des tambours, des chutes et des changements de zoom ; régler `gen-level-vertical.py`
+- [ ] Chutes de plus de ~6 u : en vue 640 px, le sol d'arrivée n'apparaît qu'en cours de chute (la vue fait 9 u de haut). Option : vue encore plus large pour les plongeons, ou chutes en deux paliers
+- [x] **Niveau musical, 2ᵉ passe** (docs/level-design-musical.md) : carte du morceau (`tools/analyse-song.py`), actions sur les attaques (grosse caisse → sauts, caisse claire → coups), pièces qui jouent la mélodie et dessinent le chemin, ennemis en vol, tambours en chaîne, caméra large sur rail précalculé sans coupes, brume de fond et piliers ombrés, HUD sans texte au milieu (2026-11-24)
+- [ ] `hook` : lianes / crochets (automatique ; pose `vine` déjà extraite)
+- [ ] Décor qui joue avec la musique (éléments qui réagissent au temps, foule d'ennemis qui danse au fond)
+- [ ] Musique libre de droits **écrite pour le niveau** : idéalement, les sons des actions manquent dans la piste et c'est le joueur qui les joue
+- [ ] Tambour : animation d'écrasement au rebond et son dédié (aujourd'hui : son de saut)
 - [ ] **Menace qui poursuit** le joueur (mur de son / créature) à l'écran
 - [ ] **Télégraphie** : chaque obstacle s'annonce 1 mesure avant (couleur, clignotement, animation)
 - [ ] Ennemis en hauteur (`lane 1`) à frapper pendant un saut

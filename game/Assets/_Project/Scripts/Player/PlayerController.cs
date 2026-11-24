@@ -31,7 +31,6 @@ namespace Kenta.Player
         [SerializeField] float standHeight = 1.0f;
         [SerializeField] float slideHeight = 0.5f;
         [SerializeField] float pickupRadius = 0.7f;
-        [SerializeField] float fallDeathY = -2.5f;
         [Tooltip("Collisions balayées entre deux frames (à-coup du navigateur) jusqu'à cette distance max.")]
         [SerializeField] float maxSweep = 3f;
 
@@ -49,6 +48,10 @@ namespace Kenta.Player
         public bool IsDead => dead;
         public bool IsSliding => sliding;
         public bool IsGrounded => grounded;
+        /// <summary>Course sur une rampe raide (pose « mur »).</summary>
+        public bool IsClimbing { get; private set; }
+        /// <summary>En vol après un tambour-tremplin.</summary>
+        public bool IsBouncing { get; private set; }
         public float VelocityY => vy;
         /// <summary>Le coup de poing est en cours (pose « hit » et croissant visibles).</summary>
         public bool IsPunching => slashTimer > 0f;
@@ -75,6 +78,8 @@ namespace Kenta.Player
         Vector3 squash = Vector3.one;
         float slashTimer, slashDuration = 0.1f;
         float landedAt = -99f;
+        int bounceCursor;
+        LevelObject pendingBounce;
 
         public void Setup(LevelBuilder level, RunManager run, IPlayerInput input)
         {
@@ -107,6 +112,9 @@ namespace Kenta.Player
             prevCenterY = y + standHeight * 0.5f;
             obstacleCursor = LevelBuilder.FirstIndexAfter(level.Obstacles, x - 4f);
             lumCursor = LevelBuilder.FirstIndexAfter(level.Lums, x - 4f);
+            bounceCursor = LevelBuilder.FirstIndexAfter(level.Bounces, x - 4f);
+            IsClimbing = IsBouncing = false;
+            pendingBounce = null;
             input?.ResetAt(beat);
             gameObject.SetActive(true);
             visual.gameObject.SetActive(true);
@@ -150,12 +158,31 @@ namespace Kenta.Player
             var ground = level.Ground;
             float half = width * 0.5f;
 
-            // plus rien sous les pieds (trou, bord d'une marche ou d'une plateforme) : on tombe
-            if (grounded && float.IsNegativeInfinity(ground.SupportTop(x, half, y))) { grounded = false; vy = 0f; }
+            // au sol : les pieds suivent le terrain (rampes) ; plus rien dessous (trou, bord) : on tombe
+            float yBefore = y;
+            if (grounded)
+            {
+                float support = ground.SupportTop(x, half, y);
+                if (float.IsNegativeInfinity(support)) { grounded = false; vy = 0f; }
+                else if (support != y)
+                {
+                    y = groundTop = support;
+                    CameraRig.Instance?.SetGroundAnchor(support);
+                }
+            }
+            float dx = x - prevX;
+            IsClimbing = grounded && dx > 1e-4f && (y - yBefore) / dx > 0.7f;
             if (grounded) lastGroundedBeat = beat;
 
             // Saut (avec buffer et coyote time)
-            if (cmd.jumpDown) jumpBufferBeat = beat;
+            if (cmd.jumpDown)
+            {
+                jumpBufferBeat = beat;
+                // appui juste après le décollage d'un tambour : il compte pour le rebond
+                if (pendingBounce != null && beat - pendingBounce.beat <= 0.5) run.OnObstacleCleared(pendingBounce, beat);
+                pendingBounce = null;
+            }
+            if (pendingBounce != null && beat - pendingBounce.beat > 0.5) pendingBounce = null;
             bool coyote = !grounded && vy <= 0f && y > groundTop - 0.2f && beat - lastGroundedBeat <= coyoteBeats;
             if (beat - jumpBufferBeat <= jumpBufferBeats && (grounded || coyote)) Jump(jumpVelocity, beat, x);
 
@@ -184,13 +211,15 @@ namespace Kenta.Player
             if (!grounded)
             {
                 float yPrev = y;
+                // intégration exacte pour une gravité constante : saut de 1,5 u en 1 beat quel que soit le framerate
+                y += vy * dt - 0.5f * gravity * dt * dt;
                 vy -= gravity * dt;
-                y += vy * dt;
                 // atterrissage balayé : même un à-coup ne fait pas traverser une plateforme
                 if (vy <= 0f && ground.TryLand(x, half, yPrev, y, out float top)) Land(x, top);
                 else if (ground.HitsSide(x, half, y)) { run.Damage(); return; }   // tombé dans un trou, cogne le bord opposé
             }
-            if (y < ground.LowestTop + fallDeathY) { run.Damage(); return; }
+            if (!grounded && y < ground.KillY(x)) { run.Damage(); return; }
+            CheckBounce(x, beat, spb, gravity);
 
             transform.position = new Vector3(x, y, 0f);
 
@@ -226,6 +255,7 @@ namespace Kenta.Player
                 run.OnObstacleCleared(p, LastJumpPressBeat);
             }
             y = groundTop = top;
+            IsBouncing = false;
             CameraRig.Instance?.SetGroundAnchor(top);
             vy = 0f;
             grounded = true;
@@ -235,6 +265,40 @@ namespace Kenta.Player
             landedAt = Time.time;
             ActionSfx.Instance?.Land();
             FxPool.Instance?.Burst(new Vector2(x, y + 0.05f), Color.white, 8, 3.5f, 0.12f, 0.35f, 3f, 0f);
+        }
+
+        /// <summary>
+        /// Tambour-tremplin : en passant dessus (au sol ou juste après un saut), le héros s'envole pour `airBeats` beats et
+        /// retombe pile sur le sol prévu par la chart. Sauter sur le temps du tambour est jugé (PARFAIT…) ; ne pas sauter
+        /// n'est pas puni, mais sauter trop tôt fait passer au-dessus (et rater le rebond).
+        /// </summary>
+        void CheckBounce(float x, double beat, float spb, float gravity)
+        {
+            var pads = level.Bounces;
+            while (bounceCursor < pads.Count && pads[bounceCursor].bounds.xMax + 1f < x) bounceCursor++;
+            for (int i = bounceCursor; i < pads.Count; i++)
+            {
+                var o = pads[i];
+                if (o.bounds.xMin > x + 0.5f) break;
+                if (o.passed || x < o.bounds.center.x - 0.15f || y > o.bounds.yMax + 1.2f || y < o.bounds.yMin - 0.4f) continue;
+                o.passed = true;
+                float t = o.airBeats * spb;
+                float landTop = level.HeightAt(x + t * level.RunSpeed);
+                vy = (landTop - y + 0.5f * gravity * t * t) / t;
+                grounded = false;
+                IsBouncing = true;
+                jumpBufferBeat = -99;
+                if (System.Math.Abs(LastJumpPressBeat - o.beat) <= 0.5) run.OnObstacleCleared(o, LastJumpPressBeat);
+                else pendingBounce = o;
+                squash = Squash(0.7f, 1.35f);
+                ActionSfx.Instance?.Jump();
+                CameraRig.Instance?.Shake(0.12f, 0.12f);
+                CameraRig.Instance?.Punch(0.3f);
+                FxPool.Instance?.Burst(new Vector2(o.bounds.center.x, o.bounds.yMax), Color.white, 14, 6f, 0.15f, 0.4f, 4f, 0f);
+                var press = o.view != null ? o.view.GetComponentInChildren<PressBump>() : null;
+                if (press != null) press.Press();
+                return;
+            }
         }
 
         /// <summary>Retourne vrai si le joueur a été touché (la frame s'arrête là).</summary>

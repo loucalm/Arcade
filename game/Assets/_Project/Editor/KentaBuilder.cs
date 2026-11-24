@@ -198,6 +198,7 @@ namespace Kenta.EditorTools
             t.heroes = heroes;
             t.coinFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/coin_{i}.png")).ToArray();
             t.totem = Spr("Gen/world/totem.png");
+            t.flyer = Spr("Pdf/enemy_chauve.png");        // ennemi volant commun (niveaux verticaux)
             t.pixel = Spr("Gen/world/px.png");
             t.sourdine = Spr("Gen/ui/sourdine.png");
             t.sourdineVeil = Spr("Gen/ui/veil.png");
@@ -608,8 +609,9 @@ namespace Kenta.EditorTools
             bandanaGo.layer = actorsLayer;
             var rig = cam.GetComponent<CameraRig>();
             Set(rig, "actorVisual", visual);
-            Set(rig, "offsetX", 2.6f);          // héros à 56 px du bord gauche (sur 320)
-            Set(rig, "baseY", 1.05f);           // sol de référence à 48 px du bas
+            Set(rig, "defaultZoom", 640);       // vue de 16 × 9 u (×3) : une mesure d'avance devant le héros
+            Set(rig, "defaultFrameX", 0.22f);   // héros au quart gauche de l'écran
+            Set(rig, "defaultFrameY", 0.3f);    // sol sous le héros à 30 % du bas
             Set(player, "visual", visual);
             Set(player, "spinner", spinner);
             Set(player, "slash", null);

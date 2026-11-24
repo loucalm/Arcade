@@ -21,6 +21,15 @@ namespace Kenta.FX
         [Tooltip("Canvas de l'interface (Screen Space - Camera sur la caméra du calque UI).")]
         [SerializeField] Canvas uiCanvas;
 
+        /// <summary>Largeurs de vue possibles (px de jeu) : sur 1920×1080, agrandies ×6, ×5, ×4 et ×3 (toujours entier).</summary>
+        public static readonly int[] ZoomWidths = { 320, 384, 480, 640 };
+
+        /// <summary>Largeur de la vue du monde en px de jeu (zoom de la caméra). L'interface reste en 320×180.</summary>
+        public int ViewWidth { get; private set; } = Width;
+        public int ViewHeight => ViewWidth * 9 / 16;
+        /// <summary>Taille de la vue du monde en unités.</summary>
+        public Vector2 ViewUnits => new(ViewWidth / (float)Ppu, ViewHeight / (float)Ppu);
+
         public int Divider { get; private set; } = 1;
         public int Scale { get; private set; } = 1;
         int lastW, lastH;
@@ -52,7 +61,7 @@ namespace Kenta.FX
         {
             lastW = Screen.width;
             lastH = Screen.height;
-            int w = Width / Divider, h = Height / Divider;
+            int w = ViewWidth / Divider, h = ViewHeight / Divider;
             Scale = PixelMath.IntegerScale(Screen.width, Screen.height, w, h);
             if (frame != null)
             {
@@ -76,6 +85,20 @@ namespace Kenta.FX
         {
             world.SetFraction(fracPx);
             actors.SetFraction(fracPx);
+        }
+
+        /// <summary>
+        /// Change le zoom (largeur de vue la plus proche parmi ZoomWidths). Changement net, comme une coupe de caméra :
+        /// la définition change mais chaque pixel de jeu reste un carré entier de pixels d'écran.
+        /// </summary>
+        public void SetZoom(int viewWidth)
+        {
+            int best = ZoomWidths[0];
+            foreach (int z in ZoomWidths)
+                if (Mathf.Abs(z - viewWidth) < Mathf.Abs(best - viewWidth)) best = z;
+            if (best == ViewWidth) return;
+            ViewWidth = best;
+            Build();
         }
 
         /// <summary>1 = 320×180 ; 4 = 80×45 (tour REMIX).</summary>
