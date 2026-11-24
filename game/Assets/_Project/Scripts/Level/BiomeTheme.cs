@@ -16,10 +16,17 @@ namespace Kenta.Level
         public string guardianName = "CERF DE PIERRE";
 
         [Header("Décor (calques en parallaxe)")]
-        [Tooltip("240×135, fixe à l'écran : ciel, astre, gardien.")]
+        [Tooltip("640×360, fixe à l'écran : ciel, astre.")]
         public Sprite sky;
-        [Tooltip("480×135, boucle sans couture.")]
+        [Tooltip("1280×360, boucle sans couture.")]
         public Sprite far, mid, near;
+
+        [Header("Gardien (sprite à part, placé comme le ciel)")]
+        public Sprite guardian;
+        [Tooltip("Gardien éveillé (yeux ouverts) : montré aux changements de section, tout le refrain.")]
+        public Sprite guardianAwake;
+        [Tooltip("Centre du gardien par rapport au centre de l'écran 640×360, en px (y vers le haut). Écrit par tools/gen-kenta-assets.py.")]
+        public Vector2 guardianOffset;
 
         [Header("Niveau")]
         [Tooltip("Tuile 32×20 : herbe, terre, reflet de l'eau.")]
@@ -36,6 +43,10 @@ namespace Kenta.Level
         public Sprite post;
         [Tooltip("Flanc d'un sol surélevé (marche), 32×32, répété.")]
         public Sprite fill;
+        [Tooltip("Flanc en profondeur, plus sombre (32×32) : les piliers fonçent vers le bas.")]
+        public Sprite fillDeep;
+        [Tooltip("Détails semés sur le flanc des piliers : pierre, racine, fossile, cailloux.")]
+        public Sprite[] pillarDecor;
         [Tooltip("Dessus d'un sol surélevé, 32×8.")]
         public Sprite cliff;
         [Tooltip("Plateforme suspendue (traversable par en dessous), 32×10.")]

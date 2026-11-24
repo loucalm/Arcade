@@ -67,21 +67,21 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-24, ADR-020) **P0** Le multiplicateur atteint ×8 vers le beat 70 (~28 s) et n'évolue plus pendant les 3/4 du niveau ; la Sourdine reste alors loin. Pistes : les pièces ne comptent plus dans le combo, ou un palier plus long (`comboPerMultiplier`)
 - [x] (2026-11-24, ADR-020) **P0** La Sourdine couvre le héros à ×1 : bord à 45 px + voile de 56 px = 101 px, alors que le héros est à ~70 px (cadrage 0,22 de la vue). Le héros est grisé en début de partie et après chaque BOF. Recaler `Sourdine.TargetEdge` sur la place du héros à l'écran
 - [x] (2026-11-24, avec la chart régénérée : 326/326 et S+ en autoplay) **P1** 339/340 pièces en autoplay : une pièce est inatteignable, donc le S+ (« toutes les pièces ») est impossible. Trouver laquelle dans le simulateur
-- [ ] **P1** Un seul monde jouable : les 8 `LevelDef` partagent la même chart et le jeu lance toujours `catalog.levels[0]` (la Sylve). Il manque l'écran ou le mode qui donne accès aux 7 autres (« niveau par biome », en cours)
-- [ ] **P1** Peu de variété d'obstacles : 49 champignons au sol, 17 chauves-souris, 21 trous, 45 marches ; plus aucun mur, bloc ni plafond (types du PDF)
-- [ ] **P1** Rejouer est long : game over (5,5 s), classement (4 s), accueil, consignes (6 s), choix du héros (12 s), soit ~25 s entre deux essais en mort subite. Pistes : passer les consignes si on rejoue dans la minute, raccourcir le game over
-- [ ] **P2** Choix du héros : au bout de 12 s, le code force Kenta même si le joueur a déplacé le curseur (`HeroSelectScreen`, `index = 0`). Garder le héros sélectionné
-- [ ] **P2** Choix du héros sans garde d'entrée : l'appui B1 qui passe les consignes peut valider le héros dans la même frame (ordre des `Update`), à vérifier
+- [x] (2026-11-24, ADR-021) **P1** Un seul monde jouable → choix du monde à l'écran du héros (haut/bas). Reste : une chart par monde (« niveau par biome »). Avant : : les 8 `LevelDef` partagent la même chart et le jeu lance toujours `catalog.levels[0]` (la Sylve). Il manque l'écran ou le mode qui donne accès aux 7 autres (« niveau par biome », en cours)
+- [x] (2026-11-24, ADR-021) **P1** Peu de variété d'obstacles → 6 murs, 6 glissades, test Python de variété. Avant : : 49 champignons au sol, 17 chauves-souris, 21 trous, 45 marches ; plus aucun mur, bloc ni plafond (types du PDF)
+- [x] (2026-11-24, ADR-021) **P1** Rejouer est long → consignes sautées et choix repris dans la minute, écrans de fin passables au bouton 1, game over 4,5 s + classement 3,5 s. Avant : : game over (5,5 s), classement (4 s), accueil, consignes (6 s), choix du héros (12 s), soit ~25 s entre deux essais en mort subite. Pistes : passer les consignes si on rejoue dans la minute, raccourcir le game over
+- [x] (2026-11-24) **P2** Choix du héros : au bout de 12 s, le code force Kenta même si le joueur a déplacé le curseur (`HeroSelectScreen`, `index = 0`). Garder le héros sélectionné
+- [x] (2026-11-24, garde de 0,3 s) **P2** Choix du héros sans garde d'entrée : l'appui B1 qui passe les consignes peut valider le héros dans la même frame (ordre des `Update`), à vérifier
 - [ ] **P2** Les 3 héros sont seulement cosmétiques (mêmes sons, même gameplay) : au minimum un son de frappe par héros (caisse claire, flûte, basse) comme dans le PDF
 
 **Visuel**
 - [x] (2026-11-24, ADR-020) **P0** Flash blanc plein écran + secousse + son de « checkpoint » à chacune des 10 sections, en double (`section_change` de la chart **et** `RunManager.EnterSection`), alors qu'il n'y a plus ni checkpoint ni changement de monde : ça masque les obstacles en début de section. Garder un seul effet discret, ou le réserver aux vrais drops
 - [x] (2026-11-24, ADR-020) **P0** Victoire et défaite ont le même écran : la Sourdine recouvre tout et grise l'image, même sur « BRAVO ! ». Faire une fin heureuse (feu d'artifice, pose de victoire, couleurs)
-- [ ] **P1** Densités de pixels mélangées en vue 640 px : le décor (320×180) est agrandi ×2, donc ses pixels font 6 px d'écran contre 3 px pour le niveau et le héros. L'arbre rose du fond est plus gros et plus « cubique » que le premier plan. Dessiner le décor en 640×360, ou revenir à une vue plus serrée
-- [ ] **P1** Piliers de terre : de grands aplats de briques brun foncé (jusqu'à la moitié de l'écran), tous identiques. Ajouter racines, pierres, mousse, variations de tuiles, dégradé vers le bas
-- [ ] **P1** Trous et chutes : le fond d'un trou est vide (couleur de la brume). Montrer le danger : eau, ronces, obscurité ou la Sourdine en bas
-- [ ] **P1** Un seul décor pendant 1 min 43 : même arbre rose, même gardien, même ciel. Varier par section (heure, météo, couleurs) même sans changer de biome
-- [ ] **P1** Le gardien (Cerf de pierre) est une tache grise floue derrière la brume, jamais animé : le rendre lisible et le faire réagir aux sections
+- [x] (2026-11-24, ADR-021) **P1** Densités de pixels mélangées → décors régénérés en 640×360 (`pixlib.Pix(scale=2)`). Avant : en vue 640 px : le décor (320×180) est agrandi ×2, donc ses pixels font 6 px d'écran contre 3 px pour le niveau et le héros. L'arbre rose du fond est plus gros et plus « cubique » que le premier plan. Dessiner le décor en 640×360, ou revenir à une vue plus serrée
+- [x] (2026-11-24, ADR-021) **P1** Piliers de terre → trois tons (bandeau, terre, profondeur `fill_deep`) et détails semés (`deco_*`). Avant : : de grands aplats de briques brun foncé (jusqu'à la moitié de l'écran), tous identiques. Ajouter racines, pierres, mousse, variations de tuiles, dégradé vers le bas
+- [x] (2026-11-24, ADR-021) **P1** Trous et chutes → liquide du biome 1 u sous le bord, plus sombre en profondeur. Avant : : le fond d'un trou est vide (couleur de la brume). Montrer le danger : eau, ronces, obscurité ou la Sourdine en bas
+- [x] (2026-11-24, ADR-021) **P1** Un seul décor pendant 1 min 43 → ambiance par section (teinte, lumière qui baisse) ; la démo de l'accueil change de monde. Avant : : même arbre rose, même gardien, même ciel. Varier par section (heure, météo, couleurs) même sans changer de biome
+- [x] (2026-11-24, ADR-021) **P1** Le gardien (Cerf de pierre) → sprite à part, plus contrasté, yeux ouverts une mesure à chaque section et tout le refrain. Avant : est une tache grise floue derrière la brume, jamais animé : le rendre lisible et le faire réagir aux sections
 - [ ] **P2** Pièces qui tournent : les images de profil (1 à 2 px de large) se lisent comme des traits orange parasites dans les arcs. Garder des images plus larges, ou ne pas les faire tourner
 - [ ] **P2** Plateformes flottantes trop fines (2 à 3 px) : elles se lisent comme des lignes. Les épaissir, avec un dessous
 - [ ] **P2** Tambours-tremplins dessinés en tonneaux : rien ne dit « rebond ». Peau tendue, couleur vive, flèche ou animation d'appel
@@ -90,16 +90,21 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [ ] **P2** PARFAIT reste à l'endroit où l'action a été jugée : sur un tremplin, le mot apparaît sous le héros qui s'envole. Le faire suivre le héros
 
 **Écrans et interface**
-- [ ] **P1** Accueil : décor seul et texte. Ni démo jouée (pourtant décrite dans `game-design.md` et `game/CLAUDE.md`), ni héros, ni pièces autour du logo. Pour attirer les passants : alterner logo, démo en autoplay et classement. Mettre la doc à jour selon le choix
-- [ ] **P1** « APPUIE SUR START » descend à 55 % d'opacité : jaune sale sur plaque grise, peu lisible au creux de la pulsation
-- [ ] **P1** Classement et saisie du nom : style par défaut du toolkit (police Arial, panneau gris), en rupture avec le pixel art. Le restyler (autorisé par le CLAUDE.md) : police pixel, pièces or / argent / bronze
-- [ ] **P1** Consignes : 6 lignes de texte et une image fixe qui change toutes les 1,1 s, sans lien avec le tempo. Trop long pour « compris en 10 s ». Garder 3 gestes avec des pictos de la borne, et le héros qui mime en boucle sur le temps
+- [x] (2026-11-24, ADR-021) **P1** Accueil → cycle logo, démo jouée (un monde différent à chaque passage), classement ; sol et terre sous le décor des menus. Avant : décor seul et texte. Ni démo jouée (pourtant décrite dans `game-design.md` et `game/CLAUDE.md`), ni héros, ni pièces autour du logo. Pour attirer les passants : alterner logo, démo en autoplay et classement. Mettre la doc à jour selon le choix
+- [x] (2026-11-24, ADR-021) **P1** « APPUIE SUR START » → jamais sous 85 %, passe de l'or au blanc ; en bas de l'écran pendant la démo. Avant : il descendait à 55 % d'opacité : jaune sale sur plaque grise, peu lisible au creux de la pulsation
+- [x] (2026-11-24, ADR-021) **P1** Classement et saisie du nom → `HighscoreBoard` et `NameEntryScreen` en pixel art (données et envoi par le toolkit), vérifiés avec la borne locale. Avant : : style par défaut du toolkit (police Arial, panneau gris), en rupture avec le pixel art. Le restyler (autorisé par le CLAUDE.md) : police pixel, pièces or / argent / bronze
+- [x] (2026-11-24, ADR-021) **P1** Consignes → 3 gestes avec les boutons de la borne, le héros mime sur le temps. Avant : 6 lignes de texte et une image fixe qui change toutes les 1,1 s, sans lien avec le tempo. Trop long pour « compris en 10 s ». Garder 3 gestes avec des pictos de la borne, et le héros qui mime en boucle sur le temps
 - [ ] **P2** Choix du héros : grands cadres sombres presque vides, sélection signalée par la seule couleur du cadre, pas de pose de victoire ni de son au déplacement
 - [ ] **P2** La frise du HUD a 8 segments (8 biomes) alors que le niveau a 11 sections et un seul monde : la caler sur les sections du niveau
-- [ ] **P2** Retour à l'accueil après une partie : le zoom de la partie (640 px) n'est pas remis à 320, et l'accueil change d'échelle après la première partie (`GameFlow.Enter(Attract)`)
-- [ ] **P1** Le score et le multiplicateur (HUD en haut à gauche) passent sous la Sourdine : la masse et le voile recouvrent la plaque du score, même à ×8. Dessiner le HUD au-dessus de la Sourdine, ou le décaler
+- [x] (2026-11-24, les menus sont aussi en vue large) **P2** Retour à l'accueil après une partie : le zoom de la partie (640 px) n'est pas remis à 320, et l'accueil change d'échelle après la première partie (`GameFlow.Enter(Attract)`)
+- [x] (2026-11-24, vérifié en 1920×1080) **P1** Faux problème : le HUD est bien dessiné au-dessus de la Sourdine ; l'impression venait du texte de debug (F9) qui le recouvre en éditeur. Constat initial : le score et le multiplicateur (HUD en haut à gauche) passent sous la Sourdine : la masse et le voile recouvrent la plaque du score, même à ×8. Dessiner le HUD au-dessus de la Sourdine, ou le décaler
 - [ ] **P2** Feu d'artifice de victoire en particules simples : gerbes petites, sans fusée ni traînée
 - [ ] **P2** Hors 1920×1080 (confirmé le 24/11 : en 1920×1080 dans l'éditeur, HUD et panneaux sont entiers) (fenêtre de l'éditeur), l'interface 320×180 est rognée au cadre du monde : le HUD disparaît et le panneau de fin est coupé. Sur 1920×1080 les deux cadres font la même taille (×3 et ×6) : à confirmer dans un build
+
+**Nouveaux points (après les P1)**
+- [ ] **P2** « SILENCE… » s'affiche encore au milieu de l'écran à la mort (`RunHud.HandleDamaged`), contre la règle « rien au milieu »
+- [ ] **P2** Liquide des trous parfois hors de l'image quand la caméra anticipe une montée (le sol est alors en bas de l'écran)
+- [ ] **P2** En éditeur, l'AFK du toolkit (60 s sans appui) affiche « Retour au menu… » pendant une partie en autoplay : sans effet sur la borne (on y joue), mais l'accueil en cycle (logo, démo, classement) renvoie au menu de la borne après 60 s d'inactivité, comme le veut le toolkit
 
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)

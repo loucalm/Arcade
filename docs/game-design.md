@@ -56,14 +56,15 @@ Démarrage → [1 Attract + HighScore] ⟲ (tourne en boucle)
 
 | # | Écran | Contenu Kenta | Toolkit |
 |---|---|---|---|
-| 1 | **Attract + HighScore** | Alternance toutes les ~8 s : démo en **autoplay** du niveau (musique basse, implémentée : `RunManager.BeginRun(song, demo: true)`) ↔ classement top 10. Logo + « APPUIE SUR UN BOUTON » qui pulse sur le beat. N'importe quel bouton → écran 2. Cet appui débloque aussi l'audio du navigateur. | `HighscoreUI` |
-| 2 | **Explain (How to play)** | Une planche animée : joystick bas = glisser, B1 = sauter, B2 = frapper, « suis la musique ». B1/Start pour passer, sinon passage auto après ~6 s. | — |
-| 3 | **Config** : choix du héros | Kenta, Aiko ou Ryo (joystick gauche/droite, bouton 1). 12 s, sinon Kenta. Le 2e joueur (hot-seat) viendra plus tard. | — |
+| 1 | **Attract + HighScore** | Cycle en trois temps : logo KENTA sur la Sylve (8 s) → **démo jouée en autoplay** (20 s, un monde différent à chaque passage, `RunManager.BeginRun(level, demo: true)`) → classement top 10 (8 s). « APPUIE SUR START » respire entre l'or et le blanc. N'importe quel bouton → écran 2. Cet appui débloque aussi l'audio du navigateur. | `HighscoreBoard` (données du toolkit) |
+| 2 | **Explain (How to play)** | Trois gestes avec les boutons dessinés comme ceux de la borne (1 SAUTE, 2 FRAPPE, ▼ GLISSE) ; le héros mime le geste mis en avant, sur le temps (2 temps par geste). « UN SEUL COUP ET C'EST FINI ! ». B1/Start pour passer, sinon passage auto après ~6 s. | — |
+| 3 | **Config** : héros et monde | Kenta, Aiko ou Ryo (joystick gauche/droite) et l'un des 8 mondes (haut/bas, le décor change derrière), bouton 1. Au bout de 12 s, on part avec la sélection en cours. Le 2e joueur (hot-seat) viendra plus tard. | — |
 | 4 | **Game** | HUD : score, multiplicateur, cœurs, progression du morceau, section, tour de remix. | — |
-| 5 | **Game Over + score + liste** | Animation « GAME OVER » sur le beat, puis score final, lums, médaille, tours de remix et classement actuel avec la place du joueur mise en évidence. | `HighscoreUI` |
-| 6 | **Enregistrement** | Seulement si `HighscoreManager.IsHighscore(score)` : saisie du nom sur 3 caractères, puis retour à l'écran 1. | `HighscoreNameInput` |
+| 5 | **Game Over + score + liste** | « GAME OVER » (ou « BRAVO ! » et feu d'artifice), note S+ … D, score, pièces, jugements, puis le classement. Chaque panneau se passe au bouton 1. | `HighscoreBoard` |
+| 6 | **Enregistrement** | Seulement si `HighscoreManager.IsHighscore(score)` : « NOUVEAU RECORD ! », 3 lettres (haut/bas, bouton 1 suivante, bouton 2 retour, validation auto à 20 s), envoi par `HighscoreManager.SetHighscore`, puis retour à l'écran 1 sur le classement, le nouveau score en or. | `NameEntryScreen` |
 
 Partout : bouton blanc (1,5 s) ou 60 s sans input → retour au menu de la borne (`MenuManager`).
+**Rejouer vite** : si une partie recommence moins d'une minute après la précédente, les consignes sont sautées et le héros et le monde choisis sont repris (`GameSession.IsQuickRetry`).
 Implémentation : une machine à états `GameFlow` (`Attract, Explain, Config, Playing, GameOver, NameEntry`) dans une scène unique `Main`. On évite de charger des scènes en WebGL, pour garder l'audio et le `Conductor` actifs.
 
 ## Lisibilité et ressenti

@@ -43,3 +43,12 @@ def test_slides_are_part_of_the_level():
     slides = [e["beat"] for e in EVENTS if e["type"] == "slide_bar"]
     assert len(slides) >= 5
     assert any(b < 128 for b in slides) and any(b >= 152 for b in slides)
+
+
+def test_obstacle_variety():
+    """Pas seulement des champignons et des trous : murs, glissades, tambours, plateformes et ennemis en vol."""
+    kinds = {e["type"] for e in EVENTS}
+    for k in ("gap", "wall", "slide_bar", "enemy", "bounce", "platform", "step", "ramp"):
+        assert k in kinds, k
+    assert sum(1 for e in EVENTS if e["type"] == "wall") >= 4
+    assert sum(1 for e in EVENTS if e["type"] == "enemy" and e["lane"] == 1) >= 10

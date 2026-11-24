@@ -19,6 +19,9 @@ MonoBehaviour:
   far: {fileID: 21300000, guid: c6a6fc82e468940c59c17fa4049c07b2, type: 3}
   mid: {fileID: 21300000, guid: 83988e54a105844e997ea47dd5cd410d, type: 3}
   near: {fileID: 21300000, guid: e0ead944634bb4a3b86eb0c590aea0b6, type: 3}
+  guardian: {fileID: 21300000, guid: 9a5bbf4297ed24346a32ad308ac8cea0, type: 3}
+  guardianAwake: {fileID: 21300000, guid: 913bec386f31447ad910599577591cf1, type: 3}
+  guardianOffset: {x: 139, y: 13}
   ground: {fileID: 21300000, guid: 2ffe8fcbcd27e420ba5000541a02e0ba, type: 3}
   hazard: {fileID: 21300000, guid: 6a4560b600f124d0abe93e6578d730f3, type: 3}
   wall: {fileID: 21300000, guid: b2997d496d19643efbef99935d9e341a, type: 3}
@@ -26,6 +29,12 @@ MonoBehaviour:
   ceiling: {fileID: 21300000, guid: dad6f328784394619973b552b99c8222, type: 3}
   post: {fileID: 21300000, guid: 9ccf764a0499b4382ab580b812cab888, type: 3}
   fill: {fileID: 21300000, guid: ff518a1379e1e431c8abee148f218245, type: 3}
+  fillDeep: {fileID: 21300000, guid: d8814c21f23e340868edc90771da0463, type: 3}
+  pillarDecor:
+  - {fileID: 21300000, guid: 914fb97c9a2db45ba93419193b86b481, type: 3}
+  - {fileID: 21300000, guid: e429012a3079f46ffbe2a4c35a142609, type: 3}
+  - {fileID: 21300000, guid: 30867087ec29545a1ac801daca050c2a, type: 3}
+  - {fileID: 21300000, guid: c04acdfd4eb7e4c1fb45ed978366fe7d, type: 3}
   cliff: {fileID: 21300000, guid: 8d32662291d354b1f87ba4d31de62a8b, type: 3}
   platform: {fileID: 21300000, guid: 8fc0fd92c68ce48c996aee7e4c6ac8b8, type: 3}
   enemyFrames:

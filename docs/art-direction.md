@@ -20,7 +20,7 @@ Ce document explique **comment elle est construite dans le projet** et comment l
 | Source | Contenu | Où |
 |---|---|---|
 | **PDF de la DA** (`tools/extract-kenta-pdf.py`) | 3 héros × 8 poses + pose d'attente, 8 ennemis, djembé écrasé / étiré / cassé | `Art/Kenta/Pdf/` |
-| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel, 3 calques, sol, trou, mur, bloc, plafond, poteau), pièces, totem, Sourdine, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
+| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel 640×360, 3 calques 1280×360, gardien endormi / éveillé + `guardians.json`, sol, trou, mur, bloc, plafond, poteau, flanc et flanc profond, 4 détails de pilier), pièces, totem, Sourdine, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
 
 Les PNG sont **commités** : inutile de relancer les outils sauf pour modifier un décor ou si le PDF change. Dépendances : `pip install -r tools/requirements.txt` (+ `pymupdf` pour l'extraction du PDF, `librosa` pour la chart).
 - Les sprites du PDF sont recadrés pour que le pivot soit **milieu-bas** (les pieds), sans réglage dans Unity.
@@ -38,9 +38,9 @@ Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.c
 ## Dans le code
 | Élément | Script |
 |---|---|
-| Sol à hauteur variable | `fill_<biome>` (flanc en briques), `cliff_<biome>` (dessus herbu), `platform_<biome>` (plateforme suspendue) ; la rivière continue en bas |
+| Sol à hauteur variable | `cliff_<biome>` (dessus herbu), `fill_<biome>` (flanc : bandeau clair, puis assombri), `fill_<biome>_deep` (sous 2,4 u, plus sombre), `deco_<biome>_0..3` (pierres, racines, fossiles semés sur le flanc), `platform_<biome>` (plateforme suspendue). Fond des trous : le liquide du biome (`hazard_<biome>`) juste au-dessus de la hauteur où l'on meurt |
 | 8 mondes | `Level/BiomeTheme` (SO) ; un biome = une section de la chart ; `LevelBuilder.BiomeAt(beat)` |
-| Décor | `FX/BiomeBackdrop` : ciel fixe (avec le gardien) + 3 calques de 480 px qui bouclent |
+| Décor | `FX/BiomeBackdrop` : ciel fixe 640×360, gardien (sprite à part, éveillé une mesure à chaque section et tout le refrain), 3 calques de 1280 px qui bouclent, brume. **Dessinés à la définition de la vue large** (`pixlib.Pix(scale=2)` : composition de l'écran 320×180, tracée en 640×360) : leurs pixels font la taille de ceux du niveau. Ambiance par section (`SetSection` : teinte par type de section, lumière qui baisse au fil du morceau) |
 | Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO, dont `runCycle` : 6 images) ; `HeroAnimator` choisit la pose et l'image de course selon la distance |
 | Bandeau (traînée de combo) | `FX/BandanaTrail` : 8 à 48 px selon le multiplicateur ×1 → ×8 |
 | La Sourdine | `FX/Sourdine` (interface) : au plus près à ×1, recule de 8 px par palier du multiplicateur, **s'arrête toujours juste derrière le héros** (le voile se tasse sous la masse noire) ; recouvre l'écran au game over, s'efface en cas de victoire |

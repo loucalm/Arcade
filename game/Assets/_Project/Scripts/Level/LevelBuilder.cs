@@ -452,6 +452,7 @@ namespace Kenta.Level
                 }
                 EmitGround(g, from, s.x1, s.top, floor);
             }
+            BuildPits(floor);
         }
 
         void EmitGround(Transform g, float x0, float x1, float top, float floor)
@@ -468,18 +469,82 @@ namespace Kenta.Level
             float fillTop = top - cliff;
             EmitFill(g, biome, cx, w, fillTop, floor);
             Tiled(g, "Cliff", biome.cliff, new Vector2(cx, top - cliff * 0.5f), new Vector2(w, cliff), 2);
+            EmitPillarDecor(g, biome, x0, x1, fillTop);
         }
 
-        // Flanc d'un pilier : un bandeau clair sous le bord herbu, puis le reste assombri (le dessus, où l'on court, ressort).
+        // Flanc d'un pilier : un bandeau clair sous le bord herbu, puis la terre assombrie, puis la profondeur encore plus
+        // sombre (le dessus, où l'on court, ressort ; les piliers ne sont plus un aplat uniforme).
         static readonly Color DeepFill = new(0.58f, 0.54f, 0.7f);
+        static readonly Color DeeperFill = new(0.46f, 0.42f, 0.58f);
         const float LipDepth = 0.4f;                                   // 16 px
+        const float MidDepth = 2.4f;                                   // sous 2,4 u : la profondeur
+        const float PitSurfaceDepth = 1f;                              // liquide des trous : 1 u sous le bord le plus bas
 
         void EmitFill(Transform g, BiomeTheme biome, float cx, float w, float fillTop, float floor)
         {
             float lipBottom = Mathf.Max(floor, PixelScreen.Snap(fillTop - LipDepth));
             Tiled(g, "Lip", biome.fill, new Vector2(cx, (fillTop + lipBottom) * 0.5f), new Vector2(w, fillTop - lipBottom), 1);
-            if (lipBottom - floor > 0.01f)
-                Tiled(g, "Fill", biome.fill, new Vector2(cx, (lipBottom + floor) * 0.5f), new Vector2(w, lipBottom - floor), 1).color = DeepFill;
+            if (lipBottom - floor <= 0.01f) return;
+            float midBottom = biome.fillDeep != null ? Mathf.Max(floor, PixelScreen.Snap(fillTop - MidDepth)) : floor;
+            Tiled(g, "Fill", biome.fill, new Vector2(cx, (lipBottom + midBottom) * 0.5f), new Vector2(w, lipBottom - midBottom), 1).color = DeepFill;
+            if (midBottom - floor > 0.01f)
+                Tiled(g, "Deep", biome.fillDeep, new Vector2(cx, (midBottom + floor) * 0.5f), new Vector2(w, midBottom - floor), 1).color = DeeperFill;
+        }
+
+        /// <summary>
+        /// Détails semés sur le flanc (pierres, racines, fossiles) : environ un toutes les 1,6 u, placés au hasard mais
+        /// toujours au même endroit (graine = position), sur la grille de pixels, sous le bord herbu.
+        /// </summary>
+        void EmitPillarDecor(Transform g, BiomeTheme biome, float x0, float x1, float fillTop)
+        {
+            var decor = biome.pillarDecor;
+            if (decor == null || decor.Length == 0) return;
+            const float spacing = 1.6f;
+            for (float x = Mathf.Ceil(x0 / spacing) * spacing; x < x1 - 0.4f; x += spacing)
+            {
+                uint h = Hash(Mathf.RoundToInt(x * 40f));
+                if ((h & 3u) == 0u) continue;                                      // un emplacement sur quatre reste nu
+                var sprite = decor[(h >> 2) % (uint)decor.Length];
+                if (sprite == null) continue;
+                float dx = ((h >> 5) % 24u) / 40f;                                 // 0 … 0,6 u
+                float depth = 0.75f + ((h >> 10) % 80u) / 40f;                     // 0,75 … 2,7 u sous le bord
+                float px = x + dx;
+                if (px < x0 + 0.3f || px > x1 - 0.3f) continue;
+                var sr = Spr(g, "Decor", sprite, new Vector2(PixelScreen.Snap(px), PixelScreen.Snap(fillTop - depth)), 1);
+                sr.color = depth > MidDepth - 0.4f ? DeeperFill : DeepFill;
+                sr.sortingOrder = 2;
+            }
+        }
+
+        static uint Hash(int v)
+        {
+            uint h = (uint)v * 2654435761u;
+            h ^= h >> 15;
+            h *= 2246822519u;
+            h ^= h >> 13;
+            return h;
+        }
+
+        /// <summary>
+        /// Le fond d'un trou montre le danger : le liquide du biome (eau, lave, vase…) 1 u sous le bord le plus bas, donc
+        /// dans l'image, puis plus sombre en profondeur. On y plonge avant de mourir (KillY : 2,5 u sous le bord).
+        /// Avant, le trou restait vide, couleur de la brume.
+        /// </summary>
+        void BuildPits(float floor)
+        {
+            if (gaps.Count == 0) return;
+            var g = Group("Pits", Vector2.zero);
+            foreach (var gap in gaps)
+            {
+                var biome = BiomeAtX((gap.x + gap.y) * 0.5f);
+                if (biome.hazard == null) continue;
+                float edge = Mathf.Min(HeightAt(gap.x - 0.05f), HeightAt(gap.y + 0.05f));
+                float top = PixelScreen.Snap(edge - PitSurfaceDepth);
+                float cx = (gap.x + gap.y) * 0.5f, w = gap.y - gap.x;
+                Tiled(g, "Surface", biome.hazard, new Vector2(cx, top - TileHeight * 0.5f), new Vector2(w, TileHeight), 0);
+                if (top - TileHeight - floor > 0.01f)
+                    Tiled(g, "Depth", biome.hazard, new Vector2(cx, (top - TileHeight + floor) * 0.5f), new Vector2(w, top - TileHeight - floor), 0).color = DeeperFill;
+            }
         }
 
         /// <summary>Rampe : colonnes de 8 px en escalier (pixel art, pas de rotation), le héros glisse sur la pente exacte.</summary>
