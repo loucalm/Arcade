@@ -53,6 +53,9 @@ namespace Kenta.Rhythm
         public void Lum(int index) =>
             Play(lum, Mathf.Pow(2f, Pentatonic[Mathf.Clamp(index, 0, Pentatonic.Length - 1)] / 12f), 0.55f);
 
+        /// <summary>Pièce qui joue une note de la mélodie : `semitones` par rapport au la du son de pièce.</summary>
+        public void LumNote(int semitones) => Play(lum, Mathf.Pow(2f, Mathf.Clamp(semitones, -24, 24) / 12f), 0.55f);
+
         public void Play(AudioClip clip, float pitch = 1f, float gain = 1f, bool quantized = true)
         {
             if (clip == null || pool == null) return;

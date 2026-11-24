@@ -27,7 +27,7 @@ namespace Kenta.UI
         float shownScore;
         int lastMultiplier = 1;
         float multiplierPulse, bannerTimer, feedbackTimer;
-        const float BannerDuration = 1.8f, FeedbackDuration = 1.2f;
+        const float FeedbackDuration = 1.2f;
         Color feedbackColor = Color.white;
 
         void OnEnable()
@@ -63,23 +63,18 @@ namespace Kenta.UI
             multiplierText.Text = $"×{m}";
             coinsText.Text = $"{run.Lums}/{run.TotalLums}";
             var biome = run.CurrentBiome;
-            if (biome != null) biomeText.Text = $"{biome.sectionName} · {biome.label}";
+            string section = run.SectionName.ToUpperInvariant();
+            if (biome != null) biomeText.Text = string.IsNullOrEmpty(section) ? biome.label : $"{section} · {biome.label}";
         }
 
         void HandleSection(ChartSection section, bool perfect, int bonus)
         {
-            var biome = run.CurrentBiome;
-            if (biome != null) ShowBanner(biome.label);
-            if (perfect) ShowFeedback($"SANS FAUTE +{bonus}", new Color(1f, 0.82f, 0.23f));
+            // un niveau = un monde : pas de grand bandeau au milieu de l'action (il masquait les obstacles), l'intitulé du haut suffit
+            HandleStats();
+            // pas de texte au milieu de l'action : le bonus de section se voit au score (docs/level-design-musical.md § 4)
         }
 
         void HandleDamaged() => ShowFeedback("SILENCE…", new Color(1f, 0.35f, 0.4f));
-
-        void ShowBanner(string t)
-        {
-            bannerText.Text = t;
-            bannerTimer = BannerDuration;
-        }
 
         void ShowFeedback(string t, Color c)
         {

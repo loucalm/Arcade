@@ -170,7 +170,9 @@ namespace Kenta.Core
             if (CameraRig.Instance != null)
             {
                 CameraRig.Instance.Target = player.transform;
-                CameraRig.Instance.MinAnchor = level.Ground.LowestTop;
+                CameraRig.Instance.HeightProbe = level.HeightAt;
+                CameraRig.Instance.Rail = level.RailAt;
+                CameraRig.Instance.ResetShot(Chart.zoom);
                 CameraRig.Instance.Snap();
             }
             Conductor.Instance.Play(song, 0, loop: false);
@@ -245,7 +247,8 @@ namespace Kenta.Core
             Lums++;
             Combo++;
             Score += lumPoints * Multiplier;
-            ActionSfx.Instance?.Lum(lum.sequenceIndex);
+            if (lum.hasNote) ActionSfx.Instance?.LumNote(lum.note);
+            else ActionSfx.Instance?.Lum(lum.sequenceIndex);
             FxPool.Instance?.Burst(lum.bounds.center, new Color(1f, 0.82f, 0.23f), 8, 4f, 0.14f, 0.35f, 0f, 0f);
             if (lum.view != null) lum.view.SetActive(false);
             OnLumPicked?.Invoke(lum);
@@ -275,6 +278,7 @@ namespace Kenta.Core
         /// <summary>Juge l'action (écart appui ↔ beat de l'obstacle), ajoute les points et règle le combo.</summary>
         void ScoreAction(LevelObject o, double actionBeat, int basePoints)
         {
+            if (o.silent) return;
             double offset = (actionBeat - o.beat) * Conductor.Instance.SecondsPerBeat;
             var j = TimingJudge.Judge(offset);
             if (!ApplyJudgement(ref judgeStats, o, j)) return;
@@ -359,6 +363,11 @@ namespace Kenta.Core
                     break;
                 case "camera_zoom":
                     rig.Punch(0.5f * intensity);
+                    break;
+                case "camera":
+                    // nouveau plan : zoom (coupe nette, soulignée d'un petit flash) et place du héros à l'écran
+                    rig.SetShot(e.@params.zoom, e.@params.frameX, e.@params.frameY);
+                    if (e.@params.zoom > 0) rig.Flash(Color.white, 0.25f * intensity);
                     break;
                 case "section_change":
                     rig.Shake(0.35f * intensity, 0.3f);

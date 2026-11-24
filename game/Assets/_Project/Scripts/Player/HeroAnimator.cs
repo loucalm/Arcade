@@ -37,6 +37,7 @@ namespace Kenta.Player
             if (player.IsDead) return sprites.death;
             if (player.IsPunching) return sprites.hit;
             if (player.IsSliding) return sprites.slide;
+            if (player.IsClimbing && sprites.wall != null) return sprites.wall;
             if (!player.IsGrounded) return sprites.jump;
             if (player.SinceLanded < 0.08f) return sprites.idle;
             var cycle = sprites.runCycle;

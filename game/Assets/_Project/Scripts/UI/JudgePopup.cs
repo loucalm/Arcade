@@ -26,6 +26,7 @@ namespace Kenta.UI
             group = label.GetComponent<CanvasGroup>();
             if (group == null) group = label.gameObject.AddComponent<CanvasGroup>();
             group.alpha = 0f;
+            label.Scale = 1;                     // petit et discret : il ne doit pas masquer l'action
         }
 
         void OnEnable()
@@ -47,7 +48,9 @@ namespace Kenta.UI
             label.Color = j == Judgement.Perfect ? perfectColor : j == Judgement.Good ? goodColor : mehColor;
             var rig = CameraRig.Instance;
             Vector2 cam = rig != null ? rig.ExactPosition : Vector2.zero;
-            anchor = new Vector2(Mathf.Round((world.x - cam.x) * PixelScreen.Ppu), Mathf.Round((world.y - cam.y) * PixelScreen.Ppu));
+            // monde → interface (320×180) : la vue du monde peut être plus large que l'interface (zoom de la caméra)
+            float k = PixelScreen.Instance != null ? PixelScreen.Width / (float)PixelScreen.Instance.ViewWidth : 1f;
+            anchor = new Vector2(Mathf.Round((world.x - cam.x) * PixelScreen.Ppu * k), Mathf.Round((world.y - cam.y) * PixelScreen.Ppu * k));
             t = 0f;
         }
 

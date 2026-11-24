@@ -58,7 +58,7 @@ Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à éta
 - Clips musicaux : Vorbis, `Compressed In Memory`, `Preload Audio Data` activé. SFX courts : `Decompress On Load`.
 
 ## Gameplay et DA Kenta (voir [../docs/art-direction.md](../docs/art-direction.md))
-Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteurs, interface ; défilement au sous-pixel, voir docs/art-direction.md). Monde : 40 px/unité. Hitbox héros 0,5 × 1,0 u (glissade 0,5 u), saut 1,5 u en 1 beat, vitesse 8 u/s. Mort subite.
+Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à 640 px de large selon le plan de caméra, interface en 320 × 180 ×6 (ADR-018 ; 3 calques : monde, acteurs, interface ; défilement au sous-pixel, voir docs/art-direction.md). Monde : 40 px/unité. Hitbox héros 0,5 × 1,0 u (glissade 0,5 u), saut 1,5 u en 1 beat, vitesse 8 u/s. Mort subite.
 | Script | Rôle |
 |---|---|
 | `Core/RunManager` | Une partie : build du niveau, score/combo, drops (flash, secousse), **mort subite** (un coup = fin de partie, pas de cœurs ni de checkpoint). |
@@ -66,8 +66,8 @@ Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteu
 | `Core/GameSession` | Héros choisi (statique). |
 | `Core/TimingJudge`, `Core/GradeCalculator`, `UI/JudgePopup` | Jugement PARFAIT / BIEN / BOF de chaque action (score, combo) et note de fin S+ … D (règles : docs/game-design.md). |
 | `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par section de la chart : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |
-| `Level/LevelBuilder`, `Level/LevelTerrain` | Chart → obstacles + collisions, sol à hauteur variable (`step`, `platform`, trous) lu par le joueur et la caméra. Géométrie : docs/chart-format.md. |
-| `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu 320×180 en 3 calques (couche Unity `Actors` pour le héros), caméra au sous-pixel qui suit aussi en hauteur, ciel + 3 calques en parallaxe. |
+| `Level/LevelBuilder`, `Level/LevelTerrain` | Chart → obstacles + collisions, sol à hauteur libre (`step`, `ramp`, `platform`, trous, tambours `bounce`) en piliers, lu par le joueur et la caméra ; mort par chute locale (`KillY`). Géométrie : docs/chart-format.md. |
+| `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu en 3 calques (couche Unity `Actors` pour le héros), zoom par paliers entiers (`PixelScreen.SetZoom`), caméra par plans pilotée par la chart (`camera` : zoom, place du héros), qui regarde le terrain devant ; ciel + 3 calques en parallaxe (agrandis ×2 en vue large). |
 | `FX/BandanaTrail`, `FX/Sourdine`, `FX/ScreenFx`, `FX/FxPool`, `FX/BeatFrames` | Traînée du bandeau, mur de silence, flash, particules en pixels, djembé qui change d'image sur le temps. |
 | `Player/PlayerController`, `HeroAnimator`, `HeroProfile`, `HeroSpriteSet` | Physique maison réglée en beats ; pose du héros (8 poses du PDF) ; 3 héros. |
 | `UI/PixelText`, `PixelFontData`, `RunHud`, `AttractScreen`, `HeroSelectScreen`, `ExplainScreen`, `GameOverScreen` | Interface en pixels (canvas 320×180) : police proportionnelle à ombre, plaques sous les textes posés sur le décor. |
@@ -76,7 +76,7 @@ Le jeu est en **pixel art 320 × 180 px, agrandi ×6** (3 calques : monde, acteu
 - ⚠️ Après une modification de `KentaSpritePostprocessor` (pivot, bordure), **forcer le réimport** des sprites concernés (sinon ils gardent l'ancien réglage : héros enfoncé dans le sol, plaques sans 9-slice).
 - **Sprites : jamais dessinés dans Unity.** Héros et ennemis viennent du PDF (`tools/extract-kenta-pdf.py`), le reste est généré (`tools/gen-kenta-assets.py`). Après toute régénération : menu Kenta > Reconstruire.
 - Pas de rotation ni d'échelle fractionnaire d'un sprite ; l'interface utilise des agrandissements **entiers** (`PixelText.scale`). En code UI, ne pas utiliser `SetNativeSize()` (il applique le PPU du monde) : `sizeDelta = sprite.rect.size`.
-- Autres assets générés : `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py` (musique de test). La chart du niveau vient de `tools/gen-level-chart.py`.
+- Autres assets générés : `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py` (musique de test). La chart du niveau vient de `tools/gen-level-vertical.py` (scènes écrites à la main + simulateur de l'autoplay : `--table` pour le niveau, `--map` pour la carte du morceau). Principes : `docs/level-design-musical.md`. La carte du morceau (`tools/data/level01_analysis.json`) vient de `tools/analyse-song.py` (librosa), à relancer seulement si la musique change.
 
 ## Juice / perfs (GPU intégré)
 - Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.

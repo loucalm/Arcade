@@ -19,6 +19,8 @@ namespace Kenta.Level
         public Sprite[] coinFrames;
         [Tooltip("Gardien miniature posé au début de chaque biome (checkpoint).")]
         public Sprite totem;
+        [Tooltip("Ennemi volant (à frapper en l'air), commun aux biomes : la chauve-souris du PDF.")]
+        public Sprite flyer;
         [Tooltip("Carré blanc de 1 px (40 px/unité) : traînée du bandeau, particules.")]
         public Sprite pixel;
         public Sprite sourdine;

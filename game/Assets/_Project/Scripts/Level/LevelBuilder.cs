@@ -15,14 +15,17 @@ namespace Kenta.Level
         // Décalages (en beats) entre le beat d'action et l'obstacle : ils définissent la fenêtre de tolérance.
         const float GapStartBeats = 0.2f;
         const float GapDefaultLength = 0.6f;
-        const float WallStartBeats = 0.3f;
+        const float WallStartBeats = 0.36f;         // mur centré sur le sommet du saut : ~±45 ms de marge
         const float EnemyCenterBeats = 0.4f;
         const float SlideStartBeats = 0.1f;
         const float SlideDefaultLength = 1f;
         const float SlideBarBottom = 0.62f;
-        const float StepStartBeats = 0.3f;          // marche et plateforme : comme un mur
-        const float MaxHeight = 2.0f;
+        const float StepStartBeats = 0.3f;          // plateforme : comme un mur
+        const float StepFaceBeats = 0.5f;           // marche : face à beat+0,5 → ~85 ms de marge pour un saut en retard sur +1 u
+        const float MaxHeight = 60f;                // hauteur libre : le niveau grimpe et plonge (garde-fou seulement)
         const float StepFaceMin = 0.25f;            // une montée plus haute que ça se saute (face mortelle)
+        const float BounceDefaultBeats = 2f;
+        const float PillarDepth = 14f;              // les piliers descendent jusque sous le sol le plus bas
         static readonly float[] LumLaneY = { 0.45f, 1.9f, 2.4f };
 
         [SerializeField] LevelTheme theme;
@@ -36,7 +39,9 @@ namespace Kenta.Level
         public readonly List<LevelObject> Lums = new();
         /// <summary>Plateformes (jugées à l'atterrissage, pas de collision de côté).</summary>
         public readonly List<LevelObject> Platforms = new();
-        /// <summary>Événements visuels de la chart (fx_flash, camera_shake, camera_zoom, section_change), triés par beat.</summary>
+        /// <summary>Tremplins (tambours) : lancent le héros très haut, triés par x.</summary>
+        public readonly List<LevelObject> Bounces = new();
+        /// <summary>Événements visuels de la chart (fx_flash, camera_shake, camera_zoom, camera, section_change), triés par beat.</summary>
         public readonly List<ChartEvent> FxEvents = new();
         // Données d'autoplay (debug + démo de l'écran Attract).
         public readonly List<float> AutoJumpBeats = new();
@@ -44,8 +49,11 @@ namespace Kenta.Level
         public readonly List<Vector2> AutoSlideSpans = new();
 
         readonly List<Vector2> gaps = new();
-        /// <summary>Profil du sol principal : (x de début, hauteur), trié par x.</summary>
-        readonly List<Vector2> steps = new();
+        /// <summary>
+        /// Profil du sol principal : nœuds (x, hauteur, z = 1 si le sol monte/descend en ligne droite jusqu'au nœud suivant,
+        /// 0 s'il reste plat), triés par x. Marche = nœud plat ; rampe = nœud en pente puis nœud plat.
+        /// </summary>
+        readonly List<Vector3> steps = new();
         readonly List<GroundSpan> platforms = new();
 
         /// <summary>Sol du niveau (marches, trous, plateformes) : lu par le joueur et la caméra.</summary>
@@ -71,20 +79,32 @@ namespace Kenta.Level
             root = new GameObject("Built").transform;
             root.SetParent(transform, false);
 
-            // 1er passage : le profil du sol (marches), pour poser les obstacles à la bonne hauteur
+            // 1er passage : le profil du sol (marches, rampes), pour poser les obstacles à la bonne hauteur
             float h0 = 0f;
             foreach (var e in chart.events)
             {
-                if (e.type != "step") continue;
-                float h = Mathf.Clamp(e.@params.height, 0f, MaxHeight);
-                float x = BeatToX(e.beat + StepStartBeats);
-                steps.Add(new Vector2(x, h));
-                if (h - h0 > StepFaceMin)
+                if (e.type == "step")
                 {
-                    Obstacles.Add(new LevelObject { kind = LevelObjectKind.StepFace, beat = e.beat, bounds = new Rect(x, h0, 0.05f, h - h0) });
-                    AutoJumpBeats.Add(e.beat);
+                    float h = Mathf.Clamp(e.@params.height, -MaxHeight, MaxHeight);
+                    float x = BeatToX(e.beat + StepFaceBeats);
+                    steps.Add(new Vector3(x, h, 0f));
+                    // lane 1 = falaise : on l'atteint en vol (tambour) ; pas de saut attendu, s'y cogner au sol reste mortel
+                    if (h - h0 > StepFaceMin && e.lane != 1)
+                    {
+                        Obstacles.Add(new LevelObject { kind = LevelObjectKind.StepFace, beat = e.beat, bounds = new Rect(x, h0, 0.05f, h - h0) });
+                        AutoJumpBeats.Add(e.beat);
+                    }
+                    h0 = h;
                 }
-                h0 = h;
+                else if (e.type == "ramp")
+                {
+                    // rampe automatique (course sur un mur si elle est raide) : de la hauteur actuelle à `height` en `length` beats
+                    float h = Mathf.Clamp(e.@params.height, -MaxHeight, MaxHeight);
+                    float len = e.@params.length > 0 ? e.@params.length : 1f;
+                    steps.Add(new Vector3(BeatToX(e.beat), h0, 1f));
+                    steps.Add(new Vector3(BeatToX(e.beat + len), h, 0f));
+                    h0 = h;
+                }
             }
 
             float lastX = 0f;
@@ -99,15 +119,18 @@ namespace Kenta.Level
                         float x0 = BeatToX(e.beat + GapStartBeats), x1 = BeatToX(e.beat + GapStartBeats + len);
                         gaps.Add(new Vector2(x0, x1));
                         float gh = HeightAt(x0);
-                        Obstacles.Add(new LevelObject { kind = LevelObjectKind.Gap, beat = e.beat, bounds = Rect.MinMaxRect(x0, gh - 50f, x1, gh - 1f) });
-                        AutoJumpBeats.Add(e.beat);
+                        // lane 1 = vide (sous une suite de plateformes) : pas jugé, pas de saut de l'autoplay
+                        bool silent = e.lane == 1;
+                        Obstacles.Add(new LevelObject { kind = LevelObjectKind.Gap, beat = e.beat, silent = silent, bounds = Rect.MinMaxRect(x0, gh - 50f, x1, gh - 1f) });
+                        if (!silent) AutoJumpBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, x1);
                         break;
                     }
                     case "wall":
                     {
                         float x0 = BeatToX(e.beat + WallStartBeats);   // le sprite du mur fait 36×32 px : hauteur fixe de 0,8 u
-                        var o = new LevelObject { kind = LevelObjectKind.Wall, beat = e.beat, bounds = new Rect(x0, HeightAt(x0 + 0.45f), 0.9f, 0.8f) };
+                        // hitbox indulgente (0,7 × 0,75 u) dans le sprite de 0,9 × 0,8 u, centrée pareil
+                        var o = new LevelObject { kind = LevelObjectKind.Wall, beat = e.beat, bounds = new Rect(x0 + 0.1f, HeightAt(x0 + 0.45f), 0.7f, 0.75f) };
                         o.view = MakeWall(o.bounds, BiomeAt(e.beat));
                         Obstacles.Add(o);
                         AutoJumpBeats.Add(e.beat);
@@ -118,15 +141,17 @@ namespace Kenta.Level
                     case "block":
                     {
                         bool enemy = e.type == "enemy";
+                        bool flying = enemy && e.lane == 1;         // ennemi en vol : à la hauteur absolue `height`
                         float cx = BeatToX(e.beat + EnemyCenterBeats);
-                        float ey = HeightAt(cx);
+                        float ey = flying ? p.height : HeightAt(cx);
                         var o = new LevelObject
                         {
                             kind = enemy ? LevelObjectKind.Enemy : LevelObjectKind.Block,
                             beat = e.beat,
                             bounds = enemy ? new Rect(cx - 0.4f, ey, 0.8f, 0.9f) : new Rect(cx - 0.45f, ey, 0.9f, 0.95f),
                         };
-                        o.view = enemy ? MakeEnemy(new Vector2(cx, ey), BiomeAt(e.beat)) : MakeBlock(new Vector2(cx, ey), BiomeAt(e.beat));
+                        o.view = flying ? MakeFlyer(new Vector2(cx, ey), BiomeAt(e.beat))
+                            : enemy ? MakeEnemy(new Vector2(cx, ey), BiomeAt(e.beat)) : MakeBlock(new Vector2(cx, ey), BiomeAt(e.beat));
                         Obstacles.Add(o);
                         AutoHitBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
@@ -161,13 +186,45 @@ namespace Kenta.Level
                         break;
                     }
                     case "step":
-                        lastX = Mathf.Max(lastX, BeatToX(e.beat + StepStartBeats));
+                        lastX = Mathf.Max(lastX, BeatToX(e.beat + StepFaceBeats));
                         break;
+                    case "ramp":
+                        lastX = Mathf.Max(lastX, BeatToX(e.beat + (p.length > 0 ? p.length : 1f)));
+                        break;
+                    case "bounce":
+                    {
+                        // tambour-tremplin : posé sur le sol au beat ; le héros qui passe dessus s'envole (sauter pile dessus est jugé)
+                        float cx = BeatToX(e.beat);
+                        float top = HeightAt(cx);
+                        var o = new LevelObject
+                        {
+                            kind = LevelObjectKind.Bounce,
+                            beat = e.beat,
+                            airBeats = p.length > 0 ? p.length : BounceDefaultBeats,
+                            bounds = new Rect(cx - 0.45f, top, 0.9f, 0.35f),   // tambour enfoncé dans le sol : seule la peau dépasse
+                        };
+                        o.view = MakeBounce(new Vector2(cx, top - 0.6f), BiomeAt(e.beat));
+                        Bounces.Add(o);
+                        AutoJumpBeats.Add(e.beat);
+                        lastX = Mathf.Max(lastX, cx);
+                        break;
+                    }
+                    case "lum_at":
+                    {
+                        // pièce à une hauteur absolue (arcs des tremplins, chutes)
+                        float x = BeatToX(e.beat);
+                        float ly = p.height;
+                        var o = new LevelObject { kind = LevelObjectKind.Lum, beat = e.beat, sequenceIndex = e.lane, hasNote = p.hasNote, note = p.note, bounds = new Rect(x - 0.3f, ly - 0.3f, 0.6f, 0.6f) };
+                        o.view = MakeLum(new Vector2(x, ly));
+                        Lums.Add(o);
+                        lastX = Mathf.Max(lastX, x);
+                        break;
+                    }
                     case "platform":
                     {
                         float len = p.length > 0 ? p.length : 1f;
                         float x0 = BeatToX(e.beat + StepStartBeats), x1 = BeatToX(e.beat + StepStartBeats + len);
-                        float top = Mathf.Clamp(p.height, 0f, MaxHeight);
+                        float top = Mathf.Clamp(p.height, -MaxHeight, MaxHeight);
                         platforms.Add(new GroundSpan(x0, x1, top, true));
                         Platforms.Add(new LevelObject { kind = LevelObjectKind.Platform, beat = e.beat, bounds = Rect.MinMaxRect(x0, top, x1, top) });
                         MakePlatform(x0, x1, top, BiomeAt(e.beat));
@@ -178,6 +235,7 @@ namespace Kenta.Level
                     case "fx_flash":
                     case "camera_shake":
                     case "camera_zoom":
+                    case "camera":
                     case "section_change":
                         FxEvents.Add(e);
                         break;
@@ -189,13 +247,14 @@ namespace Kenta.Level
 
             Obstacles.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
             Lums.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
+            Bounces.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
             gaps.Sort((a, b) => a.x.CompareTo(b.x));
             AutoJumpBeats.Sort();
             AutoHitBeats.Sort();
 
             float lastBeat = chart.events.Length > 0 ? chart.events[^1].beat : 0f;
-            BuildGround(lastX + 60f);
             BuildTerrain(lastX + 60f);
+            BuildGround(lastX + 60f);
             BuildBeatGrid(Mathf.CeilToInt(lastBeat) + 16);
             BuildCheckpoints();
         }
@@ -208,6 +267,7 @@ namespace Kenta.Level
             Obstacles.Clear();
             Lums.Clear();
             Platforms.Clear();
+            Bounces.Clear();
             FxEvents.Clear();
             AutoJumpBeats.Clear();
             AutoHitBeats.Clear();
@@ -223,16 +283,31 @@ namespace Kenta.Level
         {
             foreach (var o in Obstacles) if (o.beat >= beat) o.ResetState();
             foreach (var o in Lums) if (o.beat >= beat) o.ResetState();
+            foreach (var o in Bounces) if (o.beat >= beat) o.ResetState();
         }
 
-        /// <summary>Hauteur du sol principal en x (marches de la chart ; 0 avant la première).</summary>
+        /// <summary>Centre de la caméra au beat donné, d'après le rail de la chart (NaN s'il n'y en a pas).</summary>
+        public float RailAt(double beat)
+        {
+            var rail = Chart != null ? Chart.rail : null;
+            if (rail == null || rail.Length == 0) return float.NaN;
+            float step = Chart.railStep > 0f ? Chart.railStep : 0.25f;
+            float f = Mathf.Clamp((float)(beat / step), 0f, rail.Length - 1);
+            int i = Mathf.Min((int)f, rail.Length - 2);
+            return i < 0 ? rail[0] : Mathf.Lerp(rail[i], rail[i + 1], f - i);
+        }
+
+        /// <summary>Hauteur du sol principal en x (marches et rampes de la chart, trous ignorés ; 0 avant la première).</summary>
         public float HeightAt(float x)
         {
             float h = 0f;
             for (int i = 0; i < steps.Count; i++)
             {
-                if (steps[i].x > x) break;
-                h = steps[i].y;
+                var k = steps[i];
+                if (k.x > x) break;
+                h = k.y;
+                if (k.z > 0.5f && i + 1 < steps.Count && steps[i + 1].x > x)
+                    return Mathf.Lerp(k.y, steps[i + 1].y, Mathf.InverseLerp(k.x, steps[i + 1].x, x));
             }
             return h;
         }
@@ -325,69 +400,104 @@ namespace Kenta.Level
 
         IEnumerable<GroundSpan> MainSpans(float endX)
         {
-            // intervalles de hauteur constante
-            var bounds = new List<(float x0, float x1, float h)>();
+            // intervalles du profil : plats (marches) ou en pente (rampes)
+            var bounds = new List<(float x0, float x1, float h0, float h1)>();
             float from = -40f, h = 0f;
+            bool linear = false;
             foreach (var st in steps)
             {
-                if (st.x > from) bounds.Add((from, st.x, h));
+                if (st.x > from) bounds.Add((from, st.x, h, linear ? st.y : h));
                 from = Mathf.Max(from, st.x);
                 h = st.y;
+                linear = st.z > 0.5f;
             }
-            bounds.Add((from, endX, h));
+            bounds.Add((from, endX, h, h));
             // on retire les trous
-            foreach (var (x0, x1, top) in bounds)
+            foreach (var (x0, x1, h0, h1) in bounds)
             {
                 float cursor = x0;
                 foreach (var g in gaps)
                 {
                     if (g.y <= cursor || g.x >= x1) continue;
-                    if (g.x > cursor) yield return new GroundSpan(cursor, g.x, top, false);
+                    if (g.x > cursor) yield return Cut(x0, x1, h0, h1, cursor, g.x);
                     cursor = Mathf.Max(cursor, g.y);
                 }
-                if (x1 > cursor) yield return new GroundSpan(cursor, x1, top, false);
+                if (x1 > cursor) yield return Cut(x0, x1, h0, h1, cursor, x1);
             }
         }
 
+        static GroundSpan Cut(float x0, float x1, float h0, float h1, float a, float b)
+        {
+            float ta = Mathf.Lerp(h0, h1, Mathf.InverseLerp(x0, x1, a));
+            float tb = Mathf.Lerp(h0, h1, Mathf.InverseLerp(x0, x1, b));
+            return new GroundSpan(a, b, ta, tb, false);
+        }
+
+        /// <summary>Le sol en piliers : dessus herbu, flanc de terre jusque sous le point le plus bas. Les trous restent vides.</summary>
         void BuildGround(float endX)
         {
             var g = Group("Ground", Vector2.zero);
+            float floor = Ground.LowestTop - PillarDepth;
             foreach (var s in MainSpans(endX))
             {
+                if (s.Sloped) { EmitRamp(g, s, floor); continue; }
                 // découpe aux frontières de section pour suivre le biome
                 float from = s.x0;
                 for (int i = 1; i < Chart.sections.Length; i++)
                 {
                     float c = BeatToX(Chart.sections[i].startBeat);
                     if (c <= from || c >= s.x1) continue;
-                    EmitGround(g, from, c, s.top);
+                    EmitGround(g, from, c, s.top, floor);
                     from = c;
                 }
-                EmitGround(g, from, s.x1, s.top);
-            }
-            foreach (var gap in gaps)
-            {
-                var biome = BiomeAtX((gap.x + gap.y) * 0.5f);
-                Tiled(g, "Hazard", biome.hazard, new Vector2((gap.x + gap.y) * 0.5f, -TileHeight * 0.5f), new Vector2(gap.y - gap.x, TileHeight), 0);
+                EmitGround(g, from, s.x1, s.top, floor);
             }
         }
 
-        void EmitGround(Transform g, float x0, float x1, float top)
+        void EmitGround(Transform g, float x0, float x1, float top, float floor)
         {
             if (x1 - x0 < 0.01f) return;
             var biome = BiomeAtX((x0 + x1) * 0.5f);
             float cx = (x0 + x1) * 0.5f, w = x1 - x0;
-            if (top <= 0.001f || biome.fill == null || biome.cliff == null)
+            if (biome.fill == null || biome.cliff == null)
             {
                 Tiled(g, "Ground", biome.ground, new Vector2(cx, top - TileHeight * 0.5f), new Vector2(w, TileHeight), 0);
                 return;
             }
-            // sol surélevé : la rivière continue en bas, flanc de terre, dessus herbu
-            Tiled(g, "Ground", biome.ground, new Vector2(cx, -TileHeight * 0.5f), new Vector2(w, TileHeight), 0);
             const float cliff = 0.2f;                                   // 8 px
             float fillTop = top - cliff;
-            Tiled(g, "Fill", biome.fill, new Vector2(cx, fillTop * 0.5f), new Vector2(w, fillTop), 1);
+            EmitFill(g, biome, cx, w, fillTop, floor);
             Tiled(g, "Cliff", biome.cliff, new Vector2(cx, top - cliff * 0.5f), new Vector2(w, cliff), 2);
+        }
+
+        // Flanc d'un pilier : un bandeau clair sous le bord herbu, puis le reste assombri (le dessus, où l'on court, ressort).
+        static readonly Color DeepFill = new(0.58f, 0.54f, 0.7f);
+        const float LipDepth = 0.4f;                                   // 16 px
+
+        void EmitFill(Transform g, BiomeTheme biome, float cx, float w, float fillTop, float floor)
+        {
+            float lipBottom = Mathf.Max(floor, PixelScreen.Snap(fillTop - LipDepth));
+            Tiled(g, "Lip", biome.fill, new Vector2(cx, (fillTop + lipBottom) * 0.5f), new Vector2(w, fillTop - lipBottom), 1);
+            if (lipBottom - floor > 0.01f)
+                Tiled(g, "Fill", biome.fill, new Vector2(cx, (lipBottom + floor) * 0.5f), new Vector2(w, lipBottom - floor), 1).color = DeepFill;
+        }
+
+        /// <summary>Rampe : colonnes de 8 px en escalier (pixel art, pas de rotation), le héros glisse sur la pente exacte.</summary>
+        void EmitRamp(Transform g, GroundSpan s, float floor)
+        {
+            var biome = BiomeAtX((s.x0 + s.x1) * 0.5f);
+            if (biome.fill == null || biome.cliff == null) return;
+            const float col = 0.2f, cliff = 0.2f;
+            int n = Mathf.Max(1, Mathf.CeilToInt((s.x1 - s.x0) / col));
+            float w = (s.x1 - s.x0) / n;
+            for (int i = 0; i < n; i++)
+            {
+                float a = s.x0 + i * w;
+                float top = PixelScreen.Snap(s.TopAt(a + w * 0.5f));
+                float cx = a + w * 0.5f;
+                EmitFill(g, biome, cx, w, top - cliff, floor);
+                Tiled(g, "RampTop", biome.cliff, new Vector2(cx, top - cliff * 0.5f), new Vector2(w, cliff), 2);
+            }
         }
 
         void MakePlatform(float x0, float x1, float top, BiomeTheme biome)
@@ -438,6 +548,23 @@ namespace Kenta.Level
         {
             var t = Group("Block", pos);
             Spr(t, "Sprite", biome.block, Vector2.zero, 10);
+            return t.gameObject;
+        }
+
+        /// <summary>Tambour-tremplin : le tambour du biome (sprite `block`). Dans les niveaux verticaux, tambour = rebond.</summary>
+        GameObject MakeBounce(Vector2 pos, BiomeTheme biome)
+        {
+            var t = Group("Bounce", pos);
+            var sr = Spr(t, "Sprite", biome.block, Vector2.zero, 10);
+            sr.gameObject.AddComponent<PressBump>();
+            return t.gameObject;
+        }
+
+        /// <summary>Ennemi volant (chauve-souris du PDF, commune à tous les biomes ; l'ennemi du biome sinon).</summary>
+        GameObject MakeFlyer(Vector2 pos, BiomeTheme biome)
+        {
+            var t = Group("Flyer", pos);
+            Spr(t, "Sprite", theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
             return t.gameObject;
         }
 

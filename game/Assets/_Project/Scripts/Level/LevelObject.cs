@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Kenta.Level
 {
-    public enum LevelObjectKind { Gap, Wall, Enemy, Block, SlideBar, Lum, StepFace, Platform }
+    public enum LevelObjectKind { Gap, Wall, Enemy, Block, SlideBar, Lum, StepFace, Platform, Bounce }
 
     /// <summary>
     /// Donnée runtime d'un élément du niveau (collision gérée à la main, pas de moteur physique : ADR-009).
@@ -21,6 +21,13 @@ namespace Kenta.Level
         /// <summary>Déjà jugé (PARFAIT/BIEN/BOF) : un obstacle ne compte qu'une fois.</summary>
         public bool judged;
         public GameObject view;
+        /// <summary>Tremplin : durée du vol (beats).</summary>
+        public float airBeats;
+        /// <summary>Jamais jugé (vide sous des plateformes, franchi sans action propre).</summary>
+        public bool silent;
+        /// <summary>Pièce : note jouée (demi-tons par rapport au la du son de pièce), si hasNote.</summary>
+        public bool hasNote;
+        public int note;
 
         public bool IsHittable => kind == LevelObjectKind.Enemy || kind == LevelObjectKind.Block;
 
