@@ -43,7 +43,7 @@ Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.c
 | Décor | `FX/BiomeBackdrop` : ciel fixe (avec le gardien) + 3 calques de 480 px qui bouclent |
 | Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO, dont `runCycle` : 6 images) ; `HeroAnimator` choisit la pose et l'image de course selon la distance |
 | Bandeau (traînée de combo) | `FX/BandanaTrail` : 8 à 48 px selon le multiplicateur ×1 → ×8 |
-| La Sourdine | `FX/Sourdine` (interface) : avance quand on est touché, recule avec le combo, recouvre l'écran au game over |
+| La Sourdine | `FX/Sourdine` (interface) : au plus près à ×1, recule de 8 px par palier du multiplicateur, **s'arrête toujours juste derrière le héros** (le voile se tasse sous la masse noire) ; recouvre l'écran au game over, s'efface en cas de victoire |
 | Ennemis | djembé : 2 images alternées sur le temps (`BeatFrames`) ; les autres : immobiles (le sautillement au beat a été retiré) |
 | Texte | `UI/PixelText` + `PixelFontData` : police 5×7 **proportionnelle**, ombre d'1 px vers le bas, une image par caractère ; `plate` = plaque sombre arrondie (9-slice) sous les textes posés sur le décor ; agrandissements entiers |
 | Cadres | `Gen/ui/panel.png` (9-slice, coins arrondis, liseré clair) ; `Gen/ui/plate.png` (plaque de texte) |

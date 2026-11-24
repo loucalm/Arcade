@@ -63,10 +63,10 @@ Règles :
 Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT, 339/340 pièces. Points relevés, absents des listes ci-dessus.
 
 **Gameplay**
-- [ ] **P0** Une seule glissade dans tout le niveau 01 (`slide_bar` au beat 25) alors que c'est 1 des 3 commandes, enseignée à l'écran Consignes : en poser sur les notes tenues (`gen-level-vertical.py`)
-- [ ] **P0** Le multiplicateur atteint ×8 vers le beat 70 (~28 s) et n'évolue plus pendant les 3/4 du niveau ; la Sourdine reste alors loin. Pistes : les pièces ne comptent plus dans le combo, ou un palier plus long (`comboPerMultiplier`)
-- [ ] **P0** La Sourdine couvre le héros à ×1 : bord à 45 px + voile de 56 px = 101 px, alors que le héros est à ~70 px (cadrage 0,22 de la vue). Le héros est grisé en début de partie et après chaque BOF. Recaler `Sourdine.TargetEdge` sur la place du héros à l'écran
-- [ ] **P1** 339/340 pièces en autoplay : une pièce est inatteignable, donc le S+ (« toutes les pièces ») est impossible. Trouver laquelle dans le simulateur
+- [x] (2026-11-24) **P0** Une seule glissade dans tout le niveau 01 → 6 glissades (25, 51, 123,5, 171, 243,5, 253,5), test Python (`slide_bar` au beat 25) alors que c'est 1 des 3 commandes, enseignée à l'écran Consignes : en poser sur les notes tenues (`gen-level-vertical.py`)
+- [x] (2026-11-24, ADR-020) **P0** Le multiplicateur atteint ×8 vers le beat 70 (~28 s) et n'évolue plus pendant les 3/4 du niveau ; la Sourdine reste alors loin. Pistes : les pièces ne comptent plus dans le combo, ou un palier plus long (`comboPerMultiplier`)
+- [x] (2026-11-24, ADR-020) **P0** La Sourdine couvre le héros à ×1 : bord à 45 px + voile de 56 px = 101 px, alors que le héros est à ~70 px (cadrage 0,22 de la vue). Le héros est grisé en début de partie et après chaque BOF. Recaler `Sourdine.TargetEdge` sur la place du héros à l'écran
+- [x] (2026-11-24, avec la chart régénérée : 326/326 et S+ en autoplay) **P1** 339/340 pièces en autoplay : une pièce est inatteignable, donc le S+ (« toutes les pièces ») est impossible. Trouver laquelle dans le simulateur
 - [ ] **P1** Un seul monde jouable : les 8 `LevelDef` partagent la même chart et le jeu lance toujours `catalog.levels[0]` (la Sylve). Il manque l'écran ou le mode qui donne accès aux 7 autres (« niveau par biome », en cours)
 - [ ] **P1** Peu de variété d'obstacles : 49 champignons au sol, 17 chauves-souris, 21 trous, 45 marches ; plus aucun mur, bloc ni plafond (types du PDF)
 - [ ] **P1** Rejouer est long : game over (5,5 s), classement (4 s), accueil, consignes (6 s), choix du héros (12 s), soit ~25 s entre deux essais en mort subite. Pistes : passer les consignes si on rejoue dans la minute, raccourcir le game over
@@ -75,8 +75,8 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [ ] **P2** Les 3 héros sont seulement cosmétiques (mêmes sons, même gameplay) : au minimum un son de frappe par héros (caisse claire, flûte, basse) comme dans le PDF
 
 **Visuel**
-- [ ] **P0** Flash blanc plein écran + secousse + son de « checkpoint » à chacune des 10 sections, en double (`section_change` de la chart **et** `RunManager.EnterSection`), alors qu'il n'y a plus ni checkpoint ni changement de monde : ça masque les obstacles en début de section. Garder un seul effet discret, ou le réserver aux vrais drops
-- [ ] **P0** Victoire et défaite ont le même écran : la Sourdine recouvre tout et grise l'image, même sur « BRAVO ! ». Faire une fin heureuse (feu d'artifice, pose de victoire, couleurs)
+- [x] (2026-11-24, ADR-020) **P0** Flash blanc plein écran + secousse + son de « checkpoint » à chacune des 10 sections, en double (`section_change` de la chart **et** `RunManager.EnterSection`), alors qu'il n'y a plus ni checkpoint ni changement de monde : ça masque les obstacles en début de section. Garder un seul effet discret, ou le réserver aux vrais drops
+- [x] (2026-11-24, ADR-020) **P0** Victoire et défaite ont le même écran : la Sourdine recouvre tout et grise l'image, même sur « BRAVO ! ». Faire une fin heureuse (feu d'artifice, pose de victoire, couleurs)
 - [ ] **P1** Densités de pixels mélangées en vue 640 px : le décor (320×180) est agrandi ×2, donc ses pixels font 6 px d'écran contre 3 px pour le niveau et le héros. L'arbre rose du fond est plus gros et plus « cubique » que le premier plan. Dessiner le décor en 640×360, ou revenir à une vue plus serrée
 - [ ] **P1** Piliers de terre : de grands aplats de briques brun foncé (jusqu'à la moitié de l'écran), tous identiques. Ajouter racines, pierres, mousse, variations de tuiles, dégradé vers le bas
 - [ ] **P1** Trous et chutes : le fond d'un trou est vide (couleur de la brume). Montrer le danger : eau, ronces, obscurité ou la Sourdine en bas
@@ -97,7 +97,9 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [ ] **P2** Choix du héros : grands cadres sombres presque vides, sélection signalée par la seule couleur du cadre, pas de pose de victoire ni de son au déplacement
 - [ ] **P2** La frise du HUD a 8 segments (8 biomes) alors que le niveau a 11 sections et un seul monde : la caler sur les sections du niveau
 - [ ] **P2** Retour à l'accueil après une partie : le zoom de la partie (640 px) n'est pas remis à 320, et l'accueil change d'échelle après la première partie (`GameFlow.Enter(Attract)`)
-- [ ] **P2** Hors 1920×1080 (fenêtre de l'éditeur), l'interface 320×180 est rognée au cadre du monde : le HUD disparaît et le panneau de fin est coupé. Sur 1920×1080 les deux cadres font la même taille (×3 et ×6) : à confirmer dans un build
+- [ ] **P1** Le score et le multiplicateur (HUD en haut à gauche) passent sous la Sourdine : la masse et le voile recouvrent la plaque du score, même à ×8. Dessiner le HUD au-dessus de la Sourdine, ou le décaler
+- [ ] **P2** Feu d'artifice de victoire en particules simples : gerbes petites, sans fusée ni traînée
+- [ ] **P2** Hors 1920×1080 (confirmé le 24/11 : en 1920×1080 dans l'éditeur, HUD et panneaux sont entiers) (fenêtre de l'éditeur), l'interface 320×180 est rognée au cadre du monde : le HUD disparaît et le panneau de fin est coupé. Sur 1920×1080 les deux cadres font la même taille (×3 et ×6) : à confirmer dans un build
 
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)

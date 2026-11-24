@@ -62,6 +62,9 @@ namespace Kenta.FX
         /// <summary>Décalage (unités) à appliquer aux éléments du calque acteurs pour qu'ils tombent sur la grille de l'écran.</summary>
         public Vector2 ActorShift { get; private set; }
 
+        /// <summary>Place actuelle du héros à l'écran, de gauche (0) à droite (1).</summary>
+        public float HeroFrameX => frameX;
+
         /// <summary>Sol sur lequel le héros s'est posé en dernier : la caméra s'y ancre verticalement.</summary>
         public void SetGroundAnchor(float top) => anchorY = top;
 

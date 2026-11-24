@@ -35,6 +35,9 @@ namespace Kenta.Player
         Sprite Pick()
         {
             if (player.IsDead) return sprites.death;
+            var run = Kenta.Core.RunManager.Instance;
+            if (run != null && run.Completed && !run.IsRunning)          // niveau fini : il s'arrête et savoure
+                return sprites.idle != null ? sprites.idle : sprites.run;
             if (player.IsPunching) return sprites.hit;
             if (player.IsSliding) return sprites.slide;
             if (player.IsClimbing && sprites.wall != null) return sprites.wall;

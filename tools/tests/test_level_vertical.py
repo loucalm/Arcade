@@ -36,3 +36,10 @@ def test_rail_keeps_hero_in_view():
         feet = gen.track_at(track, beats, i * 0.25) - 0.5
         assert feet + 1.4 <= c + gen.VIEW_H * 0.5 + 1e-6      # la tête dans l'image
         assert feet >= c - gen.VIEW_H * 0.5 - 1e-6            # les pieds dans l'image
+
+
+def test_slides_are_part_of_the_level():
+    """La glissade est 1 des 3 commandes : elle doit revenir plusieurs fois, dans les deux passages du morceau."""
+    slides = [e["beat"] for e in EVENTS if e["type"] == "slide_bar"]
+    assert len(slides) >= 5
+    assert any(b < 128 for b in slides) and any(b >= 152 for b in slides)

@@ -42,7 +42,20 @@ namespace Kenta.Core
         public int Combo { get; private set; }
         public int Lums { get; private set; }
         public int TotalLums { get; private set; }
-        public int Multiplier => Mathf.Min(1 + Combo / Mathf.Max(1, comboPerMultiplier), maxMultiplier);
+        public int Multiplier => MultiplierFor(Combo, comboPerMultiplier, maxMultiplier);
+
+        /// <summary>
+        /// Paliers croissants : passer de ×m à ×(m+1) demande m × comboPerMultiplier / 2 actions de plus
+        /// (avec 8 : ×2 à 4 actions, ×3 à 12, ×4 à 24 … ×8 à 112). Le ×8 arrive vers les 4/5 du niveau 01
+        /// au lieu du premier quart : le multiplicateur et la Sourdine restent un enjeu tout le morceau.
+        /// </summary>
+        public static int MultiplierFor(int combo, int comboPerMultiplier, int maxMultiplier)
+        {
+            int per = Mathf.Max(1, comboPerMultiplier);
+            int m = 1;
+            while (m < maxMultiplier && combo >= per * m * (m + 1) / 4) m++;
+            return m;
+        }
         public bool IsRunning { get; private set; }
         public bool IsDemo { get; private set; }
         public bool Completed { get; private set; }
@@ -244,8 +257,7 @@ namespace Kenta.Core
 
         public void OnLumCollected(LevelObject lum)
         {
-            Lums++;
-            Combo++;
+            Lums++;                            // les pièces rapportent des points, mais seul le timing des actions fait le combo
             Score += lumPoints * Multiplier;
             if (lum.hasNote) ActionSfx.Instance?.LumNote(lum.note);
             else ActionSfx.Instance?.Lum(lum.sequenceIndex);
@@ -335,13 +347,18 @@ namespace Kenta.Core
             SectionIndex = index;
             sectionClean = true;
 
-            ActionSfx.Instance?.Checkpoint();
-            // Le drop : flash, secousse, et le décor change de monde pendant que l'écran est blanc.
+            // Le drop (flash, secousse, son, gerbe) seulement quand le monde change : un niveau = un monde, donc ses
+            // sections ne font que l'accent discret de l'événement `section_change` de la chart (TriggerFx).
             var biomeNow = level.BiomeAt(Chart.sections[index].startBeat);
+            bool newWorld = biomeNow != null && backdrop != null && biomeNow != backdrop.Current;
             ApplyBiome(index);
-            CameraRig.Instance?.Flash(biomeNow != null ? biomeNow.flash : Color.white, 1f);
-            CameraRig.Instance?.Shake(0.35f, 0.45f);
-            FxPool.Instance?.Burst(new Vector2(level.BeatToX(Chart.sections[index].startBeat), 1.2f), biomeNow != null ? biomeNow.spark : Color.white, 24, 7f, 0.2f, 0.6f, 8f, 0.5f);
+            if (newWorld)
+            {
+                ActionSfx.Instance?.Checkpoint();
+                CameraRig.Instance?.Flash(biomeNow.flash, 1f);
+                CameraRig.Instance?.Shake(0.35f, 0.45f);
+                FxPool.Instance?.Burst(new Vector2(level.BeatToX(Chart.sections[index].startBeat), 1.2f), biomeNow.spark, 24, 7f, 0.2f, 0.6f, 8f, 0.5f);
+            }
 
             OnSectionChanged?.Invoke(Chart.sections[index], perfect, bonus);
             OnStatsChanged?.Invoke();
@@ -370,9 +387,9 @@ namespace Kenta.Core
                     if (e.@params.zoom > 0) rig.Flash(Color.white, 0.25f * intensity);
                     break;
                 case "section_change":
-                    rig.Shake(0.35f * intensity, 0.3f);
-                    rig.Punch(0.4f * intensity);
-                    rig.Flash(Color.white, 0.7f * intensity);
+                    // accent sur le premier temps de la section, sans flash plein écran (il masquait les obstacles)
+                    rig.Shake(0.12f * intensity, 0.2f);
+                    rig.Punch(0.35f * intensity);
                     break;
             }
         }
