@@ -163,7 +163,8 @@ namespace Kenta.Core
 
                 case GameState.GameOver:
                     conductor?.Stop();
-                    if (sourdine != null) sourdine.Cover();
+                    // perdu : la Sourdine avale l'écran ; gagné : elle s'efface (feu d'artifice dans GameOverScreen)
+                    if (sourdine != null && (run == null || !run.Completed)) sourdine.Cover();
                     break;
 
                 case GameState.NameEntry:

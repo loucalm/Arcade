@@ -90,6 +90,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 
 - **Tests** : Unity Test Framework, tests EditMode sans asmdef dans `Assets/_Project/Editor/Tests/` (MCP `run_tests`, mode EditMode). Tests Python des générateurs : `pytest tools/tests`.
 - ⚠️ Piège MCP : `manage_camera screenshot` recompose mal les calques pixel (image fausse). Pour voir le vrai rendu : `ScreenCapture.CaptureScreenshot("Temp/gv.png")` via `execute_code`, puis lire le fichier.
+- ⚠️ Piège : avec une Game view qui n'est pas en 1920×1080 (écran Retina, « Free Aspect »), l'interface 320×180 et la vue du monde n'ont pas le même agrandissement : l'interface est rognée au cadre du monde (HUD absent, PARFAIT décalé). Pour juger l'interface, choisir une résolution fixe 1920×1080 dans la Game view.
 - ⚠️ Piège MCP : chaque `execute_code` compile du C# dans l'éditeur et fige le jeu ~300 ms (`dt` = 0,333). Pendant une partie en autoplay, ça fait rater un saut. Pour valider une chart : lancer l'autoplay, **ne rien appeler** pendant la durée du morceau, puis lire le résultat une seule fois. Même chose pour les captures (`manage_camera screenshot`) et les gros calculs CPU (génération de sprites).
 
 ## Build → borne

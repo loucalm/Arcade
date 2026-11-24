@@ -153,7 +153,7 @@ def scene_couplet(L, base, variant=False):
         L.step(b + 14.5, +1)
     # course sur le mur : de 48 à 49,5, +5 (+6 au passage 2), sur la note tenue
     L.ramp(b + 16, 1.5, +6 if variant else +5)
-    L.enemy(b + 19)             # 51
+    L.slide(b + 19, 2.0)        # 51 : au sommet, on glisse sous la branche pendant le roulement de caisse claire
     L.enemy(b + 22.5)           # 54,5 S
     L.enemy(b + 23.5)           # 55,5 S
     L.enemy(b + 25)             # 57 S
@@ -222,11 +222,11 @@ def scene_refrain(L, base, variant=False):
 
 
 def scene_retombee(L, base):
-    """120-128 : on souffle. Des pièces qui chantent la mélodie, deux coups, deux sauts."""
+    """120-128 : on souffle. Des pièces qui chantent la mélodie, un saut, un coup, une glissade, un saut."""
     b = base
     L.gap(b + 0.5)              # 120,5 K
     L.enemy(b + 2)              # 122 S
-    L.enemy(b + 4)              # 124 S
+    L.slide(b + 3.5, 1.5)       # 123,5 : longue glissade, le morceau se pose
     L.gap(b + 6.5)              # 126,5 K
 
 
@@ -251,6 +251,7 @@ def scene_fin(L):
     L.enemy(249)
     L.gap(250.5)
     L.enemy(252)
+    L.slide(253.5, 1.5)         # dernière glissade sur la dernière note
 
 
 def build():
