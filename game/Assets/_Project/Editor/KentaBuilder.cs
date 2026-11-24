@@ -128,16 +128,24 @@ namespace Kenta.EditorTools
             {
                 var set = Asset<HeroSpriteSet>(SoDir + $"Heroes/HeroSprites_{names[i]}.asset");
                 string n = ids[i];
-                set.idle = Spr($"Pdf/hero_{n}_idle.png");
-                set.run = Spr($"Pdf/hero_{n}_run.png");
-                set.runCycle = Enumerable.Range(0, 6).Select(k => Spr($"Gen/heroes/hero_{n}_run_{k}.png")).ToArray();
-                set.jump = Spr($"Pdf/hero_{n}_jump.png");
-                set.slide = Spr($"Pdf/hero_{n}_slide.png");
-                set.hit = Spr($"Pdf/hero_{n}_hit.png");
-                set.vine = Spr($"Pdf/hero_{n}_vine.png");
-                set.wall = Spr($"Pdf/hero_{n}_wall.png");
-                set.hurt = Spr($"Pdf/hero_{n}_hurt.png");
-                set.death = Spr($"Pdf/hero_{n}_death.png");
+                // marionnette de tools/hero_rig.py (tools/gen-heroes.py) ; les sprites du PDF restent dans Pdf/
+                string g = $"Gen/heroes/hero_{n}_";
+                set.idle = Spr(g + "idle.png");
+                set.runCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"run_{k}.png")).ToArray();
+                set.run = set.runCycle[0];
+                set.jumpFrames = Enumerable.Range(0, 8).Select(k => Spr(g + $"jump_{k}.png")).ToArray();
+                set.jump = set.jumpFrames[1];
+                set.slideLoop = Enumerable.Range(0, 3).Select(k => Spr(g + $"slide_{k}.png")).ToArray();
+                set.slide = set.slideLoop[0];
+                set.slideIn = Enumerable.Range(0, 3).Select(k => Spr(g + $"slidein_{k}.png")).ToArray();
+                set.slideOut = Enumerable.Range(0, 3).Select(k => Spr(g + $"slideout_{k}.png")).ToArray();
+                set.hitFrames = Enumerable.Range(0, 4).Select(k => Spr(g + $"hit_{k}.png")).ToArray();
+                set.hit = set.hitFrames[1];
+                set.crouch = Spr(g + "crouch.png");
+                set.vine = Spr(g + "vine.png");
+                set.wall = Spr(g + "wall.png");
+                set.hurt = Spr(g + "hurt.png");
+                set.death = Spr(g + "death.png");
                 EditorUtility.SetDirty(set);
                 var p = Asset<HeroProfile>(SoDir + $"Heroes/Hero_{names[i]}.asset");
                 p.displayName = names[i];
@@ -211,8 +219,6 @@ namespace Kenta.EditorTools
             t.totem = Spr("Gen/world/totem.png");
             t.flyer = Spr("Pdf/enemy_chauve.png");        // ennemi volant commun (niveaux verticaux)
             t.pixel = Spr("Gen/world/px.png");
-            t.sourdine = Spr("Gen/ui/sourdine.png");
-            t.sourdineVeil = Spr("Gen/ui/veil.png");
             EditorUtility.SetDirty(t);
             return t;
         }
@@ -623,26 +629,6 @@ namespace Kenta.EditorTools
             scaler.referencePixelsPerUnit = 100f;
             Set(ps, "uiCanvas", canvas);
 
-            // la Sourdine est sous les écrans
-            var sourdineRoot = NewRect("Sourdine", uiGo.transform, Vector2.zero);
-            sourdineRoot.anchorMin = Vector2.zero;
-            sourdineRoot.anchorMax = Vector2.one;
-            sourdineRoot.offsetMin = sourdineRoot.offsetMax = Vector2.zero;
-            var body = AddImage(sourdineRoot, "Body", theme.sourdine, Vector2.zero, null, null, true, new Vector2(0f, 0.5f));
-            var veil = AddImage(sourdineRoot, "Veil", theme.sourdineVeil, Vector2.zero, null, null, true, new Vector2(0f, 0.5f));
-            foreach (var im in new[] { body, veil })
-            {
-                var r = (RectTransform)im.transform;
-                r.anchorMin = r.anchorMax = new Vector2(0f, 0.5f);
-            }
-            var fill = AddImage(sourdineRoot, "VeilFill", Spr("Gen/ui/pixel.png"), Vector2.zero, new Color(92f / 255f, 98f / 255f, 108f / 255f, 150f / 255f), new Vector2(0, PixelScreen.Height), false, new Vector2(0f, 0.5f));
-            var fillRt = (RectTransform)fill.transform;
-            fillRt.anchorMin = fillRt.anchorMax = new Vector2(0f, 0.5f);
-            var sourdine = sourdineRoot.gameObject.AddComponent<Sourdine>();
-            Set(sourdine, "body", (RectTransform)body.transform);
-            Set(sourdine, "veil", (RectTransform)veil.transform);
-            Set(sourdine, "veilFill", fillRt);
-
             var screens = prefabs.Select(p => (GameObject)PrefabUtility.InstantiatePrefab(p, uiGo.transform)).ToArray();
             foreach (var s in screens) { var r = (RectTransform)s.transform; r.anchoredPosition = Vector2.zero; s.SetActive(false); }
             GameObject attract = screens[0], explain = screens[1], hero = screens[2], hud = screens[3], over = screens[4],
@@ -734,7 +720,6 @@ namespace Kenta.EditorTools
             Set(flow, "heroSelect", hero.GetComponent<HeroSelectScreen>());
             Set(flow, "theme", theme);
             Set(flow, "backdrop", backdrop);
-            Set(flow, "sourdine", sourdine);
             Set(flow, "highscoreBoard", board.GetComponent<HighscoreBoard>());
             Set(flow, "nameEntry", nameEntry.GetComponent<NameEntryScreen>());
             Set(flow, "gameOverDuration", 4.5f);    // titre, note puis panneau : le temps de lire (bouton 1 pour passer)

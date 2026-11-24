@@ -38,7 +38,6 @@ namespace Kenta.Core
         [Header("Monde et effets")]
         [SerializeField] LevelTheme theme;
         [SerializeField] BiomeBackdrop backdrop;
-        [SerializeField] Sourdine sourdine;
 
         [Header("Musique")]
         [SerializeField] SongData levelSong;
@@ -180,7 +179,6 @@ namespace Kenta.Core
                     if (rig != null) rig.AutoScroll = 0f;
                     if (backdrop != null) backdrop.SetGroundVisible(false);
                     conductor?.SetVolume(1f);
-                    if (sourdine != null) sourdine.ResetPosition();
                     menuLooping = false;
                     var lvl = GameSession.Level != null ? GameSession.Level : FirstLevel();
                     if (lvl != null) run?.BeginRun(lvl, demo: false);
@@ -190,8 +188,6 @@ namespace Kenta.Core
                 case GameState.GameOver:
                     conductor?.Stop();
                     GameSession.LastRunEnd = Time.unscaledTime;
-                    // perdu : la Sourdine avale l'écran ; gagné : elle s'efface (feu d'artifice dans GameOverScreen)
-                    if (sourdine != null && (run == null || !run.Completed)) sourdine.Cover();
                     if (highscoreBoard != null) highscoreBoard.ClearHighlight();
                     break;
 
@@ -220,7 +216,6 @@ namespace Kenta.Core
                 demoIndex++;
                 if (rig != null) rig.AutoScroll = 0f;
                 if (backdrop != null) backdrop.SetGroundVisible(false);
-                if (sourdine != null) sourdine.ResetPosition();
                 menuLooping = false;
                 run.BeginRun(level, demo: true);
                 Conductor.Instance?.SetVolume(attractVolume);
@@ -228,7 +223,6 @@ namespace Kenta.Core
             }
 
             run?.StopRun(hideWorld: true, stopMusic: false);
-            if (sourdine != null) sourdine.ResetPosition();
             if (p == AttractPhase.Logo && highscoreBoard != null) highscoreBoard.ClearHighlight();
             ShowMenuWorld(scroll: true);
             PlayMenuMusic();

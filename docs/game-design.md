@@ -3,7 +3,7 @@
 Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en scrolling horizontal où **toute la traversée est synchronisée sur la musique**. Bien joué, chaque saut, coup, glissade ou collecte tombe sur un temps fort : le joueur a l'impression de **jouer la musique en courant**.
 
 ## Pitch arcade (lisible en 10 s)
-« Cours, saute et frappe en rythme. Ne te fais pas toucher. Ramasse les pièces pour faire monter le score. Ne laisse pas la Sourdine te rattraper. »
+« Cours, saute et frappe en rythme. Ne te fais pas toucher. Ramasse les pièces pour faire monter le score. »
 
 **Univers, héros, huit mondes, ennemis, écrans** : voir [da-kenta.md](da-kenta.md). Les « pièces » du PDF sont les `lum` / `lum_line` du code et des charts.
 
@@ -25,7 +25,7 @@ Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en sc
 - Une **menace poursuit le joueur** (mur de son / créature) pour justifier la vitesse imposée.
 
 ## Adaptation arcade (score, fin, difficulté)
-- **Mort subite** (2026-11-04) : toucher un obstacle ou tomber dans un trou termine la partie (pose de mort ~0,8 s, la Sourdine recouvre l'écran, puis Game Over). Niveau fini : la Sourdine s'efface, feu d'artifice et « BRAVO ! » en or. Pas de cœurs, pas de checkpoint.
+- **Mort subite** (2026-11-04) : toucher un obstacle ou tomber dans un trou termine la partie (pose de mort ~0,8 s, puis Game Over). Niveau fini : feu d'artifice et « BRAVO ! » en or. Pas de cœurs, pas de checkpoint.
 - Morceau d'environ 1 min 30 à 2 min, découpé en sections (intro, montée, refrain, break, final), avec une densité d'actions croissante (noires → croches → syncopes).
 - Fin du morceau → **tour REMIX 8-bit** : même chart, clip chiptune séparé, perturbations visuelles croissantes (brouillage, zoom, tremblements, zones sombres, image inversée). On boucle en ajoutant une perturbation à chaque tour, jusqu'à la mort.
 - Durée cible d'une partie : **2 à 4 min**.

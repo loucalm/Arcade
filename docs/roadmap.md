@@ -50,7 +50,10 @@ Règles :
 - [ ] Effets remix : brouillage, image inversée, zones sombres (shaders simples, compatibles GPU intégré)
 - [ ] Écran « Comment jouer » animé (pictos des boutons au lieu du texte)
 - [ ] **DA Kenta, à finir** (voir [da-kenta.md](da-kenta.md)) :
-  - 2 à 4 images par pose du héros (le PDF n'en fournit qu'une) ; poses liane et course sur mur (déjà extraites : `vine`, `wall`) à brancher avec les mécaniques correspondantes
+  - [x] Héros redessinés en marionnette pixel art (~3,5 têtes au lieu de ~2) : course 8 images, saut 8, frappe 4, glissade 3 + entrée 3 + sortie 3, accroupi, bandeau / pan de veste / écharpe / cheveux simulés, contour de silhouette seulement (`tools/gen-heroes.py`, ADR-022) (2026-11-24)
+  - [ ] Faire valider le nouveau gabarit par l'équipe, puis **vérifier sur la borne** : lisibilité à 2 m, rendu des héros à ×3 (vue large)
+  - [ ] Animations restantes : attente animée (menus), pose de victoire, mort animée ; liane et course sur mur à brancher avec leurs mécaniques
+  - [ ] Vignette (`thumbnail.png`) et pages du site : encore avec le Kenta du PDF
   - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : gardiens animés, éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
   - scènes de drop entre biomes (tronc qui frappe, chute vers le marais, éruption, avalanche…) : aujourd'hui flash + secousse + changement de décor
   - ennemis : variante « cassé » (pièces qui s'échappent) pour les 8, comme le djembé
@@ -66,6 +69,7 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-24) **P0** Une seule glissade dans tout le niveau 01 → 6 glissades (25, 51, 123,5, 171, 243,5, 253,5), test Python (`slide_bar` au beat 25) alors que c'est 1 des 3 commandes, enseignée à l'écran Consignes : en poser sur les notes tenues (`gen-level-vertical.py`)
 - [x] (2026-11-24, ADR-020) **P0** Le multiplicateur atteint ×8 vers le beat 70 (~28 s) et n'évolue plus pendant les 3/4 du niveau ; la Sourdine reste alors loin. Pistes : les pièces ne comptent plus dans le combo, ou un palier plus long (`comboPerMultiplier`)
 - [x] (2026-11-24, ADR-020) **P0** La Sourdine couvre le héros à ×1 : bord à 45 px + voile de 56 px = 101 px, alors que le héros est à ~70 px (cadrage 0,22 de la vue). Le héros est grisé en début de partie et après chaque BOF. Recaler `Sourdine.TargetEdge` sur la place du héros à l'écran
+- [x] (2026-11-24, ADR-023) Puis **Sourdine retirée du jeu** à la demande de Jeremy : avec la mort subite, elle n'a plus de rôle
 - [x] (2026-11-24, avec la chart régénérée : 326/326 et S+ en autoplay) **P1** 339/340 pièces en autoplay : une pièce est inatteignable, donc le S+ (« toutes les pièces ») est impossible. Trouver laquelle dans le simulateur
 - [x] (2026-11-24, ADR-021) **P1** Un seul monde jouable → choix du monde à l'écran du héros (haut/bas). Reste : une chart par monde (« niveau par biome »). Avant : : les 8 `LevelDef` partagent la même chart et le jeu lance toujours `catalog.levels[0]` (la Sylve). Il manque l'écran ou le mode qui donne accès aux 7 autres (« niveau par biome », en cours)
 - [x] (2026-11-24, ADR-021) **P1** Peu de variété d'obstacles → 6 murs, 6 glissades, test Python de variété. Avant : : 49 champignons au sol, 17 chauves-souris, 21 trous, 45 marches ; plus aucun mur, bloc ni plafond (types du PDF)

@@ -47,7 +47,7 @@ namespace Kenta.Core
         /// <summary>
         /// Paliers croissants : passer de ×m à ×(m+1) demande m × comboPerMultiplier / 2 actions de plus
         /// (avec 8 : ×2 à 4 actions, ×3 à 12, ×4 à 24 … ×8 à 112). Le ×8 arrive vers les 4/5 du niveau 01
-        /// au lieu du premier quart : le multiplicateur et la Sourdine restent un enjeu tout le morceau.
+        /// au lieu du premier quart : le multiplicateur reste un enjeu tout le morceau.
         /// </summary>
         public static int MultiplierFor(int combo, int comboPerMultiplier, int maxMultiplier)
         {
@@ -319,7 +319,7 @@ namespace Kenta.Core
             return true;
         }
 
-        /// <summary>Mort subite : pose de mort, la Sourdine se referme, puis l'écran de fin.</summary>
+        /// <summary>Mort subite : pose de mort, puis l'écran de fin.</summary>
         public void Damage()
         {
             if (!IsRunning) return;

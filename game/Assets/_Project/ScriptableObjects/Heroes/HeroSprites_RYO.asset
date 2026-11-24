@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e47d9c09f9964a5e84c640397542cd6, type: 3}
   m_Name: HeroSprites_RYO
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.Player.HeroSpriteSet
-  idle: {fileID: 21300000, guid: 526444f721041488bb4bad8390502f37, type: 3}
-  run: {fileID: 21300000, guid: 1a3bcd46821804515b8287649c28ceaf, type: 3}
+  idle: {fileID: 21300000, guid: cf9de35c2b804414b9b072b594dd5e36, type: 3}
+  run: {fileID: 21300000, guid: 0a7ce2d3bd3424aff8136c1d84a09fd6, type: 3}
   runCycle:
   - {fileID: 21300000, guid: 0a7ce2d3bd3424aff8136c1d84a09fd6, type: 3}
   - {fileID: 21300000, guid: b22d86340d9764bed897ab56c8407c20, type: 3}
@@ -21,10 +21,39 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 91ad1daf10aba47ec81116290ec4b7f4, type: 3}
   - {fileID: 21300000, guid: 76289ad3c42c54c05bf4e4785773eb63, type: 3}
   - {fileID: 21300000, guid: bf204a51e62eb43abb72a241b1ce6bcc, type: 3}
-  jump: {fileID: 21300000, guid: 930bf55e66bcb418d9163238393ddb39, type: 3}
-  slide: {fileID: 21300000, guid: 59f73f37412284b328bc8108c4d1abe2, type: 3}
-  hit: {fileID: 21300000, guid: 33080fa93d4614cc9953a5e994977989, type: 3}
-  vine: {fileID: 21300000, guid: daf4ce9f2440e4bc28b28eb4e6cb2902, type: 3}
-  wall: {fileID: 21300000, guid: 129b79b96f8d14194b6c3e2df268efd7, type: 3}
-  hurt: {fileID: 21300000, guid: 8222ef5f1da284662b32455f182371df, type: 3}
-  death: {fileID: 21300000, guid: 9064c222540f647c9b5d5b2e17511502, type: 3}
+  - {fileID: 21300000, guid: c2db1ed717a5146ae97acd18f74d72fe, type: 3}
+  - {fileID: 21300000, guid: 0b15ef16d5a9f4707ae257209182f18a, type: 3}
+  jump: {fileID: 21300000, guid: c50bcbe29056f48fd902a3149f718383, type: 3}
+  slide: {fileID: 21300000, guid: 94e8e3548758143529ef4050b1d84f88, type: 3}
+  hit: {fileID: 21300000, guid: 6ac44ccc2bba8425bb5160dda711f044, type: 3}
+  vine: {fileID: 21300000, guid: 6b8ce1f5388ed43a5ac65da53e8addc8, type: 3}
+  wall: {fileID: 21300000, guid: 08f6a92ccc888483f8134e78fa7fb8cf, type: 3}
+  hurt: {fileID: 21300000, guid: c090614d43fe840579c346a0c4a2df94, type: 3}
+  death: {fileID: 21300000, guid: 1ae9f04b18dff46d185c6129f9d6c0f5, type: 3}
+  hitFrames:
+  - {fileID: 21300000, guid: 57a732a313f7143059a0029216569243, type: 3}
+  - {fileID: 21300000, guid: 6ac44ccc2bba8425bb5160dda711f044, type: 3}
+  - {fileID: 21300000, guid: eaec19ee5c705452987088658291c6e8, type: 3}
+  - {fileID: 21300000, guid: 3f5915ebcb15a454c9f9b793f747473c, type: 3}
+  jumpFrames:
+  - {fileID: 21300000, guid: 8e7fbbc292f8b4aa4be11b60773983f8, type: 3}
+  - {fileID: 21300000, guid: c50bcbe29056f48fd902a3149f718383, type: 3}
+  - {fileID: 21300000, guid: d62dc19ba4593428496e40bd512e9467, type: 3}
+  - {fileID: 21300000, guid: 2491aa3fa81114844a50e1703bd5f9d7, type: 3}
+  - {fileID: 21300000, guid: 9c6685ae66b864615a4d3a560212a733, type: 3}
+  - {fileID: 21300000, guid: 1225fb2ed83904fcdbcdf93cddda859e, type: 3}
+  - {fileID: 21300000, guid: adbe178af5431442d941cf718eb6440f, type: 3}
+  - {fileID: 21300000, guid: 50f63762c8b6e437dba31f07e0875db3, type: 3}
+  slideLoop:
+  - {fileID: 21300000, guid: 94e8e3548758143529ef4050b1d84f88, type: 3}
+  - {fileID: 21300000, guid: 32a55c1d3524d4b1895350743fb4a5f6, type: 3}
+  - {fileID: 21300000, guid: 0fefff4411a52499d826b637276e7e20, type: 3}
+  slideIn:
+  - {fileID: 21300000, guid: 45a6c40b60c094ac68e1d7c72b922db2, type: 3}
+  - {fileID: 21300000, guid: 66ce51d30acdb43a88eb330eb1a41985, type: 3}
+  - {fileID: 21300000, guid: bf42e1a5e45c3426f8015daa22a8a3e2, type: 3}
+  slideOut:
+  - {fileID: 21300000, guid: 0305c9606a43d47308f31d0e758d2f68, type: 3}
+  - {fileID: 21300000, guid: f1562b93a07eb48108b55db1e91d3b95, type: 3}
+  - {fileID: 21300000, guid: 73fc417370bf547c38a0d32c522e44d4, type: 3}
+  crouch: {fileID: 21300000, guid: e9a3d6975f0024621aaf3451c70aa179, type: 3}
