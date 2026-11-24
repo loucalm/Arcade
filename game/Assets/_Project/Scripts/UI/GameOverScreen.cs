@@ -4,8 +4,7 @@ using UnityEngine;
 namespace Kenta.UI
 {
     /// <summary>
-    /// Partie perdue (docs/da-kenta.md § 8.5) : la Sourdine recouvre l'écran, tout passe en gris, « GAME OVER » tombe sur le
-    /// temps fort suivant, puis la note (S+ … D) et le panneau : score, pièces, PARFAIT / BIEN / BOF, monde.
+    /// Partie perdue (docs/da-kenta.md § 8.5) : « GAME OVER » tombe sur le temps fort suivant, puis la note (S+ … D) et le panneau : score, pièces, PARFAIT / BIEN / BOF, monde.
     /// </summary>
     public class GameOverScreen : MonoBehaviour
     {

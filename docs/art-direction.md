@@ -20,20 +20,21 @@ Ce document explique **comment elle est construite dans le projet** et comment l
 | Source | Contenu | Où |
 |---|---|---|
 | **PDF de la DA** (`tools/extract-kenta-pdf.py`) | 3 héros × 8 poses + pose d'attente, 8 ennemis, djembé écrasé / étiré / cassé | `Art/Kenta/Pdf/` |
-| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel, 3 calques, sol, trou, mur, bloc, plafond, poteau), pièces, totem, Sourdine, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
+| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel, 3 calques, sol, trou, mur, bloc, plafond, poteau), pièces, totem, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
 
 Les PNG sont **commités** : inutile de relancer les outils sauf pour modifier un décor ou si le PDF change. Dépendances : `pip install -r tools/requirements.txt` (+ `pymupdf` pour l'extraction du PDF, `librosa` pour la chart).
 - Les sprites du PDF sont recadrés pour que le pivot soit **milieu-bas** (les pieds), sans réglage dans Unity.
 - Les biomes sont décrits dans `tools/kenta_biomes.py` (palettes issues du PDF) et dessinés par `tools/kenta_art.py`. Ajouter un biome = une entrée dans `BIOMES` + éventuellement un nouveau type de calque dans `kenta_art.py`.
 - `tools/pixlib.py` : primitives de dessin sans anti-aliasing, contour noir d'1 px, dégradés en bandes.
-- Chaque héros n'a **qu'une image par pose** dans le PDF. La **course** a 6 images générées (`tools/gen-hero-run.py`, appelé par `gen-kenta-assets.py --only heroes`) : haut du corps du PDF, jambes redessinées à 6 phases avec les couleurs du sprite ; l'image suit la distance parcourue (une foulée = 1,6 u). Les autres poses (2 à 4 images prévues par le PDF) restent à dessiner (voir roadmap).
+- **Héros : marionnette pixel art** (ADR-020), plus les sprites du PDF (gardés dans `Art/Kenta/Pdf/` pour la vignette). `tools/hero_rig.py` dessine un héros à partir d'un squelette (bassin, buste, tête, bras et jambes articulés) : proportions d'**environ 3,5 têtes** (PDF : ~2), mêmes palettes et signes distinctifs que le PDF (bandeau, écharpe et baguette de Kenta, queue de cheval et flûte d'Aiko, crinière et basse de Ryo). Style : membres effilés (plus fins vers les mains et les pieds), cheveux en mèches courbes (`HAIR` dans `hero_rig.py`), visage avec menton et oreille, ombre en bas-arrière, reflet en haut-avant, membres du fond plus sombres ; **contour noir autour de la silhouette seulement**, et lignes intérieures dans un ton sombre de la pièce de devant (« sel-out ») : un trait noir autour de chaque pièce donnait un effet « pièces détachées ». `tools/gen-heroes.py` (appelé par `gen-kenta-assets.py --only heroes`) produit toutes les images, sur une toile de 96 × 72 px (pivot milieu-bas) : **course** 8 images (deux pas = 2,4 u, bras et jambes opposés, rebond naturel), **saut** 8 images réparties sur sa durée (impulsion, genoux remontés, vrille d'un tour, ouverture, réception), **frappe** 4 images (0,45 beat après l'appui : l'arc part du haut, arc complet gelé, fin de l'arc, retour), **glissade** 3 images en boucle (façon baseball : couché, jambe avant tendue, poussière et traits de vitesse ; ~28 px de haut), avec **3 images pour se jeter au sol** (genoux qui plient, bascule en arrière, jambe qui part devant ; 0,12 s) et **3 pour se relever** (on se redresse, accroupi, on repart ; 0,15 s), **accroupi** (réception d'un saut), attente, mur, liane, touché, mort.
+- **Éléments souples simulés** à la génération (Verlet dans le repère du héros, avec le vent relatif de la course) : pans du bandeau, **pan de veste** dans le dos (les trois héros), écharpe de Kenta, queue de cheval d'Aiko (lourde : elle ondule et rebondit), mèches de Ryo. Ils traînent derrière en courant et ondulent, fouettent pendant la vrille, retombent au sommet du saut, partent vers l'avant quand le héros est touché. Régler une chaîne : `strands_for()` dans `gen-heroes.py` (frottement, gravité, flottement).
 - **Aucune animation par crans sur le temps** (rebond d'1 px au beat, texte qui saute) : ça se lit comme un tremblement. Mouvements continus (sinus lents, fondus) ou cycles d'images.
 
 ## Import Unity
 `Editor/KentaSpritePostprocessor.cs` règle tout automatiquement, par chemin : filtre Point, aucune compression, PPU **40** (monde) ou **100** (interface : un sprite fait sa taille en px dans le canvas), pivot, bordures du cadre 9-slice. **Si on change la taille d'un sprite (mur, bloc, totem), mettre à jour ses pivots dans ce fichier.**
 
 ## Reconstruire le projet après un changement d'assets
-Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.cs`) : recrée la police (`PixelFont`), les 3 héros, les 8 `BiomeTheme`, `Theme_Kenta`, les 5 prefabs d'écran et recâble la scène `Main` (affichage pixel, canvas, Sourdine, flash, héros, décor, particules). Reproductible : on le relance sans crainte.
+Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.cs`) : recrée la police (`PixelFont`), les 3 héros, les 8 `BiomeTheme`, `Theme_Kenta`, les 5 prefabs d'écran et recâble la scène `Main` (affichage pixel, canvas, flash, héros, décor, particules). Reproductible : on le relance sans crainte.
 
 ## Dans le code
 | Élément | Script |
@@ -41,9 +42,8 @@ Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.c
 | Sol à hauteur variable | `fill_<biome>` (flanc en briques), `cliff_<biome>` (dessus herbu), `platform_<biome>` (plateforme suspendue) ; la rivière continue en bas |
 | 8 mondes | `Level/BiomeTheme` (SO) ; un biome = une section de la chart ; `LevelBuilder.BiomeAt(beat)` |
 | Décor | `FX/BiomeBackdrop` : ciel fixe (avec le gardien) + 3 calques de 480 px qui bouclent |
-| Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO, dont `runCycle` : 6 images) ; `HeroAnimator` choisit la pose et l'image de course selon la distance |
+| Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO : `runCycle` 8 images, `jumpFrames` 8, `hitFrames` 4, `slideLoop` 3, `slideIn` 3, `slideOut` 3, `crouch`, poses fixes) ; `HeroAnimator` choisit l'image : course et glissade selon la distance, frappe selon le temps depuis l'appui (`PlayerController.HitAgeBeats`), saut selon son avancement (`JumpProgress`) |
 | Bandeau (traînée de combo) | `FX/BandanaTrail` : 8 à 48 px selon le multiplicateur ×1 → ×8 |
-| La Sourdine | `FX/Sourdine` (interface) : avance quand on est touché, recule avec le combo, recouvre l'écran au game over |
 | Ennemis | djembé : 2 images alternées sur le temps (`BeatFrames`) ; les autres : immobiles (le sautillement au beat a été retiré) |
 | Texte | `UI/PixelText` + `PixelFontData` : police 5×7 **proportionnelle**, ombre d'1 px vers le bas, une image par caractère ; `plate` = plaque sombre arrondie (9-slice) sous les textes posés sur le décor ; agrandissements entiers |
 | Cadres | `Gen/ui/panel.png` (9-slice, coins arrondis, liseré clair) ; `Gen/ui/plate.png` (plaque de texte) |

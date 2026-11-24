@@ -33,5 +33,3 @@ MonoBehaviour:
   totem: {fileID: 21300000, guid: 168c43d81541a4aeab4206e8a914aa13, type: 3}
   flyer: {fileID: 21300000, guid: eb31e0c5a6b944ac48d031beeac3108c, type: 3}
   pixel: {fileID: 21300000, guid: 629e8e2125bc942ba8bb6e02d25d6ce3, type: 3}
-  sourdine: {fileID: 21300000, guid: 6b406dbc2de904e0ab5ad84904a8a45a, type: 3}
-  sourdineVeil: {fileID: 21300000, guid: ffaeab15ec6544b8b9a3ded7b961d5c1, type: 3}

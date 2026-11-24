@@ -49,7 +49,7 @@ Obstacles dans l'ordre : trou / mur bas / bloc / plafond / liane-crochet.
 Pendant un drop, le joueur ne lâche jamais la manette.
 
 ## 4. Les héros : les porteurs du bandeau
-Aventuriers musiciens chibi en pixel art (environ 50 px, contour noir d'un pixel). Leur bandeau porte la partition : **ses deux pans s'allongent avec le multiplicateur et forment la traînée de combo**.
+Aventuriers musiciens en pixel art (contour noir d'un pixel). ⚠️ Dans le jeu, les héros ne sont plus chibi : proportions d'environ 3,5 têtes au lieu de ~2, mêmes couleurs et signes distinctifs, dessinés par une marionnette (ADR-020). Leur bandeau porte la partition : **ses deux pans s'allongent avec le multiplicateur et forment la traînée de combo**.
 
 | Héros | Description | Plus / moins |
 |---|---|---|
@@ -71,6 +71,7 @@ Aventuriers musiciens chibi en pixel art (environ 50 px, contour noir d'un pixel
 | Mort | se couche, ses notes s'envolent |
 
 ## 5. La Sourdine (la menace)
+⚠️ **Retirée du jeu** (ADR-021, 2026-11-24) : avec la mort subite, elle n'avait plus de rôle et masquait le héros. Ce paragraphe ne décrit plus que le PDF.
 Un mur de silence au bord gauche de l'écran (masse noire, deux yeux blancs à pupille rouge, un sourire). Tout ce qu'il couvre perd sa couleur et son son : **un simple calque gris, sans shader**.
 Elle se rapproche quand le joueur est touché et recule quand le multiplicateur monte : **la distance montre l'état du combo**.
 Sa forme par biome : Sylve brume grise · Bayou vase noire · Échos ombre · Forge cendre froide · Échine avalanche grise · Givre blizzard · Cité Sourde poussière · Orage nuage noir.

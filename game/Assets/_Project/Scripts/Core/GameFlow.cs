@@ -30,7 +30,6 @@ namespace Kenta.Core
         [Header("Monde et effets")]
         [SerializeField] LevelTheme theme;
         [SerializeField] BiomeBackdrop backdrop;
-        [SerializeField] Sourdine sourdine;
 
         [Header("Musique")]
         [SerializeField] SongData levelSong;
@@ -138,7 +137,6 @@ namespace Kenta.Core
                     GameSession.HeroIndex = 0;
                     GameSession.Hero = theme != null && theme.heroes.Length > 0 ? theme.heroes[0] : null;
                     run?.StopRun(hideWorld: true, stopMusic: false);
-                    if (sourdine != null) sourdine.ResetPosition();
                     if (PixelScreen.Instance != null) PixelScreen.Instance.SetDivider(1);
                     if (backdrop != null && theme != null) { backdrop.SetBiome(theme.biomes[0]); backdrop.SetGroundVisible(true); }
                     if (rig != null) { rig.Target = null; rig.AutoScroll = attractScroll; }
@@ -154,7 +152,6 @@ namespace Kenta.Core
                     if (rig != null) rig.AutoScroll = 0f;
                     if (backdrop != null) backdrop.SetGroundVisible(false);
                     conductor?.SetVolume(1f);
-                    if (sourdine != null) sourdine.ResetPosition();
                     var lvl = GameSession.Level != null ? GameSession.Level
                             : (catalog != null && catalog.levels != null && catalog.levels.Length > 0 ? catalog.levels[0] : null);
                     if (lvl != null) run?.BeginRun(lvl, demo: false);
@@ -163,7 +160,6 @@ namespace Kenta.Core
 
                 case GameState.GameOver:
                     conductor?.Stop();
-                    if (sourdine != null) sourdine.Cover();
                     break;
 
                 case GameState.NameEntry:

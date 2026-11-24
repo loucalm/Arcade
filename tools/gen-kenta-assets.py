@@ -3,7 +3,7 @@
 
 Les sprites des héros et des ennemis ne sont PAS générés : ils viennent du PDF de la DA
 (tools/extract-kenta-pdf.py). Ici : 8 biomes (ciel, 3 calques en parallaxe, sol, trou, obstacles), pièces,
-Sourdine, totem, logo, cœurs, cadres et police pixel.
+totem, logo, cœurs, cadres et police pixel.
 
 Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,font] [--sheet planche.png]
 Dossier par défaut : game/Assets/_Project/Art/Kenta/Gen   (dépendances : tools/requirements.txt)
@@ -61,8 +61,6 @@ def gen_ui(out, sheet):
     put(out, "ui", "button_blue", ui.draw_button("#4A90D8"), sheet)
     put(out, "ui", "stick", ui.draw_stick(), sheet)
     put(out, "ui", "pixel", Pix(1, 1, "#FFFFFF"))
-    put(out, "ui", "veil", ui.draw_veil())
-    put(out, "ui", "sourdine", ui.draw_sourdine(), sheet)
     put(out, "world", "px", Pix(1, 1, "#FFFFFF"))
     put(out, "world", "totem", ui.draw_totem(), sheet)
     for f in range(4):
@@ -104,9 +102,9 @@ def gen_thumbnail(out, sheet):
 
 
 def gen_heroes(out, sheet):
-    """Cycles de course à 6 images (tools/gen-hero-run.py), à partir des sprites du PDF."""
+    """Toutes les images des héros, dessinées par la marionnette de tools/hero_rig.py (tools/gen-heroes.py)."""
     import importlib.util
-    spec = importlib.util.spec_from_file_location("gen_hero_run", os.path.join(ROOT, "tools", "gen-hero-run.py"))
+    spec = importlib.util.spec_from_file_location("gen_heroes", os.path.join(ROOT, "tools", "gen-heroes.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     mod.main()

@@ -302,7 +302,7 @@ namespace Kenta.Core
             return true;
         }
 
-        /// <summary>Mort subite : pose de mort, la Sourdine se referme, puis l'écran de fin.</summary>
+        /// <summary>Mort subite : pose de mort, puis l'écran de fin.</summary>
         public void Damage()
         {
             if (!IsRunning) return;

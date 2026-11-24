@@ -1,4 +1,4 @@
-"""Police pixel 5×7, logo KENTA, cœurs, cadres, pièces, Sourdine et totem (pixel art). Utilisé par gen-kenta-assets.py."""
+"""Police pixel 5×7, logo KENTA, cœurs, cadres, pièces et totem (pixel art). Utilisé par gen-kenta-assets.py."""
 import math
 import random
 
@@ -255,43 +255,3 @@ def draw_totem():
     p.line((6, 11), (8, 11), "#5A5E6E", 1)
     p.line((12, 11), (14, 11), "#5A5E6E", 1)
     return outlined(p)
-
-
-# ---------------------------------------------------------------- la Sourdine
-def draw_sourdine():
-    """Mur de silence : masse noire à deux grands yeux blancs (pupille rouge) et un sourire, bord droit en grumeaux."""
-    rng = random.Random("sourdine")
-    p = Pix(104, 180)
-    body, edge = "#14101C", "#1C1830"
-    p.rect(0, 0, 80, 180, body)
-    y = -6
-    while y < 140:
-        r = rng.randint(14, 22)
-        p.circle(80 + rng.randint(-2, 6), y + r // 2, r, body)
-        y += r + rng.randint(-2, 6)
-    for i in range(0, 180, 9):                      # rayures de pluie
-        p.line((10 + (i * 3) % 70, i), (22 + (i * 3) % 70, i + 22), "#262240", 1)
-    # yeux
-    for ex in (30, 62):
-        p.ellipse(ex, 55, 9, 13, "#FFFFFF")
-        p.ellipse(ex + 2, 57, 4, 6, "#D82446")
-        p.ellipse(ex + 2, 55, 2, 3, "#14101C")
-        p.px(ex - 2, 50, "#FFFFFF")
-    # sourire
-    pts = [(20, 84), (28, 92), (40, 96), (52, 96), (64, 92), (72, 84)]
-    for a, b in zip(pts, pts[1:]):
-        p.line(a, b, "#0A0810", 3)
-    return p
-
-
-def draw_veil():
-    """Calque gris « sans shader » : la couleur disparaît près de la Sourdine, tramage ordonné sur 4 niveaux."""
-    w, h = 56, 180
-    p = Pix(w, h)
-    bayer = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
-    for x in range(w):
-        level = 1 - x / (w - 1)                      # 1 à gauche → 0 à droite
-        for y in range(h):
-            if bayer[y % 4][x % 4] / 16.0 < level * 0.9:
-                p.px(x, y, (92, 98, 108, 150))
-    return p

@@ -50,7 +50,10 @@ Règles :
 - [ ] Effets remix : brouillage, image inversée, zones sombres (shaders simples, compatibles GPU intégré)
 - [ ] Écran « Comment jouer » animé (pictos des boutons au lieu du texte)
 - [ ] **DA Kenta, à finir** (voir [da-kenta.md](da-kenta.md)) :
-  - 2 à 4 images par pose du héros (le PDF n'en fournit qu'une) ; poses liane et course sur mur (déjà extraites : `vine`, `wall`) à brancher avec les mécaniques correspondantes
+  - [x] Héros redessinés en marionnette pixel art (~3,5 têtes au lieu de ~2) : course 8 images, saut 8, frappe 4, glissade 3 + entrée 3 + sortie 3, accroupi, bandeau / pan de veste / écharpe / cheveux simulés, contour de silhouette seulement (`tools/gen-heroes.py`, ADR-020) (2026-11-24)
+  - [ ] Faire valider le nouveau gabarit par l'équipe, puis **vérifier sur la borne** : lisibilité à 2 m, rendu des héros à ×3 (vue large)
+  - [ ] Animations restantes : attente animée (menus), pose de victoire, mort animée ; liane et course sur mur à brancher avec leurs mécaniques
+  - [ ] Vignette (`thumbnail.png`) et pages du site : encore avec le Kenta du PDF
   - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : gardiens animés, éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
   - scènes de drop entre biomes (tronc qui frappe, chute vers le marais, éruption, avalanche…) : aujourd'hui flash + secousse + changement de décor
   - ennemis : variante « cassé » (pièces qui s'échappent) pour les 8, comme le djembé
@@ -64,8 +67,8 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 
 **Gameplay**
 - [ ] **P0** Une seule glissade dans tout le niveau 01 (`slide_bar` au beat 25) alors que c'est 1 des 3 commandes, enseignée à l'écran Consignes : en poser sur les notes tenues (`gen-level-vertical.py`)
-- [ ] **P0** Le multiplicateur atteint ×8 vers le beat 70 (~28 s) et n'évolue plus pendant les 3/4 du niveau ; la Sourdine reste alors loin. Pistes : les pièces ne comptent plus dans le combo, ou un palier plus long (`comboPerMultiplier`)
-- [ ] **P0** La Sourdine couvre le héros à ×1 : bord à 45 px + voile de 56 px = 101 px, alors que le héros est à ~70 px (cadrage 0,22 de la vue). Le héros est grisé en début de partie et après chaque BOF. Recaler `Sourdine.TargetEdge` sur la place du héros à l'écran
+- [ ] **P0** Le multiplicateur atteint ×8 vers le beat 70 (~28 s) et n'évolue plus pendant les 3/4 du niveau. Pistes : les pièces ne comptent plus dans le combo, ou un palier plus long (`comboPerMultiplier`)
+- [x] La Sourdine couvrait et grisait le héros : **Sourdine retirée du jeu** (ADR-021) (2026-11-24)
 - [ ] **P1** 339/340 pièces en autoplay : une pièce est inatteignable, donc le S+ (« toutes les pièces ») est impossible. Trouver laquelle dans le simulateur
 - [ ] **P1** Un seul monde jouable : les 8 `LevelDef` partagent la même chart et le jeu lance toujours `catalog.levels[0]` (la Sylve). Il manque l'écran ou le mode qui donne accès aux 7 autres (« niveau par biome », en cours)
 - [ ] **P1** Peu de variété d'obstacles : 49 champignons au sol, 17 chauves-souris, 21 trous, 45 marches ; plus aucun mur, bloc ni plafond (types du PDF)
@@ -76,10 +79,10 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 
 **Visuel**
 - [ ] **P0** Flash blanc plein écran + secousse + son de « checkpoint » à chacune des 10 sections, en double (`section_change` de la chart **et** `RunManager.EnterSection`), alors qu'il n'y a plus ni checkpoint ni changement de monde : ça masque les obstacles en début de section. Garder un seul effet discret, ou le réserver aux vrais drops
-- [ ] **P0** Victoire et défaite ont le même écran : la Sourdine recouvre tout et grise l'image, même sur « BRAVO ! ». Faire une fin heureuse (feu d'artifice, pose de victoire, couleurs)
+- [ ] **P0** Victoire et défaite ont le même écran (le gris de la Sourdine est retiré, mais « BRAVO ! » et « GAME OVER » restent identiques). Faire une fin heureuse (feu d'artifice, pose de victoire, couleurs)
 - [ ] **P1** Densités de pixels mélangées en vue 640 px : le décor (320×180) est agrandi ×2, donc ses pixels font 6 px d'écran contre 3 px pour le niveau et le héros. L'arbre rose du fond est plus gros et plus « cubique » que le premier plan. Dessiner le décor en 640×360, ou revenir à une vue plus serrée
 - [ ] **P1** Piliers de terre : de grands aplats de briques brun foncé (jusqu'à la moitié de l'écran), tous identiques. Ajouter racines, pierres, mousse, variations de tuiles, dégradé vers le bas
-- [ ] **P1** Trous et chutes : le fond d'un trou est vide (couleur de la brume). Montrer le danger : eau, ronces, obscurité ou la Sourdine en bas
+- [ ] **P1** Trous et chutes : le fond d'un trou est vide (couleur de la brume). Montrer le danger : eau, ronces ou obscurité en bas
 - [ ] **P1** Un seul décor pendant 1 min 43 : même arbre rose, même gardien, même ciel. Varier par section (heure, météo, couleurs) même sans changer de biome
 - [ ] **P1** Le gardien (Cerf de pierre) est une tache grise floue derrière la brume, jamais animé : le rendre lisible et le faire réagir aux sections
 - [ ] **P2** Pièces qui tournent : les images de profil (1 à 2 px de large) se lisent comme des traits orange parasites dans les arcs. Garder des images plus larges, ou ne pas les faire tourner

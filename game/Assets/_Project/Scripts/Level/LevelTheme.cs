@@ -23,7 +23,5 @@ namespace Kenta.Level
         public Sprite flyer;
         [Tooltip("Carré blanc de 1 px (40 px/unité) : traînée du bandeau, particules.")]
         public Sprite pixel;
-        public Sprite sourdine;
-        public Sprite sourdineVeil;
     }
 }

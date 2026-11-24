@@ -63,6 +63,11 @@ namespace Kenta.Player
         public double SlideStartBeat { get; private set; } = -99;
         /// <summary>Secondes depuis le dernier atterrissage.</summary>
         public float SinceLanded => Time.time - landedAt;
+        /// <summary>Avancement du saut ou du rebond en cours (0 au décollage, 1 à l'atterrissage prévu) ; -1 au sol
+        /// ou en simple chute (bord de plateforme). Sert à caler la vrille sur la durée du saut.</summary>
+        public float JumpProgress => grounded || airBeats <= 0f ? -1f : Mathf.Clamp01((float)((nowBeat - airStartBeat) / airBeats));
+        /// <summary>Beats écoulés depuis le dernier appui sur « frappe » (négatif ou très grand s'il n'y en a pas eu).</summary>
+        public double HitAgeBeats => nowBeat - LastHitPressBeat;
 
         LevelBuilder level;
         RunManager run;
@@ -78,6 +83,8 @@ namespace Kenta.Player
         Vector3 squash = Vector3.one;
         float slashTimer, slashDuration = 0.1f;
         float landedAt = -99f;
+        double nowBeat, airStartBeat;
+        float airBeats;                       // durée du saut ou du rebond en cours (0 : pas de saut)
         int bounceCursor;
         LevelObject pendingBounce;
 
@@ -104,6 +111,8 @@ namespace Kenta.Player
             jumpBufferBeat = hitUntilBeat = -99;
             LastJumpPressBeat = LastHitPressBeat = SlideStartBeat = -99;
             lastGroundedBeat = beat;
+            nowBeat = beat;
+            airBeats = 0f;
             float x = level.BeatToX(beat);
             y = groundTop = level.HeightAt(x);
             transform.position = new Vector3(x, y, 0f);
@@ -146,6 +155,7 @@ namespace Kenta.Player
             if (conductor == null) return;
 
             double beat = conductor.SongBeat;
+            nowBeat = beat;
             float spb = (float)conductor.SecondsPerBeat;
             float dt = Time.deltaTime;
             float x = level.BeatToX(beat);
@@ -163,7 +173,7 @@ namespace Kenta.Player
             if (grounded)
             {
                 float support = ground.SupportTop(x, half, y);
-                if (float.IsNegativeInfinity(support)) { grounded = false; vy = 0f; }
+                if (float.IsNegativeInfinity(support)) { grounded = false; vy = 0f; airBeats = 0f; }
                 else if (support != y)
                 {
                     y = groundTop = support;
@@ -238,7 +248,8 @@ namespace Kenta.Player
             vy = velocity;
             grounded = false;
             jumpBufferBeat = -99;
-            jumpStartBeat = beat;
+            jumpStartBeat = airStartBeat = beat;
+            airBeats = jumpAirBeats;
             spinning = spinOnJump;
             squash = Squash(0.82f, 1.2f);
             ActionSfx.Instance?.Jump();
@@ -259,6 +270,7 @@ namespace Kenta.Player
             CameraRig.Instance?.SetGroundAnchor(top);
             vy = 0f;
             grounded = true;
+            airBeats = 0f;
             spinning = false;
             spinner.localRotation = Quaternion.identity;
             squash = Squash(1.2f, 0.82f);
@@ -287,6 +299,8 @@ namespace Kenta.Player
                 vy = (landTop - y + 0.5f * gravity * t * t) / t;
                 grounded = false;
                 IsBouncing = true;
+                airStartBeat = beat;
+                airBeats = o.airBeats;
                 jumpBufferBeat = -99;
                 if (System.Math.Abs(LastJumpPressBeat - o.beat) <= 0.5) run.OnObstacleCleared(o, LastJumpPressBeat);
                 else pendingBounce = o;
