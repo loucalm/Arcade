@@ -215,7 +215,7 @@ def scene_refrain(L, base, variant=False):
         L.ramp(b + 12.5, 2.0, -10)                      # 108,5 : la dévalée
         L.enemy(b + 15)         # 111 S
     L.enemy(b + 17)             # 113 S
-    L.gap(b + 18.5)
+    L.wall(b + 18.5)            # 114,5 : une souche à sauter (un mur au lieu d'un trou, pour varier)
     L.enemy(b + 20)             # 116 S
     L.enemy(b + 21)             # 117 S
     L.step(b + 22.5, -6)        # 118,5 : le plongeon (la caméra l'a anticipé)
@@ -227,7 +227,7 @@ def scene_retombee(L, base):
     L.gap(b + 0.5)              # 120,5 K
     L.enemy(b + 2)              # 122 S
     L.slide(b + 3.5, 1.5)       # 123,5 : longue glissade, le morceau se pose
-    L.gap(b + 6.5)              # 126,5 K
+    L.wall(b + 6.5)             # 126,5 K : une souche
 
 
 def scene_final(L):
@@ -242,14 +242,14 @@ def scene_final(L):
     L.flyer(141)
     L.gap(142.5)                # K
     L.enemy(144)
-    L.gap(145.5)                # k
+    L.wall(145.5)               # k : une souche au sommet de la tour
     L.enemy(147)
     L.ramp(148, 3.5, -16)       # la grande dévalée
 
 
 def scene_fin(L):
     L.enemy(249)
-    L.gap(250.5)
+    L.wall(250.5)
     L.enemy(252)
     L.slide(253.5, 1.5)         # dernière glissade sur la dernière note
 

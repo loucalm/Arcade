@@ -1,11 +1,17 @@
-"""Dessin des décors, du sol et des obstacles de chaque biome (pixel art 320×180). Utilisé par gen-kenta-assets.py."""
+"""Dessin des décors, du sol et des obstacles de chaque biome. Utilisé par gen-kenta-assets.py.
+
+Les décors (ciel, calques en parallaxe, gardien) sont composés dans les coordonnées de l'écran 320×180 mais tracés
+×BG_SCALE (640×360) : en vue large (640 px), leurs pixels ont la même taille que ceux du niveau et du héros."""
 import math
 import random
+
+from PIL import Image, ImageDraw
 
 from pixlib import Pix, banded_gradient, blob, col, mix, outlined, shade, tile_wrap
 
 W_SCREEN, H_SCREEN, GROUND_Y = 320, 180, 132     # le sol de référence est à 48 px du bas (CameraRig.baseY)
 STRIP_W = 640
+BG_SCALE = 2                                      # décors tracés en 640×360 (calques : 1280×360)
 # les palettes de kenta_biomes.py donnent les positions (soleil) pour l'ancien écran de 240×135 au sol à 115
 SX, SY = W_SCREEN / 240, GROUND_Y / 115
 
@@ -17,9 +23,10 @@ def rng_for(biome, salt):
 # ============================================================================
 # CIEL (320×180, fixe) : bandes, soleil / étoiles, nuages, gardien
 # ============================================================================
-def draw_sky(b):
+def draw_sky(b, scale=BG_SCALE, statue=False):
+    """Ciel fixe : bandes, astre, étoiles. Le gardien est un sprite à part (draw_guardian), sauf pour la jaquette."""
     rng = rng_for(b, "sky")
-    p = banded_gradient(W_SCREEN, H_SCREEN, b["sky"], 0, GROUND_Y, jitter=0.35, rng=rng)
+    p = banded_gradient(W_SCREEN, H_SCREEN, b["sky"], 0, GROUND_Y, jitter=0.35, rng=rng, scale=scale)
     p.rect(0, GROUND_Y, W_SCREEN, H_SCREEN, b["sky"][-1])
     if b["sun"]:
         c, x, y, r = b["sun"]
@@ -34,18 +41,37 @@ def draw_sky(b):
             if rng.random() < 0.18:
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     p.px(x + dx, y + dy, mix(b["stars"], b["sky"][1], 0.5))
-    draw_statue(p, b, round(172 * SX), GROUND_Y)
-    if b["clouds"] and b["id"] not in ("forge", "echine", "givre", "cite", "orage"):
-        pass
+    if statue:
+        draw_statue(p, b, GUARDIAN_X, GROUND_Y)
     return p
 
 
-def draw_statue(p, b, cx, base):
-    """Gardien : énorme statue endormie, teintée de l'air du biome (très peu contrastée, pour ne pas gêner la lecture)."""
+GUARDIAN_X = round(172 * SX)
+
+
+def draw_guardian(b, awake=False):
+    """Gardien seul (fond transparent), recadré. Renvoie (image, (dx, dy)) : décalage en px réels du centre de l'image
+    par rapport au centre de l'écran 640×360, y vers le haut (BiomeBackdrop le place comme le ciel)."""
+    p = Pix(W_SCREEN, H_SCREEN, scale=BG_SCALE)
+    draw_statue(p, b, GUARDIAN_X, GROUND_Y, awake=awake)
+    x0, y0, x1, y1 = p.im.getbbox()
+    x0, y0, x1, y1 = max(0, x0 - 1), max(0, y0 - 1), min(p.im.width, x1 + 1), min(p.im.height, y1 + 1)
+    x1 += (x1 - x0) % 2                           # dimensions paires : le centre (pivot) tombe sur un pixel entier
+    y1 += (y1 - y0) % 2
+    crop = Pix(1, 1)
+    crop.im = p.im.crop((x0, y0, x1, y1))
+    crop.w, crop.h = crop.im.size
+    dx = (x0 + x1) / 2 - p.im.width / 2
+    dy = p.im.height / 2 - (y0 + y1) / 2
+    return crop, (dx, dy)
+
+
+def draw_statue(p, b, cx, base, awake=False):
+    """Gardien : énorme statue, teintée de l'air du biome. Endormie (yeux clos) ou éveillée (yeux ouverts qui brillent)."""
     s = b["statue"]
     sky = b["sky"][3]
-    body = mix(s["body"], sky, 0.18)
-    line = mix(s["line"], sky, 0.1)
+    body = mix(s["body"], sky, 0.08)               # assez contrasté pour être lu (audit du 24/11), sans voler la vedette
+    line = s["line"]
     kind = s["kind"]
     hx, hy = cx, base - 54          # tête
     # corps assis puis tête
@@ -94,10 +120,18 @@ def draw_statue(p, b, cx, base):
         for i, dx in enumerate((-16, -6, 4, 14)):
             p.poly([(hx + dx - 5, hy - 18), (hx + dx, hy - 40 - (i % 2) * 8), (hx + dx + 5, hy - 18)], body)
     p.ellipse(hx, hy, 33, 26, body)
-    # visage endormi : yeux clos, petite bouche
-    p.line((hx - 20, hy - 2), (hx - 8, hy - 2), line, 2)
-    p.line((hx + 8, hy - 2), (hx + 20, hy - 2), line, 2)
-    p.rect(hx - 2, hy + 10, hx + 3, hy + 12, line)
+    if awake:
+        # éveillé : grands yeux clairs, pupilles de la couleur de la mousse, bouche ouverte qui chante
+        for sgn in (-1, 1):
+            p.ellipse(hx + sgn * 14, hy - 2, 6, 5, line)
+            p.ellipse(hx + sgn * 14, hy - 2, 5, 4, "#FFF6D8")
+            p.ellipse(hx + sgn * 14 + 1, hy - 1, 2, 2, s["moss"])
+        p.ellipse(hx, hy + 12, 5, 3, line)
+    else:
+        # visage endormi : yeux clos, petite bouche
+        p.line((hx - 20, hy - 2), (hx - 8, hy - 2), line, 2)
+        p.line((hx + 8, hy - 2), (hx + 20, hy - 2), line, 2)
+        p.rect(hx - 2, hy + 10, hx + 3, hy + 12, line)
     if kind == "bird":
         p.poly([(hx - 6, hy + 4), (hx + 6, hy + 4), (hx, hy + 16)], s["moss"])
     if kind == "frog":
@@ -125,9 +159,9 @@ def pine(p, x, base, h, c, snow=None):
             p.poly([(x, top), (x - half // 2, top + (bot - top) // 2), (x + half // 2, top + (bot - top) // 2)], snow)
 
 
-def draw_far(b):
+def draw_far(b, scale=BG_SCALE):
     rng = rng_for(b, "far")
-    p = Pix(STRIP_W, H_SCREEN)
+    p = Pix(STRIP_W, H_SCREEN, scale=scale)
     f = b["far"]
     k = f["kind"]
     if k in ("mountains", "icepeaks"):
@@ -212,9 +246,9 @@ def draw_far(b):
     return p
 
 
-def draw_mid(b):
+def draw_mid(b, scale=BG_SCALE):
     rng = rng_for(b, "mid")
-    p = Pix(STRIP_W, H_SCREEN)
+    p = Pix(STRIP_W, H_SCREEN, scale=scale)
     m = b["mid"]
     k = m["kind"]
     n = m["count"]
@@ -268,9 +302,9 @@ def draw_mid(b):
     return p
 
 
-def draw_near(b):
+def draw_near(b, scale=BG_SCALE):
     rng = rng_for(b, "near")
-    p = Pix(STRIP_W, H_SCREEN)
+    p = Pix(STRIP_W, H_SCREEN, scale=scale)
     n = b["near"]
     for x in (40, 290):
         h = rng.randint(66, 80)
@@ -327,6 +361,54 @@ def draw_fill(b):
     for _ in range(18):
         p.px(rng.randrange(32), rng.randrange(32), shade(g["dirt"], 0.12))
     return p
+
+
+def draw_fill_deep(b):
+    """Flanc en profondeur (sous ~2 u) : la même terre, plus sombre, avec des pierres enfouies. Les piliers fonçent vers le bas."""
+    g = b["ground"]
+    rng = rng_for(b, "filldeep")
+    p = draw_fill(b)
+    a = p.array()
+    a[..., :3] = (a[..., :3] * 0.72).astype(a.dtype)
+    p.im = Image.fromarray(a, "RGBA")
+    p.d = ImageDraw.Draw(p.im)
+    for _ in range(3):
+        x, y = rng.randrange(3, 29), rng.randrange(3, 29)
+        p.ellipse(x, y, 2, 1, shade(g["dirt2"], -0.2))
+    return p
+
+
+def draw_deco(b, k):
+    """Détails semés sur le flanc des piliers (pierre, racine, fossile, cailloux) : contour d'1 px, couleurs de la terre."""
+    g = b["ground"]
+    rng = rng_for(b, f"deco{k}")
+    stone = mix(g["dirt2"], "#C8C0B0", 0.45)
+    if k == 0:                                   # grosse pierre
+        p = Pix(14, 10)
+        p.ellipse(7, 5, 6, 4, stone)
+        p.ellipse(6, 4, 4, 2, shade(stone, 0.18))
+        p.px(9, 6, shade(stone, -0.25))
+    elif k == 1:                                 # racine qui pend
+        p = Pix(12, 16)
+        x = 6
+        for y in range(16):
+            x += rng.choice((-1, 0, 0, 1))
+            x = max(2, min(9, x))
+            p.rect(x, y, x + 2, y + 1, shade(g["dirt2"], -0.15))
+            if y % 5 == 3:
+                p.px(x + 2, y + 1, g["dirt2"])
+    elif k == 2:                                 # fossile en spirale
+        p = Pix(12, 12)
+        p.circle(6, 6, 5, stone)
+        p.circle(6, 6, 3, shade(stone, -0.2))
+        p.circle(6, 6, 2, stone)
+        p.px(6, 6, shade(stone, -0.3))
+    else:                                        # cailloux
+        p = Pix(14, 8)
+        for cx, cy, r in ((3, 4, 2), (8, 5, 2), (11, 3, 1)):
+            p.circle(cx, cy, r, stone)
+            p.px(cx - 1, cy - 1, shade(stone, 0.25))
+    return outlined(p, color=shade(g["dirt"], -0.55))
 
 
 def draw_cliff_top(b):

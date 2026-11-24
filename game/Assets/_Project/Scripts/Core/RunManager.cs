@@ -178,6 +178,11 @@ namespace Kenta.Core
             world.SetActive(true);
             ApplyHero();
             ApplyBiome(0);
+            if (backdrop != null)
+            {
+                backdrop.ResetMood();
+                backdrop.SetSection(Chart.sections.Length > 0 ? Chart.sections[0].name : "", 0f, 0.01f);
+            }
             player.Setup(level, this, CreateInput());
             player.Spawn(0);
             if (CameraRig.Instance != null)
@@ -352,6 +357,7 @@ namespace Kenta.Core
             var biomeNow = level.BiomeAt(Chart.sections[index].startBeat);
             bool newWorld = biomeNow != null && backdrop != null && biomeNow != backdrop.Current;
             ApplyBiome(index);
+            UpdateScenery(index);
             if (newWorld)
             {
                 ActionSfx.Instance?.Checkpoint();
@@ -362,6 +368,21 @@ namespace Kenta.Core
 
             OnSectionChanged?.Invoke(Chart.sections[index], perfect, bonus);
             OnStatsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Le décor suit le morceau : ambiance de la section (teinte, lumière qui baisse), et le gardien qui s'éveille
+        /// une mesure à chaque section, tout le refrain.
+        /// </summary>
+        void UpdateScenery(int index)
+        {
+            if (backdrop == null) return;
+            var section = Chart.sections[index];
+            backdrop.SetSection(section.name, Progress);
+            double end = index + 1 < Chart.sections.Length ? Chart.sections[index + 1].startBeat : section.startBeat + 32;
+            double spb = Conductor.Instance.SecondsPerBeat;
+            bool refrain = section.name != null && section.name.StartsWith("refrain");
+            backdrop.Wake((float)((refrain ? end - section.startBeat : 4.0) * spb));
         }
 
         void TriggerFx(ChartEvent e)

@@ -28,35 +28,46 @@ def shade(c, f):
 
 
 class Pix:
-    def __init__(self, w, h, bg=None):
-        self.w, self.h = w, h
-        self.im = Image.new("RGBA", (w, h), col(bg) if bg else (0, 0, 0, 0))
+    """Image pixel art. `scale` > 1 : on dessine en coordonnées « logiques » (celles d'une image w×h), mais l'image fait
+    (w·scale)×(h·scale) et les primitives sont tracées à cette définition : même composition, pixels plus fins.
+    Sert aux décors 640×360 dessinés avec les coordonnées de l'ancien écran 320×180."""
+
+    def __init__(self, w, h, bg=None, scale=1):
+        self.w, self.h, self.s = w, h, scale
+        self.im = Image.new("RGBA", (w * scale, h * scale), col(bg) if bg else (0, 0, 0, 0))
         self.d = ImageDraw.Draw(self.im)
 
-    # --- primitives ---
+    # --- primitives (coordonnées logiques) ---
     def px(self, x, y, c):
+        """Un seul pixel réel (détail fin : étoile, tramage), à la position logique (x, y)."""
+        s = self.s
         if 0 <= x < self.w and 0 <= y < self.h:
-            self.im.putpixel((int(x), int(y)), col(c))
+            self.im.putpixel((int(x * s), int(y * s)), col(c))
 
     def rect(self, x0, y0, x1, y1, c):
         """Rectangle plein, x1 / y1 exclus."""
+        s = self.s
         if x1 > x0 and y1 > y0:
-            self.d.rectangle([x0, y0, x1 - 1, y1 - 1], fill=col(c))
+            self.d.rectangle([x0 * s, y0 * s, x1 * s - 1, y1 * s - 1], fill=col(c))
 
     def poly(self, pts, c):
-        self.d.polygon([(int(round(x)), int(round(y))) for x, y in pts], fill=col(c))
+        s = self.s
+        self.d.polygon([(int(round(x * s)), int(round(y * s))) for x, y in pts], fill=col(c))
 
     def circle(self, cx, cy, r, c):
-        self.d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=col(c))
+        s = self.s
+        self.d.ellipse([(cx - r) * s, (cy - r) * s, (cx + r) * s, (cy + r) * s], fill=col(c))
 
     def ellipse(self, cx, cy, rx, ry, c):
-        self.d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=col(c))
+        s = self.s
+        self.d.ellipse([(cx - rx) * s, (cy - ry) * s, (cx + rx) * s, (cy + ry) * s], fill=col(c))
 
     def line(self, a, b, c, width=1):
-        self.d.line([a, b], fill=col(c), width=width)
+        s = self.s
+        self.d.line([(a[0] * s, a[1] * s), (b[0] * s, b[1] * s)], fill=col(c), width=max(1, int(width * s)))
 
     def paste(self, other, x, y):
-        self.im.alpha_composite(other.im if isinstance(other, Pix) else other, (int(x), int(y)))
+        self.im.alpha_composite(other.im if isinstance(other, Pix) else other, (int(x * self.s), int(y * self.s)))
 
     # --- helpers ---
     def array(self):
@@ -107,10 +118,10 @@ def outlined(img, color="#14101C", thickness=1, outer_only=False):
     return res
 
 
-def banded_gradient(w, h, colors, y0=0, y1=None, jitter=0, rng=None):
+def banded_gradient(w, h, colors, y0=0, y1=None, jitter=0, rng=None, scale=1):
     """Dégradé vertical en bandes (comme les ciels des maquettes) : une bande par couleur, entre y0 et y1."""
     y1 = y1 or h
-    p = Pix(w, h)
+    p = Pix(w, h, scale=scale)
     n = len(colors)
     for i, c in enumerate(colors):
         a = y0 + (y1 - y0) * i // n
@@ -120,11 +131,12 @@ def banded_gradient(w, h, colors, y0=0, y1=None, jitter=0, rng=None):
         # bord de bande en escalier irrégulier (tramage simple)
         for i in range(1, n):
             y = y0 + (y1 - y0) * i // n
-            for x in range(0, w):
+            for x in range(0, w * scale):
+                xl = x / scale
                 if rng.random() < jitter:
-                    p.px(x, y, colors[i - 1])
+                    p.rect(xl, y, xl + 1 / scale, y + 1 / scale, colors[i - 1])
                     if rng.random() < 0.5:
-                        p.px(x, y - 1, colors[i])
+                        p.rect(xl, y - 1 / scale, xl + 1 / scale, y, colors[i])
     return p
 
 

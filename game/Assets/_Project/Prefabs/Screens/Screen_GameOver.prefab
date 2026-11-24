@@ -248,6 +248,8 @@ MonoBehaviour:
   judgeText: {fileID: 4228844123260848903}
   dropDelay: 0.9
   panelDelay: 1.7
+  fireworkInterval: 0.4
+  fireworkCount: 12
 --- !u!1 &3517027553004191882
 GameObject:
   m_ObjectHideFlags: 0
