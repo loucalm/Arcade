@@ -29,7 +29,7 @@ Les `.gitkeep` gardent les dossiers vides dans git (Unity ignore les fichiers qu
 - `HighscoreManager.GameName` → **`"Kenta"`** (`Assets/Anatidae/Scripts/HighscoreManager.cs`). Doit être identique au nom du dossier de build.
 - Le prefab **`AnatidaeInterface`** doit être présent dans **chaque scène**. Il contient `MenuManager` (bouton blanc 1,5 s + AFK 60 s), `HighscoreNameInput` et `HighscoreUI`.
 - Au démarrage : `StartCoroutine(HighscoreManager.FetchHighscores())`, **avant** tout `IsHighscore()`.
-- Fin de partie : `if (HighscoreManager.IsHighscore(score)) HighscoreManager.ShowHighscoreInput(score);`. Bloquer nos menus tant que `IsHighscoreInputScreenShown` est vrai.
+- Fin de partie : `if (HighscoreManager.IsHighscore(score))` → **notre** écran `UI/NameEntryScreen` (pixel art), puis `StartCoroutine(HighscoreManager.SetHighscore(nom, score))`. Le classement s'affiche avec **notre** `UI/HighscoreBoard` (données : `HighscoreManager.Highscores`). L'interface du toolkit (`HighscoreUI`, `HighscoreNameInput`, police Arial) n'est plus montrée (ADR-021) ; ses données et l'envoi restent ceux du toolkit.
 - Appels vers notre VPS : **uniquement `AnatidaeProxyWebRequest.Get/Post`**, qui passe par `localhost:3000/proxy`. URL de base dans un ScriptableObject `NetConfig` (en local : `http://localhost:8080/api`). Contrat dans [../docs/api-contract.md](../docs/api-contract.md).
 - En éditeur, `Core/EditorArcadeShim` (compilé seulement dans l'éditeur, le toolkit n'est pas modifié) : coupe `MenuManager`, dont `BackToMenu()` (`.jslib`) n'existe qu'en build Web et levait une exception à chaque image après 60 s d'AFK ou Échap maintenu ; à la place, retour à l'écran d'accueil. Il démarre aussi avec un classement vide quand la borne locale (`localhost:3000`) ne répond pas, sinon `HighscoreUI` levait une `NullReferenceException`. Pour tester le vrai retour au menu et les scores : build + borne locale.
 - `TextMesh Pro/.../LiberationSans SDF - Fallback.asset` change tout seul (atlas de police dynamique) : **ne pas le commiter** (`git restore` dessus).
@@ -37,8 +37,9 @@ Les `.gitkeep` gardent les dossiers vides dans git (Unity ignore les fichiers qu
 
 ## Flow d'écrans (ADR-007)
 Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à états : `Attract → Explain → Config (facultatif) → Playing → GameOver → NameEntry (si top 10) → Attract`. Un prefab par écran dans `Prefabs/Screens/`. Détails : [../docs/game-design.md](../docs/game-design.md).
-- Attract : démo en autoplay qui alterne avec `HighscoreUI`. N'importe quel bouton lance la partie (et débloque l'audio).
-- GameOver : score + classement, puis `IsHighscore` → `ShowHighscoreInput`. Attendre que `IsHighscoreInputScreenShown` repasse à faux avant de revenir à Attract.
+- Attract : cycle logo (8 s) → démo jouée en autoplay, un monde différent à chaque fois (20 s) → classement (8 s). N'importe quel bouton lance la partie (et débloque l'audio).
+- Config : héros (gauche/droite) **et monde** (haut/bas), le décor montre le monde choisi. Rejouer dans la minute (`GameSession.IsQuickRetry`) saute les consignes et reprend les choix.
+- GameOver : panneau puis classement, chacun passable au bouton 1 ; si top 10 → saisie du nom → retour à l'accueil sur le classement (le nouveau score pulse en or).
 
 ## Entrées
 - Classe unique `Kenta.Core.ArcadeInput` : lit `P{n}_Horizontal`/`P{n}_Vertical` (dead zone **0,3** sur `GetAxisRaw`) et `P{n}_B1`, `P{n}_B2`, `P{n}_Start`.
@@ -62,7 +63,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 | Script | Rôle |
 |---|---|
 | `Core/RunManager` | Une partie : build du niveau, score/combo, drops (flash, secousse), **mort subite** (un coup = fin de partie, pas de cœurs ni de checkpoint). |
-| `Core/GameFlow` | Flow d'écrans imposé : Attract → Explain → Config (choix du héros) → Playing → GameOver → NameEntry. |
+| `Core/GameFlow` | Flow d'écrans imposé : Attract (logo, démo, classement) → Explain → Config (héros et monde) → Playing → GameOver → NameEntry. |
 | `Core/GameSession` | Héros choisi (statique). |
 | `Core/TimingJudge`, `Core/GradeCalculator`, `UI/JudgePopup` | Jugement PARFAIT / BIEN / BOF de chaque action (score, combo) et note de fin S+ … D (règles : docs/game-design.md). |
 | `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par section de la chart : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |
@@ -70,11 +71,11 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 | `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu en 3 calques (couche Unity `Actors` pour le héros), zoom par paliers entiers (`PixelScreen.SetZoom`), caméra par plans pilotée par la chart (`camera` : zoom, place du héros), qui regarde le terrain devant ; ciel + 3 calques en parallaxe (agrandis ×2 en vue large). |
 | `FX/BandanaTrail`, `FX/ScreenFx`, `FX/FxPool`, `FX/BeatFrames` | Traînée du bandeau, flash, particules en pixels, djembé qui change d'image sur le temps. |
 | `Player/PlayerController`, `HeroAnimator`, `HeroProfile`, `HeroSpriteSet` | Physique maison réglée en beats ; image du héros (marionnette `tools/hero_rig.py` : course, saut, frappe, glissade, accroupi, poses fixes) ; 3 héros. |
-| `UI/PixelText`, `PixelFontData`, `RunHud`, `AttractScreen`, `HeroSelectScreen`, `ExplainScreen`, `GameOverScreen` | Interface en pixels (canvas 320×180) : police proportionnelle à ombre, plaques sous les textes posés sur le décor. |
+| `UI/PixelText`, `PixelFontData`, `RunHud`, `AttractScreen`, `HeroSelectScreen`, `ExplainScreen`, `GameOverScreen`, `HighscoreBoard`, `NameEntryScreen` | Interface en pixels (canvas 320×180) : police proportionnelle à ombre, plaques sous les textes posés sur le décor. |
 | `Editor/KentaSpritePostprocessor`, `Editor/KentaBuilder` | Import des sprites ; menu **Kenta > Reconstruire thèmes, prefabs et scène**. |
 - Aucun moteur physique (ADR-009). Aucun `Instantiate` en jeu : le niveau est construit une fois par partie, puis on réactive au respawn.
 - ⚠️ Après une modification de `KentaSpritePostprocessor` (pivot, bordure), **forcer le réimport** des sprites concernés (sinon ils gardent l'ancien réglage : héros enfoncé dans le sol, plaques sans 9-slice).
-- **Sprites : jamais dessinés dans Unity.** Ennemis : PDF (`tools/extract-kenta-pdf.py`). Héros : marionnette pixel art (`tools/hero_rig.py` + `tools/gen-heroes.py`, lancé par `gen-kenta-assets.py --only heroes` ; ADR-020). Le reste : `tools/gen-kenta-assets.py`. Les durées des animations (150 BPM, foulée 2,4 u, frappe 0,45 beat) sont dans `gen-heroes.py` **et** dans `HeroAnimator` : les changer des deux côtés. Après toute régénération : menu Kenta > Reconstruire.
+- **Sprites : jamais dessinés dans Unity.** Ennemis : PDF (`tools/extract-kenta-pdf.py`). Héros : marionnette pixel art (`tools/hero_rig.py` + `tools/gen-heroes.py`, lancé par `gen-kenta-assets.py --only heroes` ; ADR-022). Le reste : `tools/gen-kenta-assets.py`. Les durées des animations (150 BPM, foulée 2,4 u, frappe 0,45 beat) sont dans `gen-heroes.py` **et** dans `HeroAnimator` : les changer des deux côtés. Après toute régénération : menu Kenta > Reconstruire.
 - Pas de rotation ni d'échelle fractionnaire d'un sprite ; l'interface utilise des agrandissements **entiers** (`PixelText.scale`). En code UI, ne pas utiliser `SetNativeSize()` (il applique le PPU du monde) : `sizeDelta = sprite.rect.size`.
 - Autres assets générés : `tools/gen-sfx.py` (bruitages), `tools/gen-test-beat.py` (musique de test). La chart du niveau vient de `tools/gen-level-vertical.py` (scènes écrites à la main + simulateur de l'autoplay : `--table` pour le niveau, `--map` pour la carte du morceau). Principes : `docs/level-design-musical.md`. La carte du morceau (`tools/data/level01_analysis.json`) vient de `tools/analyse-song.py` (librosa), à relancer seulement si la musique change.
 
@@ -90,6 +91,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 
 - **Tests** : Unity Test Framework, tests EditMode sans asmdef dans `Assets/_Project/Editor/Tests/` (MCP `run_tests`, mode EditMode). Tests Python des générateurs : `pytest tools/tests`.
 - ⚠️ Piège MCP : `manage_camera screenshot` recompose mal les calques pixel (image fausse). Pour voir le vrai rendu : `ScreenCapture.CaptureScreenshot("Temp/gv.png")` via `execute_code`, puis lire le fichier.
+- ⚠️ Piège : avec une Game view qui n'est pas en 1920×1080 (écran Retina, « Free Aspect »), l'interface 320×180 et la vue du monde n'ont pas le même agrandissement : l'interface est rognée au cadre du monde (HUD absent, PARFAIT décalé). Pour juger l'interface, choisir une résolution fixe 1920×1080 dans la Game view.
 - ⚠️ Piège MCP : chaque `execute_code` compile du C# dans l'éditeur et fige le jeu ~300 ms (`dt` = 0,333). Pendant une partie en autoplay, ça fait rater un saut. Pour valider une chart : lancer l'autoplay, **ne rien appeler** pendant la durée du morceau, puis lire le résultat une seule fois. Même chose pour les captures (`manage_camera screenshot`) et les gros calculs CPU (génération de sprites).
 
 ## Build → borne

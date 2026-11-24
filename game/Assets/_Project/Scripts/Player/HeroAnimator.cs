@@ -87,6 +87,9 @@ namespace Kenta.Player
         Sprite Pick()
         {
             if (player.IsDead) return sprites.death;
+            var run = Kenta.Core.RunManager.Instance;
+            if (run != null && run.Completed && !run.IsRunning)          // niveau fini : il s'arrête et savoure
+                return sprites.idle != null ? sprites.idle : sprites.run;
 
             int hit = HitFrameIndex(player.HitAgeBeats, hitAnimBeats, Count(sprites.hitFrames));
             if (hit >= 0) return sprites.hitFrames[hit];

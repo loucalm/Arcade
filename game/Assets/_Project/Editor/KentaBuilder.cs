@@ -158,9 +158,14 @@ namespace Kenta.EditorTools
             return result;
         }
 
+        [Serializable] class GuardianPos { public string id; public float x, y; }
+        [Serializable] class GuardianList { public GuardianPos[] items; }
+
         static BiomeTheme[] BuildBiomes()
         {
             var result = new BiomeTheme[8];
+            var guardianFile = Art + "Gen/biomes/guardians.json";
+            var positions = File.Exists(guardianFile) ? JsonUtility.FromJson<GuardianList>(File.ReadAllText(guardianFile)).items : new GuardianPos[0];
             for (int i = 0; i < 8; i++)
             {
                 string id = BiomeIds[i];
@@ -181,6 +186,12 @@ namespace Kenta.EditorTools
                 b.fill = Spr($"Gen/biomes/fill_{id}.png");
                 b.cliff = Spr($"Gen/biomes/cliff_{id}.png");
                 b.platform = Spr($"Gen/biomes/platform_{id}.png");
+                b.fillDeep = Spr($"Gen/biomes/fill_{id}_deep.png");
+                b.pillarDecor = Enumerable.Range(0, 4).Select(k => Spr($"Gen/biomes/deco_{id}_{k}.png")).ToArray();
+                b.guardian = Spr($"Gen/biomes/guardian_{id}.png");
+                b.guardianAwake = Spr($"Gen/biomes/guardian_{id}_awake.png");
+                var pos = positions.FirstOrDefault(g => g.id == id);
+                b.guardianOffset = pos != null ? new Vector2(pos.x, pos.y) : Vector2.zero;
                 if (Enemies[i] == "djembe")
                 {
                     b.enemyFrames = new[] { Spr("Pdf/enemy_djembe_squash.png"), Spr("Pdf/enemy_djembe_stretch.png") };
@@ -276,43 +287,52 @@ namespace Kenta.EditorTools
             var tr = root.transform;
             var hi = AddText(tr, font, "HiScore", "HI-SCORE 000000", new Vector2(0, 76), Gold, 1, PixelText.Align.Center, true);
             var logo = AddImage(tr, "Logo", Spr("Gen/ui/logo.png"), new Vector2(0, 26));
-            AddText(tr, font, "Subtitle", "LA COURSE EN RYTHME", new Vector2(0, -2), Color.white, 1, PixelText.Align.Center, true);
+            var subtitle = AddText(tr, font, "Subtitle", "LA COURSE EN RYTHME", new Vector2(0, -2), Color.white, 1, PixelText.Align.Center, true);
             var press = AddText(tr, font, "PressStart", "APPUIE SUR START", new Vector2(0, -46), Gold, 2, PixelText.Align.Center, true);
+            var demo = AddText(tr, font, "DemoLabel", "DÉMO", new Vector2(0, 76), Gold, 1, PixelText.Align.Center, true);
+            demo.gameObject.SetActive(false);
             var comp = root.AddComponent<AttractScreen>();
             Set(comp, "pressStart", press);
             Set(comp, "hiScore", hi);
             Set(comp, "logo", (RectTransform)logo.transform);
             Set(comp, "logoY", 26f);
+            SetArray(comp, "logoOnly", new UnityEngine.Object[] { logo.gameObject, subtitle.gameObject, hi.gameObject });
+            Set(comp, "demoLabel", demo.gameObject);
             return SavePrefab(root, "Screen_Attract");
         }
 
         static GameObject BuildExplain(PixelFontData font, LevelTheme theme)
         {
+            // 3 gestes, les boutons dessinés comme ceux de la borne ; le héros mime le geste en cours, sur le temps
             var root = ScreenRoot("Screen_Explain");
             var tr = root.transform;
-            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(14, -6), null, new Vector2(232, 118), false);
+            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(24, -6), null, new Vector2(224, 112), false);
             panel.type = Image.Type.Sliced;
             AddText(tr, font, "Title", "COMMENT JOUER", new Vector2(0, 70), Gold, 2, PixelText.Align.Center, true);
-            var hero = AddImage(tr, "Hero", theme.heroes[0].sprites.run, new Vector2(-122, -62), null, null, true, new Vector2(0.5f, 0f));
-            string[] lines = { "SAUTE : TROUS, MURS, MARCHES", "FRAPPE : LES INSTRUMENTS", "GLISSE : SOUS LA BRANCHE", "RAMASSE LES PIÈCES", "SUIS LE RYTHME : PARFAIT !", "UN SEUL COUP ET C'EST FINI" };
-            var texts = new PixelText[lines.Length];
-            for (int i = 0; i < lines.Length; i++)
-                texts[i] = AddText(tr, font, $"Line{i}", lines[i], new Vector2(-62, 38 - i * 16), Color.white, 1, PixelText.Align.Left);
-            AddImage(tr, "Btn1", Spr("Gen/ui/button_red.png"), new Vector2(-76, 38));
-            AddText(tr, font, "Btn1Label", "1", new Vector2(-76, 38), Color.white);
-            AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-76, 22));
-            AddText(tr, font, "Btn2Label", "2", new Vector2(-76, 22), Color.white);
-            AddImage(tr, "Stick", Spr("Gen/ui/stick.png"), new Vector2(-76, 6));
-            AddImage(tr, "Coin", theme.coinFrames[0], new Vector2(-76, -10));
+            var hero = AddImage(tr, "Hero", theme.heroes[0].sprites.run, new Vector2(-122, -50), null, null, true, new Vector2(0.5f, 0f));
+            string[] verbs = { "SAUTE", "FRAPPE", "GLISSE" };
+            string[] details = { "TROUS, MURS, MARCHES", "LES INSTRUMENTS", "SOUS LES BRANCHES" };
+            var texts = new PixelText[3];
+            var icons = new Image[3];
+            for (int i = 0; i < 3; i++)
+            {
+                float y = 32 - i * 28;
+                texts[i] = AddText(tr, font, $"Line{i}", verbs[i], new Vector2(-46, y + 4), Color.white, 2, PixelText.Align.Left);
+                AddText(tr, font, $"Detail{i}", details[i], new Vector2(-46, y - 10), Dim, 1, PixelText.Align.Left);
+            }
+            icons[0] = AddImage(tr, "Btn1", Spr("Gen/ui/button_red.png"), new Vector2(-64, 32), null, null, true);
+            AddText(tr, font, "Btn1Label", "1", new Vector2(-64, 32), Color.white);
+            icons[1] = AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-64, 4), null, null, true);
+            AddText(tr, font, "Btn2Label", "2", new Vector2(-64, 4), Color.white);
+            icons[2] = AddImage(tr, "Stick", Spr("Gen/ui/stick.png"), new Vector2(-64, -24), null, null, true);
+            AddText(tr, font, "StickLabel", "▼", new Vector2(-64, -36), Gold);
+            AddText(tr, font, "Footer", "UN SEUL COUP ET C'EST FINI !", new Vector2(24, -50), Gold, 1, PixelText.Align.Center);
             AddText(tr, font, "Hint", "BOUTON 1 POUR CONTINUER", new Vector2(0, -80), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<ExplainScreen>();
             Set(comp, "theme", theme);
             Set(comp, "hero", hero);
-            var so = new SerializedObject(comp);
-            var p = so.FindProperty("lines");
-            p.arraySize = texts.Length;
-            for (int i = 0; i < texts.Length; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = texts[i];
-            so.ApplyModifiedPropertiesWithoutUndo();
+            SetArray(comp, "lines", texts);
+            SetArray(comp, "icons", icons);
             return SavePrefab(root, "Screen_Explain");
         }
 
@@ -322,21 +342,23 @@ namespace Kenta.EditorTools
             var tr = root.transform;
             AddText(tr, font, "Title", "CHOISIS TON HÉROS", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
             var timer = AddText(tr, font, "Timer", "12", new Vector2(146, 72), Color.white, 1, PixelText.Align.Center, true);
+            var world = AddText(tr, font, "World", "▲  MONDE 1/8 : LA SYLVE  ▼", new Vector2(0, 50), Color.white, 1, PixelText.Align.Center, true);
             var portraits = new Image[3];
             var frames = new Image[3];
             var names = new PixelText[3];
             for (int i = 0; i < 3; i++)
             {
                 float x = -96 + i * 96;
-                frames[i] = AddImage(tr, $"Frame{i}", Spr("Gen/ui/panel.png"), new Vector2(x, -2), Dim, new Vector2(84, 108), false);
+                frames[i] = AddImage(tr, $"Frame{i}", Spr("Gen/ui/panel.png"), new Vector2(x, -12), Dim, new Vector2(84, 92), false);
                 frames[i].type = Image.Type.Sliced;
-                portraits[i] = AddImage(tr, $"Portrait{i}", theme.heroes[i].sprites.idle, new Vector2(x, -46), null, null, true, new Vector2(0.5f, 0f));
-                names[i] = AddText(tr, font, $"Name{i}", theme.heroes[i].displayName, new Vector2(x, -66), Color.white, 1, PixelText.Align.Center, true);
+                portraits[i] = AddImage(tr, $"Portrait{i}", theme.heroes[i].sprites.idle, new Vector2(x, -42), null, null, true, new Vector2(0.5f, 0f));
+                names[i] = AddText(tr, font, $"Name{i}", theme.heroes[i].displayName, new Vector2(x, -68), Color.white, 1, PixelText.Align.Center, true);
             }
-            AddText(tr, font, "Hint", "◄ ► CHOISIR    1 VALIDER", new Vector2(0, -82), Color.white, 1, PixelText.Align.Center, true);
+            AddText(tr, font, "Hint", "◄ ► HÉROS   ▲ ▼ MONDE   1 VALIDER", new Vector2(0, -84), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<HeroSelectScreen>();
             Set(comp, "theme", theme);
             Set(comp, "timerText", timer);
+            Set(comp, "worldText", world);
             SetArray(comp, "portraits", portraits);
             SetArray(comp, "frames", frames);
             SetArray(comp, "names", names);
@@ -409,6 +431,67 @@ namespace Kenta.EditorTools
             Set(comp, "gradeText", grade);
             Set(comp, "judgeText", judge);
             return SavePrefab(root, "Screen_GameOver");
+        }
+
+        static GameObject BuildHighscores(PixelFontData font, LevelTheme theme)
+        {
+            // classement en pixel art : rang, nom, score ; pièces or / argent / bronze devant les trois premiers
+            var root = ScreenRoot("Screen_Highscores");
+            var tr = root.transform;
+            AddText(tr, font, "Title", "MEILLEURS SCORES", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
+            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(0, -6), null, new Vector2(176, 128), false);
+            panel.type = Image.Type.Sliced;
+            const int rows = 10;
+            var ranks = new PixelText[rows];
+            var names = new PixelText[rows];
+            var scores = new PixelText[rows];
+            var medals = new Image[3];
+            for (int i = 0; i < rows; i++)
+            {
+                float y = 48 - i * 11;
+                ranks[i] = AddText(tr, font, $"Rank{i}", "01", new Vector2(-58, y), Color.white, 1, PixelText.Align.Left);
+                names[i] = AddText(tr, font, $"Name{i}", "AAA", new Vector2(-30, y), Color.white, 1, PixelText.Align.Left);
+                scores[i] = AddText(tr, font, $"Score{i}", "000000", new Vector2(72, y), Color.white, 1, PixelText.Align.Right);
+                if (i < 3) medals[i] = AddImage(tr, $"Medal{i}", theme.coinFrames[0], new Vector2(-70, y));
+            }
+            var empty = AddText(tr, font, "Empty", "AUCUN SCORE : À TOI DE JOUER !", new Vector2(0, -6), Color.white);
+            var comp = root.AddComponent<HighscoreBoard>();
+            SetArray(comp, "ranks", ranks);
+            SetArray(comp, "namesText", names);
+            SetArray(comp, "scores", scores);
+            SetArray(comp, "medals", medals);
+            Set(comp, "emptyText", empty);
+            return SavePrefab(root, "Screen_Highscores");
+        }
+
+        static GameObject BuildNameEntry(PixelFontData font, LevelTheme theme)
+        {
+            // trois lettres : joystick haut/bas, bouton 1 suivante, bouton 2 retour ; le héros bondit de joie à droite
+            var root = ScreenRoot("Screen_NameEntry");
+            var tr = root.transform;
+            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(-20, -2), null, new Vector2(176, 100), false);
+            panel.type = Image.Type.Sliced;
+            AddText(tr, font, "Title", "NOUVEAU RECORD !", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
+            var timer = AddText(tr, font, "Timer", "20", new Vector2(146, 72), Color.white, 1, PixelText.Align.Center, true);
+            var score = AddText(tr, font, "Score", "SCORE 000000", new Vector2(-20, 34), Gold, 1);
+            AddText(tr, font, "Prompt", "TON NOM", new Vector2(-20, 20), Dim, 1);
+            var letters = new PixelText[3];
+            for (int i = 0; i < 3; i++)
+            {
+                float x = -20 + (i - 1) * 26;
+                AddText(tr, font, $"Up{i}", "▲", new Vector2(x, 8), Dim);
+                letters[i] = AddText(tr, font, $"Letter{i}", "A", new Vector2(x, -8), Color.white, 3);
+                AddText(tr, font, $"Down{i}", "▼", new Vector2(x, -26), Dim);
+            }
+            var hero = AddImage(tr, "Hero", theme.heroes[0].sprites.jump, new Vector2(108, -44), null, null, true, new Vector2(0.5f, 0f));
+            AddText(tr, font, "Hint", "▲ ▼ LETTRE   1 SUIVANTE   2 RETOUR", new Vector2(0, -80), Color.white, 1, PixelText.Align.Center, true);
+            var comp = root.AddComponent<NameEntryScreen>();
+            Set(comp, "theme", theme);
+            SetArray(comp, "letters", letters);
+            Set(comp, "scoreText", score);
+            Set(comp, "timerText", timer);
+            Set(comp, "hero", hero);
+            return SavePrefab(root, "Screen_NameEntry");
         }
 
         // ------------------------------------------------------------------ scène
@@ -548,7 +631,8 @@ namespace Kenta.EditorTools
 
             var screens = prefabs.Select(p => (GameObject)PrefabUtility.InstantiatePrefab(p, uiGo.transform)).ToArray();
             foreach (var s in screens) { var r = (RectTransform)s.transform; r.anchoredPosition = Vector2.zero; s.SetActive(false); }
-            GameObject attract = screens[0], explain = screens[1], hero = screens[2], hud = screens[3], over = screens[4];
+            GameObject attract = screens[0], explain = screens[1], hero = screens[2], hud = screens[3], over = screens[4],
+                       board = screens[5], nameEntry = screens[6];
 
             var flashRt = NewRect("ScreenFx", uiGo.transform, Vector2.zero);
             flashRt.anchorMin = Vector2.zero;
@@ -636,8 +720,14 @@ namespace Kenta.EditorTools
             Set(flow, "heroSelect", hero.GetComponent<HeroSelectScreen>());
             Set(flow, "theme", theme);
             Set(flow, "backdrop", backdrop);
-            Set(flow, "gameOverDuration", 6f);
-            Set(flow, "catalog", catalog);          // titre, note puis panneau : le temps de lire
+            Set(flow, "highscoreBoard", board.GetComponent<HighscoreBoard>());
+            Set(flow, "nameEntry", nameEntry.GetComponent<NameEntryScreen>());
+            Set(flow, "gameOverDuration", 4.5f);    // titre, note puis panneau : le temps de lire (bouton 1 pour passer)
+            Set(flow, "gameOverHighscoreDuration", 3.5f);
+            Set(flow, "attractLogoSeconds", 8f);
+            Set(flow, "attractDemoSeconds", 20f);
+            Set(flow, "attractBoardSeconds", 8f);
+            Set(flow, "catalog", catalog);
             Set(flow, "attractSong", null);
 
             cam.backgroundColor = Color.black;
@@ -663,6 +753,7 @@ namespace Kenta.EditorTools
             var prefabs = new[]
             {
                 BuildAttract(font, theme), BuildExplain(font, theme), BuildHeroSelect(font, theme), BuildHud(font, theme), BuildGameOver(font),
+                BuildHighscores(font, theme), BuildNameEntry(font, theme),
             };
             AssetDatabase.SaveAssets();
             string result = BuildScene(theme, font, prefabs, catalog);

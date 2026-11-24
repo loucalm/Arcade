@@ -34,7 +34,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 96, y: -46}
+  m_AnchoredPosition: {x: 96, y: -42}
   m_SizeDelta: {x: 96, y: 72}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &9089311557282701121
@@ -75,6 +75,60 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &1521848775441724955
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2492193634984202536}
+  - component: {fileID: 4957365068116938287}
+  m_Layer: 0
+  m_Name: World
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2492193634984202536
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1521848775441724955}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 419500781277465661}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 50}
+  m_SizeDelta: {x: 2, y: 2}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4957365068116938287
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1521848775441724955}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6be959e4e87ec4e1e868dd9e23fe8692, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
+  font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
+  text: "\u25B2  MONDE 1/8 : LA SYLVE  \u25BC"
+  color: {r: 1, g: 1, b: 1, a: 1}
+  align: 1
+  scale: 1
+  plate: 1
 --- !u!1 &2078750718563996092
 GameObject:
   m_ObjectHideFlags: 0
@@ -109,7 +163,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -46}
+  m_AnchoredPosition: {x: 0, y: -42}
   m_SizeDelta: {x: 96, y: 72}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &5118601540513513495
@@ -238,7 +292,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -96, y: -46}
+  m_AnchoredPosition: {x: -96, y: -42}
   m_SizeDelta: {x: 96, y: 72}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &1423799709585803655
@@ -312,7 +366,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -96, y: -66}
+  m_AnchoredPosition: {x: -96, y: -68}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4866202171475452012
@@ -420,7 +474,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -66}
+  m_AnchoredPosition: {x: 0, y: -68}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8888340927456389183
@@ -474,7 +528,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 96, y: -66}
+  m_AnchoredPosition: {x: 96, y: -68}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5844826537131243344
@@ -529,8 +583,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -2}
-  m_SizeDelta: {x: 84, y: 108}
+  m_AnchoredPosition: {x: 0, y: -12}
+  m_SizeDelta: {x: 84, y: 92}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &672782365653565315
 CanvasRenderer:
@@ -601,6 +655,7 @@ RectTransform:
   m_Children:
   - {fileID: 999476291425633923}
   - {fileID: 7747096433338241308}
+  - {fileID: 2492193634984202536}
   - {fileID: 8029100017742165936}
   - {fileID: 1147210194746866197}
   - {fileID: 5400540712430710471}
@@ -644,6 +699,7 @@ MonoBehaviour:
   - {fileID: 8888340927456389183}
   - {fileID: 5844826537131243344}
   timerText: {fileID: 2861203854293180930}
+  worldText: {fileID: 4957365068116938287}
   seconds: 12
 --- !u!1 &7486210109642003254
 GameObject:
@@ -678,7 +734,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -82}
+  m_AnchoredPosition: {x: 0, y: -84}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &6379910978991012095
@@ -694,7 +750,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: "\u25C4 \u25BA CHOISIR    1 VALIDER"
+  text: "\u25C4 \u25BA H\xC9ROS   \u25B2 \u25BC MONDE   1 VALIDER"
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 1
@@ -733,8 +789,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 96, y: -2}
-  m_SizeDelta: {x: 84, y: 108}
+  m_AnchoredPosition: {x: 96, y: -12}
+  m_SizeDelta: {x: 84, y: 92}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4049231137432827722
 CanvasRenderer:
@@ -808,8 +864,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -96, y: -2}
-  m_SizeDelta: {x: 84, y: 108}
+  m_AnchoredPosition: {x: -96, y: -12}
+  m_SizeDelta: {x: 84, y: 92}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6861800194603062462
 CanvasRenderer:
