@@ -51,14 +51,16 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `lum_at` | une pièce à la hauteur absolue `height` (pièces posées sur la trajectoire par le générateur). Avec `hasNote: true`, elle joue la note `note` (demi-tons par rapport au la du son de pièce) : les pièces jouent la mélodie | — |
 | `camera` | nouveau plan : `zoom` = largeur de vue en px de jeu (320, 384, 480, 640 → ×6, ×5, ×4, ×3 : changement net, petit flash), `frameX` = place du héros (0 gauche … 1 droite), `frameY` = hauteur du sol sous le héros (0 bas … 1 haut). 0 = inchangé | — |
 | `platform` | plateforme de `beat+0,3` à `beat+0,3+length` (défaut 1) à `height`, traversable par en dessous ; sauter sur `beat` | sommet du saut au-dessus de `height` avant `beat+0,3` |
-| `vine` | **liane** attrapée en passant à `beat` (pieds à ±1,6 u de `height`), balancier automatique de `length` beats (pieds de `height` à `releaseHeight`, creux `sag`), lâchée à `beat+length` (appui de saut jugé, pas obligatoire), puis `step` beats de vol (défaut 1) vers la liane suivante si elle commence là, sinon vers le sol | lâcher à ±0,5 beat |
+| `vine` | **liane** attrapée en passant à `beat` (pieds à ±1,6 u de `height`), balancier de `length` beats (pieds de `height` à `releaseHeight`, creux `sag`). **On saute pour lâcher**, autour de `beat+length` ; sans appui, la main glisse et on tombe. Le vol arrive au temps `beat+length+step` (défaut 1) sur la liane suivante si elle commence là, sinon sur le sol | lâcher à ±0,35 beat (140 ms) |
+| `enemy` + `variant: "stomp"` | **cuirassé** (on ne le frappe pas) : centre à `beat−0,15`, on le touche en lui sautant dessus ; appuyer sur saut autour de `beat` = **grand rebond** de `length` beats (défaut 2) vers le cuirassé suivant, une note de saut ou le sol ; sinon petit rebond d'un demi-temps | appui à ±0,35 beat |
+| `orb` | **note de saut** : centre à (x de `beat`, `height`). En l'air près d'elle (3 u en hauteur), un appui autour de `beat` relance le saut pour `step` beats (défaut 1) vers la note suivante, un cuirassé, une liane ou le sol. Pendant sa fenêtre, la note retient la chute (3 u/s) | appui à ±0,35 beat |
 | `ceiling` | **plafond** : dessous à `height`, de `beat` à `beat+length` (les trous entre deux plafonds se sautent) | — |
 | `gravity` | **portail de gravité** à `beat` : `lane 1` = on tombe vers le plafond et on y court la tête en bas, `lane 0` = retour au sol | — |
 | `back` | **chemin de l'arrière-plan** : sol plat à `height`, de `beat` à `beat+length`, dessiné derrière le niveau | — |
 | `bounce` + `variant` | `"to_back"` : tambour devant qui envoie sur le chemin du fond ; `"to_front"` : tambour au fond qui ramène devant ; `"back"` : tambour au fond | comme `bounce` |
 | `enemy` + `lane 2` | **pendu au plafond** (dessous à `height`) ; avec `variant: "back"` : ennemi sur le chemin du fond | comme `enemy` |
 | `jump` | saut sans trou dans le sol du niveau (trou du plafond, ou du chemin du fond avec `variant: "back"`) : jugé quand on passe le trou | comme `gap` |
-| `screen_split` | l'image se dédouble : `copies` = 1 (normal), 2, 5 ou 9 copies plus petites, jusqu'au prochain `screen_split` | — |
+| `screen_split` | l'image se dédouble en une grille qui remplit tout l'écran : `copies` = 1 (normal), 4 (2×2, agrandies ×1,5) ou 9 (3×3, ×1), jusqu'au prochain `screen_split` (2 et 5 sont lus comme 4 et 9) | — |
 | `glitch` | grésillement (neige, image qui saute, couleurs) d'intensité `intensity` (0…1) pendant `length` beats, plus fort sur chaque temps | — |
 
 Tous les obstacles (mur, ennemi, bloc, plafond, pièces) se posent **sur le sol principal à leur x** : un mur après une marche est posé en haut de la marche.
@@ -84,7 +86,9 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus 
 | `bounce` | rien (automatique) ; sauter sur le temps = jugé | `length` (durée du vol) |
 | `camera` | — (mise en scène) | `zoom`, `frameX`, `frameY` |
 | `lum_at` | collecter | `height` |
-| `vine` | rien (automatique) ; sauter au lâcher = jugé | `length`, `height`, `releaseHeight`, `sag`, `step` |
+| `vine` | sauter pour lâcher (obligatoire) | `length`, `height`, `releaseHeight`, `sag`, `step` |
+| `enemy` `stomp` | sauter dessus, puis sauter au rebond | `variant`, `length` |
+| `orb` | sauter en passant dessus | `height`, `step` |
 | `ceiling`, `back`, `gravity` | rien (décor et portails) ; on saute les trous (`jump`) | `length`, `height` |
 | `jump` | sauter (trou du plafond ou du chemin du fond) | `variant` |
 | `screen_split`, `glitch` | — (effets d'écran) | `copies` ; `intensity`, `length` |

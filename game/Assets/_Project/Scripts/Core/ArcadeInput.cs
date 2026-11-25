@@ -6,6 +6,10 @@ namespace Kenta.Core
     /// Point d'entrée UNIQUE pour lire la borne (manettes + clavier de dev).
     /// Ne jamais appeler Input.GetAxis / GetButton ailleurs dans le projet.
     /// Mapping : B1 = saut, B2 = frappe, joystick bas = glissade, Start = valider.
+    /// Deux sources : l'Input Manager du toolkit (clavier de dev, et la manette à l'index 0 du navigateur) et les
+    /// manettes lues directement dans le navigateur (ArcadePads, build Web) : Unity 6.3 ne voit pas une manette qui
+    /// n'est pas à l'index 0, et sur la borne plus rien ne répondait. Dès qu'une manette est vue par le navigateur,
+    /// le joystick vient d'elle (haut = +1, comme le menu de la borne).
     /// </summary>
     public static class ArcadeInput
     {
@@ -33,23 +37,24 @@ namespace Kenta.Core
         public static Vector2 Stick(int player = 1)
         {
             int i = Index(player);
-            var raw = new Vector2(Input.GetAxisRaw(Horizontal[i]), Input.GetAxisRaw(Vertical[i]));
+            var raw = ArcadePads.Count > 0 ? ArcadePads.Stick(player)
+                : new Vector2(Input.GetAxisRaw(Horizontal[i]), Input.GetAxisRaw(Vertical[i]));
             float magnitude = raw.magnitude;
             if (magnitude < DeadZone) return Vector2.zero;
             float scaled = Mathf.Clamp01((magnitude - DeadZone) / (1f - DeadZone));
             return raw / magnitude * scaled;
         }
 
-        public static bool JumpDown(int player = 1) => Input.GetButtonDown(B1[Index(player)]);
-        public static bool JumpHeld(int player = 1) => Input.GetButton(B1[Index(player)]);
+        public static bool JumpDown(int player = 1) => Input.GetButtonDown(B1[Index(player)]) || ArcadePads.Down(player, 0);
+        public static bool JumpHeld(int player = 1) => Input.GetButton(B1[Index(player)]) || ArcadePads.Held(player, 0);
         public static bool JumpUp(int player = 1) => Input.GetButtonUp(B1[Index(player)]);
 
-        public static bool HitDown(int player = 1) => Input.GetButtonDown(B2[Index(player)]);
+        public static bool HitDown(int player = 1) => Input.GetButtonDown(B2[Index(player)]) || ArcadePads.Down(player, 1);
 
         /// <summary>Glissade = joystick tenu vers le bas.</summary>
         public static bool SlideHeld(int player = 1) => Stick(player).y < -DirectionThreshold;
 
-        public static bool StartDown(int player = 1) => Input.GetButtonDown(Start[Index(player)]);
+        public static bool StartDown(int player = 1) => Input.GetButtonDown(Start[Index(player)]) || ArcadePads.Down(player, 6);
 
         /// <summary>Valider dans les menus : Start ou B1.</summary>
         public static bool ConfirmDown(int player = 1) => StartDown(player) || JumpDown(player);
@@ -59,6 +64,26 @@ namespace Kenta.Core
         {
             for (int i = 0; i < AllButtons.Length; i++)
                 if (Input.GetButtonDown(AllButtons[i])) return true;
+            return ArcadePads.AnyActionDown();
+        }
+
+        /// <summary>Bouton blanc tenu (retour au menu de la borne au bout de 1,5 s).</summary>
+        public static bool CoinHeld() => Input.GetButton("Coin") || ArcadePads.CoinHeld();
+
+        /// <summary>
+        /// Le joueur touche à quelque chose (bouton tenu ou joystick poussé, J1 ou J2) : remet à zéro les 60 s
+        /// d'inactivité. Mêmes règles que le MenuManager du toolkit.
+        /// </summary>
+        public static bool AnyInput()
+        {
+            for (int i = 0; i < AllButtons.Length; i++)
+                if (Input.GetButton(AllButtons[i])) return true;
+            for (int p = 1; p <= 2; p++)
+            {
+                if (Stick(p).sqrMagnitude > 0.25f) return true;
+                for (int b = 0; b <= 6; b++)
+                    if (ArcadePads.Held(p, b)) return true;
+            }
             return false;
         }
     }

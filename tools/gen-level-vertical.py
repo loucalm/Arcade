@@ -32,7 +32,12 @@ GRAVITY = 8 * JUMP_HEIGHT / (JUMP_BEATS * SPB) ** 2
 JUMP_V = 4 * JUMP_HEIGHT / (JUMP_BEATS * SPB)
 STEP_FACE_START = 0.5
 STEP_START, GAP_START, WALL_START, ENEMY_CENTER, SLIDE_START = 0.3, 0.2, 0.4, 0.6, 0.1
-AIR_HIT_BELOW, AIR_HIT_ABOVE = 1.2, 2.4             # zone de frappe en l'air (au sol : de −0,5 à +1,6)
+AIR_HIT_BELOW, AIR_HIT_ABOVE = 3.5, 3.5             # zone de frappe en l'air (au sol : de −0,5 à +1,6)
+STOMP_TOUCH = 0.15                           # on touche un cuirassé 0,15 beat avant son temps (fin d'un saut)
+ORB_HOVER = 3.0                              # chute ralentie (u/s) près d'une note, le temps d'appuyer
+ORB_REACH = 3.0                              # note de saut : portée verticale (on la prend même en tombant vite)
+PRESS_EARLY = PRESS_LATE = 0.35              # appui d'une note de saut ou d'un grand rebond : fenêtre autour du temps
+VINE_EARLY = VINE_LATE = 0.35                # lâcher d'une liane : fenêtre autour de son temps (PlayerController)
 JUMP_BUFFER = 0.35                           # appui en l'air juste avant d'atterrir : le saut part à l'atterrissage (140 ms)
 LEDGE_ASSIST = 0.4                           # pieds à moins de 0,4 u sous le haut d'une marche ou d'un mur : on passe dessus
 STEP_FACE = 0.25
@@ -153,6 +158,16 @@ class Level:
         self.add(beat, "bounce", length=air, variant=where)
         self.lums(beat + 0.25, int(air * 4) - 1, 0.25)
 
+    def stomp(self, beat, air=2.0):
+        """Ennemi cuirassé : on lui saute dessus (on le touche juste avant `beat`), on appuie sur `beat` pour le grand
+        rebond de `air` beats (vers le cuirassé suivant, une note, ou le sol)."""
+        self.add(beat, "enemy", variant="stomp", length=air)
+
+    def orb(self, beat, dy, air=1.0):
+        """Note de saut au beat, centre à self.h + dy : en l'air près d'elle, on appuie sur `beat` pour relancer le saut
+        pendant `air` beats (vers la note suivante, un cuirassé ou le sol)."""
+        self.add(beat, "orb", height=self.h + dy, step=air)
+
     def screen_split(self, beat, copies):
         self.add(beat, "screen_split", copies=copies)
 
@@ -167,41 +182,55 @@ class Level:
 # automatiquement, sur la trajectoire simulée (resolve).
 
 def scene_intro(L):
-    """0-32 : une leçon par geste, avec de l'air autour. Sauter (8), monter (14), frapper (20), glisser (25),
-    puis la montée de grosse caisse et le premier tambour : envol sur le drop du couplet."""
-    L.gap(8)                    # k
+    """0-32 : un geste nouveau toutes les deux mesures, avec de l'air autour (la musique est encore calme).
+    Sauter (4, 6), frapper (8, 10), monter (12, 14), glisser (16,5), sauter sur un cuirassé et appuyer au rebond (19 → 20),
+    traverser un gouffre de note de saut en note de saut (23 → 24, 25, 26), puis la montée de grosse caisse et le
+    premier tambour : envol sur le drop du couplet."""
+    L.gap(4, 0.5)
+    L.wall(6)                   # une souche
+    L.enemy(8)                  # k
+    L.enemy(10)
+    L.step(12, +1)
     L.step(14, +1)              # K
-    L.enemy(20)                 # S
-    L.slide(25, 2.0)            # le morceau retient son souffle
-    L.gap(28.5)                 # K : la montée commence
+    L.slide(16.5, 1.5)
+    L.add(19, "jump")           # on saute sur le cuirassé…
+    L.stomp(20, 2.0)            # S : … et on appuie au rebond : grand rebond
+    L.cliff(21.25, 1.0)         # on se pose un étage plus haut (22)
+    L.gap(23, 3.6)              # le gouffre : on saute…
+    h = L.h
+    L.orb(24, 0.5)              # … et on relance de note en note
+    L.orb(25, 1.8)
+    L.orb(26, 2.5)
+    L.cliff(26.25, 2.0)         # l'autre bord, plus haut (27)
+    L.gap(28.5, 0.5)            # K : la montée commence
     L.bounce(30, 2.0, +5)       # X X : envol, on atterrit sur le premier temps du couplet
 
 
 def scene_couplet(L, base, variant=False):
-    """32-64 : on grimpe en suivant la caisse claire. Motif : deux coups, une marche ; puis saut + coup en l'air.
-    Signature : la course sur le mur (note tenue) puis la dévalée."""
+    """32-64 : on grimpe en suivant la caisse claire. Coups par deux, une marche, deux cuirassés enchaînés (on rebondit
+    de l'un à l'autre en appuyant sur 41 et 43), la course sur le mur (note tenue), une glissade, deux notes de saut
+    au-dessus du vide (54,5 ; 55,5), puis la dévalée."""
     b = base
     L.enemy(b + 1)              # 33 S
     L.enemy(b + 2)              # 34 S
     L.enemy(b + 4)              # 36 S
     L.enemy(b + 5)              # 37 S
     L.step(b + 6, +1)           # 38 k : une marche
-    L.enemy(b + 7.5)            # 39,5 S
-    L.enemy(b + 9)              # 41 S
-    L.step(b + 10.5, +1)        # 42,5 k : saut…
-    L.flyer(b + 11)             # 43 S : … et coup en plein vol
-    L.enemy(b + 13)             # 45 S
-    if variant:
-        L.flyer(b + 15)         # 47 S (passage 2 : un saut de plus)
-        L.step(b + 14.5, +1)
+    L.add(b + 8, "jump")        # 40 : on saute sur le premier cuirassé
+    L.stomp(b + 9, 1.5)         # 41 S : rebond vers le second (bas : le second reste à l'image)
+    L.stomp(b + 10.5, 2.0)      # 42,5 k : rebond vers la falaise
+    L.cliff(b + 11.75, 1.0)     # on se pose plus haut (44,5)
+    L.enemy(b + 15)             # 47 S
     # course sur le mur : de 48 à 49,5, +5 (+6 au passage 2), sur la note tenue
     L.ramp(b + 16, 1.5, +6 if variant else +5)
-    L.slide(b + 19, 2.0)        # 51 : au sommet, on glisse sous la branche pendant le roulement de caisse claire
-    L.enemy(b + 22.5)           # 54,5 S
-    L.enemy(b + 23.5)           # 55,5 S
+    L.slide(b + 18.5, 1.5)      # 50,5 : au sommet, on glisse sous la branche
+    L.gap(b + 21.5, 2.6)        # 53,5 : dans le vide…
+    L.orb(b + 22.5, 0.5)        # 54,5 S : … de note en note
+    L.orb(b + 23.5, 1.5)        # 55,5 S
+    L.cliff(b + 23.75, 1.0)     # l'autre bord (56,5)
     L.enemy(b + 25)             # 57 S
-    # la dévalée : on file dans la pente sur 2 beats
-    L.ramp(b + 25.5, 2.0, -8)
+    # la dévalée : on file dans la pente sur un temps et demi
+    L.ramp(b + 25.5, 1.5, -8)
     L.enemy(b + 28)             # 60 S
     L.enemy(b + 29)             # 61 S
     L.gap(b + 31, 0.5)          # 63
@@ -264,14 +293,14 @@ def scene_refrain(L, base, variant=False):
     L.enemy(b + 4)              # 100 S
     # tambours en chaîne : 102 → 104 → 106 → 108 (rebonds courts, le sol reste à l'image), coup en l'air entre deux
     L.bounce(b + 6, 2.0, +1)
-    L.flyer(b + 7)              # 103 S
+    L.flyer(b + 6.5)            # au sommet du rebond (contact juste après)
     L.bounce(b + 8, 2.0, +1)
-    L.flyer(b + 9)              # 105 S
+    L.flyer(b + 8.5)
     L.bounce(b + 10, 2.0, +1)
-    L.flyer(b + 11)             # 107 k
+    L.flyer(b + 10.5)
     if variant:
         L.bounce(b + 12, 2.0, +1)
-        L.flyer(b + 13)
+        L.flyer(b + 12.5)
         L.ramp(b + 14.5, 2.0, -11)
     else:
         L.ramp(b + 12.5, 2.0, -10)                      # 108,5 : la dévalée
@@ -294,11 +323,11 @@ def scene_refrain_ciel(L, base):
       120   on rebondit, on glisse, on finit au sol en frappant sur les derniers temps."""
     b = base
     L.bounce(b - 0.5, 2.5, +10)  # 95,5 → 98 : le drop
-    L.flyer(b + 1)              # 97 S : en plein vol
+    # pas de chauve-souris sur le tambour géant : au sommet, on est trop haut pour l'avoir vue venir
     L.enemy(b + 3)              # 99 S
     L.ramp(b + 4, 1.5, +6)      # 100 → 101,5 : course sur le mur
-    L.bounce(b + 6, 2.0, +5)    # 102 k : relance
-    L.flyer(b + 7)              # 103 S
+    L.bounce(b + 6, 1.5, +3)    # 102 k : relance (courte : la chauve-souris reste à l'image)
+    L.flyer(b + 6.5)            # 102,5 S : juste avant le sommet, à hauteur du héros
     for k in (8.5, 9.5, 10.5, 11.5):                   # 104,5 … 107,5 : K K K K, on grimpe à chaque rebond
         L.bounce(b + k, 1.0, +2.5, lums=False)
     L.lums(b + 8.75, 15, 0.25)
@@ -306,11 +335,11 @@ def scene_refrain_ciel(L, base):
     L.gap(b + 14, 0.5)          # 110 k
     L.enemy(b + 15)             # 111 S
     L.ramp(b + 16, 2.5, -14)    # 112 : le plongeon, en pente raide (le sol reste à l'image, pas de chute dans le vide)
-    L.ramp(b + 19, 2.0, -12)    # 115 : on rebondit sur le palier et on replonge
-    L.enemy(b + 21)             # 117 S : en bas
+    L.ramp(b + 18.5, 2.0, -12)  # 114,5 : on replonge aussitôt
+    L.enemy(b + 21.5)           # 117,5 s : en bas, une fois la caméra posée
     L.gap(b + 22.5, 0.5)        # 118,5
-    L.bounce(b + 24.5, 2.0, +4) # 120,5 K : on rebondit
-    L.flyer(b + 25.5)           # 121,5 s
+    L.bounce(b + 24.5, 1.5, +2) # 120,5 K : on rebondit
+    L.flyer(b + 25)             # 121 S : au sommet du rebond
     L.enemy(b + 27)             # 123 S
     L.slide(b + 27.75, 1.5)     # 123,75 : glissade sous la branche
     L.enemy(b + 30)             # 126 S
@@ -397,13 +426,14 @@ def build():
     # passage 2 : la musique de [32, 128) revient en [152, 248) : mêmes idées, variées et plus hautes
     scene_couplet(L, 152, variant=True)
     scene_pont(L, 184, variant=True)
-    scene_roulement(L, 200, variant=True)
-    scene_refrain(L, 216, variant=True)
-    scene_retombee(L, 240)
+    scene_roulement(L, 200, variant=True, launch=False)
+    scene_refrain_ciel(L, 216)                         # le refrain 2 rejoue le refrain 1 (avant : ancien refrain + retombée)
     scene_fin(L)
-    # refrain 2 : l'image se dédouble puis grésille (calé sur la musique, sur des passages déjà connus)
-    L.screen_split(216, 2)      # le drop : deux écrans
-    L.screen_split(224, 5)      # le roulement de grosse caisse : cinq écrans, en petit
+    # l'écran se détraque dès le couplet 2 (≈ 1 min), sur des passages déjà joués : la grille remplit tout l'écran
+    L.screen_split(152, 4)      # couplet 2 : quatre écrans (2×2)
+    L.screen_split(168, 1)      # retour à un écran pour la course sur le mur
+    L.glitch(184, 0.35, 8)      # pont 2 : un grésillement léger
+    L.screen_split(216, 9)      # refrain 2, sur le drop : neuf écrans (3×3), en petit
     L.screen_split(232, 1)      # retour à un écran…
     L.glitch(232, 0.7, 8)       # … qui grésille sur la dévalée et les coups
     L.glitch(248, 0.5, 6)       # la fin : un dernier grésillement
@@ -460,6 +490,7 @@ class World:
                                  -e["params"]["height"]) for e in events if e["type"] == "ceiling"), key=lambda s_: s_.x0)
         self.flips = sorted((e["beat"], e["lane"] == 1) for e in events if e["type"] == "gravity")
         self.gaps, self.walls, self.enemies, self.bars, self.platforms, self.bounces = [], [], [], [], [], []
+        self.orbs = []           # [x, y du centre, beat, vol, prise, plan]
         self.vines = []          # [x_prise, x_lâcher, beat_prise, beat_lâcher, y_prise, y_lâcher, creux, vol, prise_faite]
         for e in events:
             p, b, t = e.get("params", {}), e["beat"], e["type"]
@@ -474,15 +505,19 @@ class World:
                 self.walls.append((x0, self.height(x0 + 0.45), b))
                 self.jumps.append(b)
             elif t in ("enemy", "block"):
-                cx = X(b + ENEMY_CENTER)
+                stomp = p.get("variant") == "stomp"
+                cx = X(b - STOMP_TOUCH) if stomp else X(b + ENEMY_CENTER)
                 if e["lane"] == 1:
                     ey = p["height"]
                 elif e["lane"] == 2:
                     ey = p["height"] - 0.9          # pendu au plafond
                 else:
                     ey = self.height_on(cx, plane)
-                self.enemies.append([cx, ey, b, True, plane])
-                self.hits.append(b)
+                self.enemies.append([cx, ey, b, True, plane, stomp, p.get("length", 2.0)])
+                (self.jumps if stomp else self.hits).append(b)      # cuirassé : l'appui du grand rebond
+            elif t == "orb":
+                self.orbs.append([X(b), p["height"], b, p.get("step", 1.0), False, plane])
+                self.jumps.append(b)
             elif t == "slide_bar":
                 ln = p.get("length", 1.0)
                 x0, x1 = X(b + SLIDE_START), X(b + SLIDE_START + ln)
@@ -650,6 +685,26 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
     inv, plane = False, 0
     fi = 0
     vine = None
+    last_press = -99
+    pending = None               # cuirassé écrasé : en attente de l'appui du grand rebond
+
+    def arrival(arrive, x_land):
+        """Miroir de PlayerController.ArrivalTarget : (pieds visés, temps de contact)."""
+        for o in w.orbs:
+            if not o[4] and abs(o[2] - arrive) < 0.05:
+                return o[1] - 0.5, arrive
+        for en in w.enemies:
+            if en[5] and en[3] and abs(en[2] - arrive) < 0.05:
+                return en[1] + 0.9, arrive - STOMP_TOUCH
+        for v in w.vines:
+            if not v[8] and abs(v[2] - arrive) < 0.05:
+                return v[4], arrive
+        return w.height_on(x_land, plane), arrive
+
+    def launch(arrive, beat_, x_, y_):
+        target, touch = arrival(arrive, x_ + (arrive - beat_) * SPB * RUN_SPEED)
+        ta = max(0.3, touch - beat_) * SPB
+        return (target - y_ + 0.5 * GRAVITY * ta * ta) / ta
     ji = hi = 0
     jump_buf = -99
     last_ground = 0.0
@@ -689,6 +744,8 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
                 y = s
         if grounded:
             last_ground = beat
+        if jump:
+            last_press = beat
         if jump and vine is None:
             jump_buf = beat
         coyote = not grounded and vy <= 0 and beat - last_ground <= 0.12
@@ -697,6 +754,26 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
         if not grounded and sliding_cmd and vy > -JUMP_V:
             vy = -JUMP_V
         sliding = sliding_cmd and grounded
+        # cuirassé écrasé : l'appui (en avance ou juste après) donne le grand rebond
+        if pending is not None:
+            if last_press >= pending[2] - PRESS_EARLY:
+                vy, grounded, jump_buf = launch(pending[2] + pending[6], beat, x, y), False, -99
+                pending = None
+            elif beat > pending[2] + PRESS_LATE:
+                pending = None
+        # notes de saut : en l'air près d'une note, l'appui relance le saut
+        if not inv:
+            for o in w.orbs:
+                if o[4] or o[5] != plane or abs(o[0] - x) > 1.2 or abs(o[1] - (y + 0.5)) > ORB_REACH:
+                    continue
+                if beat < o[2] - PRESS_EARLY or beat > o[2] + PRESS_LATE:
+                    continue
+                if last_press < o[2] - PRESS_EARLY:
+                    vy = max(vy, -ORB_HOVER)                 # la note retient le héros pendant sa fenêtre
+                    continue
+                o[4] = True
+                vy, grounded, jump_buf = launch(o[2] + o[3], beat, x, y), False, -99
+                break
         # lianes : prise en passant, balancier sur un arc, lâcher vers la liane suivante ou le sol
         if vine is None and not inv:
             for v in w.vines:
@@ -705,22 +782,28 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
                     break
         swinging = False
         if vine is not None:
+            # miroir de PlayerController.Swing : on lâche en sautant (de −VINE_EARLY à +VINE_LATE autour du temps)
             xg, xr, bg, br, yg, yr, sag, air, _ = vine
-            u = min(1.0, max(0.0, (beat - bg) / (br - bg)))
-            if u < 1.0:
-                y = yg + (yr - yg) * u - sag * math.sin(math.pi * u)
-                vy = ((yr - yg) - sag * math.pi * math.cos(math.pi * u)) / ((br - bg) * SPB)
-                grounded, swinging = False, True
+            u = (beat - bg) / (br - bg)
+            arc_y = yg + (yr - yg) * u - sag * math.sin(math.pi * u)
+            arc_vy = ((yr - yg) - sag * math.pi * math.cos(math.pi * u)) / ((br - bg) * SPB)
+            pressed = last_press >= br - VINE_EARLY and last_press >= bg
+            if not pressed and beat <= br + VINE_LATE:
+                y, vy, grounded, swinging = arc_y, arc_vy, False, True
+            elif not pressed:
+                y, vy, jump_buf, vine = arc_y, min(arc_vy, 0.0), -99, None      # la main glisse : on tombe
             else:
-                ta = air * SPB
+                arrive = br + air
+                ta = max(0.3, arrive - beat) * SPB
                 target = w.height_on(x + ta * RUN_SPEED, plane)
                 for nv in w.vines:
-                    if nv is not vine and abs(nv[2] - (br + air)) < 0.05:
+                    if nv is not vine and abs(nv[2] - arrive) < 0.05:
                         target = nv[4]
                         break
-                y = yr
+                y = arc_y
                 vy = (target - y + 0.5 * GRAVITY * ta * ta) / ta
                 jump_buf, vine = -99, None
+        frame_start_y = y
         if not grounded and not swinging:
             yp = y
             y += vy * dt - 0.5 * GRAVITY * dt * dt
@@ -772,11 +855,23 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
                     wy = y
                     body = body_at(wy)
         for en in w.enemies:
-            cx, ey, eb, alive, eplane = en
+            cx, ey, eb, alive, eplane, stomp, sair = en
             if not alive or eplane != plane:
                 continue
             r = (cx - 0.4, ey, cx + 0.4, ey + 0.9)
-            if hitting and ov(hit_box, r):
+            if stomp and not inv and vy <= 0 and frame_start_y >= ey + 0.9 - 0.45 and y <= ey + 0.9 + 0.8 \
+                    and abs(x - cx) <= 1.15:
+                # écrasé : petit rebond d'un demi-temps ; l'appui déjà fait donne tout de suite le grand rebond
+                en[3] = False
+                y = max(y, ey + 0.9)
+                vy, grounded = 0.5 * GRAVITY * 0.5 * SPB, False
+                pending = en
+                if last_press >= eb - PRESS_EARLY:
+                    vy, jump_buf, pending = launch(eb + sair, beat, x, y), -99, None
+                wy = y
+                body = body_at(wy)
+                continue
+            if hitting and not stomp and ov(hit_box, r):
                 en[3] = False
             elif ov(body, r):
                 return f"touché par l'ennemi du beat {eb} au beat {beat:.2f} (y {wy:.2f}, ennemi {ey:.2f})", {}
@@ -828,8 +923,8 @@ def action_windows(events, lo=0.0, hi=NB, limit=0.5, fps=60):
 
 
 MIN_MARGIN = 0.3                             # 120 ms : un humain peut appuyer un peu tôt ou un peu tard sans mourir
-# passages déjà passés à cette règle : pont (lianes), roulement + refrain, final (gravité, arrière-plan), refrain 2 + fin
-WIDE_MARGIN = [(57, 80), (78, 128), (126, 154), (212, 256)]
+# passages déjà passés à cette règle
+WIDE_MARGIN = [(0, 184), (212, 256)]          # tout le niveau sauf le pont 2 et le roulement 2 (encore à ±40 ms)
 
 
 def check_margins(events, ranges, margin=MIN_MARGIN, fps=60):
@@ -949,9 +1044,20 @@ def auto_lums(events, world, song):
     return out
 
 
-def camera_rail(track, step=0.25):
+SAFE_BOTTOM, SAFE_TOP = 0.12, 0.2               # marges de CameraRig.safeMargins (le haut : sous le HUD)
+FLYER_BELOW, FLYER_ABOVE = 0.6, 2.4               # chauve-souris par rapport au centre du héros, à l'appui
+ENEMY_LEAD = 1.5                                # un ennemi est dans l'image au moins 1,5 temps (600 ms) avant son coup
+
+
+def enemy_windows(world):
+    """Pour chaque ennemi : (beat du coup, bas, haut) de sa boîte dans le monde."""
+    return [(en[2], en[1], en[1] + 0.9) for en in world.enemies]
+
+
+def camera_rail(track, step=0.25, enemies=()):
     """Rail de la caméra : trajectoire des pieds lissée dans les deux sens (elle anticipe montées et chutes),
-    contrainte à garder le héros dans l'image, avec le cadrage par défaut (sol à FRAME_Y)."""
+    contrainte à garder le héros dans l'image (marges de CameraRig) et à montrer chaque ennemi au moins ENEMY_LEAD
+    temps avant son coup, avec le cadrage par défaut (sol à FRAME_Y). Le héros passe avant les ennemis."""
     beats = [tr[0] for tr in track]
     n = NB * 4
     feet = [feet_at(track, beats, i * step) for i in range(n)]
@@ -959,8 +1065,15 @@ def camera_rail(track, step=0.25):
     # corps : des pieds vers la tête (vers le bas en gravité inversée)
     top = [f if v else f + 1.0 for f, v in zip(feet, inv)]
     bottom = [f - 1.0 if v else f for f, v in zip(feet, inv)]
-    lo = [t_ + 0.4 - VIEW_H * 0.4 for t_ in top]       # la tête (ou les pieds) reste sous la marge du haut (10 %)
-    hi = [b_ + VIEW_H * 0.42 for b_ in bottom]          # le bas du corps reste au-dessus de la marge du bas (8 %)
+    lo = [t_ + 0.4 - VIEW_H * (0.5 - SAFE_TOP) for t_ in top]       # le haut du corps sous la marge du haut (HUD)
+    hi = [b_ + VIEW_H * (0.5 - SAFE_BOTTOM) for b_ in bottom]        # le bas du corps au-dessus de la marge du bas
+    # ennemis : visibles (sous le HUD, au-dessus du bas) pendant les ENEMY_LEAD temps avant leur coup
+    elo = [-math.inf] * n
+    ehi = [math.inf] * n
+    for eb, y0, y1 in enemies:
+        for i in range(max(0, int((eb - ENEMY_LEAD) / step)), min(n, int(eb / step) + 1)):
+            elo[i] = max(elo[i], y1 + 0.05 - VIEW_H * (0.5 - SAFE_TOP))     # 0,05 u de plus que la vérification
+            ehi[i] = min(ehi[i], y0 - 0.35 + VIEW_H * 0.5)
     # le sol sous le héros à FRAME_Y du bas ; au plafond, le plafond à FRAME_Y du haut
     target = [f - VIEW_H * (0.5 - FRAME_Y) if v else f + VIEW_H * (0.5 - FRAME_Y) for f, v in zip(feet, inv)]
 
@@ -977,12 +1090,34 @@ def camera_rail(track, step=0.25):
             out.append(acc / tot)
         return out
 
-    c = smooth(target, 6.0)                            # σ = 1,5 beat
+    def clamp(c):
+        c = [min(max(x, a), b) if a <= b else x for x, a, b in zip(c, elo, ehi)]   # ennemis (si possible)
+        return [min(max(x, a), b) for x, a, b in zip(c, lo, hi)]                    # héros (toujours)
+
+    c = smooth(target, 4.0)                            # σ = 1 beat : la caméra colle au héros, avec un peu d'avance
     for _ in range(12):
-        c = [min(max(x, a), b) for x, a, b in zip(c, lo, hi)]
-        c = smooth(c, 3.0)
-    c = [min(max(x, a), b) for x, a, b in zip(c, lo, hi)]
+        c = smooth(clamp(c), 3.0)
+    c = clamp(c)
     return [round(x, 2) for x in c]
+
+
+def enemy_leads(rail, world, step=0.25):
+    """Pour chaque ennemi : depuis combien de temps (beats) il est entièrement dans l'image au moment du coup."""
+    view_w = ZOOM / 40.0
+    out = []
+    for cx, ey, eb, *_ in world.enemies:
+        first, b = None, eb
+        while b > eb - 4:
+            f = max(0.0, b / step)
+            i = min(int(f), len(rail) - 2)
+            c = rail[i] + (rail[i + 1] - rail[i]) * (f - i)
+            x0 = X(b) - view_w * 0.22
+            if not (cx - 0.4 >= x0 and cx + 0.4 <= x0 + view_w and ey >= c - VIEW_H / 2 + 0.3
+                    and ey + 0.9 <= c + VIEW_H * (0.5 - SAFE_TOP)):
+                break
+            first, b = b, b - 0.05
+        out.append((eb, 0.0 if first is None else eb - first))
+    return out
 
 
 def resolve(events, song):
@@ -1009,7 +1144,7 @@ def resolve(events, song):
         else:
             out.append(e)
     out.sort(key=lambda e: (e["beat"], e["type"]))
-    return out, camera_rail(track), None
+    return out, camera_rail(track, enemies=enemy_windows(World(out))), None
 
 
 def lint(events):
@@ -1034,7 +1169,7 @@ def lint(events):
 def table(events):
     sym = {"gap": "G", "wall": "W", "enemy": "E", "slide_bar": "S", "step": "^", "ramp": "/", "platform": "P",
            "bounce": "T", "camera": "c", "vine": "V", "gravity": "g", "back": "B", "ceiling": "C",
-           "screen_split": "#", "glitch": "~"}
+           "screen_split": "#", "glitch": "~", "orb": "o"}
     rows = {}
     for e in events:
         if e["type"] not in sym:
@@ -1094,6 +1229,22 @@ def generate():
             problems.append(f"appuis décalés de {late * SPB * 1000:+.0f} ms : {err}")
     # passages réécrits avec la nouvelle règle : chaque action laisse au moins 120 ms de marge, seule, des deux côtés
     problems += check_margins(events, WIDE_MARGIN)
+    # lisibilité : au moment de l'appui, une chauve-souris est à hauteur du héros ou au-dessus (jamais en bas du saut)
+    track = []
+    simulate(events, 120, track)
+    beats = [tr[0] for tr in track]
+    for e in events:
+        if e["type"] == "enemy" and e["lane"] == 1:
+            inv, _ = track_state(track, beats, e["beat"])
+            hero_c = track_at(track, beats, e["beat"])
+            bat_c = e["params"]["height"] + 0.45
+            if bat_c < hero_c - FLYER_BELOW or bat_c > hero_c + FLYER_ABOVE:
+                problems.append(f"chauve-souris du beat {e['beat']} à {bat_c - hero_c:+.1f} u du héros au moment de la frapper "
+                                f"(de −{FLYER_BELOW} à +{FLYER_ABOVE} u)")
+    # lisibilité : chaque ennemi apparaît assez tôt pour qu'on ait le temps de le voir venir
+    for eb, lead in enemy_leads(rail, World(events)):
+        if lead < 1.0 - 1e-6:
+            problems.append(f"ennemi du beat {eb} visible seulement {lead * SPB * 1000:.0f} ms avant le coup (min 400 ms)")
     return events, rail, stats, problems
 
 

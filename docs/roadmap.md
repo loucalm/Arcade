@@ -14,7 +14,7 @@ Règles :
 - [x] Démo jouable : niveau depuis chart JSON, saut/frappe/glissade, 3 cœurs, checkpoints, score × combo, HUD, Game Over + saisie du nom, démo autoplay sur l'Attract, juice de base (2026-09-25)
 
 ## Jeu — P0 (rendu / borne)
-- [ ] **Tester sur la vraie borne** : 60 fps dans Firefox ESR, manettes et dead zone, bouton blanc, AFK 60 s, et surtout **l'audio démarre-t-il après un appui manette ?** (politique d'autoplay du navigateur)
+- [ ] **Tester sur la vraie borne** : 60 fps dans Firefox ESR, manettes (correctif ADR-029 : à vérifier sur la vraie machine, et le sens haut/bas du joystick), bouton blanc, AFK 60 s, et surtout **l'audio démarre-t-il après un appui manette ?** (politique d'autoplay du navigateur)
 - [ ] **Tester le ressenti dans Firefox** : durée et hauteur du saut, fenêtres de tolérance, latence des sons quantifiés (jusqu'à ~60 ms)
 - [ ] **Réduire le build** (`Build.wasm` ≈ 31 Mo) : Managed Stripping Level = High, IL2CPP « Optimize Size », retirer les packages inutiles (navigation, multiplayer center, timeline, modules VR/XR…)
 - [ ] **Musique libre de droits** : le niveau utilise provisoirement « Main Theme » de Shovel Knight (protégé, voir `Audio/LICENSES.md`) ; la remplacer par un morceau original ou libre (110–160 BPM, sections marquées), avec sa **version 8-bit** au même BPM + licence dans `Audio/LICENSES.md`
@@ -37,6 +37,13 @@ Règles :
 - [ ] Le reste du niveau 01 (intro, couplets, pont 2, roulement 2) n'a que ±40 ms de marge par endroits (marches juste après un trou : 64 ms) : à repasser à la règle des 120 ms (`WIDE_MARGIN`)
 - [ ] Arrière-plan plus lisible : aujourd'hui seulement assombri et derrière les piliers ; idées : décor du premier plan qui s'assombrit pendant le passage, son étouffé
 - [ ] Lianes : sprite de nœud dédié (aujourd'hui la tuile de poteau du biome), corde au repos qui pend verticalement
+- [x] (2026-11-25, ADR-027) **Retour de test** : chauves-souris qui apparaissaient au moment de les frapper → rail de caméra qui montre chaque ennemi 1,5 temps avant (minimum garanti 400 ms, médiane 1,26 s ; avant : 40 ms) et zone de frappe en l'air de 3,5 u ; lianes lâchées **au saut** (plus automatiques) ; deux mécaniques nouvelles, **cuirassés** (écraser + appui au rebond) et **notes de saut** ; intro et couplet réécrits ; règle des 120 ms sur tout le niveau sauf le pont 2 et le roulement 2 ; marges de caméra de Jeremy (0,12 / 0,2) appliquées dans la scène (elle gardait 0,08 / 0,1)
+- [x] (2026-11-25) Cuirassé : sprite dédié commun à tous les biomes (carapace bleu acier + tremplin jaune, `tools/gen-stomper.py`), chevrons qui rebondissent sur le temps
+- [ ] Cuirassé : son d'écrasement dédié
+- [x] (2026-11-25, ADR-029) **Commandes de la borne** : « rien ne répond » reproduit (Unity 6.3 ne voit en Web que la manette à l'index 0) ; manettes lues dans le navigateur (`KentaGamepad.jslib`, `ArcadePads`), `ArcadeMenu` remplace le `MenuManager` en build ; vérifié dans un build Web avec une fausse manette à l'index 1 (accueil, partie, 80 s d'appuis sans retour au menu, bouton blanc → `localhost:3000`)
+- [x] (2026-11-25) Chauves-souris à hauteur du héros (règle du générateur), refrain 2 = refrain 1 rejoué, écrans dédoublés en grille pleine (4 puis 9) dès le couplet 2
+- [ ] Note de saut : sprite dédié (aujourd'hui la pièce ×2 teintée) et son (une note de la mélodie)
+- [ ] Pont 2 et roulement 2 (184-212) : passer à la règle des 120 ms et y mettre les nouvelles mécaniques
 - [ ] Portail de gravité : son dédié et sprite (aujourd'hui deux colonnes de pixels)
 - [ ] Décor qui joue avec la musique (éléments qui réagissent au temps, foule d'ennemis qui danse au fond)
 - [ ] Musique libre de droits **écrite pour le niveau** : idéalement, les sons des actions manquent dans la piste et c'est le joueur qui les joue
@@ -59,11 +66,14 @@ Règles :
 - [ ] **DA Kenta, à finir** (voir [da-kenta.md](da-kenta.md)) :
   - [x] Héros redessinés en marionnette pixel art (~3,5 têtes au lieu de ~2) : course 8 images, saut 8, frappe 4, glissade 3 + entrée 3 + sortie 3, accroupi, bandeau / pan de veste / écharpe / cheveux simulés, contour de silhouette seulement (`tools/gen-heroes.py`, ADR-022) (2026-11-24)
   - [x] Obstacles des 8 biomes (mur, bloc, plafond, poteau, plateforme) redessinés par Gemini au niveau des maquettes du PDF, ramenés en pixel art par script (`tools/gemini-obstacles/`, ADR-026) (2026-11-25)
+  - [x] Gardiens des 8 biomes redessinés par Gemini au niveau des maquettes, **immobiles** (plus d'yeux qui s'ouvrent) et **derrière les montagnes** (`tools/gemini-gardiens/`, ADR-028) (2026-11-25)
   - [ ] **P2** Obstacles à refaire dans Gemini : `wall_orage` (socle plat), `block_orage` et `post_orage` (fond rectangulaire retiré, contour haché), `block_cite` (copie de l'ancien bloc), `post_echine` (corde en rayures jaunes et noires)
   - [ ] Faire valider le nouveau gabarit par l'équipe, puis **vérifier sur la borne** : lisibilité à 2 m, rendu des héros à ×3 (vue large)
   - [ ] Animations restantes : attente animée (menus), pose de victoire, mort animée ; liane et course sur mur à brancher avec leurs mécaniques
-  - [ ] Vignette (`thumbnail.png`) et pages du site : encore avec le Kenta du PDF
-  - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : gardiens animés, éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
+  - [x] Vignette (`thumbnail.png`) : Kenta en marionnette, bandeau rouge « DÉMO » ; `info.json` à jour (plus de Sourdine, mentions « démo ») (2026-11-25)
+  - [ ] Pages du site : encore avec le Kenta du PDF
+  - [ ] Version finale : retirer le bandeau « DÉMO » de la vignette (`demo_banner` dans `gen_thumbnail`) et les mentions « démo » de `info.json`
+  - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
   - scènes de drop entre biomes (tronc qui frappe, chute vers le marais, éruption, avalanche…) : aujourd'hui flash + secousse + changement de décor
   - ennemis : variante « cassé » (pièces qui s'échappent) pour les 8, comme le djembé
   - tour REMIX : `PixelScreen.SetDivider(3)` (80×45), palette 4 tons, perturbations (voir § 9) ; il manque la version 8-bit du morceau
@@ -124,7 +134,7 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2026-11-25.md](audit-2026-11-25.md). La **verticalité** a finalement été traitée ici (demande de Jeremy), sans toucher à la physique de `PlayerController`.
 - [x] (2026-11-25) **P0** Décor collé à l'écran verticalement (arbres qui « volent ») → `BiomeBackdrop` pose la ligne de sol des calques sur le sol le plus bas de la vue (lu sur `CameraRig.HeightProbe`, lissé), une part par calque
 - [x] (2026-11-25) **P0** Bande vide et pâle sous les arbres → pied des calques (`kenta_art.add_foot`), étiré jusqu'au bas de la vue
-- [x] (2026-11-25) **P0** Gardien → entier, opaque, **devant** les montagnes lointaines : c'est l'élément principal du décor (choix de Jeremy, au lieu de l'enfoncer)
+- [x] (2026-11-25) **P0** Gardien → entier, opaque, **devant** les montagnes lointaines : c'est l'élément principal du décor (choix de Jeremy, au lieu de l'enfoncer). Remplacé le même jour par ADR-028 : derrière les montagnes, à la demande de Lou
 - [x] (2026-11-25) **P1** Brume blanche à 32 % → dégradé de 4 % en haut à 20 % en bas
 - [x] (2026-11-25) **P1** « PARFAIT ! » suit le héros (`JudgePopup`)
 - [x] (2026-11-25) **P1** Traînée du bandeau → ruban plein, seulement à partir de ×4

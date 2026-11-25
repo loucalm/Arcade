@@ -192,7 +192,6 @@ namespace Kenta.EditorTools
                 b.fillDeep = Spr($"Gen/biomes/fill_{id}_deep.png");
                 b.pillarDecor = Enumerable.Range(0, 4).Select(k => Spr($"Gen/biomes/deco_{id}_{k}.png")).ToArray();
                 b.guardian = Spr($"Gen/biomes/guardian_{id}.png");
-                b.guardianAwake = Spr($"Gen/biomes/guardian_{id}_awake.png");
                 var pos = positions.FirstOrDefault(g => g.id == id);
                 b.guardianOffset = pos != null ? new Vector2(pos.x, pos.y) : Vector2.zero;
                 if (Enemies[i] == "djembe")
@@ -221,6 +220,7 @@ namespace Kenta.EditorTools
             t.coinFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/coin_{i}.png")).ToArray();
             t.totem = Spr("Gen/world/totem.png");
             t.flyer = Spr("Pdf/enemy_chauve.png");        // ennemi volant commun (niveaux verticaux)
+            t.stomper = new[] { Spr("Gen/world/stomper_0.png"), Spr("Gen/world/stomper_1.png") };   // cuirassé commun
             t.pixel = Spr("Gen/world/px.png");
             EditorUtility.SetDirty(t);
             return t;

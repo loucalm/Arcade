@@ -9,11 +9,10 @@ Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,fon
 Dossier par défaut : game/Assets/_Project/Art/Kenta/Gen   (dépendances : tools/requirements.txt)
 """
 import argparse
-import json
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kenta_art as art  # noqa: E402
@@ -35,15 +34,11 @@ def put(out, sub, name, img, sheet=None):
 
 
 def gen_biomes(out, sheet):
-    guardians = {}
+    # gardiens (guardian_<id>.png + guardians.json) : dessinés par Gemini, nettoyés par tools/gemini-gardiens/clean.py
+    # (ADR-028). Ils ne sont plus générés ici : ne pas les réécraser.
     for b in BIOMES:
         i = b["id"]
         put(out, "biomes", f"bg_{i}_sky", art.draw_sky(b), sheet)
-        sleep, (dx, dy) = art.draw_guardian(b, awake=False)
-        awake, _ = art.draw_guardian(b, awake=True)
-        put(out, "biomes", f"guardian_{i}", sleep, sheet)
-        put(out, "biomes", f"guardian_{i}_awake", awake, sheet)
-        guardians[i] = {"x": dx, "y": dy}
         put(out, "biomes", f"fill_{i}_deep", art.draw_fill_deep(b))
         for k in range(4):
             put(out, "biomes", f"deco_{i}_{k}", art.draw_deco(b, k), sheet)
@@ -56,9 +51,6 @@ def gen_biomes(out, sheet):
         put(out, "biomes", f"cliff_{i}", art.draw_cliff_top(b))
         # obstacles (wall, block, ceil, post, platform) : dessinés par Gemini, nettoyés par tools/gemini-obstacles/clean.py
         # (ADR-026). Ils ne sont plus générés ici : ne pas les réécraser.
-    # position des gardiens (px réels depuis le centre de l'écran 640×360, y vers le haut) : lue par KentaBuilder
-    with open(os.path.join(out, "biomes", "guardians.json"), "w", encoding="utf-8") as f:
-        json.dump({"items": [{"id": k, "x": v["x"], "y": v["y"]} for k, v in guardians.items()]}, f, indent=1)
 
 
 def gen_ui(out, sheet):
@@ -88,22 +80,55 @@ def gen_font(out, sheet):
         sheet.append(line)
 
 
+def text_image(text, scale=1):
+    """Texte dans la police pixel du jeu (glyphes de kenta_ui, avance = largeur + 1 px), agrandi d'un facteur entier."""
+    glyphs = [ui.glyph_image(ch).im for ch in text]
+    w = sum(g.width + 1 for g in glyphs) - 1
+    im = Image.new("RGBA", (w, max(g.height for g in glyphs)), (0, 0, 0, 0))
+    x = 0
+    for g in glyphs:
+        im.alpha_composite(g, (x, 0))
+        x += g.width + 1
+    return im.resize((im.width * scale, im.height * scale), Image.NEAREST)
+
+
+def demo_banner(img, y0, h, text="DÉMO"):
+    """Bandeau rouge sur toute la largeur (bord sombre, reflet clair), texte blanc à ombre centré, agrandi ×2."""
+    w = img.width
+    band = Image.new("RGBA", (w, h), col("#D7263D"))
+    d = ImageDraw.Draw(band)
+    d.rectangle([0, 0, w - 1, 0], fill=col("#5A0A16"))
+    d.rectangle([0, 1, w - 1, 1], fill=col("#F25467"))
+    d.rectangle([0, h - 2, w - 1, h - 2], fill=col("#A8172C"))
+    d.rectangle([0, h - 1, w - 1, h - 1], fill=col("#5A0A16"))
+    t = text_image(text, scale=2)
+    band.alpha_composite(t, ((w - t.width) // 2, (h - t.height) // 2 + 1))
+    img.alpha_composite(band, (0, y0))
+
+
 def gen_thumbnail(out, sheet):
-    """Jaquette carrée de la borne (game/BuildExtras/thumbnail.png) : la Sylve, Kenta en pleine course et le logo."""
+    """Jaquette carrée de la borne (game/BuildExtras/thumbnail.png) : la Sylve, Kenta (marionnette, ADR-022) en pleine
+    course, le logo, et un bandeau rouge « DÉMO » en bas."""
     b = BIOMES[0]
-    scene = art.draw_sky(b, scale=1, statue=True)
+    scene = art.draw_sky(b, scale=1)
     for layer, off in ((art.draw_far(b, scale=1, foot=False), 120), (art.draw_mid(b, scale=1, foot=False), 150), (art.draw_near(b, scale=1, foot=False), 230)):
         scene.im.alpha_composite(layer.im.crop((off, 0, off + 240, 135)))
     ground = art.draw_ground(b)
     for x in range(0, 240, 32):
         scene.im.alpha_composite(ground.im, (x, 115))
-    hero = Image.open(os.path.join(ROOT, "game", "Assets", "_Project", "Art", "Kenta", "Pdf", "hero_kenta_run.png")).convert("RGBA")
-    scene.im.alpha_composite(hero, (116 - hero.width // 2, 116 - hero.height))
+    hero = Image.open(os.path.join(ROOT, "game", "Assets", "_Project", "Art", "Kenta", "Gen", "heroes", "hero_kenta_run_1.png")).convert("RGBA")
+    scene.im.alpha_composite(hero, (116 - hero.width // 2, 116 - hero.height))     # toile 96×72, pieds en bas au milieu
     for i, (x, y) in enumerate(((150, 95), (162, 92), (174, 94))):
         scene.im.alpha_composite(ui.draw_coin(i % 2).im, (x, y))
-    sq = scene.im.crop((52, 0, 187, 135))
+    # la scène remonte de SHIFT px pour laisser la place au bandeau sous le sol (l'eau est prolongée vers le bas)
+    SHIFT, BAND = 10, 23
+    tall = Image.new("RGBA", (scene.im.width, 135 + SHIFT))
+    tall.alpha_composite(scene.im.crop((0, 0, scene.im.width, 135)), (0, 0))
+    tall.alpha_composite(scene.im.crop((0, 135 - SHIFT, scene.im.width, 135)), (0, 135))
+    sq = tall.crop((52, SHIFT, 187, 135 + SHIFT))
     logo = ui.draw_logo().im
     sq.alpha_composite(logo, ((135 - logo.width) // 2, 8))
+    demo_banner(sq, 135 - BAND, BAND)
     big = sq.resize((135 * 4, 135 * 4), Image.NEAREST)
     path = os.path.join(ROOT, "game", "BuildExtras", "thumbnail.png")
     big.convert("RGB").save(path, optimize=True)

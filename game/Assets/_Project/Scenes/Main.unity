@@ -1700,7 +1700,7 @@ MonoBehaviour:
   smoothTime: 0.18
   railSmoothTime: 0.06
   frameBlendTime: 0.45
-  safeMargins: {x: 0.08, y: 0.1}
+  safeMargins: {x: 0.12, y: 0.2}
 --- !u!1 &636771008
 GameObject:
   m_ObjectHideFlags: 0
@@ -2988,8 +2988,8 @@ MonoBehaviour:
   hitReach: 1.9
   hitHeight: 2.1
   hitActiveBeats: 0.3
-  airHitBelow: 1.2
-  airHitAbove: 2.4
+  airHitBelow: 3.5
+  airHitAbove: 3.5
 --- !u!4 &1371135630
 Transform:
   m_ObjectHideFlags: 0

@@ -21,11 +21,9 @@ namespace Kenta.Level
         [Tooltip("1280×360, boucle sans couture.")]
         public Sprite far, mid, near;
 
-        [Header("Gardien (sprite à part, placé comme le ciel)")]
+        [Header("Gardien (statue immobile, placée comme le ciel, derrière les montagnes)")]
         public Sprite guardian;
-        [Tooltip("Gardien éveillé (yeux ouverts) : montré aux changements de section, tout le refrain.")]
-        public Sprite guardianAwake;
-        [Tooltip("Centre du gardien par rapport au centre de l'écran 640×360, en px (y vers le haut). Écrit par tools/gen-kenta-assets.py.")]
+        [Tooltip("Centre du gardien par rapport au centre de l'écran 640×360, en px (y vers le haut). Écrit par tools/gemini-gardiens/clean.py (guardians.json).")]
         public Vector2 guardianOffset;
 
         [Header("Niveau")]

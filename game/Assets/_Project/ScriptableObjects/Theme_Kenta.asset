@@ -32,4 +32,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 9e7a4bd6f38a148af9c50f15f4e4a4fb, type: 3}
   totem: {fileID: 21300000, guid: 168c43d81541a4aeab4206e8a914aa13, type: 3}
   flyer: {fileID: 21300000, guid: eb31e0c5a6b944ac48d031beeac3108c, type: 3}
+  stomper:
+  - {fileID: 21300000, guid: 150c9781c32e748b188e04c5d3ac2b10, type: 3}
+  - {fileID: 21300000, guid: 4c4a8652984d643ca9520325733804c6, type: 3}
   pixel: {fileID: 21300000, guid: 629e8e2125bc942ba8bb6e02d25d6ce3, type: 3}
