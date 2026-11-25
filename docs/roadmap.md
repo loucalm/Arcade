@@ -62,7 +62,9 @@ Règles :
   - [ ] **P2** Obstacles à refaire dans Gemini : `wall_orage` (socle plat), `block_orage` et `post_orage` (fond rectangulaire retiré, contour haché), `block_cite` (copie de l'ancien bloc), `post_echine` (corde en rayures jaunes et noires)
   - [ ] Faire valider le nouveau gabarit par l'équipe, puis **vérifier sur la borne** : lisibilité à 2 m, rendu des héros à ×3 (vue large)
   - [ ] Animations restantes : attente animée (menus), pose de victoire, mort animée ; liane et course sur mur à brancher avec leurs mécaniques
-  - [ ] Vignette (`thumbnail.png`) et pages du site : encore avec le Kenta du PDF
+  - [x] Vignette (`thumbnail.png`) : Kenta en marionnette, bandeau rouge « DÉMO » ; `info.json` à jour (plus de Sourdine, mentions « démo ») (2026-11-25)
+  - [ ] Pages du site : encore avec le Kenta du PDF
+  - [ ] Version finale : retirer le bandeau « DÉMO » de la vignette (`demo_banner` dans `gen_thumbnail`) et les mentions « démo » de `info.json`
   - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : gardiens animés, éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
   - scènes de drop entre biomes (tronc qui frappe, chute vers le marais, éruption, avalanche…) : aujourd'hui flash + secousse + changement de décor
   - ennemis : variante « cassé » (pièces qui s'échappent) pour les 8, comme le djembé
