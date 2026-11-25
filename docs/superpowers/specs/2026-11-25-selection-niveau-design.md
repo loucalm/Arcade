@@ -77,7 +77,7 @@ Maquette de référence : [../../img/selection-niveau-maquette.png](../../img/se
 
 ## Vignettes
 - Générées par `tools/gen-kenta-assets.py --only thumbs` → `Art/Kenta/Gen/ui/thumb_<biome>.png`, **40×24**.
-- Composition : ciel + calques lointain, milieu et proche du décor 640×360 (une fenêtre fixe), réduits en moyenne par blocs, puis **chaque pixel ramené à la couleur la plus proche de la palette du biome** (`kenta_biomes.py`) : pas de couleurs intermédiaires floues. Contour d'1 px sombre.
+- Composition : ciel + calques lointain, milieu et proche du décor 640×360 (fenêtre fixe 600×360, rapport 5:3), réduits en moyenne par blocs de 15×15 px, puis **chaque pixel ramené à la couleur la plus proche parmi celles du décor du biome** (couleurs opaques de la fenêtre) : aucune couleur nouvelle, pas de demi-teintes floues. Pas de contour : le cadre de la carte en tient lieu. Une étoile 5×5 (`Gen/ui/star.png`, blanche, teintée dans Unity) sert aux difficultés.
 - Importées comme les autres sprites d'interface (`KentaSpritePostprocessor`, dossier `Gen/ui/`).
 
 ## Classements par niveau
