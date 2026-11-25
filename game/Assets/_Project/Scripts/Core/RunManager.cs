@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System;
 using System.Collections;
 using Kenta.FX;
@@ -68,6 +69,15 @@ namespace Kenta.Core
         public string SectionName => Chart != null ? Chart.sections[SectionIndex].name : "";
 
         /// <summary>Avancement 0..1 dans le morceau.</summary>
+        /// <summary>Part du morceau (0..1) atteinte au beat donné (frise du HUD).</summary>
+        public float ProgressAt(double beat)
+        {
+            var c = Conductor.Instance;
+            if (c == null || song == null || song.clip == null) return 0f;
+            double totalBeats = c.SecondsToBeat(song.clip.length - song.offsetSeconds);
+            return totalBeats > 0 ? Mathf.Clamp01((float)(beat / totalBeats)) : 0f;
+        }
+
         public float Progress
         {
             get
@@ -103,6 +113,12 @@ namespace Kenta.Core
         public event Action<LevelObject> OnLumPicked;
         /// <summary>vrai = niveau terminé, faux = mort.</summary>
         public event Action<bool> OnFinished;
+        /// <summary>Une surprise arrive dans une mesure (portail, arrière-plan, écrans, lianes) : texte d'annonce.</summary>
+        public event Action<string> OnWarning;
+
+        // annonces des surprises (télégraphie, docs/level-design-musical.md § 6) : (beat d'affichage, texte)
+        readonly List<(double beat, string text)> warnings = new();
+        int warnCursor;
 
         SongData song;
         RunJudgeStats judgeStats;
@@ -174,6 +190,7 @@ namespace Kenta.Core
             SectionIndex = 0;
             sectionClean = true;
             fxCursor = 0;
+            BuildWarnings();
 
             world.SetActive(true);
             ApplyHero();
@@ -230,6 +247,7 @@ namespace Kenta.Core
             if (hero == null) return;
             if (heroAnimator != null) heroAnimator.Sprites = hero.sprites;
             if (bandana != null) bandana.Color = hero.accent;
+            if (ActionSfx.Instance != null) ActionSfx.Instance.HeroHit = hero.hitSound;
         }
 
         void ApplyBiome(int index)
@@ -275,6 +293,9 @@ namespace Kenta.Core
 
             int index = Chart.SectionIndexAt(beat);
             if (index > SectionIndex) EnterSection(index);
+
+            while (warnCursor < warnings.Count && warnings[warnCursor].beat <= beat)
+                OnWarning?.Invoke(warnings[warnCursor++].text);
 
             var fx = level.FxEvents;
             while (fxCursor < fx.Count && fx[fxCursor].beat <= beat)
@@ -416,6 +437,40 @@ namespace Kenta.Core
             backdrop.SetSection(section.name, Progress);
         }
 
+        /// <summary>
+        /// Chaque surprise s'annonce une mesure avant (audit du 25/11, D2) : la première de chaque série seulement
+        /// (portail de gravité, passage à l'arrière-plan, écrans dédoublés, lianes).
+        /// </summary>
+        void BuildWarnings()
+        {
+            warnings.Clear();
+            warnCursor = 0;
+            if (Chart?.events == null) return;
+            int perBar = Chart.beatsPerBar > 0 ? Chart.beatsPerBar : 4;
+            double lastBack = -99, lastVine = -99;
+            foreach (var e in Chart.events)
+            {
+                string text = null;
+                switch (e.type)
+                {
+                    case "gravity": text = e.lane == 1 ? "▲ LE MONDE SE RETOURNE" : "▼ RETOUR AU SOL"; break;
+                    case "back":
+                        if (e.beat - lastBack > 8) text = "► VERS L'ARRIÈRE-PLAN";
+                        lastBack = e.beat;
+                        break;
+                    case "vine":
+                        if (e.beat - lastVine > 8) text = "LIANES : SAUTE POUR LÂCHER";
+                        lastVine = e.beat;
+                        break;
+                    case "screen_split":
+                        if (e.@params != null && e.@params.copies > 1) text = "L'ÉCRAN SE DÉDOUBLE !";
+                        break;
+                }
+                if (text != null) warnings.Add((e.beat - perBar, text));
+            }
+            warnings.Sort((a, b) => a.beat.CompareTo(b.beat));
+        }
+
         void TriggerFx(ChartEvent e)
         {
             var rig = CameraRig.Instance;
@@ -434,9 +489,9 @@ namespace Kenta.Core
                     rig.Punch(0.5f * intensity);
                     break;
                 case "camera":
-                    // nouveau plan : zoom (coupe nette, soulignée d'un petit flash) et place du héros à l'écran
+                    // nouveau plan : zoom (coupe nette, sur le temps) et place du héros à l'écran ; plus de flash :
+                    // le niveau change de plan une vingtaine de fois (vue 480, plan large 640 sur les tambours)
                     rig.SetShot(e.@params.zoom, e.@params.frameX, e.@params.frameY);
-                    if (e.@params.zoom > 0) rig.Flash(Color.white, 0.25f * intensity);
                     break;
                 case "section_change":
                     // accent sur le premier temps de la section, sans flash plein écran (il masquait les obstacles)

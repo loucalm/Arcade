@@ -99,7 +99,7 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-24, ADR-021) **P1** Rejouer est long → consignes sautées et choix repris dans la minute, écrans de fin passables au bouton 1, game over 4,5 s + classement 3,5 s. Avant : : game over (5,5 s), classement (4 s), accueil, consignes (6 s), choix du héros (12 s), soit ~25 s entre deux essais en mort subite. Pistes : passer les consignes si on rejoue dans la minute, raccourcir le game over
 - [x] (2026-11-24) **P2** Choix du héros : au bout de 12 s, le code force Kenta même si le joueur a déplacé le curseur (`HeroSelectScreen`, `index = 0`). Garder le héros sélectionné
 - [x] (2026-11-24, garde de 0,3 s) **P2** Choix du héros sans garde d'entrée : l'appui B1 qui passe les consignes peut valider le héros dans la même frame (ordre des `Update`), à vérifier
-- [ ] **P2** Les 3 héros sont seulement cosmétiques (mêmes sons, même gameplay) : au minimum un son de frappe par héros (caisse claire, flûte, basse) comme dans le PDF
+- [x] (2026-11-25, un son de frappe par héros) **P2** Les 3 héros sont seulement cosmétiques (mêmes sons, même gameplay) : au minimum un son de frappe par héros (caisse claire, flûte, basse) comme dans le PDF
 
 **Visuel**
 - [x] (2026-11-24, ADR-020) **P0** Flash blanc plein écran + secousse + son de « checkpoint » à chacune des 10 sections, en double (`section_change` de la chart **et** `RunManager.EnterSection`), alors qu'il n'y a plus ni checkpoint ni changement de monde : ça masque les obstacles en début de section. Garder un seul effet discret, ou le réserver aux vrais drops
@@ -111,7 +111,7 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-24, ADR-021) **P1** Le gardien (Cerf de pierre) → sprite à part, plus contrasté, yeux ouverts une mesure à chaque section et tout le refrain. Avant : est une tache grise floue derrière la brume, jamais animé : le rendre lisible et le faire réagir aux sections
 - [x] (2026-11-25) **P2** Pièces qui tournent : les images de profil (1 à 2 px de large) se lisent comme des traits orange parasites dans les arcs. Garder des images plus larges, ou ne pas les faire tourner
 - [ ] **P2** `pytest tools/tests` : `test_generated_chart_is_feasible_and_vertical` échoue (`validate` de l'ancien `tools/gen-level-chart.py` refuse des hauteurs, ex. « hauteur 6.0 … beat 66 ») ; déjà le cas sur `main` le 2026-11-25. Mettre le test à jour ou le retirer avec l'ancien générateur
-- [ ] **P2** Plateformes flottantes trop fines (2 à 3 px) : elles se lisent comme des lignes. Les épaissir, avec un dessous
+- [x] (2026-11-25, dessous en îlot) **P2** Plateformes flottantes trop fines (2 à 3 px) : elles se lisent comme des lignes. Les épaissir, avec un dessous
 - [ ] **P2** Tambours-tremplins dessinés en tonneaux : rien ne dit « rebond ». Peau tendue, couleur vive, flèche ou animation d'appel
 - [ ] **P2** Héros petit en vue 640 px (~50 px sur 360, soit 150 px d'écran) : vérifier la lisibilité à 2 m sur la borne
 - [x] (2026-11-25, ruban plein à partir de ×4) **P2** Bandeau (traînée de combo) : une ligne pointillée fine, presque invisible même à ×8
@@ -123,7 +123,7 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-24, ADR-021) **P1** Classement et saisie du nom → `HighscoreBoard` et `NameEntryScreen` en pixel art (données et envoi par le toolkit), vérifiés avec la borne locale. Avant : : style par défaut du toolkit (police Arial, panneau gris), en rupture avec le pixel art. Le restyler (autorisé par le CLAUDE.md) : police pixel, pièces or / argent / bronze
 - [x] (2026-11-24, ADR-021) **P1** Consignes → 3 gestes avec les boutons de la borne, le héros mime sur le temps. Avant : 6 lignes de texte et une image fixe qui change toutes les 1,1 s, sans lien avec le tempo. Trop long pour « compris en 10 s ». Garder 3 gestes avec des pictos de la borne, et le héros qui mime en boucle sur le temps
 - [ ] **P2** Choix du héros : grands cadres sombres presque vides, sélection signalée par la seule couleur du cadre, pas de pose de victoire ni de son au déplacement
-- [ ] **P2** La frise du HUD a 8 segments (8 biomes) alors que le niveau a 11 sections et un seul monde : la caler sur les sections du niveau
+- [x] (2026-11-25, un segment par section) **P2** La frise du HUD a 8 segments (8 biomes) alors que le niveau a 11 sections et un seul monde : la caler sur les sections du niveau
 - [x] (2026-11-24, les menus sont aussi en vue large) **P2** Retour à l'accueil après une partie : le zoom de la partie (640 px) n'est pas remis à 320, et l'accueil change d'échelle après la première partie (`GameFlow.Enter(Attract)`)
 - [x] (2026-11-24, vérifié en 1920×1080) **P1** Faux problème : le HUD est bien dessiné au-dessus de la Sourdine ; l'impression venait du texte de debug (F9) qui le recouvre en éditeur. Constat initial : le score et le multiplicateur (HUD en haut à gauche) passent sous la Sourdine : la masse et le voile recouvrent la plaque du score, même à ×8. Dessiner le HUD au-dessus de la Sourdine, ou le décaler
 - [ ] **P2** Feu d'artifice de victoire en particules simples : gerbes petites, sans fusée ni traînée
@@ -152,6 +152,34 @@ Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2
 - [x] (2026-11-25, 5 motifs) **P2** Arbre rose du calque proche trop gros et trop répété : au moins 3 motifs par biome
 - [x] (2026-11-25, `AuditScenarios` en 1920×1080) Limites de l'audit revues : écrans, choix du héros et du monde, 8 mondes en partie, défaite et saisie du nom
 - [ ] **P0** Tester sur la vraie borne : Firefox ESR, 60 fps, manettes, envoi du score
+
+## Grand audit du 2026-11-25
+Verticalité, visuels après les obstacles de Lou, contenu. Détail, captures et pistes : [audit-verticalite-2026-11-25.md](audit-verticalite-2026-11-25.md).
+- [x] (2026-11-25) Brume du décor limitée à une colonne de 282 px au centre de l'écran → échelle divisée par la taille du sprite (`BiomeBackdrop`)
+- [x] (2026-11-25, décision de Jeremy : 1 niveau assumé, « DÉCOR » gardé tout le morceau ; peut changer plus tard) **P0** Les 8 mondes jouent la même chart (seule la peau change, et l'Orage et les Échos reviennent partout) : 1 niveau assumé, 3 niveaux, ou une chart par monde (E1)
+- [ ] **P0 — décision d'équipe** Choisir la musique finale **avant** de polir la chart : tout le level design est écrit sur Shovel Knight (E2)
+- [x] (2026-11-25, profondeur des piliers en paliers transparents) **P0** Verticalité visible : terrain en couches qui s'allège vers le bas, paliers flottants au lieu de colonnes de 20 à 60 u (A1)
+- [x] (2026-11-25, calques qui descendent, mer de nuages, ciel plus froid ; le gardien reste immobile, ADR-028) **P0** Décor qui change avec l'altitude : bandes (mer de nuages, ciel sombre), parallaxe verticale, gardien qui suit le héros des yeux (A2)
+- [x] (2026-11-25, vue 480, plans larges 640 posés par le générateur) **P0** Héros à ~60 px sur 1080 en vue 640 : vue 480 par défaut, 640 seulement sur les tambours et les plongeons ; contour sombre (B1)
+- [x] (2026-11-25, 2×2 au plus, neige ≤ 30 % dégagée autour du héros, plus d'image masquée, FIN nette) **P0** Refrain 2 : 5 écrans de 640×360 et une image toute en neige, illisible à 2 m. 2 écrans au plus, neige ≤ 30 % et jamais sur le héros, retirer le glitch de la FIN (D1)
+- [ ] **P1** Gestes de montée et de descente variés (double marche, mur, plateformes sur le temps, dévalée avec frappes), une grande ascension par section ; couplets 1 et 2 identiques aujourd'hui (A3)
+- [x] (2026-11-25, cadrage selon la pente, plans larges) **P1** Caméra : héros collé en bas en descente, en haut sur les tambours ; rail asymétrique selon la pente, repère d'arrivée hors champ (A4)
+- [ ] **P1** Couleurs : héros et ennemis perdus sur l'Orage et les Échos, pièces sur les arbres jaunes ; le fond ne doit jamais reprendre la couleur des pièces (B2)
+- [x] (2026-11-25, vérifié : le niveau est toujours dessiné devant le décor ; la brume pleine largeur détache le jeu) **P1** Calque proche devant les ennemis et les pièces : le garder sous la ligne de sol (B3)
+- [x] (2026-11-25) **P1** Lianes en trait de 1 px : corde de 2 à 3 px, nœud, halo sur le temps du lâcher (C2)
+- [x] (2026-11-25, vraie porte ; plafond inchangé) **P1** Portail de gravité (deux traits cyan) et plafond (bande sombre) : arche, plafond dessiné comme un sol (C3)
+- [x] (2026-11-25, dessous en îlot ; les barres de glissade ont disparu avec la PR #22) **P1** Plateformes flottantes et poteaux de barre trop fins (C4)
+- [x] (2026-11-25, annonce en haut une mesure avant) **P1** Télégraphie des surprises (portail, arrière-plan, split) une mesure avant (D2)
+- [ ] **P1** Passage à l'arrière-plan peu visible : sprite réduit, premier plan en silhouette, son étouffé ; l'image du héros se règle dans `PlayerController.SetVisualPlane` (D3 ; l'annonce une mesure avant est faite)
+- [ ] **P1** Le jeu se joue tout seul (139 PARFAIT, 0 BIEN) : contretemps, doubles croches, deux chemins pour le score (E4)
+- [x] (2026-11-25, `ResetMood` remet le sol à zéro) **P1** Démo de l'accueil → partie sans écran de fin : le décor glisse 0,6 s depuis la hauteur de la démo (remettre `groundValid` à faux au lancement)
+- [ ] **P1** L'autoplay du jeu ne ramasse que 364 pièces sur 387 alors que le simulateur du générateur les prend toutes (déjà vrai sur main après la PR #18) : écart entre `AutoPlayerInput` et le simulateur, à creuser
+- [ ] **P2** Contour sombre du héros et règle de couleur de la DA (le fond ne reprend jamais la couleur des pièces) (B2)
+- [ ] **P2** Rampes en escalier de colonnes de 8 px : tuiles de pente 1:1 et 1:2 par biome (A5)
+- [ ] **P2** Poteau planté au pied d'une falaise (Sylve, beat ~28) : à vérifier dans la chart (C5)
+- [ ] **P2** Calque proche : 8 à 10 motifs, ou des motifs par section (C6)
+- [x] (2026-11-25, `ScreenFx` plafonné à 50 %) **P2** Flash blanc plein écran à l'entrée du final : 50 % au plus (photosensibilité) (D4)
+- [x] (2026-11-25) **P2** Étiquette de section : ne nommer le biome que s'il change (F)
 
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)

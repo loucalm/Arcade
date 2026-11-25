@@ -124,7 +124,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: "\u25B2  MONDE 1/8 : LA SYLVE  \u25BC"
+  text: "\u25B2  D\xC9COR 1/8 : LA SYLVE  \u25BC"
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 1
@@ -750,7 +750,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: "\u25C4 \u25BA H\xC9ROS   \u25B2 \u25BC MONDE   1 VALIDER"
+  text: "\u25C4 \u25BA H\xC9ROS   \u25B2 \u25BC D\xC9COR   1 VALIDER"
   color: {r: 1, g: 1, b: 1, a: 1}
   align: 1
   scale: 1

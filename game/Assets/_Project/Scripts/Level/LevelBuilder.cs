@@ -468,6 +468,9 @@ namespace Kenta.Level
         /// <summary>Biome de la section qui contient ce beat (un biome par section de la chart).</summary>
         public BiomeTheme BiomeAt(double beat)
         {
+            // le décor choisi par le joueur vaut pour tout le morceau (décision du 25/11 : les 8 « mondes » sont le
+            // même niveau, le choix est celui du décor). Les biomes nommés par les sections ne servent que sans choix.
+            if (LevelBiome != null) return LevelBiome;
             int i = Chart != null ? Chart.SectionIndexAt(beat) : 0;
             // une section peut changer de monde (ex. le refrain monte dans l'orage) : elle nomme l'asset du biome
             string named = Chart != null && Chart.sections.Length > 0 ? Chart.sections[Mathf.Clamp(i, 0, Chart.sections.Length - 1)].biome : null;
@@ -622,9 +625,26 @@ namespace Kenta.Level
             if (lipBottom - floor <= 0.01f) return;
             float midBottom = biome.fillDeep != null ? Mathf.Max(floor, PixelScreen.Snap(fillTop - MidDepth)) : floor;
             Tiled(g, "Fill", biome.fill, new Vector2(cx, (lipBottom + midBottom) * 0.5f), new Vector2(w, lipBottom - midBottom), 1).color = DeepFill;
-            if (midBottom - floor > 0.01f)
-                Tiled(g, "Deep", biome.fillDeep, new Vector2(cx, (midBottom + floor) * 0.5f), new Vector2(w, midBottom - floor), 1).color = DeeperFill;
+            if (midBottom - floor <= 0.01f) return;
+            // la profondeur s'efface par paliers (pas de dégradé continu) : les grands piliers deviennent des îlots qui
+            // se fondent dans le décor, et l'on voit le paysage sous soi quand on monte (audit du 25/11, verticalité)
+            float y = midBottom;
+            for (int i = 0; i <= DeepFade.Length && y - floor > 0.01f; i++)
+            {
+                float bottom = i < DeepFade.Length ? Mathf.Max(floor, PixelScreen.Snap(y - DeepBand)) : floor;
+                float alpha = i == 0 ? 1f : DeepFade[i - 1];
+                if (i == DeepFade.Length) alpha = DeepFade[DeepFade.Length - 1];
+                var c = DeeperFill;
+                c.a = alpha;
+                if (i == 0) bottom = Mathf.Max(floor, PixelScreen.Snap(y - DeepSolid));
+                Tiled(g, "Deep", biome.fillDeep, new Vector2(cx, (y + bottom) * 0.5f), new Vector2(w, y - bottom), 1).color = c;
+                y = bottom;
+            }
         }
+
+        const float DeepSolid = 0.8f;                                  // sous la terre : 32 px encore pleins
+        const float DeepBand = 1.2f;                                   // puis des paliers de 48 px…
+        static readonly float[] DeepFade = { 0.78f, 0.56f, 0.36f, 0.2f };   // … de plus en plus transparents
 
         /// <summary>
         /// Détails semés sur le flanc (pierres, racines, fossiles) : environ un toutes les 1,6 u, placés au hasard mais
@@ -704,7 +724,20 @@ namespace Kenta.Level
         {
             if (biome.platform == null) return;
             var g = Group("Platform", Vector2.zero);
-            Tiled(g, "Slab", biome.platform, new Vector2((x0 + x1) * 0.5f, top - 0.125f), new Vector2(x1 - x0, 0.25f), 3);
+            float cx = (x0 + x1) * 0.5f, w = x1 - x0;
+            Tiled(g, "Slab", biome.platform, new Vector2(cx, top - 0.125f), new Vector2(w, 0.25f), 3);
+            // dessous en îlot (deux paliers de terre en retrait) : la plateforme a du volume et ne se lit plus comme
+            // une ligne de 2 à 3 px (audit du 25/11)
+            if (biome.fill == null) return;
+            float y = top - 0.25f;
+            float[] inset = { 0.1f, 0.3f }, depth = { 0.2f, 0.15f };   // 14 px en tout : on passe encore dessous
+            for (int i = 0; i < inset.Length; i++)
+            {
+                float ww = PixelScreen.Snap(w - inset[i] * 2f);
+                if (ww <= 0.2f) break;
+                Tiled(g, "Under", biome.fill, new Vector2(PixelScreen.Snap(cx), y - depth[i] * 0.5f), new Vector2(ww, depth[i]), 2).color = i == 0 ? DeepFill : DeeperFill;
+                y -= depth[i];
+            }
         }
 
         void BuildBeatGrid(int lastBeat)
@@ -801,23 +834,48 @@ namespace Kenta.Level
             }
         }
 
-        /// <summary>Portail de gravité : deux colonnes de lumière qui barrent l'écran ; on les traverse et le haut devient le bas.</summary>
+        /// <summary>
+        /// Portail de gravité : une grande porte (deux montants à contour sombre, linteau en haut et en bas, voile coloré
+        /// rayé entre les deux) et de grosses flèches qui montrent le sens de la chute. On la traverse et le haut devient
+        /// le bas. Lisible à 2 m : l'ancien portail (deux traits cyan) se lisait comme un bug d'affichage.
+        /// </summary>
         void MakeGravityPortal(float x, bool up, BiomeTheme biome)
         {
             var g = Group(up ? "GravityUp" : "GravityDown", Vector2.zero);
-            float y0 = HeightAt(x) - 1f, y1 = y0 + 9f;
+            float y0 = PixelScreen.Snap(HeightAt(x) - 1f), y1 = y0 + 9f, ym = (y0 + y1) * 0.5f, h = y1 - y0;
             var c = biome.spark;
-            for (int i = 0; i < 2; i++)
+            var ink = new Color(0.08f, 0.06f, 0.14f);
+            const float half = 0.8f, post = 0.3f, rim = 0.05f;
+            // voile : bandes horizontales alternées (pixel art, pas de dégradé)
+            for (float y = y0; y < y1 - 0.01f; y += 0.4f)
             {
-                float px = PixelScreen.Snap(x - 0.15f + i * 0.3f);
-                Box(g, "Beam", new Color(c.r, c.g, c.b, i == 0 ? 0.35f : 0.7f), new Vector2(px, (y0 + y1) * 0.5f), new Vector2(i == 0 ? 0.3f : 0.1f, y1 - y0), 12);
+                bool odd = Mathf.RoundToInt((y - y0) / 0.4f) % 2 == 1;
+                Box(g, "Veil", new Color(c.r, c.g, c.b, odd ? 0.22f : 0.36f), new Vector2(PixelScreen.Snap(x), y + 0.2f), new Vector2(half * 2f, 0.4f), 11);
             }
-            // flèches (pixels) qui indiquent le sens de la chute
+            // montants et linteaux : contour sombre, puis la couleur vive du biome
+            foreach (float side in new[] { -1f, 1f })
+            {
+                float px = PixelScreen.Snap(x + side * (half + post * 0.5f));
+                Box(g, "PostRim", ink, new Vector2(px, ym), new Vector2(post + rim * 2f, h + rim * 2f), 12);
+                Box(g, "Post", c, new Vector2(px, ym), new Vector2(post, h), 13);
+                Box(g, "PostLight", Color.Lerp(c, Color.white, 0.5f), new Vector2(PixelScreen.Snap(px - post * 0.25f), ym), new Vector2(0.05f, h), 14);
+            }
+            foreach (float yy in new[] { y0, y1 })
+            {
+                Box(g, "LintelRim", ink, new Vector2(PixelScreen.Snap(x), yy), new Vector2(half * 2f + post * 2f + rim * 2f, 0.3f + rim * 2f), 12);
+                Box(g, "Lintel", c, new Vector2(PixelScreen.Snap(x), yy), new Vector2(half * 2f + post * 2f, 0.3f), 13);
+            }
+            // grosses flèches (chevrons de 3 carrés de 4 px, contour sombre) dans le sens de la chute
+            const float sq = 0.1f;
             for (int k = 0; k < 4; k++)
             {
-                float ay = y0 + 1.5f + k * 2f;
-                for (int j = 0; j < 3; j++)
-                    Box(g, "Arrow", new Color(1f, 1f, 1f, 0.8f), new Vector2(PixelScreen.Snap(x + (j - 1) * 0.1f), PixelScreen.Snap(ay + (up ? -1 : 1) * Mathf.Abs(j - 1) * 0.1f)), new Vector2(0.1f, 0.1f), 13);
+                float ay = PixelScreen.Snap(y0 + 1.5f + k * 2f);
+                for (int j = -2; j <= 2; j++)
+                {
+                    var p = new Vector2(PixelScreen.Snap(x + j * sq * 1.5f), PixelScreen.Snap(ay + (up ? 1 : -1) * (2 - Mathf.Abs(j)) * sq * 1.5f));
+                    Box(g, "ArrowRim", ink, p, new Vector2(sq * 2.5f, sq * 2.5f), 14);
+                    Box(g, "Arrow", Color.white, p, new Vector2(sq * 1.5f, sq * 1.5f), 15);
+                }
             }
         }
 

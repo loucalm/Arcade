@@ -40,4 +40,14 @@ save(os.path.join(out, "sfx_lum.wav"), mix(sweep(880, 880, 0.18, 14), [0.3 * x f
 save(os.path.join(out, "sfx_land.wav"), sweep(140, 50, 0.07, 10))
 save(os.path.join(out, "sfx_hurt.wav"), sweep(260, 55, 0.4, 3, lambda ph: (ph / math.pi % 2) - 1))
 save(os.path.join(out, "sfx_checkpoint.wav"), sweep(523, 523, 0.12, 5) + sweep(784, 784, 0.3, 6))
+# frappe propre à chaque héros (docs/da-kenta.md : Kenta la caisse claire, Aiko la flûte, Ryo la basse)
+def flute(f, dur, decay):
+    n = int(SR * dur)
+    return [min(1.0, i / (SR * 0.012)) * math.exp(-decay * i / SR)
+            * (math.sin(2 * math.pi * f * i / SR + 0.15 * math.sin(2 * math.pi * 6 * i / SR))
+               + 0.25 * math.sin(4 * math.pi * f * i / SR)) * 0.7 for i in range(n)]
+save(os.path.join(out, "sfx_hit_kenta.wav"), mix(noise(0.09, 38, 0.85), [0.6 * x for x in sweep(230, 180, 0.08, 30)]))
+save(os.path.join(out, "sfx_hit_aiko.wav"), mix(flute(1046.5, 0.16, 18), [0.25 * x for x in noise(0.03, 80, 0.9)]))
+save(os.path.join(out, "sfx_hit_ryo.wav"), mix(sweep(110, 98, 0.16, 14, lambda ph: math.sin(ph) + 0.35 * math.sin(2 * ph)),
+                                            [0.3 * x for x in noise(0.03, 90, 0.4)]))
 print("ok")

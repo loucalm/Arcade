@@ -18,7 +18,7 @@ namespace Kenta.UI
         [SerializeField] Image[] frames;
         [SerializeField] PixelText[] names;
         [SerializeField] PixelText timerText;
-        [Tooltip("« ▲ MONDE 1/8 : LA SYLVE ▼ »")]
+        [Tooltip("« ▲ DÉCOR 1/8 : LA SYLVE ▼ »")]
         [SerializeField] PixelText worldText;
         [SerializeField] float seconds = 12f;
 
@@ -106,7 +106,7 @@ namespace Kenta.UI
             if (worldText != null)
             {
                 var l = CurrentLevel;
-                worldText.Text = l != null ? $"▲  MONDE {level + 1}/{LevelCount} : {l.Label}  ▼" : "";
+                worldText.Text = l != null ? $"▲  DÉCOR {level + 1}/{LevelCount} : {l.Label}  ▼" : "";
             }
         }
     }

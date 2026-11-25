@@ -24,7 +24,7 @@ namespace Kenta.FX
 
         [Header("Plan par défaut")]
         [Tooltip("Largeur de vue (px de jeu) : 320 = ×6 (serré) … 640 = ×3 (très large).")]
-        [SerializeField] int defaultZoom = 640;
+        [SerializeField] int defaultZoom = 480;
         [Tooltip("Place du héros de gauche (0) à droite (1) : assez à gauche pour voir arriver les obstacles.")]
         [SerializeField, Range(0.1f, 0.6f)] float defaultFrameX = 0.22f;
         [Tooltip("Hauteur du sol sous le héros, du bas (0) au haut (1) de l'écran.")]
@@ -49,6 +49,8 @@ namespace Kenta.FX
         float frameX, frameY, frameXTarget, frameYTarget, frameXVel, frameYVel;
 
         public Transform Target { get => target; set => target = value; }
+        /// <summary>Caméra du monde (lue par les effets d'écran).</summary>
+        public Camera Cam { get; private set; }
         /// <summary>Défilement automatique hors partie (accueil, sélection) : unités par seconde.</summary>
         public float AutoScroll { get; set; }
         /// <summary>Hauteur du terrain en x (sans les trous) : sert à anticiper les montées et les chutes.</summary>
@@ -76,6 +78,7 @@ namespace Kenta.FX
         {
             Instance = this;
             var cam = GetComponent<Camera>();
+            Cam = cam;
             cam.orthographic = true;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Color.black;
