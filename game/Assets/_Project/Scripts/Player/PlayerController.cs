@@ -38,14 +38,28 @@ namespace Kenta.Player
         [SerializeField] float jumpHeight = 1.5f;
         [SerializeField] float jumpAirBeats = 1f;
         [SerializeField] float coyoteBeats = 0.12f;
-        [SerializeField] float jumpBufferBeats = 0.2f;
+        [Tooltip("Appui en l'air juste avant d'atterrir : le saut part à l'atterrissage (0,35 beat = 140 ms). " +
+                 "Nouveau nom (avant : jumpBufferBeats = 0,2) pour que la valeur de la scène ne l'écrase pas.")]
+        [SerializeField] float jumpBufferWindowBeats = 0.35f;
+        [Tooltip("Pieds à moins de cette hauteur sous le haut d'une marche ou d'un mur : on passe dessus au lieu de mourir.")]
+        [SerializeField] float ledgeAssist = 0.4f;
 
         [Header("Frappe")]
         [SerializeField] float hitReach = 1.9f;
         [SerializeField] float hitHeight = 2.1f;
         [SerializeField] float hitActiveBeats = 0.3f;
+        [Tooltip("En l'air, la zone de frappe s'étire : de airHitBelow sous les pieds à airHitAbove au-dessus " +
+                 "(on frappe ce qu'on croise en montant ou en tombant, même vite).")]
+        [SerializeField] float airHitBelow = 1.2f;
+        [SerializeField] float airHitAbove = 2.4f;
 
         public bool IsDead => dead;
+        /// <summary>Gravité inversée : il court au plafond, la tête en bas.</summary>
+        public bool IsInverted => inverted;
+        /// <summary>Plan du héros : 0 = premier plan, 1 = arrière-plan.</summary>
+        public int Plane => plane;
+        /// <summary>Pendu à une liane (balancier automatique).</summary>
+        public bool IsSwinging => vine != null;
         public bool IsSliding => sliding;
         public bool IsGrounded => grounded;
         /// <summary>Course sur une rampe raide (pose « mur »).</summary>
@@ -87,6 +101,19 @@ namespace Kenta.Player
         float airBeats;                       // durée du saut ou du rebond en cours (0 : pas de saut)
         int bounceCursor;
         LevelObject pendingBounce;
+        // Gravité inversée : y, vy, groundTop sont dans le repère retourné (y' = −y monde) et le sol est le plafond en miroir.
+        bool inverted;
+        int flipCursor;
+        // Plans : le héros ne touche que ce qui est sur son plan ; l'image change de calque au sommet du saut.
+        int plane, visualPlane;
+        // Liane en cours (null : aucune)
+        LevelObject vine;
+        int vineCursor;
+        double lastJumpDownBeat = -99;
+
+        LevelTerrain Terrain => plane == 1 ? level.Back : inverted ? level.CeilingMirror : level.Ground;
+        /// <summary>Hauteur des pieds dans le monde (y est dans le repère de la gravité).</summary>
+        float WorldY => inverted ? -y : y;
 
         public void Setup(LevelBuilder level, RunManager run, IPlayerInput input)
         {
@@ -119,6 +146,14 @@ namespace Kenta.Player
             CameraRig.Instance?.SetGroundAnchor(groundTop);
             prevX = x;
             prevCenterY = y + standHeight * 0.5f;
+            inverted = false;
+            plane = 0;
+            SetVisualPlane(0);
+            vine = null;
+            vineCursor = LevelBuilder.FirstIndexAfter(level.Vines, x);
+            flipCursor = 0;
+            while (flipCursor < level.GravityFlips.Count && level.GravityFlips[flipCursor].x <= beat) flipCursor++;
+            lastJumpDownBeat = -99;
             obstacleCursor = LevelBuilder.FirstIndexAfter(level.Obstacles, x - 4f);
             lumCursor = LevelBuilder.FirstIndexAfter(level.Lums, x - 4f);
             bounceCursor = LevelBuilder.FirstIndexAfter(level.Bounces, x - 4f);
@@ -165,8 +200,16 @@ namespace Kenta.Player
             float airTime = jumpAirBeats * spb;
             float gravity = 8f * jumpHeight / (airTime * airTime);
             float jumpVelocity = 4f * jumpHeight / airTime;
-            var ground = level.Ground;
             float half = width * 0.5f;
+
+            // portails de gravité : le haut devient le bas (même position dans le monde, vitesse retournée)
+            var flips = level.GravityFlips;
+            while (flipCursor < flips.Count && flips[flipCursor].x <= beat)
+            {
+                SetGravity(flips[flipCursor].y > 0.5f, x);
+                flipCursor++;
+            }
+            var ground = Terrain;
 
             // au sol : les pieds suivent le terrain (rampes) ; plus rien dessous (trou, bord) : on tombe
             float yBefore = y;
@@ -177,7 +220,7 @@ namespace Kenta.Player
                 else if (support != y)
                 {
                     y = groundTop = support;
-                    CameraRig.Instance?.SetGroundAnchor(support);
+                    CameraRig.Instance?.SetGroundAnchor(WorldY);
                 }
             }
             float dx = x - prevX;
@@ -187,14 +230,15 @@ namespace Kenta.Player
             // Saut (avec buffer et coyote time)
             if (cmd.jumpDown)
             {
-                jumpBufferBeat = beat;
+                lastJumpDownBeat = beat;
+                jumpBufferBeat = vine != null ? -99 : beat;     // pendu à une liane, l'appui sert seulement au jugement du lâcher
                 // appui juste après le décollage d'un tambour : il compte pour le rebond
                 if (pendingBounce != null && beat - pendingBounce.beat <= 0.5) run.OnObstacleCleared(pendingBounce, beat);
                 pendingBounce = null;
             }
             if (pendingBounce != null && beat - pendingBounce.beat > 0.5) pendingBounce = null;
             bool coyote = !grounded && vy <= 0f && y > groundTop - 0.2f && beat - lastGroundedBeat <= coyoteBeats;
-            if (beat - jumpBufferBeat <= jumpBufferBeats && (grounded || coyote)) Jump(jumpVelocity, beat, x);
+            if (beat - jumpBufferBeat <= jumpBufferWindowBeats && (grounded || coyote)) Jump(jumpVelocity, beat, x);
 
             // Frappe
             if (cmd.hitDown)
@@ -217,8 +261,13 @@ namespace Kenta.Player
             }
             sliding = nowSliding;
 
+            // Liane : on l'attrape en passant, le balancier suit un arc calé sur les beats, le lâcher est automatique
+            if (vine == null) TryGrabVine(x);
+            bool swinging = vine != null && Swing(x, beat, spb, gravity);
+            if (swinging) ground = Terrain;
+
             // Intégration verticale
-            if (!grounded)
+            if (!grounded && !swinging)
             {
                 float yPrev = y;
                 // intégration exacte pour une gravité constante : saut de 1,5 u en 1 beat quel que soit le framerate
@@ -228,10 +277,10 @@ namespace Kenta.Player
                 if (vy <= 0f && ground.TryLand(x, half, yPrev, y, out float top)) Land(x, top);
                 else if (ground.HitsSide(x, half, y)) { run.Damage(); return; }   // tombé dans un trou, cogne le bord opposé
             }
-            if (!grounded && y < ground.KillY(x)) { run.Damage(); return; }
+            if (!grounded && !swinging && y < ground.KillY(x)) { run.Damage(); return; }
             CheckBounce(x, beat, spb, gravity);
 
-            transform.position = new Vector3(x, y, 0f);
+            transform.position = new Vector3(x, WorldY, 0f);
 
             // Balayage depuis la frame précédente : un à-coup ne doit pas faire traverser un lum ou un obstacle.
             float sweepFrom = Mathf.Max(prevX, x - maxSweep);
@@ -239,7 +288,109 @@ namespace Kenta.Player
             CollectLums(x, sweepFrom);
             UpdateVisual(beat, dt);
             prevX = x;
-            prevCenterY = y + (sliding ? slideHeight : standHeight) * 0.5f;
+            prevCenterY = CenterWorldY();
+        }
+
+        float CenterWorldY() => WorldY + (inverted ? -1f : 1f) * (sliding ? slideHeight : standHeight) * 0.5f;
+
+        /// <summary>Traverse un portail de gravité : on garde la position et la vitesse dans le monde, on tombe vers l'autre côté.</summary>
+        void SetGravity(bool up, float x)
+        {
+            if (up == inverted) return;
+            float w = WorldY;
+            inverted = up;
+            y = inverted ? -w : w;
+            vy = -vy;
+            grounded = false;
+            airBeats = 0f;
+            jumpBufferBeat = -99;
+            if (vine != null) { vine.view?.GetComponent<VineView>()?.Release(); vine = null; }
+            squash = Squash(0.8f, 1.25f);
+            ActionSfx.Instance?.Jump();
+            CameraRig.Instance?.Flash(Color.white, 0.35f);
+            CameraRig.Instance?.Punch(0.3f);
+            FxPool.Instance?.Burst(new Vector2(x, w + (inverted ? 0.5f : 0.5f)), new Color(0.75f, 0.9f, 1f), 16, 5f, 0.15f, 0.4f, 0f, 0f);
+        }
+
+        /// <summary>Attrape la liane suivante si on passe à son point de prise (en courant ou en l'air, à ±1,6 u).</summary>
+        void TryGrabVine(float x)
+        {
+            var vines = level.Vines;
+            while (vineCursor < vines.Count && (vines[vineCursor].passed || vines[vineCursor].bounds.xMax < x)) vineCursor++;
+            if (vineCursor >= vines.Count || inverted) return;
+            var o = vines[vineCursor];
+            if (o.plane != plane || x < o.bounds.xMin - 0.05f || x > o.bounds.xMin + 0.8f || Mathf.Abs(y - o.grabY) > 1.6f) return;
+            o.passed = true;
+            vine = o;
+            grounded = false;
+            IsBouncing = false;
+            jumpBufferBeat = -99;
+            ActionSfx.Instance?.Land();
+            FxPool.Instance?.Burst(new Vector2(x, y + VineView.HandHeight), new Color(0.6f, 0.8f, 0.4f), 6, 2.5f, 0.12f, 0.3f, 0f, 0f);
+        }
+
+        /// <summary>
+        /// Balancier : pieds sur un arc (de la prise au lâcher, creux `sag`) qui avance au rythme des beats. Au lâcher,
+        /// envol calculé pour arriver pile sur la liane suivante (si elle suit) ou sur le sol, comme un tambour.
+        /// Renvoie vrai tant qu'on est pendu.
+        /// </summary>
+        bool Swing(float x, double beat, float spb, float gravity)
+        {
+            double len = vine.beat - vine.grabBeat;
+            float u = Mathf.Clamp01((float)((beat - vine.grabBeat) / len));
+            var view = vine.view != null ? vine.view.GetComponent<VineView>() : null;
+            if (u < 1f)
+            {
+                y = Mathf.Lerp(vine.grabY, vine.releaseY, u) - vine.sag * Mathf.Sin(Mathf.PI * u);
+                vy = (float)(((vine.releaseY - vine.grabY) - vine.sag * Mathf.PI * Mathf.Cos(Mathf.PI * u)) / (len * spb));
+                grounded = false;
+                view?.Hold(new Vector2(x, y + VineView.HandHeight));
+                return true;
+            }
+            // lâcher : vers la liane suivante si elle commence à la fin du vol, sinon vers le sol
+            float t = vine.airBeats * spb;
+            float xLand = x + t * level.RunSpeed;
+            float target = level.HeightOnPlane(xLand, plane);
+            foreach (var next in level.Vines)
+                if (next != vine && Mathf.Abs(next.grabBeat - (vine.beat + vine.airBeats)) < 0.05f) { target = next.grabY; break; }
+            y = vine.releaseY;
+            vy = (target - y + 0.5f * gravity * t * t) / t;
+            airStartBeat = beat;
+            airBeats = vine.airBeats;
+            jumpBufferBeat = -99;
+            if (System.Math.Abs(lastJumpDownBeat - vine.beat) <= 0.5) run.OnObstacleCleared(vine, lastJumpDownBeat);
+            else pendingBounce = vine;
+            view?.Release();
+            squash = Squash(0.8f, 1.25f);
+            ActionSfx.Instance?.Jump();
+            vine = null;
+            return false;
+        }
+
+        /// <summary>Calque de l'image du héros : devant (calque acteurs) ou dans l'arrière-plan (calque monde, derrière le niveau).</summary>
+        void SetVisualPlane(int p)
+        {
+            visualPlane = p;
+            if (visual == null) return;
+            int layer = p == 1 ? 0 : LayerMask.NameToLayer("Actors");
+            if (layer < 0) layer = 0;
+            SetLayer(visual, layer);
+            if (trail != null) SetLayer(trail.transform, layer);
+            foreach (var sr in visual.GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                if (!baseOrders.ContainsKey(sr)) baseOrders[sr] = sr.sortingOrder;
+                sr.sortingOrder = p == 1 ? -45 : baseOrders[sr];
+                sr.color = p == 1 ? new Color(0.62f, 0.62f, 0.78f) : Color.white;
+            }
+            if (CameraRig.Instance != null) CameraRig.Instance.ActorInWorld = p == 1;
+        }
+
+        readonly System.Collections.Generic.Dictionary<SpriteRenderer, int> baseOrders = new();
+
+        static void SetLayer(Transform t, int layer)
+        {
+            t.gameObject.layer = layer;
+            for (int i = 0; i < t.childCount; i++) SetLayer(t.GetChild(i), layer);
         }
 
         void Jump(float velocity, double beat, float x)
@@ -267,7 +418,7 @@ namespace Kenta.Player
             }
             y = groundTop = top;
             IsBouncing = false;
-            CameraRig.Instance?.SetGroundAnchor(top);
+            CameraRig.Instance?.SetGroundAnchor(WorldY);
             vy = 0f;
             grounded = true;
             airBeats = 0f;
@@ -276,7 +427,7 @@ namespace Kenta.Player
             squash = Squash(1.2f, 0.82f);
             landedAt = Time.time;
             ActionSfx.Instance?.Land();
-            FxPool.Instance?.Burst(new Vector2(x, y + 0.05f), Color.white, 8, 3.5f, 0.12f, 0.35f, 3f, 0f);
+            FxPool.Instance?.Burst(new Vector2(x, WorldY + 0.05f), Color.white, 8, 3.5f, 0.12f, 0.35f, 3f, 0f);
         }
 
         /// <summary>
@@ -292,10 +443,11 @@ namespace Kenta.Player
             {
                 var o = pads[i];
                 if (o.bounds.xMin > x + 0.5f) break;
-                if (o.passed || x < o.bounds.center.x - 0.15f || y > o.bounds.yMax + 1.2f || y < o.bounds.yMin - 0.4f) continue;
+                if (o.passed || inverted || o.plane != plane || x < o.bounds.center.x - 0.15f || y > o.bounds.yMax + 1.2f || y < o.bounds.yMin - 0.4f) continue;
                 o.passed = true;
                 float t = o.airBeats * spb;
-                float landTop = level.HeightAt(x + t * level.RunSpeed);
+                if (o.targetPlane >= 0) plane = o.targetPlane;          // tambour de plan : on retombe sur l'autre chemin
+                float landTop = level.HeightOnPlane(x + t * level.RunSpeed, plane);
                 vy = (landTop - y + 0.5f * gravity * t * t) / t;
                 grounded = false;
                 IsBouncing = true;
@@ -319,9 +471,12 @@ namespace Kenta.Player
         bool CheckCollisions(float x, float sweepFrom, double beat)
         {
             float h = sliding ? slideHeight : standHeight;
-            var bodyRect = Rect.MinMaxRect(sweepFrom - width * 0.5f, y, x + width * 0.5f, y + h);
+            float wy = WorldY;
+            var bodyRect = BodyRect(sweepFrom, x, wy, h);
             bool hitting = beat <= hitUntilBeat;
-            var hitRect = Rect.MinMaxRect(sweepFrom, y - 0.5f, x + hitReach, y - 0.5f + hitHeight);
+            // zone de frappe dans le repère de la gravité (au-dessus des pieds = vers la tête), ramenée dans le monde
+            float a = grounded ? -0.5f : -airHitBelow, b = grounded ? -0.5f + hitHeight : airHitAbove;
+            var hitRect = inverted ? Rect.MinMaxRect(sweepFrom, wy - b, x + hitReach, wy - a) : Rect.MinMaxRect(sweepFrom, wy + a, x + hitReach, wy + b);
 
             var obstacles = level.Obstacles;
             while (obstacleCursor < obstacles.Count && obstacles[obstacleCursor].bounds.xMax < x - 4f) obstacleCursor++;
@@ -329,7 +484,7 @@ namespace Kenta.Player
             {
                 var o = obstacles[i];
                 if (o.bounds.xMin > x + hitReach + 0.5f) break;
-                if (!o.alive) continue;
+                if (!o.alive || o.plane != plane) continue;
 
                 if (o.kind == LevelObjectKind.Gap)
                 {
@@ -346,6 +501,15 @@ namespace Kenta.Player
                     run.OnEnemyKilled(o, LastHitPressBeat);
                     continue;
                 }
+                if (!inverted && bodyRect.Overlaps(o.bounds) && (o.kind == LevelObjectKind.StepFace || o.kind == LevelObjectKind.Wall)
+                    && y >= o.bounds.yMax - ledgeAssist)
+                {
+                    // coup de pouce de plateformeur : un saut un peu court se hisse sur la marche ou passe la souche
+                    y = o.bounds.yMax;
+                    if (vy < 0f) vy = 0f;
+                    transform.position = new Vector3(x, y, 0f);
+                    bodyRect = BodyRect(sweepFrom, x, y, h);
+                }
                 if (bodyRect.Overlaps(o.bounds))
                 {
                     run.Damage();
@@ -360,10 +524,14 @@ namespace Kenta.Player
             return false;
         }
 
+        /// <summary>Corps dans le monde : des pieds vers la tête (vers le bas en gravité inversée).</summary>
+        Rect BodyRect(float fromX, float x, float feetWorldY, float h) => inverted
+            ? Rect.MinMaxRect(fromX - width * 0.5f, feetWorldY - h, x + width * 0.5f, feetWorldY)
+            : Rect.MinMaxRect(fromX - width * 0.5f, feetWorldY, x + width * 0.5f, feetWorldY + h);
+
         void CollectLums(float x, float sweepFrom)
         {
-            float h = sliding ? slideHeight : standHeight;
-            var center = new Vector2(x, y + h * 0.5f);
+            var center = new Vector2(x, CenterWorldY());
             var from = new Vector2(sweepFrom, prevCenterY);
             var lums = level.Lums;
             while (lumCursor < lums.Count && lums[lumCursor].bounds.xMax < x - 4f) lumCursor++;
@@ -371,7 +539,7 @@ namespace Kenta.Player
             {
                 var o = lums[i];
                 if (o.bounds.xMin > x + 1f) break;
-                if (!o.alive) continue;
+                if (!o.alive || o.plane != plane) continue;
                 if (SqrDistanceToSegment(o.bounds.center, from, center) <= pickupRadius * pickupRadius)
                 {
                     o.alive = false;
@@ -393,7 +561,9 @@ namespace Kenta.Player
         void UpdateVisual(double beat, float dt)
         {
             squash = Vector3.Lerp(squash, Vector3.one, 1f - Mathf.Exp(-14f * dt));
-            visual.localScale = squash;
+            visual.localScale = new Vector3(squash.x, inverted ? -squash.y : squash.y, 1f);   // tête en bas : miroir entier
+            // changement de plan : l'image passe derrière (ou devant) le niveau au sommet du saut
+            if (visualPlane != plane && (grounded || vy <= 0f)) SetVisualPlane(plane);
 
             // Vrille pendant le saut (désactivée par défaut) : un tour complet par saut, par crans de 45° pour rester pixel art.
             if (spinning)

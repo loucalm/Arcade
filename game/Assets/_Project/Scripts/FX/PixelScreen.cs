@@ -31,6 +31,9 @@ namespace Kenta.FX
         public Vector2 ViewUnits => new(ViewWidth / (float)Ppu, ViewHeight / (float)Ppu);
 
         public int Divider { get; private set; } = 1;
+        public RectTransform Frame => frame;
+        public PixelLayer WorldLayer => world;
+        public PixelLayer ActorsLayer => actors;
         public int Scale { get; private set; } = 1;
         int lastW, lastH;
 
@@ -45,6 +48,7 @@ namespace Kenta.FX
             clear.cullingMask = 0;
             clear.depth = -100;
             Build();
+            if (GetComponent<ScreenGlitch>() == null) gameObject.AddComponent<ScreenGlitch>();   // copies et grésillement (chart)
         }
 
         void OnDestroy()

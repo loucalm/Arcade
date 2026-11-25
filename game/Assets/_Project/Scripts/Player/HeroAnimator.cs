@@ -94,6 +94,7 @@ namespace Kenta.Player
             int hit = HitFrameIndex(player.HitAgeBeats, hitAnimBeats, Count(sprites.hitFrames));
             if (hit >= 0) return sprites.hitFrames[hit];
             if (player.IsPunching) return sprites.hit;
+            if (player.IsSwinging && sprites.vine != null) return sprites.vine;
 
             float sinceSlideChange = Time.time - slideChangedAt;
             if (player.IsSliding)

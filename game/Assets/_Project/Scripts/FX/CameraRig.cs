@@ -61,6 +61,8 @@ namespace Kenta.FX
         public Vector2 Fraction { get; private set; }
         /// <summary>Décalage (unités) à appliquer aux éléments du calque acteurs pour qu'ils tombent sur la grille de l'écran.</summary>
         public Vector2 ActorShift { get; private set; }
+        /// <summary>Le héros est dessiné dans le calque monde (arrière-plan) : il suit alors la grille du décor, sans recalage en X.</summary>
+        public bool ActorInWorld { get; set; }
 
         /// <summary>Place actuelle du héros à l'écran, de gauche (0) à droite (1).</summary>
         public float HeroFrameX => frameX;
@@ -199,7 +201,7 @@ namespace Kenta.FX
             if (following && actorVisual != null)
             {
                 float py = target.position.y;
-                actorVisual.localPosition = new Vector3(ActorShift.x, PixelScreen.Snap(py) - py, 0f);
+                actorVisual.localPosition = new Vector3(ActorInWorld ? 0f : ActorShift.x, PixelScreen.Snap(py) - py, 0f);
             }
         }
     }
