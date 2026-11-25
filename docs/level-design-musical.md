@@ -50,9 +50,36 @@ On ne change pas de hauteur « pour décorer » : chaque changement de hauteur r
   Chauve-souris = à frapper en vol. Mur = à sauter. Barre = à glisser.
 - **Interface discrète.** Pas de texte au milieu de l'écran pendant l'action ; le jugement (PARFAIT…) est petit,
   au-dessus du héros, et s'efface vite.
-- **Tolérance de plateformeur.** Tout passe avec un appui 40 ms en avance ou en retard (vérifié par le simulateur).
+- **Tolérance de plateformeur : survivre est facile, être précis rapporte.** Chaque action laisse **au moins
+  120 ms** de marge des deux côtés pour ne pas mourir ; seul le score (PARFAIT / BIEN) récompense la précision.
+  Le générateur mesure la marge de chaque action seule (`--marges DE A`) et refuse une chart trop serrée sur les
+  passages déjà passés à cette règle (`WIDE_MARGIN`, aujourd'hui le roulement et le refrain, 78-128 ; le reste du niveau est
+  seulement vérifié à ±40 ms). Leviers : ennemis posés 0,6 beat après leur temps, zone de frappe étirée en l'air,
+  tampon de saut de 140 ms, coup de pouce sur les marches et les souches (pieds à moins de 0,4 u du haut : on
+  passe dessus), trous de 0,5 beat sur les enchaînements.
 
-## 5. Ce qui reste à faire pour aller plus loin
-Voir [roadmap.md](roadmap.md) : lianes (balancier automatique), décor qui joue avec la musique (éléments qui
+## 5. Prototype : le refrain « dans le ciel » (beats 96-128, test à partir de 78,5)
+Test dans l'éditeur : menu **Kenta > Tester le refrain (prototype)** (la partie démarre au beat 78,5, sans les écrans ;
+après une mort, un appui relance au même endroit). Scène `scene_refrain_ciel` de `tools/gen-level-vertical.py` :
+tambour géant sur le drop (+10 u), coup en plein vol, course sur le mur, tambour de relance, **quatre tambours en
+chaîne sur le roulement de grosse caisse** (on grimpe à chaque coup), sommet, **grand plongeon en deux dévalées raides** (−26 u, le sol reste à l'image),
+rebond, glissade, coups sur les derniers temps. 33 u de dénivelé (près de 4 écrans), chaque action ≥ 130 ms de
+marge. Le niveau entier monte maintenant jusqu'à 54 u ; objectif 10 à 12 écrans de dénivelé en tout.
+
+## 6. Le niveau qui change : une surprise par section
+Un niveau musical reste fun parce que **chaque section change les règles du jeu** (pas seulement les obstacles).
+Chacune a un menu de test dans l'éditeur (**Kenta > Tester …**) :
+| Section | Surprise | Mécanique (chart) |
+|---|---|---|
+| Pont (64-80) | **de liane en liane** au-dessus de l'eau ; on lâche chaque liane sur un temps, on frappe une chauve-souris à chaque balancier | `vine` (balancier automatique, lâcher jugé), `gap` long |
+| Refrain (96-128) | **changement de monde** : on monte dans l'Orage ; tambours en chaîne, grand plongeon | section `"biome"`, `bounce`, `ramp` |
+| Final (128-152) | **le monde se retourne** dans les Échos : portail, course au plafond la tête en bas (trous à sauter, ennemis pendus) ; puis un tambour envoie **dans l'arrière-plan** : on court derrière les piliers du premier plan, un autre tambour ramène devant | `gravity`, `ceiling`, `enemy` lane 2, `jump` ; `bounce` `to_back` / `to_front`, `back` |
+| Refrain 2 (216-256) | **l'écran se détraque** : 2 écrans au drop, 5 écrans (en petit) sur le roulement, puis grésillement ; sur des gestes déjà appris au refrain 1 | `screen_split`, `glitch` |
+Règles : la surprise s'annonce (portail visible une mesure avant, liane qui pend vers le point de prise), le premier
+geste après elle est simple, et la règle des 120 ms vaut aussi pour elle (le simulateur gère gravité, plans et
+lianes). Les effets d'écran gênent la lecture mais pas le rythme : ils tombent sur des passages déjà joués.
+
+## 7. Ce qui reste à faire pour aller plus loin
+Voir [roadmap.md](roadmap.md) : décor qui joue avec la musique (éléments qui
 réagissent au temps), scènes de drop (décor qui s'effondre), son du tambour, et une **musique libre de droits
 écrite pour le niveau** (l'idéal : les sons des actions *manquent* dans la piste, et c'est le joueur qui les joue).
