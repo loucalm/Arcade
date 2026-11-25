@@ -83,7 +83,21 @@ namespace Kenta.Core
         {
             StartCoroutine(HighscoreManager.FetchHighscores());
             if (heroSelect != null) heroSelect.OnLevelChanged += ShowWorld;
-            Enter(GameState.Attract);
+            if (DevStart.Active) StartCoroutine(DevPlay());   // test d'un passage : droit au jeu
+            else Enter(GameState.Attract);
+        }
+
+        /// <summary>
+        /// Test d'un passage (DevStart) : on laisse passer les premières images (longues, juste après l'entrée en Play)
+        /// et le chargement de la musique, sinon l'horloge audio saute de plusieurs beats au départ.
+        /// </summary>
+        System.Collections.IEnumerator DevPlay()
+        {
+            var lvl = GameSession.Level != null ? GameSession.Level : FirstLevel();
+            var clip = lvl != null && lvl.song != null ? lvl.song.clip : (levelSong != null ? levelSong.clip : null);
+            if (clip != null) clip.LoadAudioData();
+            while (Time.unscaledTime < 0.5f || (clip != null && clip.loadState == AudioDataLoadState.Loading)) yield return null;
+            Enter(GameState.Playing);
         }
 
         void OnDestroy()
@@ -122,6 +136,7 @@ namespace Kenta.Core
 
                 case GameState.GameOver:
                     bool skip = phaseTimer >= skipGuard && ArcadeInput.ConfirmDown();
+                    if (DevStart.Active && skip) { Enter(GameState.Playing); break; }   // test : on relance au même passage
                     if (!showingBoard && (stateTimer >= gameOverDuration || skip))
                     {
                         showingBoard = true;

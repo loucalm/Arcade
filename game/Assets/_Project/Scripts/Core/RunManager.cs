@@ -183,8 +183,29 @@ namespace Kenta.Core
                 backdrop.ResetMood();
                 backdrop.SetSection(Chart.sections.Length > 0 ? Chart.sections[0].name : "", 0f, 0.01f);
             }
+            // test d'un passage dans l'éditeur (menu Kenta > Tester le refrain) : on démarre au beat demandé
+            ScreenGlitch.Instance?.ResetAll();
+            double start = demo ? 0 : DevStart.Beat;
+            if (start > 0)
+            {
+                SectionIndex = Mathf.Max(0, Chart.SectionIndexAt(start));
+                ApplyBiome(SectionIndex);
+                // rien ne doit chevaucher le point de départ (ennemi dont le temps est juste avant)
+                float sx = level.BeatToX(start);
+                foreach (var o in level.Obstacles)
+                    if (o.bounds.xMin < sx + 0.5f && o.bounds.xMax > sx - 0.5f && o.kind != LevelObjectKind.Gap)
+                    {
+                        o.alive = false;
+                        if (o.view != null) o.view.SetActive(false);
+                    }
+                while (fxCursor < level.FxEvents.Count && level.FxEvents[fxCursor].beat < start)
+                {
+                    var skipped = level.FxEvents[fxCursor++];
+                    if (skipped.type == "screen_split") ScreenGlitch.Instance?.SetCopies(skipped.@params.copies);
+                }
+            }
             player.Setup(level, this, CreateInput());
-            player.Spawn(0);
+            player.Spawn(start);
             if (CameraRig.Instance != null)
             {
                 CameraRig.Instance.Target = player.transform;
@@ -193,7 +214,7 @@ namespace Kenta.Core
                 CameraRig.Instance.ResetShot(Chart.zoom);
                 CameraRig.Instance.Snap();
             }
-            Conductor.Instance.Play(song, 0, loop: false);
+            Conductor.Instance.Play(song, start, loop: false);
             IsRunning = true;
 
             OnRunStarted?.Invoke();
@@ -210,9 +231,10 @@ namespace Kenta.Core
 
         void ApplyBiome(int index)
         {
-            if (level.LevelBiome != null)
+            if (level.LevelBiome != null || !string.IsNullOrEmpty(Chart.sections[Mathf.Clamp(index, 0, Chart.sections.Length - 1)].biome))
             {
-                if (backdrop != null) backdrop.SetBiome(level.LevelBiome);
+                // un niveau = un monde, sauf les sections qui en changent (BiomeAt lit le biome de la section)
+                if (backdrop != null) backdrop.SetBiome(level.BiomeAt(Chart.sections[Mathf.Clamp(index, 0, Chart.sections.Length - 1)].startBeat));
                 return;
             }
             var biomes = level.Theme.biomes;
@@ -225,6 +247,7 @@ namespace Kenta.Core
         {
             StopAllCoroutines();
             IsRunning = false;
+            ScreenGlitch.Instance?.ResetAll();
             if (stopMusic) Conductor.Instance?.Stop();
             if (hideWorld)
             {
@@ -411,6 +434,15 @@ namespace Kenta.Core
                     // accent sur le premier temps de la section, sans flash plein écran (il masquait les obstacles)
                     rig.Shake(0.12f * intensity, 0.2f);
                     rig.Punch(0.35f * intensity);
+                    break;
+                case "screen_split":
+                    // l'image se dédouble (2, 5 ou 9 copies plus petites) jusqu'au prochain screen_split
+                    ScreenGlitch.Instance?.SetCopies(e.@params.copies);
+                    rig.Flash(Color.white, 0.3f);
+                    break;
+                case "glitch":
+                    // grésillement calé sur les temps, pendant `length` beats
+                    ScreenGlitch.Instance?.Glitch(e.@params.intensity > 0 ? e.@params.intensity : 0.5f, e.@params.length > 0 ? e.@params.length : 4f);
                     break;
             }
         }

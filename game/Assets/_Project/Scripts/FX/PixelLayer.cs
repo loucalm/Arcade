@@ -23,6 +23,10 @@ namespace Kenta.FX
         Vector2 fraction;
 
         public Camera LayerCamera => layerCamera;
+        /// <summary>Image affichée (RenderTexture du calque) et son affichage agrandi : lus par ScreenGlitch pour les copies.</summary>
+        public Texture Texture => rt;
+        public RawImage Display => display;
+        public int Margin => margin;
 
         public void Bind(int width, int height, int newScale)
         {
