@@ -63,13 +63,14 @@ Règles :
 - [ ] **DA Kenta, à finir** (voir [da-kenta.md](da-kenta.md)) :
   - [x] Héros redessinés en marionnette pixel art (~3,5 têtes au lieu de ~2) : course 8 images, saut 8, frappe 4, glissade 3 + entrée 3 + sortie 3, accroupi, bandeau / pan de veste / écharpe / cheveux simulés, contour de silhouette seulement (`tools/gen-heroes.py`, ADR-022) (2026-11-24)
   - [x] Obstacles des 8 biomes (mur, bloc, plafond, poteau, plateforme) redessinés par Gemini au niveau des maquettes du PDF, ramenés en pixel art par script (`tools/gemini-obstacles/`, ADR-026) (2026-11-25)
+  - [x] Gardiens des 8 biomes redessinés par Gemini au niveau des maquettes, **immobiles** (plus d'yeux qui s'ouvrent) et **derrière les montagnes** (`tools/gemini-gardiens/`, ADR-028) (2026-11-25)
   - [ ] **P2** Obstacles à refaire dans Gemini : `wall_orage` (socle plat), `block_orage` et `post_orage` (fond rectangulaire retiré, contour haché), `block_cite` (copie de l'ancien bloc), `post_echine` (corde en rayures jaunes et noires)
   - [ ] Faire valider le nouveau gabarit par l'équipe, puis **vérifier sur la borne** : lisibilité à 2 m, rendu des héros à ×3 (vue large)
   - [ ] Animations restantes : attente animée (menus), pose de victoire, mort animée ; liane et course sur mur à brancher avec leurs mécaniques
   - [x] Vignette (`thumbnail.png`) : Kenta en marionnette, bandeau rouge « DÉMO » ; `info.json` à jour (plus de Sourdine, mentions « démo ») (2026-11-25)
   - [ ] Pages du site : encore avec le Kenta du PDF
   - [ ] Version finale : retirer le bandeau « DÉMO » de la vignette (`demo_banner` dans `gen_thumbnail`) et les mentions « démo » de `info.json`
-  - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : gardiens animés, éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
+  - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
   - scènes de drop entre biomes (tronc qui frappe, chute vers le marais, éruption, avalanche…) : aujourd'hui flash + secousse + changement de décor
   - ennemis : variante « cassé » (pièces qui s'échappent) pour les 8, comme le djembé
   - tour REMIX : `PixelScreen.SetDivider(3)` (80×45), palette 4 tons, perturbations (voir § 9) ; il manque la version 8-bit du morceau
@@ -130,7 +131,7 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2026-11-25.md](audit-2026-11-25.md). La **verticalité** a finalement été traitée ici (demande de Jeremy), sans toucher à la physique de `PlayerController`.
 - [x] (2026-11-25) **P0** Décor collé à l'écran verticalement (arbres qui « volent ») → `BiomeBackdrop` pose la ligne de sol des calques sur le sol le plus bas de la vue (lu sur `CameraRig.HeightProbe`, lissé), une part par calque
 - [x] (2026-11-25) **P0** Bande vide et pâle sous les arbres → pied des calques (`kenta_art.add_foot`), étiré jusqu'au bas de la vue
-- [x] (2026-11-25) **P0** Gardien → entier, opaque, **devant** les montagnes lointaines : c'est l'élément principal du décor (choix de Jeremy, au lieu de l'enfoncer)
+- [x] (2026-11-25) **P0** Gardien → entier, opaque, **devant** les montagnes lointaines : c'est l'élément principal du décor (choix de Jeremy, au lieu de l'enfoncer). Remplacé le même jour par ADR-028 : derrière les montagnes, à la demande de Lou
 - [x] (2026-11-25) **P1** Brume blanche à 32 % → dégradé de 4 % en haut à 20 % en bas
 - [x] (2026-11-25) **P1** « PARFAIT ! » suit le héros (`JudgePopup`)
 - [x] (2026-11-25) **P1** Traînée du bandeau → ruban plein, seulement à partir de ×4

@@ -1,0 +1,146 @@
+{
+ "sylve": {
+  "label": "LA SYLVE",
+  "guardian": "CERF DE PIERRE",
+  "kind": "deer",
+  "body": "#AEB6BC",
+  "line": "#8C949C",
+  "accent": "#6CC24A",
+  "eye": "#FFF6D8",
+  "sky": "#BCDFD3",
+  "size_now": [
+   172,
+   246
+  ],
+  "center_now": [
+   139.0,
+   28.0
+  ]
+ },
+ "bayou": {
+  "label": "LE BAYOU",
+  "guardian": "GRENOUILLE-LUNE",
+  "kind": "frog",
+  "body": "#8E9A8C",
+  "line": "#6E7A6A",
+  "accent": "#7A9A5A",
+  "eye": "#FFF6D8",
+  "sky": "#8F6A78",
+  "size_now": [
+   172,
+   186
+  ],
+  "center_now": [
+   139.0,
+   -2.0
+  ]
+ },
+ "echos": {
+  "label": "LES ÉCHOS",
+  "guardian": "CHAUVE-SOURIS DE CRISTAL",
+  "kind": "bat",
+  "body": "#3E4488",
+  "line": "#2A2F66",
+  "accent": "#4FC8C0",
+  "eye": "#FFF6D8",
+  "sky": "#262A5A",
+  "size_now": [
+   252,
+   236
+  ],
+  "center_now": [
+   139.0,
+   23.0
+  ]
+ },
+ "forge": {
+  "label": "LA FORGE",
+  "guardian": "TAUREAU-ENCLUME",
+  "kind": "bull",
+  "body": "#4A2A24",
+  "line": "#2D0C08",
+  "accent": "#FF7A1A",
+  "eye": "#FFF6D8",
+  "sky": "#4B190B",
+  "size_now": [
+   178,
+   212
+  ],
+  "center_now": [
+   138.0,
+   12.0
+  ]
+ },
+ "echine": {
+  "label": "L'ÉCHINE",
+  "guardian": "CHAT-MONTAGNE",
+  "kind": "cat",
+  "body": "#9AA0B2",
+  "line": "#7C8296",
+  "accent": "#79BC7A",
+  "eye": "#FFF6D8",
+  "sky": "#68ADED",
+  "size_now": [
+   172,
+   212
+  ],
+  "center_now": [
+   139.0,
+   11.0
+  ]
+ },
+ "givre": {
+  "label": "LE GIVRE",
+  "guardian": "RENARD DE GLACE",
+  "kind": "fox",
+  "body": "#9CBEE6",
+  "line": "#7C9ECC",
+  "accent": "#FFFFFF",
+  "eye": "#FFF6D8",
+  "sky": "#5388C1",
+  "size_now": [
+   220,
+   240
+  ],
+  "center_now": [
+   163.0,
+   25.0
+  ]
+ },
+ "cite": {
+  "label": "LA CITÉ SOURDE",
+  "guardian": "LAPIN DE GRÈS",
+  "kind": "rabbit",
+  "body": "#D2A07A",
+  "line": "#B8845A",
+  "accent": "#E8C8B0",
+  "eye": "#FFF6D8",
+  "sky": "#82A6C7",
+  "size_now": [
+   172,
+   268
+  ],
+  "center_now": [
+   139.0,
+   39.0
+  ]
+ },
+ "orage": {
+  "label": "LE GRAND ORAGE",
+  "guardian": "OISEAU-TONNERRE",
+  "kind": "bird",
+  "body": "#6A78C0",
+  "line": "#4A5598",
+  "accent": "#E0B040",
+  "eye": "#FFF6D8",
+  "sky": "#2E3570",
+  "size_now": [
+   172,
+   216
+  ],
+  "center_now": [
+   139.0,
+   13.0
+  ]
+ }
+}
