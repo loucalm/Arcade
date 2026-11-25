@@ -180,7 +180,7 @@ Verticalité, visuels après les obstacles de Lou, contenu. Détail, captures et
 - [ ] **P1** Passage à l'arrière-plan peu visible : sprite réduit, premier plan en silhouette, son étouffé ; l'image du héros se règle dans `PlayerController.SetVisualPlane` (D3 ; l'annonce une mesure avant est faite)
 - [ ] **P1** Le jeu se joue tout seul (139 PARFAIT, 0 BIEN) : contretemps, doubles croches, deux chemins pour le score (E4)
 - [x] (2026-11-25, `ResetMood` remet le sol à zéro) **P1** Démo de l'accueil → partie sans écran de fin : le décor glisse 0,6 s depuis la hauteur de la démo (remettre `groundValid` à faux au lancement)
-- [ ] **P1** L'autoplay du jeu ne ramasse que 364 pièces sur 387 alors que le simulateur du générateur les prend toutes (déjà vrai sur main après la PR #18) : écart entre `AutoPlayerInput` et le simulateur, à creuser
+- [ ] **P1** L'autoplay du jeu ne ramasse que 372 pièces sur 395 alors que le simulateur du générateur les prend toutes (déjà vrai sur main après la PR #18). Les ratées sont presque toutes dans l'enchaînement de tambours du refrain 2 (beats 225 à 234, y 62 à 71) : l'arc du jeu ne suit pas celui du simulateur (rebond sur les cuirassés ?), à creuser
 - [ ] **P2** Contour sombre du héros et règle de couleur de la DA (le fond ne reprend jamais la couleur des pièces) (B2)
 - [ ] **P2** Rampes en escalier de colonnes de 8 px : tuiles de pente 1:1 et 1:2 par biome (A5)
 - [ ] **P2** Poteau planté au pied d'une falaise (Sylve, beat ~28) : à vérifier dans la chart (C5)
