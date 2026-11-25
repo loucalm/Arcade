@@ -353,9 +353,20 @@ namespace Kenta.Core
             conductor.SetVolume(attractVolume);
             if (conductor.IsPlaying && conductor.Song == song && menuLooping) return;
             // sortie de démo ou de partie : le morceau continue là où il en est, mais en boucle
-            double from = conductor.IsPlaying && conductor.Song == song ? Math.Max(0.0, conductor.SongBeat) : 0.0;
+            double from = MenuResumeBeat(conductor.Song, conductor.IsPlaying, conductor.SongBeat, song);
             conductor.Play(song, from, loop: true);
             menuLooping = true;
+        }
+
+        /// <summary>
+        /// Beat de départ de la musique des menus : on reprend là où en est le morceau en cours s'il s'agit du même clip
+        /// (chaque niveau a son SongData, mais ils partagent encore « Main Theme », ADR-030), sinon on repart du début.
+        /// </summary>
+        public static double MenuResumeBeat(SongData playing, bool isPlaying, double beat, SongData menu)
+        {
+            bool same = isPlaying && playing != null && menu != null && playing.clip != null && playing.clip == menu.clip
+                        && Mathf.Approximately(playing.bpm, menu.bpm) && Mathf.Approximately(playing.offsetSeconds, menu.offsetSeconds);
+            return same ? Math.Max(0.0, beat) : 0.0;
         }
 
         /// <summary>Fin de partie (mort, ou niveau terminé).</summary>

@@ -35,7 +35,6 @@ namespace Kenta.UI
         [SerializeField] float scrollSharpness = 18f;
         [SerializeField] int nameMaxWidth = 118;
 
-        const int HiddenBeyond = 104;
         static readonly Color Gold = new(1f, 0.82f, 0.23f);
         static readonly Color StarOff = new(70 / 255f, 64 / 255f, 100 / 255f);
         static readonly Color EmptyRow = new(90 / 255f, 84 / 255f, 130 / 255f);
@@ -137,12 +136,13 @@ namespace Kenta.UI
             int sel = SelectedIndex;
             for (int i = 0; i < cards.Count; i++)
             {
+                // les cartes restent actives : les réactiver recréerait les glyphes de leurs textes (allocations à chaque
+                // cran) ; celles qui sont loin de la sélection sont simplement posées hors de l'écran 320×180
                 var card = cards[i];
                 bool exists = i < n;
+                if (card.gameObject.activeSelf != exists) card.gameObject.SetActive(exists);
+                if (!exists) continue;
                 var r = LevelListLayout.CardRect(LevelListLayout.Offset(i, scroll, n));
-                bool visible = exists && Mathf.Abs(r.y) <= HiddenBeyond;
-                if (card.gameObject.activeSelf != visible) card.gameObject.SetActive(visible);
-                if (!visible) continue;
                 card.Place(r);
                 card.Show(catalog.levels[i], i == sel);
             }

@@ -79,6 +79,24 @@ namespace Kenta.EditorTests
         public void FromJson_GarbageGivesEmpty(string json) => Assert.AreEqual(0, LevelScores.FromJson(json).Count);
 
         [Test]
+        public void FromJson_SortsCapsAndFixesNames()
+        {
+            // valeur écrite par une autre version : désordre, 12 entrées, un nom absent, un score nul
+            var json = "{\"entries\":[{\"score\":500},{\"name\":\"ZER\",\"score\":0}";
+            for (int i = 1; i <= 11; i++) json += $",{{\"name\":\"P{i:D2}\",\"score\":{i * 10}}}";
+            json += "]}";
+            var l = LevelScores.FromJson(json);
+            Assert.AreEqual(LevelScores.Max, l.Count);
+            for (int i = 0; i < l.Count; i++)
+            {
+                Assert.IsFalse(string.IsNullOrEmpty(l[i].name));
+                Assert.Greater(l[i].score, 0);
+                if (i > 0) Assert.GreaterOrEqual(l[i - 1].score, l[i].score);
+            }
+            Assert.AreEqual(500, l[0].score);
+        }
+
+        [Test]
         public void Record_IsPerLevel()
         {
             LevelScores.Record("sylve", "LOU", 500);

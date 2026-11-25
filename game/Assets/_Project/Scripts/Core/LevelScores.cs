@@ -106,7 +106,12 @@ namespace Kenta.Core
             try
             {
                 var w = JsonUtility.FromJson<Wrapper>(json);
-                return w?.entries != null ? new List<LevelScoreEntry>(w.entries) : new List<LevelScoreEntry>();
+                // valeur d'une autre version : on la remet aux règles (tri, 10 max, une entrée par nom, nom jamais vide)
+                var result = new List<LevelScoreEntry>();
+                if (w?.entries == null) return result;
+                foreach (var e in w.entries)
+                    if (e.score > 0) result = Insert(result, e.name, e.score);
+                return result;
             }
             catch (Exception)
             {
