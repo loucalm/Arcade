@@ -83,6 +83,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 - Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.
 - Juice = secousses en pixels entiers, flash des drops, particules en pixels (< ~300 actives). **Pas d'animation par crans sur le beat** (lu comme un tremblement) : mouvements continus ou cycles d'images.
 - Sprites pixel art : filtre Point, aucune compression (réglé par `KentaSpritePostprocessor`).
+- ⚠️ Piège : un sprite créé en code (`Sprite.Create`, ex. dégradé de 1 × 8 px) a la taille de sa texture divisée par son PPU ; pour couvrir la vue, diviser l'échelle par `sprite.bounds.size` (la brume du décor ne couvrait qu'une colonne au centre).
 - Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades.
 
 ## Debug

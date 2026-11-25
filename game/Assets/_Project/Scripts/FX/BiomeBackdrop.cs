@@ -202,7 +202,10 @@ namespace Kenta.FX
             float sink = guardianSink * k / PixelScreen.Ppu;
             guardian.transform.position = new Vector3(PixelScreen.Snap(c.x + go.x), PixelScreen.Snap(c.y + go.y - sink + lift * Follow(0)), 0f);
             float fogH = halfH * 2f + 1f;
-            fogLayer.transform.localScale = new Vector3(fogH * cam.aspect + 1f, fogH, 1f);
+            // le sprite fait 1 × 8 px à 8 px/u (0,125 × 1 u) : la largeur se divise par celle du sprite, sinon la brume
+            // ne couvre qu'une colonne au centre de l'écran
+            Vector2 fogSize = fogLayer.sprite != null ? (Vector2)fogLayer.sprite.bounds.size : Vector2.one;
+            fogLayer.transform.localScale = new Vector3((fogH * cam.aspect + 1f) / fogSize.x, fogH / fogSize.y, 1f);
             fogLayer.transform.position = new Vector3(c.x, c.y, 0f);
             if (ground.enabled && ground.sprite != null)
             {

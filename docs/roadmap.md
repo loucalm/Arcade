@@ -139,6 +139,32 @@ Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2
 - [x] (2026-11-25, `AuditScenarios` en 1920×1080) Limites de l'audit revues : écrans, choix du héros et du monde, 8 mondes en partie, défaite et saisie du nom
 - [ ] **P0** Tester sur la vraie borne : Firefox ESR, 60 fps, manettes, envoi du score
 
+## Grand audit du 2026-11-25
+Verticalité, visuels après les obstacles de Lou, contenu. Détail, captures et pistes : [audit-verticalite-2026-11-25.md](audit-verticalite-2026-11-25.md).
+- [x] (2026-11-25) Brume du décor limitée à une colonne de 282 px au centre de l'écran → échelle divisée par la taille du sprite (`BiomeBackdrop`)
+- [ ] **P0 — décision d'équipe** Les 8 mondes jouent la même chart (seule la peau change, et l'Orage et les Échos reviennent partout) : 1 niveau assumé, 3 niveaux, ou une chart par monde (E1)
+- [ ] **P0 — décision d'équipe** Choisir la musique finale **avant** de polir la chart : tout le level design est écrit sur Shovel Knight (E2)
+- [ ] **P0** Verticalité visible : terrain en couches qui s'allège vers le bas, paliers flottants au lieu de colonnes de 20 à 60 u (A1)
+- [ ] **P0** Décor qui change avec l'altitude : bandes (mer de nuages, ciel sombre), parallaxe verticale, gardien qui suit le héros des yeux (A2)
+- [ ] **P0** Héros à ~60 px sur 1080 en vue 640 : vue 480 par défaut, 640 seulement sur les tambours et les plongeons ; contour sombre (B1)
+- [ ] **P0** Refrain 2 : 5 écrans de 640×360 et une image toute en neige, illisible à 2 m. 2 écrans au plus, neige ≤ 30 % et jamais sur le héros, retirer le glitch de la FIN (D1)
+- [ ] **P1** Gestes de montée et de descente variés (double marche, mur, plateformes sur le temps, dévalée avec frappes), une grande ascension par section ; couplets 1 et 2 identiques aujourd'hui (A3)
+- [ ] **P1** Caméra : héros collé en bas en descente, en haut sur les tambours ; rail asymétrique selon la pente, repère d'arrivée hors champ (A4)
+- [ ] **P1** Couleurs : héros et ennemis perdus sur l'Orage et les Échos, pièces sur les arbres jaunes ; le fond ne doit jamais reprendre la couleur des pièces (B2)
+- [ ] **P1** Calque proche devant les ennemis et les pièces : le garder sous la ligne de sol (B3)
+- [ ] **P1** Lianes en trait de 1 px : corde de 2 à 3 px, nœud, halo sur le temps du lâcher (C2)
+- [ ] **P1** Portail de gravité (deux traits cyan) et plafond (bande sombre) : arche, plafond dessiné comme un sol (C3)
+- [ ] **P1** Plateformes flottantes et poteaux de barre trop fins (C4)
+- [ ] **P1** Télégraphie des surprises (portail, arrière-plan, split) une mesure avant (D2)
+- [ ] **P1** Passage à l'arrière-plan peu visible : sprite réduit, premier plan en silhouette, son étouffé (D3)
+- [ ] **P1** Le jeu se joue tout seul (139 PARFAIT, 0 BIEN) : contretemps, doubles croches, deux chemins pour le score (E4)
+- [ ] **P1 — à vérifier** Démo de l'accueil → partie sans écran de fin : le décor glisse 0,6 s depuis la hauteur de la démo (remettre `groundValid` à faux au lancement)
+- [ ] **P2** Rampes en escalier de colonnes de 8 px : tuiles de pente 1:1 et 1:2 par biome (A5)
+- [ ] **P2** Poteau planté au pied d'une falaise (Sylve, beat ~28) : à vérifier dans la chart (C5)
+- [ ] **P2** Calque proche : 8 à 10 motifs, ou des motifs par section (C6)
+- [ ] **P2** Flash blanc plein écran à l'entrée du final : 50 % au plus (photosensibilité) (D4)
+- [ ] **P2** Étiquette de section : ne nommer le biome que s'il change (F)
+
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)
 - [ ] Tests EditMode : `ChartData.Parse`, faisabilité d'une chart en autoplay
