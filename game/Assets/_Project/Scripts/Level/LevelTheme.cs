@@ -21,6 +21,8 @@ namespace Kenta.Level
         public Sprite totem;
         [Tooltip("Ennemi volant (à frapper en l'air), commun aux biomes : la chauve-souris du PDF.")]
         public Sprite flyer;
+        [Tooltip("Cuirassé (on lui saute dessus) : carapace et tremplin jaune, deux images (repos, tremplin écrasé sur le temps). tools/gen-stomper.py.")]
+        public Sprite[] stomper;
         [Tooltip("Carré blanc de 1 px (40 px/unité) : traînée du bandeau, particules.")]
         public Sprite pixel;
     }

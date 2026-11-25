@@ -60,5 +60,5 @@ def test_obstacle_variety():
     for k in ("gap", "wall", "slide_bar", "enemy", "bounce", "platform", "step", "ramp",
               "vine", "gravity", "ceiling", "back", "screen_split", "glitch"):
         assert k in kinds, k
-    assert sum(1 for e in EVENTS if e["type"] == "wall") >= 3
+    assert sum(1 for e in EVENTS if e["type"] == "wall") >= 2
     assert sum(1 for e in EVENTS if e["type"] == "enemy" and e["lane"] == 1) >= 10

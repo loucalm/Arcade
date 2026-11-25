@@ -6,9 +6,10 @@ using UnityEngine.UI;
 namespace Kenta.FX
 {
     /// <summary>
-    /// Effets d'écran pilotés par la chart, pour la fin du niveau : l'image du jeu se dédouble (2, 5 ou 9 copies plus
-    /// petites, agrandies d'un facteur entier) et grésille (neige, image qui se décale, couleurs qui sautent, coupures
-    /// d'une image) au rythme des temps. Ils gênent la lecture sans la rendre impossible : la chart les cale sur des
+    /// Effets d'écran pilotés par la chart : l'image du jeu se dédouble en une grille qui remplit tout l'écran, sans
+    /// bande noire (4 copies en 2×2, agrandies ×1,5 : seule exception aux facteurs entiers, assumée pour l'effet ; ou
+    /// 9 copies en 3×3 à ×1) et grésille (neige, image qui se décale, couleurs qui sautent, coupures d'une image) au
+    /// rythme des temps. Ils gênent la lecture sans la rendre impossible : la chart les cale sur des
     /// passages simples. L'interface (score, multiplicateur) reste nette par-dessus.
     /// Créé par PixelScreen ; aucun réglage dans la scène.
     /// </summary>
@@ -55,12 +56,12 @@ namespace Kenta.FX
         }
 
         /// <summary>
-        /// Nombre de copies de l'image : 1 (normal), 2 (côte à côte), 5 (centre et coins), 9 (grille 3×3). Chaque copie est
-        /// l'image entière, en plus petit (agrandissement entier, un tiers de l'écran sur la borne).
+        /// Nombre de copies de l'image : 1 (normal), 4 (grille 2×2) ou 9 (grille 3×3) ; 2 et 5 (anciennes charts) donnent
+        /// 4 et 9. Chaque copie est l'image entière, en plus petit ; la grille remplit tout l'écran.
         /// </summary>
         public void SetCopies(int count)
         {
-            count = count >= 9 ? 9 : count >= 5 ? 5 : count >= 2 ? 2 : 1;
+            count = count >= 5 ? 9 : count >= 2 ? 4 : 1;
             foreach (var c in copies) if (c != null) Destroy(c.gameObject);
             copies.Clear();
             copyImages.Clear();
@@ -71,46 +72,33 @@ namespace Kenta.FX
             if (!split) return;
 
             var frameRect = screen.Frame.rect;
-            Vector2 cell = new(frameRect.width / 3f, frameRect.height / 3f);
+            int n = count == 9 ? 3 : 2;
+            Vector2 cell = new(frameRect.width / n, frameRect.height / n);
+            float k = cell.x / screen.ViewWidth;                         // ×1 en 3×3 sur la borne, ×1,5 en 2×2
             int insertAt = screen.ActorsLayer.Display.transform.GetSiblingIndex() + 1;
-            foreach (var g in Cells(count))
-            {
-                var holder = new GameObject("Copy", typeof(RectTransform)).GetComponent<RectTransform>();
-                holder.SetParent(screen.Frame, false);
-                holder.SetSiblingIndex(insertAt++);
-                holder.anchorMin = holder.anchorMax = new Vector2(0.5f, 0.5f);
-                holder.anchoredPosition = new Vector2(Mathf.Round((g.x - 1) * cell.x), Mathf.Round((1 - g.y) * cell.y));
-                AddCopyImage(holder, screen.WorldLayer);
-                AddCopyImage(holder, screen.ActorsLayer);
-                copies.Add(holder);
-            }
+            for (int j = 0; j < n; j++)
+                for (int i = 0; i < n; i++)
+                {
+                    var holder = new GameObject("Copy", typeof(RectTransform)).GetComponent<RectTransform>();
+                    holder.SetParent(screen.Frame, false);
+                    holder.SetSiblingIndex(insertAt++);
+                    holder.anchorMin = holder.anchorMax = new Vector2(0.5f, 0.5f);
+                    holder.anchoredPosition = new Vector2(Mathf.Round((i - (n - 1) * 0.5f) * cell.x), Mathf.Round(((n - 1) * 0.5f - j) * cell.y));
+                    AddCopyImage(holder, screen.WorldLayer, k);
+                    AddCopyImage(holder, screen.ActorsLayer, k);
+                    copies.Add(holder);
+                }
         }
 
-        static IEnumerable<Vector2Int> Cells(int count)
-        {
-            if (count == 2) { yield return new Vector2Int(0, 1); yield return new Vector2Int(2, 1); yield break; }
-            if (count == 5)
-            {
-                yield return new Vector2Int(1, 1);
-                yield return new Vector2Int(0, 0); yield return new Vector2Int(2, 0);
-                yield return new Vector2Int(0, 2); yield return new Vector2Int(2, 2);
-                yield break;
-            }
-            for (int j = 0; j < 3; j++)
-                for (int i = 0; i < 3; i++)
-                    yield return new Vector2Int(i, j);
-        }
-
-        void AddCopyImage(RectTransform holder, PixelLayer layer)
+        void AddCopyImage(RectTransform holder, PixelLayer layer, float k)
         {
             var img = new GameObject(layer.name, typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
             img.transform.SetParent(holder, false);
             img.texture = layer.Texture;
             img.raycastTarget = false;
-            int k = Mathf.Max(1, screen.Scale / 3);                       // ×1 sur la borne (×3 en temps normal)
             var r = img.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(layer.Texture.width * k, layer.Texture.height * k);
+            r.sizeDelta = new Vector2(Mathf.Round(layer.Texture.width * k), Mathf.Round(layer.Texture.height * k));
             copyImages.Add(img);
         }
 

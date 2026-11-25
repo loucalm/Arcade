@@ -14,7 +14,7 @@ Règles :
 - [x] Démo jouable : niveau depuis chart JSON, saut/frappe/glissade, 3 cœurs, checkpoints, score × combo, HUD, Game Over + saisie du nom, démo autoplay sur l'Attract, juice de base (2026-09-25)
 
 ## Jeu — P0 (rendu / borne)
-- [ ] **Tester sur la vraie borne** : 60 fps dans Firefox ESR, manettes et dead zone, bouton blanc, AFK 60 s, et surtout **l'audio démarre-t-il après un appui manette ?** (politique d'autoplay du navigateur)
+- [ ] **Tester sur la vraie borne** : 60 fps dans Firefox ESR, manettes (correctif ADR-028 : à vérifier sur la vraie machine, et le sens haut/bas du joystick), bouton blanc, AFK 60 s, et surtout **l'audio démarre-t-il après un appui manette ?** (politique d'autoplay du navigateur)
 - [ ] **Tester le ressenti dans Firefox** : durée et hauteur du saut, fenêtres de tolérance, latence des sons quantifiés (jusqu'à ~60 ms)
 - [ ] **Réduire le build** (`Build.wasm` ≈ 31 Mo) : Managed Stripping Level = High, IL2CPP « Optimize Size », retirer les packages inutiles (navigation, multiplayer center, timeline, modules VR/XR…)
 - [ ] **Musique libre de droits** : le niveau utilise provisoirement « Main Theme » de Shovel Knight (protégé, voir `Audio/LICENSES.md`) ; la remplacer par un morceau original ou libre (110–160 BPM, sections marquées), avec sa **version 8-bit** au même BPM + licence dans `Audio/LICENSES.md`
@@ -38,7 +38,10 @@ Règles :
 - [ ] Arrière-plan plus lisible : aujourd'hui seulement assombri et derrière les piliers ; idées : décor du premier plan qui s'assombrit pendant le passage, son étouffé
 - [ ] Lianes : sprite de nœud dédié (aujourd'hui la tuile de poteau du biome), corde au repos qui pend verticalement
 - [x] (2026-11-25, ADR-027) **Retour de test** : chauves-souris qui apparaissaient au moment de les frapper → rail de caméra qui montre chaque ennemi 1,5 temps avant (minimum garanti 400 ms, médiane 1,26 s ; avant : 40 ms) et zone de frappe en l'air de 3,5 u ; lianes lâchées **au saut** (plus automatiques) ; deux mécaniques nouvelles, **cuirassés** (écraser + appui au rebond) et **notes de saut** ; intro et couplet réécrits ; règle des 120 ms sur tout le niveau sauf le pont 2 et le roulement 2 ; marges de caméra de Jeremy (0,12 / 0,2) appliquées dans la scène (elle gardait 0,08 / 0,1)
-- [ ] Cuirassé : sprite dédié (aujourd'hui l'ennemi du biome teinté métal + flèche de pixels) et son d'écrasement
+- [x] (2026-11-25) Cuirassé : sprite dédié commun à tous les biomes (carapace bleu acier + tremplin jaune, `tools/gen-stomper.py`), chevrons qui rebondissent sur le temps
+- [ ] Cuirassé : son d'écrasement dédié
+- [x] (2026-11-25, ADR-028) **Commandes de la borne** : « rien ne répond » reproduit (Unity 6.3 ne voit en Web que la manette à l'index 0) ; manettes lues dans le navigateur (`KentaGamepad.jslib`, `ArcadePads`), `ArcadeMenu` remplace le `MenuManager` en build ; vérifié dans un build Web avec une fausse manette à l'index 1 (accueil, partie, 80 s d'appuis sans retour au menu, bouton blanc → `localhost:3000`)
+- [x] (2026-11-25) Chauves-souris à hauteur du héros (règle du générateur), refrain 2 = refrain 1 rejoué, écrans dédoublés en grille pleine (4 puis 9) dès le couplet 2
 - [ ] Note de saut : sprite dédié (aujourd'hui la pièce ×2 teintée) et son (une note de la mélodie)
 - [ ] Pont 2 et roulement 2 (184-212) : passer à la règle des 120 ms et y mettre les nouvelles mécaniques
 - [ ] Portail de gravité : son dédié et sprite (aujourd'hui deux colonnes de pixels)
