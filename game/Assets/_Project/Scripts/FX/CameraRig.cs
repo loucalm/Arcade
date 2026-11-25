@@ -40,8 +40,8 @@ namespace Kenta.FX
         [SerializeField] float railSmoothTime = 0.06f;
         [Tooltip("Durée (s) du glissement quand le plan change de cadrage.")]
         [SerializeField] float frameBlendTime = 0.45f;
-        [Tooltip("Marges (fraction de la hauteur de vue) que le héros ne quitte jamais : bas, haut.")]
-        [SerializeField] Vector2 safeMargins = new(0.08f, 0.1f);
+        [Tooltip("Marges (fraction de la hauteur de vue) que le héros ne quitte jamais : bas, haut (assez haute pour que la tête reste sous le HUD).")]
+        [SerializeField] Vector2 safeMargins = new(0.12f, 0.2f);
 
         float shakeAmplitude, shakeDuration, shakeTime;
         float bump;

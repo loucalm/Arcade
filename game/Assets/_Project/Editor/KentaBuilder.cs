@@ -142,6 +142,9 @@ namespace Kenta.EditorTools
                 set.hitFrames = Enumerable.Range(0, 4).Select(k => Spr(g + $"hit_{k}.png")).ToArray();
                 set.hit = set.hitFrames[1];
                 set.crouch = Spr(g + "crouch.png");
+                set.climbCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"climb_{k}.png")).ToArray();
+                set.descendCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"descend_{k}.png")).ToArray();
+                set.fallFrames = Enumerable.Range(0, 3).Select(k => Spr(g + $"fall_{k}.png")).ToArray();
                 set.vine = Spr(g + "vine.png");
                 set.wall = Spr(g + "wall.png");
                 set.hurt = Spr(g + "hurt.png");
@@ -410,9 +413,10 @@ namespace Kenta.EditorTools
         {
             var root = ScreenRoot("Screen_GameOver");
             var tr = root.transform;
-            var titleT = AddText(tr, font, "Title", "GAME OVER", new Vector2(0, 48), Color.white, 3, PixelText.Align.Center, true);
-            var grade = AddText(tr, font, "Grade", "S+", new Vector2(-98, -20), Gold, 5, PixelText.Align.Center, true);
-            var panel = NewRect("Panel", tr, new Vector2(30, -20), new Vector2(196, 76));
+            // titre en haut, note en grand au centre, panneau en dessous (la note était coincée à gauche du panneau)
+            var titleT = AddText(tr, font, "Title", "GAME OVER", new Vector2(0, 62), Color.white, 3, PixelText.Align.Center, true);
+            var grade = AddText(tr, font, "Grade", "S+", new Vector2(0, 19), Gold, 4, PixelText.Align.Center, true);   // ×4 : de l'air entre titre, note et panneau
+            var panel = NewRect("Panel", tr, new Vector2(0, -50), new Vector2(196, 76));
             var bg = panel.gameObject.AddComponent<Image>();
             bg.sprite = Spr("Gen/ui/panel.png");
             bg.type = Image.Type.Sliced;

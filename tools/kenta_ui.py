@@ -218,22 +218,21 @@ def draw_stick():
 
 # ---------------------------------------------------------------- pièces, totem
 def draw_coin(frame):
-    widths = [11, 9, 4, 9]
+    """Pièce frappée d'une croche, 4 images de rotation. Assez grande pour se lire en vue large (640 px), et jamais de
+    profil (l'ancienne image de 4 px se lisait comme un trait orange parasite dans les arcs de pièces)."""
+    widths = [15, 13, 9, 13]
     wv = widths[frame]
-    p = Pix(13, 13)
-    cx, cy = 6, 6
-    if wv > 4:
-        p.ellipse(cx, cy, wv // 2, 5, "#FFD23A")
-        p.ellipse(cx, cy, wv // 2 - 2, 3, "#E8A020")
-        p.ellipse(cx - 1, cy - 1, max(1, wv // 2 - 3), 2, "#FFE87A")
-        p.px(cx - wv // 2 + 1, cy - 3, "#FFF8C8")
-        # croche
-        p.rect(cx, cy - 2, cx + 1, cy + 2, "#7A4A10")
-        p.rect(cx - 1, cy + 1, cx, cy + 3, "#7A4A10")
-        p.px(cx + 1, cy - 2, "#7A4A10")
-    else:
-        p.rect(cx - 1, cy - 5, cx + 2, cy + 6, "#E8A020")
-        p.rect(cx - 1, cy - 5, cx, cy + 6, "#FFD23A")
+    p = Pix(17, 17)
+    cx, cy = 8, 8
+    p.ellipse(cx, cy, wv // 2, 7, "#FFD23A")
+    p.ellipse(cx, cy, max(1, wv // 2 - 2), 5, "#E8A020")
+    p.ellipse(cx - 1, cy - 1, max(1, wv // 2 - 3), 3, "#FFE87A")
+    p.px(cx - wv // 2 + 2, cy - 4, "#FFF8C8")
+    # croche (seulement quand la pièce est assez large pour la montrer)
+    if wv >= 11:
+        p.rect(cx, cy - 3, cx + 1, cy + 3, "#7A4A10")
+        p.rect(cx - 2, cy + 2, cx, cy + 4, "#7A4A10")
+        p.rect(cx + 1, cy - 3, cx + 3, cy - 2, "#7A4A10")
     return outlined(p)
 
 

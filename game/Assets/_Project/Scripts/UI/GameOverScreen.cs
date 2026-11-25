@@ -11,6 +11,8 @@ namespace Kenta.UI
     public class GameOverScreen : MonoBehaviour
     {
         [SerializeField] RectTransform title;
+        // titre en haut, note en grand au centre, panneau en bas (la note était coincée à gauche du panneau)
+        const float TitleY = 62f;
         [SerializeField] PixelText titleText;
         [SerializeField] GameObject panel;
         [SerializeField] PixelText scoreText;
@@ -77,7 +79,7 @@ namespace Kenta.UI
             {
                 title.gameObject.SetActive(true);
                 float k = Mathf.Clamp01((t - dropDelay) / 0.35f);
-                title.anchoredPosition = new Vector2(0f, Mathf.Round(Mathf.Lerp(110f, 48f, k * k)));
+                title.anchoredPosition = new Vector2(0f, Mathf.Round(Mathf.Lerp(110f, TitleY, k * k)));
             }
             if (t >= panelDelay)
             {

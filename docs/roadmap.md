@@ -58,6 +58,8 @@ Règles :
 - [ ] Écran « Comment jouer » animé (pictos des boutons au lieu du texte)
 - [ ] **DA Kenta, à finir** (voir [da-kenta.md](da-kenta.md)) :
   - [x] Héros redessinés en marionnette pixel art (~3,5 têtes au lieu de ~2) : course 8 images, saut 8, frappe 4, glissade 3 + entrée 3 + sortie 3, accroupi, bandeau / pan de veste / écharpe / cheveux simulés, contour de silhouette seulement (`tools/gen-heroes.py`, ADR-022) (2026-11-24)
+  - [x] Obstacles des 8 biomes (mur, bloc, plafond, poteau, plateforme) redessinés par Gemini au niveau des maquettes du PDF, ramenés en pixel art par script (`tools/gemini-obstacles/`, ADR-026) (2026-11-25)
+  - [ ] **P2** Obstacles à refaire dans Gemini : `wall_orage` (socle plat), `block_orage` et `post_orage` (fond rectangulaire retiré, contour haché), `block_cite` (copie de l'ancien bloc), `post_echine` (corde en rayures jaunes et noires)
   - [ ] Faire valider le nouveau gabarit par l'équipe, puis **vérifier sur la borne** : lisibilité à 2 m, rendu des héros à ×3 (vue large)
   - [ ] Animations restantes : attente animée (menus), pose de victoire, mort animée ; liane et course sur mur à brancher avec leurs mécaniques
   - [ ] Vignette (`thumbnail.png`) et pages du site : encore avec le Kenta du PDF
@@ -93,12 +95,13 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-24, ADR-021) **P1** Trous et chutes → liquide du biome 1 u sous le bord, plus sombre en profondeur. Avant : : le fond d'un trou est vide (couleur de la brume). Montrer le danger : eau, ronces, obscurité ou la Sourdine en bas
 - [x] (2026-11-24, ADR-021) **P1** Un seul décor pendant 1 min 43 → ambiance par section (teinte, lumière qui baisse) ; la démo de l'accueil change de monde. Avant : : même arbre rose, même gardien, même ciel. Varier par section (heure, météo, couleurs) même sans changer de biome
 - [x] (2026-11-24, ADR-021) **P1** Le gardien (Cerf de pierre) → sprite à part, plus contrasté, yeux ouverts une mesure à chaque section et tout le refrain. Avant : est une tache grise floue derrière la brume, jamais animé : le rendre lisible et le faire réagir aux sections
-- [ ] **P2** Pièces qui tournent : les images de profil (1 à 2 px de large) se lisent comme des traits orange parasites dans les arcs. Garder des images plus larges, ou ne pas les faire tourner
+- [x] (2026-11-25) **P2** Pièces qui tournent : les images de profil (1 à 2 px de large) se lisent comme des traits orange parasites dans les arcs. Garder des images plus larges, ou ne pas les faire tourner
+- [ ] **P2** `pytest tools/tests` : `test_generated_chart_is_feasible_and_vertical` échoue (`validate` de l'ancien `tools/gen-level-chart.py` refuse des hauteurs, ex. « hauteur 6.0 … beat 66 ») ; déjà le cas sur `main` le 2026-11-25. Mettre le test à jour ou le retirer avec l'ancien générateur
 - [ ] **P2** Plateformes flottantes trop fines (2 à 3 px) : elles se lisent comme des lignes. Les épaissir, avec un dessous
 - [ ] **P2** Tambours-tremplins dessinés en tonneaux : rien ne dit « rebond ». Peau tendue, couleur vive, flèche ou animation d'appel
 - [ ] **P2** Héros petit en vue 640 px (~50 px sur 360, soit 150 px d'écran) : vérifier la lisibilité à 2 m sur la borne
-- [ ] **P2** Bandeau (traînée de combo) : une ligne pointillée fine, presque invisible même à ×8
-- [ ] **P2** PARFAIT reste à l'endroit où l'action a été jugée : sur un tremplin, le mot apparaît sous le héros qui s'envole. Le faire suivre le héros
+- [x] (2026-11-25, ruban plein à partir de ×4) **P2** Bandeau (traînée de combo) : une ligne pointillée fine, presque invisible même à ×8
+- [x] (2026-11-25, `JudgePopup` suit le héros) **P2** PARFAIT reste à l'endroit où l'action a été jugée : sur un tremplin, le mot apparaît sous le héros qui s'envole. Le faire suivre le héros
 
 **Écrans et interface**
 - [x] (2026-11-24, ADR-021) **P1** Accueil → cycle logo, démo jouée (un monde différent à chaque passage), classement ; sol et terre sous le décor des menus. Avant : décor seul et texte. Ni démo jouée (pourtant décrite dans `game-design.md` et `game/CLAUDE.md`), ni héros, ni pièces autour du logo. Pour attirer les passants : alterner logo, démo en autoplay et classement. Mettre la doc à jour selon le choix
@@ -115,7 +118,26 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 **Nouveaux points (après les P1)**
 - [ ] **P2** « SILENCE… » s'affiche encore au milieu de l'écran à la mort (`RunHud.HandleDamaged`), contre la règle « rien au milieu »
 - [ ] **P2** Liquide des trous parfois hors de l'image quand la caméra anticipe une montée (le sol est alors en bas de l'écran)
-- [ ] **P2** En éditeur, l'AFK du toolkit (60 s sans appui) affiche « Retour au menu… » pendant une partie en autoplay : sans effet sur la borne (on y joue), mais l'accueil en cycle (logo, démo, classement) renvoie au menu de la borne après 60 s d'inactivité, comme le veut le toolkit
+- [x] (2026-11-25, ignoré pendant l'autoplay et texte masqué par `EditorArcadeShim`) **P2** En éditeur, l'AFK du toolkit (60 s sans appui) affiche « Retour au menu… » pendant une partie en autoplay : sans effet sur la borne (on y joue), mais l'accueil en cycle (logo, démo, classement) renvoie au menu de la borne après 60 s d'inactivité, comme le veut le toolkit
+
+## Audit du 2026-11-25
+Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2026-11-25.md](audit-2026-11-25.md). La **verticalité** a finalement été traitée ici (demande de Jeremy), sans toucher à la physique de `PlayerController`.
+- [x] (2026-11-25) **P0** Décor collé à l'écran verticalement (arbres qui « volent ») → `BiomeBackdrop` pose la ligne de sol des calques sur le sol le plus bas de la vue (lu sur `CameraRig.HeightProbe`, lissé), une part par calque
+- [x] (2026-11-25) **P0** Bande vide et pâle sous les arbres → pied des calques (`kenta_art.add_foot`), étiré jusqu'au bas de la vue
+- [x] (2026-11-25) **P0** Gardien → entier, opaque, **devant** les montagnes lointaines : c'est l'élément principal du décor (choix de Jeremy, au lieu de l'enfoncer)
+- [x] (2026-11-25) **P1** Brume blanche à 32 % → dégradé de 4 % en haut à 20 % en bas
+- [x] (2026-11-25) **P1** « PARFAIT ! » suit le héros (`JudgePopup`)
+- [x] (2026-11-25) **P1** Traînée du bandeau → ruban plein, seulement à partir de ×4
+- [x] (2026-11-25) **P1** Pièces de 17 px, sans image de profil (aussi le point P2 des « traits parasites »)
+- [x] (2026-11-25, cycles montée / descente / chute dans `HeroAnimator`) **Verticalité** Le héros **glisse** en montant une colonne de marches ou une rampe : ses pieds suivent le terrain pendant que la course continue à plat ; en descente, il tombe du bord sans transition. Piste : une pose d'escalade / d'appui sur la marche, et une réception à chaque marche descendue
+- [x] (2026-11-25, marge haute 0,2) **Verticalité, P1** Pièces parfois hors de l'image en montée (placement et rail)
+- [x] (2026-11-25, `CameraRig.safeMargins` 0,12 / 0,2) **Verticalité, P1** Cadrage : héros au bord haut sur certains tambours, sol collé au bas avec un grand vide au-dessus (`safeMargins`, rail)
+- [x] (2026-11-25, `fill_deep` éclairci vers le ciel) **Verticalité, P1** Piliers de terre encore massifs et sombres sur les marches hautes
+- [x] (2026-11-25) **P2** Écran « BRAVO ! » : note S coincée dans une case étroite
+- [x] (2026-11-25, affichée 3 s) **P2** Étiquette de section du HUD qui chevauche les pièces en haut de l'image
+- [x] (2026-11-25, 5 motifs) **P2** Arbre rose du calque proche trop gros et trop répété : au moins 3 motifs par biome
+- [x] (2026-11-25, `AuditScenarios` en 1920×1080) Limites de l'audit revues : écrans, choix du héros et du monde, 8 mondes en partie, défaite et saisie du nom
+- [ ] **P0** Tester sur la vraie borne : Firefox ESR, 60 fps, manettes, envoi du score
 
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)

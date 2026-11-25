@@ -1,4 +1,4 @@
-"""Dessin des décors, du sol et des obstacles de chaque biome. Utilisé par gen-kenta-assets.py.
+"""Dessin des décors et du sol de chaque biome (les obstacles viennent de tools/gemini-obstacles/). Utilisé par gen-kenta-assets.py.
 
 Les décors (ciel, calques en parallaxe, gardien) sont composés dans les coordonnées de l'écran 320×180 mais tracés
 ×BG_SCALE (640×360) : en vue large (640 px), leurs pixels ont la même taille que ceux du niveau et du héros."""
@@ -144,6 +144,33 @@ def draw_statue(p, b, cx, base, awake=False):
 # ============================================================================
 # CALQUES EN PARALLAXE (640×180, boucle sans couture)
 # ============================================================================
+
+def dominant_color(p):
+    """Couleur la plus présente juste au-dessus de la ligne de sol d'un calque (RGB), ou None s'il est vide là."""
+    import numpy as np
+    from collections import Counter
+    s = p.s
+    band = np.asarray(p.im)[max(0, (GROUND_Y - 8) * s):GROUND_Y * s].reshape(-1, 4)
+    opaque = [tuple(int(v) for v in px[:3]) for px in band if px[3] >= 200]
+    return Counter(opaque).most_common(1)[0][0] if opaque else None
+
+
+def add_foot(p, b, depth, base=None):
+    """Pied du calque sous sa ligne de sol (sous-bois, terre) jusqu'au bas de l'image : en jeu, BiomeBackdrop ancre
+    les calques au sol du niveau, et sans pied on voyait un vide pâle sous les arbres dès que le sol était bas.
+    `base` : couleur de départ (par défaut, la couleur dominante du calque juste au-dessus du sol), assombrie selon la
+    profondeur (`depth` : 0 = loin, plus clair et proche du ciel ; 1 = proche, plus sombre). Deux tons, une arête
+    claire ; la dernière rangée est unie : BiomeBackdrop l'étire pour prolonger le pied sous l'image."""
+    base = base or dominant_color(p) or col(b["sky"][-1])[:3]
+    air = 0.35 * (1 - depth)
+    rim = mix(shade(base, -0.05), b["sky"][3], air)
+    top = mix(shade(base, -0.25 - 0.2 * depth), b["sky"][3], air)
+    deep = mix(shade(base, -0.4 - 0.2 * depth), b["sky"][3], air)
+    p.rect(0, GROUND_Y, STRIP_W, GROUND_Y + 1, rim)
+    p.rect(0, GROUND_Y + 1, STRIP_W, GROUND_Y + 7, top)
+    p.rect(0, GROUND_Y + 7, STRIP_W, H_SCREEN, deep)
+
+
 def pine(p, x, base, h, c, snow=None):
     w = int(h * 0.62)
     tiers = 3
@@ -159,7 +186,7 @@ def pine(p, x, base, h, c, snow=None):
             p.poly([(x, top), (x - half // 2, top + (bot - top) // 2), (x + half // 2, top + (bot - top) // 2)], snow)
 
 
-def draw_far(b, scale=BG_SCALE):
+def draw_far(b, scale=BG_SCALE, foot=True):
     rng = rng_for(b, "far")
     p = Pix(STRIP_W, H_SCREEN, scale=scale)
     f = b["far"]
@@ -243,10 +270,12 @@ def draw_far(b, scale=BG_SCALE):
             tile_wrap(p, x, lambda x0, y=y, rx=rx: blob(p, x0, y, rx, rx // 2, f["body"], hi=f["snow"], lo=f["shade"], rng=rng))
         for x in (90, 330):
             tile_wrap(p, x, lambda x0: p.poly([(x0, 0), (x0 - 7, 36), (x0 - 1, 36), (x0 - 9, 74), (x0 + 6, 28), (x0, 28)], "#FFFFFF"))
+    if foot:
+        add_foot(p, b, 0.0)
     return p
 
 
-def draw_mid(b, scale=BG_SCALE):
+def draw_mid(b, scale=BG_SCALE, foot=True):
     rng = rng_for(b, "mid")
     p = Pix(STRIP_W, H_SCREEN, scale=scale)
     m = b["mid"]
@@ -299,23 +328,39 @@ def draw_mid(b, scale=BG_SCALE):
             tile_wrap(p, x, col_)
         elif k == "cloudpuffs":
             tile_wrap(p, x, lambda x0, h=h: blob(p, x0, GROUND_Y - 4 - h // 3, 28, 14, m["mid"], hi=m["light"], lo=m["dark"], rng=rng))
+    if foot:
+        add_foot(p, b, 0.5)
     return p
 
 
-def draw_near(b, scale=BG_SCALE):
+def draw_near(b, scale=BG_SCALE, foot=True):
+    """Calque proche : trois motifs (grand arbre, petit arbre, buissons) répartis sur la largeur. Avant : un seul grand
+    arbre, très gros et répété à l'identique, qui finissait par se voir (audit du 2026-11-25)."""
     rng = rng_for(b, "near")
     p = Pix(STRIP_W, H_SCREEN, scale=scale)
     n = b["near"]
-    for x in (40, 290):
-        h = rng.randint(66, 80)
 
-        def tree(x0, h=h):
-            p.rect(x0 - 4, GROUND_Y - h, x0 + 4, GROUND_Y, n["trunk"])
-            p.rect(x0 - 4, GROUND_Y - h, x0 - 1, GROUND_Y, shade(n["trunk"], 0.18))
-            blob(p, x0, GROUND_Y - h, 34, 22, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng, lumps=6)
-            blob(p, x0 - 18, GROUND_Y - h + 14, 14, 9, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
-            blob(p, x0 + 22, GROUND_Y - h + 10, 14, 9, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
-        tile_wrap(p, x, tree)
+    def tree(x0, h, rx, ry, lumps):
+        p.rect(x0 - 3, GROUND_Y - h, x0 + 3, GROUND_Y, n["trunk"])
+        p.rect(x0 - 3, GROUND_Y - h, x0 - 1, GROUND_Y, shade(n["trunk"], 0.18))
+        blob(p, x0, GROUND_Y - h, rx, ry, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng, lumps=lumps)
+        blob(p, x0 - rx // 2 - 2, GROUND_Y - h + ry // 2 + 2, rx // 2, ry // 2, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
+
+    def bush(x0, rx):
+        blob(p, x0, GROUND_Y - rx // 2, rx, rx // 2 + 2, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng, lumps=4)
+        blob(p, x0 + rx, GROUND_Y - rx // 3, rx // 2 + 2, rx // 3 + 2, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
+
+    motifs = [
+        (55, lambda x0: tree(x0, rng.randint(58, 68), 26, 17, 5)),        # grand arbre
+        (200, lambda x0: bush(x0, rng.randint(13, 17))),                  # buissons
+        (300, lambda x0: tree(x0, rng.randint(36, 44), 16, 11, 4)),       # petit arbre
+        (455, lambda x0: tree(x0, rng.randint(52, 62), 22, 15, 5)),       # autre grand arbre
+        (575, lambda x0: bush(x0, rng.randint(10, 14))),
+    ]
+    for x, draw in motifs:
+        tile_wrap(p, x, draw)
+    if foot:                                     # sous les arbres proches : le sol de la forêt (couleur du calque milieu)
+        add_foot(p, b, 1.0, base=dominant_color(draw_mid(b, scale, foot=False)))
     return p
 
 
@@ -364,12 +409,15 @@ def draw_fill(b):
 
 
 def draw_fill_deep(b):
-    """Flanc en profondeur (sous ~2 u) : la même terre, plus sombre, avec des pierres enfouies. Les piliers fonçent vers le bas."""
+    """Flanc en profondeur (sous ~2 u) : la même terre, un peu plus sombre et noyée dans l'air du biome, avec des pierres
+    enfouies. Les piliers s'effacent vers le bas au lieu de faire de grandes masses sombres (audit du 2026-11-25)."""
     g = b["ground"]
     rng = rng_for(b, "filldeep")
     p = draw_fill(b)
     a = p.array()
-    a[..., :3] = (a[..., :3] * 0.72).astype(a.dtype)
+    air = col(b["sky"][3])[:3]
+    for i in range(3):
+        a[..., i] = (a[..., i] * 0.62 + air[i] * 0.22).clip(0, 255).astype(a.dtype)
     p.im = Image.fromarray(a, "RGBA")
     p.d = ImageDraw.Draw(p.im)
     for _ in range(3):
@@ -428,21 +476,6 @@ def draw_cliff_top(b):
     return p
 
 
-def draw_platform(b):
-    """Plateforme suspendue (traversable par en dessous) : 32×10, herbe, planche de terre, dessous sombre, contour."""
-    g = b["ground"]
-    p = Pix(32, 10)
-    p.rect(0, 1, 32, 9, g["dirt"])
-    p.rect(0, 1, 32, 3, g["grass"])
-    p.rect(0, 3, 32, 4, g["grass2"])
-    p.rect(0, 7, 32, 9, g["dirt2"])
-    for x in range(3, 32, 8):
-        p.px(x, 5, g["dirt2"])
-    p.rect(0, 0, 32, 1, "#14101C")
-    p.rect(0, 9, 32, 10, "#14101C")
-    return p
-
-
 def draw_hazard(b):
     h = b["hazard"]
     rng = rng_for(b, "hazard")
@@ -456,207 +489,4 @@ def draw_hazard(b):
         for x in range(0, 32, 5):
             p.px(x + rng.randrange(3), 3, shade(h["glow"], 0.25))
     p.rect(0, 0, 32, 1, h["ring"])
-    return p
-
-
-# ============================================================================
-# OBSTACLES : mur bas 36×32, bloc 38×38, plafond (tuile 16×16 + poteau 8×16)
-# ============================================================================
-def finish(p):
-    return outlined(p)
-
-
-def draw_wall(b):
-    w = b["wall"]
-    k = w["kind"]
-    rng = rng_for(b, "wall")
-    p = Pix(36, 32)
-    c1, c2, c3 = w["c1"], w["c2"], w["c3"]
-    if k in ("stump", "mossy"):
-        p.rect(4, 8, 32, 31, c1)
-        p.rect(4, 8, 12, 31, shade(c1, 0.15))
-        p.rect(26, 8, 32, 31, c2)
-        for x in (10, 17, 22):
-            p.line((x, 12), (x, 30), c2, 1)
-        p.ellipse(18, 9, 14, 5, c3)
-        p.ellipse(18, 9, 10, 3, shade(c3, 0.15))
-        p.ellipse(18, 9, 5, 1, mix(c3, c2, 0.5))
-        p.rect(4, 29, 32, 32, c2)
-        if w["moss"]:
-            p.ellipse(10, 7, 6, 3, w["moss"])
-            p.rect(6, 9, 11, 14 if k == "stump" else 20, w["moss"])
-            if k == "mossy":
-                p.rect(24, 10, 30, 22, w["moss"])
-    elif k in ("rock", "cloud"):
-        if k == "rock":
-            pts = [(2, 31), (4, 16), (11, 6), (22, 3), (31, 10), (34, 22), (33, 31)]
-            p.poly(pts, c1)
-            p.poly([(2, 31), (4, 16), (11, 6), (16, 8), (14, 31)], shade(c1, 0.18))
-            p.poly([(26, 12), (31, 10), (34, 22), (33, 31), (27, 31)], c2)
-            p.line((18, 10), (22, 20), c2, 1)
-            p.line((22, 20), (20, 28), c2, 1)
-            if w["moss"]:
-                p.ellipse(15, 5, 7, 2, w["moss"])
-        else:
-            blob(p, 18, 20, 16, 11, c1, hi=c3, lo=c2, rng=rng, lumps=6)
-            p.rect(2, 29, 34, 32, c2)
-    elif k == "crystal":
-        for x0, hh, ww in ((3, 20, 8), (12, 31, 10), (23, 24, 9)):
-            p.poly([(x0, 31), (x0, 31 - hh + 7), (x0 + ww // 2, 31 - hh), (x0 + ww, 31 - hh + 7), (x0 + ww, 31)], c1)
-            p.poly([(x0, 31), (x0, 31 - hh + 7), (x0 + ww // 2, 31 - hh), (x0 + ww // 2, 31)], c3)
-            p.poly([(x0 + ww // 2 + 1, 31), (x0 + ww // 2 + 1, 31 - hh + 2), (x0 + ww, 31 - hh + 7), (x0 + ww, 31)], c2)
-    elif k == "basalt":
-        for x0, hh in ((2, 22), (13, 31), (24, 26)):
-            p.rect(x0, 31 - hh, x0 + 10, 31, c1)
-            p.rect(x0, 31 - hh, x0 + 3, 31, shade(c1, 0.2))
-            p.rect(x0 + 8, 31 - hh, x0 + 10, 31, c2)
-            p.line((x0 + 5, 31 - hh + 3), (x0 + 6, 28), c3, 1)
-            p.rect(x0, 31 - hh, x0 + 10, 31 - hh + 1, shade(c1, 0.3))
-    elif k == "ice":
-        p.poly([(2, 31), (2, 14), (10, 6), (24, 3), (34, 12), (34, 31)], c1)
-        p.poly([(2, 31), (2, 14), (10, 6), (14, 8), (9, 31)], shade(c1, 0.35))
-        p.poly([(26, 10), (34, 12), (34, 31), (26, 31)], c2)
-        p.line((8, 12), (8, 22), c3, 1)
-        p.line((17, 8), (22, 8), c3, 1)
-        p.rect(2, 28, 34, 31, c2)
-    elif k == "column":
-        p.rect(2, 12, 34, 31, c1)
-        p.rect(2, 12, 34, 17, c3)
-        p.rect(2, 27, 34, 31, c2)
-        p.rect(0, 9, 7, 31, c3)
-        p.rect(0, 9, 7, 12, shade(c3, 0.2))
-        p.rect(28, 9, 36, 31, c2)
-        for x in (12, 19, 26):
-            p.line((x, 14), (x, 28), c2, 1)
-        p.ellipse(4, 20, 4, 11, c1)
-    return finish(p)
-
-
-def draw_block(b):
-    bl = b["block"]
-    k = bl["kind"]
-    rng = rng_for(b, "block")
-    p = Pix(38, 38)
-    c1, c2, c3 = bl["c1"], bl["c2"], bl["c3"]
-    if k == "barrel":
-        p.ellipse(19, 21, 17, 16, c1)
-        p.rect(2, 8, 36, 36, c1)
-        p.rect(2, 8, 10, 36, shade(c1, 0.14))
-        p.rect(29, 8, 36, 36, c2)
-        for y in (13, 29):
-            p.rect(1, y, 37, y + 3, c2)
-            p.rect(1, y, 37, y + 1, c3)
-        p.ellipse(19, 7, 15, 4, c3)
-        p.ellipse(19, 7, 11, 2, shade(c3, 0.2))
-    elif k in ("geode", "molten", "cracked", "statuebox"):
-        p.poly([(2, 36), (2, 12), (8, 3), (30, 3), (36, 12), (36, 36)], c1)
-        p.poly([(2, 36), (2, 12), (8, 3), (14, 4), (10, 36)], shade(c1, 0.15))
-        p.poly([(28, 4), (36, 12), (36, 36), (28, 36)], c2)
-        if k == "geode":
-            p.ellipse(19, 21, 9, 10, c2)
-            for dx, hh in ((-5, 8), (0, 11), (5, 7)):
-                p.poly([(19 + dx - 2, 30), (19 + dx - 2, 30 - hh + 3), (19 + dx, 30 - hh), (19 + dx + 2, 30 - hh + 3), (19 + dx + 2, 30)], c3)
-        elif k == "molten":
-            for pts in (((10, 8), (15, 18), (13, 28)), ((26, 10), (22, 20), (25, 32)), ((18, 14), (19, 24), (16, 34))):
-                p.line(pts[0], pts[1], c3, 2)
-                p.line(pts[1], pts[2], c3, 2)
-        elif k == "cracked":
-            p.line((10, 6), (16, 17), c2, 2)
-            p.line((16, 17), (13, 30), c2, 2)
-            p.circle(25, 22, 4, c3)
-            p.circle(24, 21, 1, shade(c3, 0.5))
-        else:
-            p.rect(9, 12, 29, 24, c2)
-            p.line((13, 16), (17, 16), c3, 2)
-            p.line((21, 16), (25, 16), c3, 2)
-            p.line((15, 21), (23, 21), c3, 1)
-    elif k in ("iceblock",):
-        p.poly([(2, 36), (2, 8), (8, 3), (32, 3), (36, 8), (36, 36)], c1)
-        p.poly([(2, 36), (2, 8), (8, 3), (14, 4), (10, 36)], c3)
-        p.poly([(28, 4), (36, 8), (36, 36), (28, 36)], c2)
-        p.line((16, 10), (16, 28), c3, 1)
-        p.line((22, 8), (30, 8), c3, 1)
-    elif k == "stormcloud":
-        blob(p, 19, 22, 17, 13, c1, hi=shade(c1, 0.25), lo=c2, rng=rng, lumps=6)
-        p.poly([(18, 16), (13, 26), (19, 26), (15, 36), (25, 22), (19, 22)], c3)
-    return finish(p)
-
-
-def draw_ceil(b):
-    c = b["ceil"]
-    k = c["kind"]
-    rng = rng_for(b, "ceil")
-    p = Pix(16, 16)
-    c1, c2, c3 = c["c1"], c["c2"], c["c3"]
-    if k == "leafy":
-        p.rect(0, 0, 16, 5, "#5A3A2A")
-        p.rect(0, 0, 16, 1, "#7A5238")
-        for x in range(0, 16, 2):
-            hh = rng.randint(5, 14)
-            p.rect(x, 5, x + 2, 5 + hh, c1 if x % 4 else c2)
-            p.px(x, 4 + hh, c3)
-    elif k == "roots":
-        p.rect(0, 0, 16, 6, "#3A2E3E")
-        for x in (1, 5, 9, 13):
-            hh = rng.randint(7, 15)
-            for y in range(6, 6 + hh):
-                p.px(x + (1 if y % 4 < 2 else 0), y, c2)
-            p.px(x, 6 + hh, c3)
-        p.rect(0, 5, 16, 7, c1)
-    elif k in ("spikes", "icicles"):
-        p.rect(0, 0, 16, 6, c1)
-        p.rect(0, 0, 16, 2, c3)
-        for x0, hh in ((0, 9), (5, 14), (10, 11)):
-            p.poly([(x0, 6), (x0 + 5, 6), (x0 + 2, 6 + hh)], c1)
-            p.poly([(x0, 6), (x0 + 2, 6), (x0 + 2, 6 + hh)], c3)
-    elif k == "beam":
-        p.rect(0, 0, 16, 8, c1)
-        p.rect(0, 0, 16, 2, shade(c1, 0.25))
-        p.rect(0, 6, 16, 8, c2)
-        for x in (2, 8, 14):
-            p.px(x, 4, c3)
-        for x in (4, 12):
-            for y in range(8, 16, 3):
-                p.rect(x, y, x + 1, y + 2, "#8A8A94")
-    elif k == "archrock":
-        p.rect(0, 0, 16, 9, c1)
-        for x in range(0, 16, 4):
-            p.rect(x, 9, x + 4, 9 + rng.randint(1, 5), c1)
-        p.rect(0, 0, 16, 2, c3)
-        p.rect(0, 6, 16, 9, c2)
-    elif k == "arch":
-        p.rect(0, 0, 16, 9, c1)
-        p.rect(0, 0, 16, 2, c3)
-        for x in (0, 8):
-            p.line((x, 3), (x + 7, 3), c2, 1)
-            p.line((x + 4, 6), (x + 11, 6), c2, 1)
-        for x in (3, 11):
-            p.poly([(x, 9), (x + 4, 9), (x + 2, 15)], c3)
-    elif k == "cloudbar":
-        for x in (3, 8, 13):
-            blob(p, x, 6, 7, 5, c1, hi=shade(c1, 0.25), lo=c2, rng=rng, lumps=4)
-        p.poly([(7, 8), (5, 12), (8, 12), (6, 16), (10, 11), (8, 11)], c3)
-    return p
-
-
-def draw_post(b):
-    c = b["ceil"]
-    k = c["kind"]
-    p = Pix(8, 16)
-    base = c["post"]
-    if k == "beam":
-        for y in range(0, 16, 3):
-            p.rect(2, y, 6, y + 2, "#8A8A94")
-            p.rect(3, y + 1, 5, y + 2, "#5A5A66")
-    elif k in ("spikes", "icicles"):
-        p.poly([(0, 0), (8, 0), (4, 15)], c["c1"])
-        p.poly([(0, 0), (4, 0), (4, 15)], c["c3"])
-    elif k == "roots":
-        for y in range(16):
-            p.px(3 + (1 if y % 6 < 3 else 0), y, c["c2"])
-            p.px(4 + (1 if y % 6 < 3 else 0), y, c["c1"])
-    else:
-        p.rect(2, 0, 6, 16, base)
-        p.rect(2, 0, 4, 16, shade(base, 0.2))
-        p.rect(5, 0, 6, 16, shade(base, -0.25))
     return p

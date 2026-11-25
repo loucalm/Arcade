@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Génère les décors, obstacles, interface et effets de Kenta (pixel art ; décors en 640×360, voir docs/art-direction.md).
+"""Génère les décors, interface et effets de Kenta (pixel art ; décors en 640×360, voir docs/art-direction.md).
 
-Les sprites des héros et des ennemis ne sont PAS générés : ils viennent du PDF de la DA
-(tools/extract-kenta-pdf.py). Ici : 8 biomes (ciel, 3 calques en parallaxe, sol, trou, obstacles), pièces,
-totem, logo, cœurs, cadres et police pixel.
+Les sprites des ennemis ne sont PAS générés : ils viennent du PDF de la DA (tools/extract-kenta-pdf.py). Les obstacles
+non plus : ils viennent de Gemini (tools/gemini-obstacles/, ADR-026). Ici : 8 biomes (ciel, 3 calques en parallaxe,
+sol, trou), pièces, totem, logo, cœurs, cadres et police pixel.
 
 Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,font] [--sheet planche.png]
 Dossier par défaut : game/Assets/_Project/Art/Kenta/Gen   (dépendances : tools/requirements.txt)
@@ -52,13 +52,10 @@ def gen_biomes(out, sheet):
         put(out, "biomes", f"bg_{i}_near", art.draw_near(b))
         put(out, "biomes", f"ground_{i}", art.draw_ground(b))
         put(out, "biomes", f"hazard_{i}", art.draw_hazard(b))
-        put(out, "biomes", f"wall_{i}", art.draw_wall(b), sheet)
-        put(out, "biomes", f"block_{i}", art.draw_block(b), sheet)
-        put(out, "biomes", f"ceil_{i}", art.draw_ceil(b))
-        put(out, "biomes", f"post_{i}", art.draw_post(b))
         put(out, "biomes", f"fill_{i}", art.draw_fill(b))
         put(out, "biomes", f"cliff_{i}", art.draw_cliff_top(b))
-        put(out, "biomes", f"platform_{i}", art.draw_platform(b), sheet)
+        # obstacles (wall, block, ceil, post, platform) : dessinés par Gemini, nettoyés par tools/gemini-obstacles/clean.py
+        # (ADR-026). Ils ne sont plus générés ici : ne pas les réécraser.
     # position des gardiens (px réels depuis le centre de l'écran 640×360, y vers le haut) : lue par KentaBuilder
     with open(os.path.join(out, "biomes", "guardians.json"), "w", encoding="utf-8") as f:
         json.dump({"items": [{"id": k, "x": v["x"], "y": v["y"]} for k, v in guardians.items()]}, f, indent=1)
@@ -95,7 +92,7 @@ def gen_thumbnail(out, sheet):
     """Jaquette carrée de la borne (game/BuildExtras/thumbnail.png) : la Sylve, Kenta en pleine course et le logo."""
     b = BIOMES[0]
     scene = art.draw_sky(b, scale=1, statue=True)
-    for layer, off in ((art.draw_far(b, scale=1), 120), (art.draw_mid(b, scale=1), 150), (art.draw_near(b, scale=1), 230)):
+    for layer, off in ((art.draw_far(b, scale=1, foot=False), 120), (art.draw_mid(b, scale=1, foot=False), 150), (art.draw_near(b, scale=1, foot=False), 230)):
         scene.im.alpha_composite(layer.im.crop((off, 0, off + 240, 135)))
     ground = art.draw_ground(b)
     for x in range(0, 240, 32):

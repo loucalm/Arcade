@@ -62,6 +62,22 @@ namespace Kenta.EditorTests
             Assert.AreEqual(expected, HeroAnimator.TransitionFrameIndex(elapsed, 0.12f, 3));
         }
 
+        [TestCase(0f, 0)]          // le pas dans le vide
+        [TestCase(0.09f, 0)]
+        [TestCase(0.1f, 1)]        // puis la chute, 0,12 s par image, en boucle sur les images 1 et 2
+        [TestCase(0.23f, 2)]
+        [TestCase(0.35f, 1)]
+        public void FallFrameIndex_StepsOffThenLoops(float elapsed, int expected)
+        {
+            Assert.AreEqual(expected, HeroAnimator.FallFrameIndex(elapsed, 0.1f, 0.12f, 3));
+        }
+
+        [Test]
+        public void FallFrameIndex_NoFramesGivesMinusOne()
+        {
+            Assert.AreEqual(-1, HeroAnimator.FallFrameIndex(0.5f, 0.1f, 0.12f, 0));
+        }
+
         [Test]
         public void JumpFrameIndex_NoFramesGivesMinusOne()
         {

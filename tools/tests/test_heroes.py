@@ -34,7 +34,8 @@ def test_every_animation_has_its_frames():
     for h in R.HEROES:
         f = frames(h)
         for name, n in (("run", g.RUN_FRAMES), ("jump", g.JUMP_FRAMES), ("hit", 4), ("slide", g.SLIDE_FRAMES),
-                        ("slidein", g.SLIDE_TURN_FRAMES), ("slideout", g.SLIDE_TURN_FRAMES)):
+                        ("slidein", g.SLIDE_TURN_FRAMES), ("slideout", g.SLIDE_TURN_FRAMES),
+                        ("climb", g.RUN_FRAMES), ("descend", g.RUN_FRAMES), ("fall", 3)):
             assert all(f"{name}_{k}" in f for k in range(n)), (h, name)
         for name in ("idle", "crouch", "wall", "vine", "hurt", "death"):
             assert name in f, (h, name)
@@ -123,3 +124,9 @@ def test_slide_transitions_go_down_then_back_up():
     up = [head(g.slide_pose(0))] + [head(g.slide_out_pose(k)) for k in range(3)]
     assert down == sorted(down, reverse=True), down
     assert up == sorted(up), up
+
+
+def test_climb_leans_forward_and_descend_leans_back():
+    g = gen()
+    up = lambda pose: R.place(pose).head[0] - R.place(pose).hip[0]   # tête devant le bassin = penché en avant
+    assert up(g.climb_pose(0.0)) > up(g.run_pose(0.0)) > up(g.descend_pose(0.0))
