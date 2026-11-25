@@ -42,7 +42,10 @@ namespace Kenta.Rhythm
         }
 
         public void Jump() => Play(jump, 1f, 0.7f);
-        public void Hit() => Play(hit, 1f, 0.6f);
+        /// <summary>Son de frappe du héros choisi (null : son commun).</summary>
+        public AudioClip HeroHit { get; set; }
+
+        public void Hit() => Play(HeroHit != null ? HeroHit : hit, 1f, 0.6f);
         public void Kill() => Play(kill, 1f, 0.9f);
         public void Slide() => Play(slide, 1f, 0.6f);
         public void Land() => Play(land, 1f, 0.5f, quantized: false);

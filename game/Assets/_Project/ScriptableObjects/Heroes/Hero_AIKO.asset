@@ -16,3 +16,4 @@ MonoBehaviour:
   role: "LA FL\xDBTISTE"
   sprites: {fileID: 11400000, guid: 1332901c2d76446d087662809ca26a1d, type: 2}
   accent: {r: 0.5411765, g: 0.3529412, b: 0.8784314, a: 1}
+  hitSound: {fileID: 8300000, guid: fc00f971b77304481bcc2060a6a68aa7, type: 3}

@@ -21,6 +21,8 @@ namespace Kenta.FX
         PixelScreen screen;
         readonly List<RectTransform> copies = new();
         readonly List<RawImage> copyImages = new();
+        readonly List<PixelLayer> copyLayers = new();
+        float copyScale = 1f;
         RawImage noise;
         Texture2D noiseTex;
         int copyCount = 1;
@@ -61,10 +63,13 @@ namespace Kenta.FX
         /// </summary>
         public void SetCopies(int count)
         {
-            count = count >= 5 ? 9 : count >= 2 ? 4 : 1;
+            // 2×2 au plus : en vue 480 chaque copie est agrandie ×2 (entier) et le héros reste lisible à 2 m ;
+            // la grille 3×3 le réduisait à ~15 px (audit du 25/11)
+            count = count >= 2 ? 4 : 1;
             foreach (var c in copies) if (c != null) Destroy(c.gameObject);
             copies.Clear();
             copyImages.Clear();
+            copyLayers.Clear();
             copyCount = count;
             if (screen == null || screen.Frame == null) return;
             bool split = count > 1;
@@ -74,7 +79,8 @@ namespace Kenta.FX
             var frameRect = screen.Frame.rect;
             int n = count == 9 ? 3 : 2;
             Vector2 cell = new(frameRect.width / n, frameRect.height / n);
-            float k = cell.x / screen.ViewWidth;                         // ×1 en 3×3 sur la borne, ×1,5 en 2×2
+            float k = cell.x / screen.ViewWidth;                         // ×2 en 2×2 en vue 480, ×1,5 en vue 640
+            copyScale = cell.x;
             int insertAt = screen.ActorsLayer.Display.transform.GetSiblingIndex() + 1;
             for (int j = 0; j < n; j++)
                 for (int i = 0; i < n; i++)
@@ -96,6 +102,7 @@ namespace Kenta.FX
             img.transform.SetParent(holder, false);
             img.texture = layer.Texture;
             img.raycastTarget = false;
+            copyLayers.Add(layer);
             var r = img.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.sizeDelta = new Vector2(Mathf.Round(layer.Texture.width * k), Mathf.Round(layer.Texture.height * k));
@@ -111,8 +118,27 @@ namespace Kenta.FX
             glitchUntilBeat = now + beats;
         }
 
+        /// <summary>
+        /// Un changement de zoom recrée la texture des calques : les copies suivent (sinon elles montraient l'ancienne
+        /// texture détruite, un écran gris), avec leur nouvel agrandissement.
+        /// </summary>
+        void RefreshCopyTextures()
+        {
+            if (screen == null) return;
+            for (int i = 0; i < copyImages.Count; i++)
+            {
+                var img = copyImages[i];
+                var layer = copyLayers[i];
+                if (img == null || layer == null || layer.Texture == null || img.texture == layer.Texture) continue;
+                img.texture = layer.Texture;
+                float k = copyScale / screen.ViewWidth;
+                img.rectTransform.sizeDelta = new Vector2(Mathf.Round(layer.Texture.width * k), Mathf.Round(layer.Texture.height * k));
+            }
+        }
+
         void LateUpdate()
         {
+            if (copyCount > 1) RefreshCopyTextures();
             var c = Conductor.Instance;
             double beat = c != null ? c.SongBeat : 0;
             float target = beat < glitchUntilBeat ? glitchLevel : 0f;
@@ -132,7 +158,7 @@ namespace Kenta.FX
             float r = Random.value;
             Vector2 offset = r < Level * 0.6f ? new Vector2(Mathf.Round((Random.value - 0.5f) * 2f * 24f * Level), 0f) : Vector2.zero;
             Color tint = Random.value < Level * 0.35f ? PickTint() : Color.white;
-            bool visible = Random.value > Level * 0.12f;
+            const bool visible = true;   // plus de coupure d'image : on ne perd jamais le héros (audit du 25/11)
             if (copyCount == 1) ApplyMain(offset, tint, visible);
             else ApplyCopies(offset, tint, visible);
             UpdateNoise();
@@ -201,14 +227,25 @@ namespace Kenta.FX
             if (frame % 2 == 0)
             {
                 var px = noiseTex.GetPixels32();
-                float density = 0.08f + 0.35f * Level;
-                int band = Random.Range(0, 90), bandH = Random.Range(2, 10);
+                float density = 0.05f + 0.15f * Level;
+                int band = Random.Range(0, 90), bandH = Random.Range(2, 6);
+                // zone dégagée autour du héros (une seule image) : la neige ne le cache jamais
+                Vector2 hero = new(-99f, -99f);
+                var target = CameraRig.Instance != null ? CameraRig.Instance.Target : null;
+                var cam = CameraRig.Instance != null ? CameraRig.Instance.Cam : null;
+                if (copyCount == 1 && target != null && cam != null)
+                {
+                    Vector3 vp = cam.WorldToViewportPoint(target.position + Vector3.up * 0.5f);
+                    hero = new Vector2(vp.x * 160f, vp.y * 90f);
+                }
                 for (int i = 0; i < px.Length; i++)
                 {
-                    int row = i / 160;
+                    int row = i / 160, col = i % 160;
                     bool inBand = row >= band && row < band + bandH;
                     float v = Random.value;
-                    if (v < density || (inBand && v < 0.7f))
+                    float hx = (col - hero.x) / 14f, hy = (row - hero.y) / 12f;
+                    if (hx * hx + hy * hy < 1f) px[i] = new Color32(0, 0, 0, 0);
+                    else if (v < density || (inBand && v < 0.5f))
                     {
                         byte g = (byte)(Random.value < 0.5f ? 20 : 235);
                         px[i] = new Color32(g, g, g, (byte)(inBand ? 200 : 150));
@@ -218,7 +255,7 @@ namespace Kenta.FX
                 noiseTex.SetPixels32(px);
                 noiseTex.Apply(false);
             }
-            noise.color = new Color(1f, 1f, 1f, Mathf.Clamp01(0.35f + Level * 0.5f));
+            noise.color = new Color(1f, 1f, 1f, Mathf.Min(0.3f, 0.15f + Level * 0.2f));   // 30 % au plus
         }
     }
 }

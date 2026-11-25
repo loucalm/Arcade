@@ -36,11 +36,24 @@ namespace Kenta.FX
         [Tooltip("Enfoncement du gardien (px) sous sa place d'origine. 0 : il est en entier ; c'est l'élément principal du décor.")]
         [SerializeField] float guardianSink = 0f;
 
+        [Header("Altitude (on voit qu'on est haut)")]
+        [Tooltip("Part de l'altitude dont chaque calque descend sous le sol (loin, milieu, proche) : le paysage passe sous le héros.")]
+        [SerializeField] float[] altitudeSink = { 0.08f, 0.22f, 0.45f };
+        [Tooltip("Descente maximale (u) de chaque calque : loin, milieu, proche.")]
+        [SerializeField] float[] altitudeSinkMax = { 1.5f, 3.5f, 6f };
+        [Tooltip("Altitude (u) à partir de laquelle la mer de nuages apparaît, et celle où elle est pleine.")]
+        [SerializeField] Vector2 cloudSeaRange = new(6f, 26f);
+        [SerializeField] Color cloudSea = new(0.96f, 0.97f, 1f, 1f);
+        [Tooltip("Teinte du ciel tout en haut (plus froid, plus sombre) ; altitude pleine à 45 u.")]
+        [SerializeField] Color highSky = new(0.72f, 0.78f, 0.98f, 1f);
+
         SpriteRenderer sky;
         SpriteRenderer guardian;
         SpriteRenderer ground;
         SpriteRenderer groundFill;
         SpriteRenderer fogLayer;
+        SpriteRenderer cloudLayer;
+        float altitude, altitudeVel;
         static readonly Color GroundFillTint = new(0.58f, 0.54f, 0.7f);    // comme le flanc des piliers du niveau
         const float GroundFillDepth = 8f;
         readonly SpriteRenderer[][] layers = new SpriteRenderer[3][];
@@ -77,15 +90,21 @@ namespace Kenta.FX
             fogLayer = Make("Fog", firstSortingOrder + 40);       // au-dessus des 3 calques, sous le niveau
             fogLayer.sprite = FogSprite(fogTop, fogBottom);
             fogLayer.color = new Color(fog.r, fog.g, fog.b, 1f);
+            cloudLayer = Make("CloudSea", firstSortingOrder + 35);   // devant les calques, sous la brume et le niveau
+            cloudLayer.sprite = FogSprite(0f, 0.5f, 0.35f);      // 50 % au bas de l'image, rien au-dessus du tiers
         }
 
         /// <summary>Brume en dégradé vertical (8 bandes, pixel art) : sprite de 1 × 1 unité.</summary>
-        static Sprite FogSprite(float top, float bottom)
+        static Sprite FogSprite(float top, float bottom, float clearAbove = 1f)
         {
             const int bands = 8;
             var tex = new Texture2D(1, bands, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
-            for (int y = 0; y < bands; y++)                   // y = 0 en bas
-                tex.SetPixel(0, y, new Color(1f, 1f, 1f, Mathf.Lerp(bottom, top, y / (bands - 1f))));
+            for (int y = 0; y < bands; y++)                   // y = 0 en bas ; au-dessus de clearAbove (fraction) : transparent
+            {
+                float f = y / (bands - 1f);
+                float a = f > clearAbove ? 0f : Mathf.Lerp(bottom, top, Mathf.Clamp01(f / Mathf.Max(0.01f, clearAbove)));
+                tex.SetPixel(0, y, new Color(1f, 1f, 1f, a));
+            }
             tex.Apply();
             return Sprite.Create(tex, new Rect(0, 0, 1, bands), new Vector2(0.5f, 0.5f), bands);
         }
@@ -131,6 +150,7 @@ namespace Kenta.FX
         /// <summary>Retour à l'ambiance neutre (début de partie, accueil).</summary>
         public void ResetMood()
         {
+            groundValid = false;     // nouvelle partie (même enchaînée sur la démo) : le décor se pose sans glisser
             mood = moodFrom = moodTo = Color.white;
             moodT = moodBlend = 1f;
         }
@@ -184,23 +204,36 @@ namespace Kenta.FX
                 moodT = Mathf.Min(1f, moodT + Time.deltaTime / moodBlend);
                 mood = Color.Lerp(moodFrom, moodTo, moodT * moodT * (3f - 2f * moodT));
             }
-            sky.color = mood;
-            guardian.sprite = current.guardian;
-            guardian.color = mood;
-            guardian.transform.localScale = scale;
             float half = cam.orthographicSize * cam.aspect;
             float halfH = cam.orthographicSize;
             // sol suivi par le décor : le plus bas de la vue, lissé (en partie seulement ; menus : décor collé à l'écran)
             float lift = GroundLift(c, half, halfH, k);
+            // altitude : hauteur du sol suivi au-dessus du départ du niveau (0 hors partie)
+            altitude = Mathf.SmoothDamp(altitude, groundValid ? Mathf.Max(0f, groundSmooth) : 0f, ref altitudeVel, 0.8f, Mathf.Infinity, Time.deltaTime);
+            float high = Mathf.Clamp01(altitude / 45f);
+            sky.color = mood * Color.Lerp(Color.white, highSky, high);
+            guardian.sprite = current.guardian;
+            guardian.color = mood;
+            guardian.transform.localScale = scale;
             Vector2 go = current.guardianOffset * (k / PixelScreen.Ppu);
             float sink = guardianSink * k / PixelScreen.Ppu;
-            guardian.transform.position = new Vector3(PixelScreen.Snap(c.x + go.x), PixelScreen.Snap(c.y + go.y - sink + lift * Follow(0)), 0f);
+            guardian.transform.position = new Vector3(PixelScreen.Snap(c.x + go.x), PixelScreen.Snap(c.y + go.y - sink + lift * Follow(0) - Sink(0)), 0f);
             float fogH = halfH * 2f + 1f;
             // le sprite fait 1 × 8 px à 8 px/u (0,125 × 1 u) : la largeur se divise par celle du sprite, sinon la brume
             // ne couvre qu'une colonne au centre de l'écran
             Vector2 fogSize = fogLayer.sprite != null ? (Vector2)fogLayer.sprite.bounds.size : Vector2.one;
             fogLayer.transform.localScale = new Vector3((fogH * cam.aspect + 1f) / fogSize.x, fogH / fogSize.y, 1f);
             fogLayer.transform.position = new Vector3(c.x, c.y, 0f);
+            // mer de nuages : en hauteur, le bas de la vue se remplit de nuages (le monde est loin dessous)
+            float clouds = Mathf.Clamp01((altitude - cloudSeaRange.x) / Mathf.Max(0.01f, cloudSeaRange.y - cloudSeaRange.x));
+            cloudLayer.enabled = clouds > 0.01f;
+            if (cloudLayer.enabled)
+            {
+                Vector2 cs = cloudLayer.sprite.bounds.size;
+                cloudLayer.transform.localScale = new Vector3((fogH * cam.aspect + 1f) / cs.x, fogH / cs.y, 1f);
+                cloudLayer.transform.position = new Vector3(c.x, c.y, 0f);
+                cloudLayer.color = new Color(cloudSea.r * mood.r, cloudSea.g * mood.g, cloudSea.b * mood.b, Mathf.Round(clouds * 6f) / 6f);
+            }
             if (ground.enabled && ground.sprite != null)
             {
                 // sol des menus : toute la largeur de la vue, motif accroché au monde (il défile avec le décor), terre dessous
@@ -223,7 +256,7 @@ namespace Kenta.FX
                 float height = strip.bounds.size.y * k;
                 float offset = Mathf.Repeat(c.x * parallax[i], width);
                 float left = c.x - half - offset;
-                float y = PixelScreen.Snap(c.y + lift * Follow(i));
+                float y = PixelScreen.Snap(c.y + lift * Follow(i) - Sink(i));
                 for (int j = 0; j < 2; j++)
                 {
                     layers[i][j].transform.localScale = scale;
@@ -244,6 +277,14 @@ namespace Kenta.FX
         const float LayerHalfPx = 180f;                     // calques de 1280 × 360 px
 
         float Follow(int layer) => groundFollow != null && layer < groundFollow.Length ? groundFollow[layer] : 0f;
+
+        /// <summary>Descente (u) d'un calque sous sa place en altitude : le proche passe sous le bord du palier.</summary>
+        float Sink(int layer)
+        {
+            if (altitudeSink == null || layer >= altitudeSink.Length) return 0f;
+            float max = altitudeSinkMax != null && layer < altitudeSinkMax.Length ? altitudeSinkMax[layer] : 0f;
+            return Mathf.Min(altitude * altitudeSink[layer], max);
+        }
 
         /// <summary>
         /// Décalage vertical (u) à appliquer au décor pour poser sa ligne de sol sur le sol le plus bas de la vue (lissé),
