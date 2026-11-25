@@ -34,7 +34,7 @@ Un fichier par niveau dans `game/Assets/_Project/Charts/<id>.json`, chargé comm
 - `zoom` (optionnel) : largeur de vue de la caméra pour ce niveau (320, 384, 480 ou 640 px de jeu). Le niveau 01 est en 640 (×3) : une mesure d'avance devant le héros.
 - `rail`, `railStep` (optionnels) : **rail de caméra** précalculé par le générateur, hauteur du centre de la caméra tous les `railStep` beats (trajectoire idéale lissée dans les deux sens : la caméra monte avant une envolée et descend avant un plongeon). Sans rail, la caméra suit le terrain.
 - `beat` : en temps (float). Granularité minimale : **0,25** (double-croche).
-- Les `sections` servent aussi de **checkpoints** et de **biomes** : la section n° i charge le `BiomeTheme` n° i de `Theme_Kenta` (8 sections de 32 beats pour le niveau 01). Un niveau a un monde (`LevelDef.biome`), mais une section peut en changer avec `"biome": "Biome_08_orage"` (nom de l'asset) : flash et nouveau décor au passage (niveau 01 : refrain dans l'Orage, final dans les Échos).
+- Les `sections` servent aussi de **checkpoints** et de **biomes** : la section n° i charge le `BiomeTheme` n° i de `Theme_Kenta` (8 sections de 32 beats pour le niveau 01). Un niveau a un monde (`LevelDef.biome`), gardé du début à la fin (ADR-030). Le champ `"biome": "Biome_08_orage"` (nom de l'asset) permet encore à une section d'en changer (flash et nouveau décor), mais aucune chart ne l'utilise : un thème par niveau.
 
 ## Placement (important)
 Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (appuyer). L'obstacle est placé juste après par `LevelBuilder` (constantes en tête de fichier) :

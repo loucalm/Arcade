@@ -52,13 +52,16 @@ Règles :
 - [ ] **Télégraphie** : chaque obstacle s'annonce 1 mesure avant (couleur, clignotement, animation)
 - [x] Ennemis en hauteur (`lane 1`) à frapper pendant un saut : chauves-souris du niveau 01 (2026-11-24, PR de Lucas)
 - [ ] **Écran Config** : 1 ou 2 joueurs
-- [ ] (Lou) **Sélection de niveau** (en cours, branche `feat/selection-niveau`) : un niveau = un thème + un morceau + une chart, extrait du morceau au survol, record par niveau ; **classement par niveau** (top 10 dans `ExtradataManager`, le score part aussi dans la liste officielle de la borne). Provisoire : les 8 niveaux gardent le même morceau et la même chart
+- [x] (2026-11-25, ADR-030) **Sélection de niveau** : écran dédié après le héros, liste façon osu! avec vignettes, extrait du morceau, top 5 du niveau ; un `SongData` par niveau ; un thème par niveau (plus de changement de monde dans la chart) ; **classement par niveau** (top 10 dans l'Extradata de la borne, le score part aussi dans la liste officielle). Provisoire : les 8 niveaux gardent le même morceau et la même chart
+- [ ] Choisir le score envoyé à la liste officielle de la borne (aujourd'hui le score brut, tous niveaux mélangés : cumul des meilleurs scores par niveau ?)
+- [ ] Écran des niveaux : son au déplacement et à la validation ; tester à la main sur la borne (défilement maintenu, extrait, retour au héros)
 - [ ] **Contenu unique par niveau** : un morceau et une chart propres à chacun des 8 niveaux (aujourd'hui tous sur « Main Theme » et `level01_shovel_knight.json`). Un thème par niveau, sans changement de monde en cours de partie
 - [ ] **États du thème** au fil d'un niveau : pluie, nuit, lever du jour… Visuels par biome (particules, palette, ciel) + un champ par section dans la chart, appliqué au décor par `RunManager`. À écrire avec la chart propre à chaque niveau (un orage se cale sur un drop du morceau)
 - [ ] **Mode 2 joueurs** hot-seat (P1 puis P2 sur le même morceau, comparaison à la fin)
 - [ ] Stems audio : couches (batterie, mélodie) qui montent selon le combo ou la section
 
 ## Jeu — P2 (juice / direction artistique)
+- [ ] **P2** `Main.unity` contient 26 objets racine `Bandana` (accumulés par les reconstructions) : à nettoyer, puis vérifier que « Reconstruire thèmes, prefabs et scène » n'en ajoute plus
 - [x] DA Kenta intégrée : rendu pixel 240×135 ×8, 8 biomes, 3 héros, 8 ennemis, Sourdine, bandeau de combo, interface pixel, écrans accueil / choix du héros / consignes / game over (2026-11-03). Voir [art-direction.md](art-direction.md)
 - [x] Animations du perso : course calée sur le beat, saut en 3 poses, atterrissage, glissade, coup de poing (2026-10-13)
 - [ ] Animation de mort et de victoire du héros ; foule d'ennemis qui dansent en arrière-plan
