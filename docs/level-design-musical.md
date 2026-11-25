@@ -44,19 +44,25 @@ On ne change pas de hauteur « pour décorer » : chaque changement de hauteur r
   d'image). La caméra suit un **rail précalculé** (trajectoire idéale du héros, lissée dans les deux sens) : elle
   monte *avant* une envolée et descend *avant* un plongeon, sans à-coups. Si le joueur s'écarte du rail, elle
   le garde quand même dans l'image.
+- **On voit venir chaque ennemi.** Le rail garde chaque ennemi dans l'image (sous le HUD) **1,5 temps avant son
+  coup** quand c'est possible, et le générateur refuse un ennemi vu moins de 400 ms avant (avant : une chauve-souris
+  du refrain apparaissait 40 ms avant le coup). Corollaire de level design : pas de chauve-souris en haut d'un grand
+  envol (le héros est trop bas pour la voir venir) ; on la place au sommet, ou sur la redescente.
 - **Le premier plan se détache du fond.** Une brume légère éclaircit le décor ; les piliers s'assombrissent sous
   leur bord herbu. Ce qu'on peut toucher est net et contrasté, le reste recule.
 - **Un objet = un sens.** Tambour = rebond (jamais d'obstacle « tambour »). Champignon = à frapper au sol.
-  Chauve-souris = à frapper en vol. Mur = à sauter. Barre = à glisser.
+  Champignon cuirassé (teinte métal, flèche jaune au-dessus) = à écraser en sautant dessus. Note de saut (disque
+  vert) = appuyer en passant dessus. Chauve-souris = à frapper en vol. Mur = à sauter. Barre = à glisser.
 - **Interface discrète.** Pas de texte au milieu de l'écran pendant l'action ; le jugement (PARFAIT…) est petit,
   au-dessus du héros, et s'efface vite.
 - **Tolérance de plateformeur : survivre est facile, être précis rapporte.** Chaque action laisse **au moins
   120 ms** de marge des deux côtés pour ne pas mourir ; seul le score (PARFAIT / BIEN) récompense la précision.
   Le générateur mesure la marge de chaque action seule (`--marges DE A`) et refuse une chart trop serrée sur les
-  passages déjà passés à cette règle (`WIDE_MARGIN`, aujourd'hui le roulement et le refrain, 78-128 ; le reste du niveau est
-  seulement vérifié à ±40 ms). Leviers : ennemis posés 0,6 beat après leur temps, zone de frappe étirée en l'air,
-  tampon de saut de 140 ms, coup de pouce sur les marches et les souches (pieds à moins de 0,4 u du haut : on
-  passe dessus), trous de 0,5 beat sur les enchaînements.
+  passages déjà passés à cette règle (`WIDE_MARGIN` : tout le niveau sauf le pont 2 et le roulement 2, encore
+  vérifiés à ±40 ms). Leviers : ennemis posés 0,6 beat après leur temps, zone de frappe en l'air de 3,5 u au-dessus
+  et au-dessous des pieds (on frappe ce qu'on croise, même en tombant vite), tampon de saut de 140 ms, coup de pouce
+  sur les marches et les souches (pieds à moins de 0,4 u du haut : on passe dessus), trous de 0,5 beat sur les
+  enchaînements, notes de saut qui retiennent le héros pendant leur fenêtre d'appui.
 
 ## 5. Prototype : le refrain « dans le ciel » (beats 96-128, test à partir de 78,5)
 Test dans l'éditeur : menu **Kenta > Tester le refrain (prototype)** (la partie démarre au beat 78,5, sans les écrans ;
@@ -71,7 +77,9 @@ Un niveau musical reste fun parce que **chaque section change les règles du jeu
 Chacune a un menu de test dans l'éditeur (**Kenta > Tester …**) :
 | Section | Surprise | Mécanique (chart) |
 |---|---|---|
-| Pont (64-80) | **de liane en liane** au-dessus de l'eau ; on lâche chaque liane sur un temps, on frappe une chauve-souris à chaque balancier | `vine` (balancier automatique, lâcher jugé), `gap` long |
+| Intro (0-32) | une leçon toutes les deux mesures : sauter, frapper, monter, glisser, **écraser un cuirassé** (saut dessus, appui au rebond), **traverser un gouffre de note de saut en note de saut** | `enemy` `stomp`, `orb`, `jump` |
+| Couplet (32-64) | coups par deux, **deux cuirassés enchaînés** (on rebondit de l'un à l'autre), course sur le mur, glissade, **deux notes de saut** au-dessus du vide, dévalée | idem |
+| Pont (64-80) | **de liane en liane** au-dessus de l'eau ; **on saute pour lâcher** chaque liane, sur un temps (sinon la main glisse), on frappe une chauve-souris à chaque balancier | `vine` (lâcher au saut), `gap` long |
 | Refrain (96-128) | **changement de monde** : on monte dans l'Orage ; tambours en chaîne, grand plongeon | section `"biome"`, `bounce`, `ramp` |
 | Final (128-152) | **le monde se retourne** dans les Échos : portail, course au plafond la tête en bas (trous à sauter, ennemis pendus) ; puis un tambour envoie **dans l'arrière-plan** : on court derrière les piliers du premier plan, un autre tambour ramène devant | `gravity`, `ceiling`, `enemy` lane 2, `jump` ; `bounce` `to_back` / `to_front`, `back` |
 | Refrain 2 (216-256) | **l'écran se détraque** : 2 écrans au drop, 5 écrans (en petit) sur le roulement, puis grésillement ; sur des gestes déjà appris au refrain 1 | `screen_split`, `glitch` |

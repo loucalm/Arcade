@@ -37,6 +37,10 @@ Règles :
 - [ ] Le reste du niveau 01 (intro, couplets, pont 2, roulement 2) n'a que ±40 ms de marge par endroits (marches juste après un trou : 64 ms) : à repasser à la règle des 120 ms (`WIDE_MARGIN`)
 - [ ] Arrière-plan plus lisible : aujourd'hui seulement assombri et derrière les piliers ; idées : décor du premier plan qui s'assombrit pendant le passage, son étouffé
 - [ ] Lianes : sprite de nœud dédié (aujourd'hui la tuile de poteau du biome), corde au repos qui pend verticalement
+- [x] (2026-11-25, ADR-027) **Retour de test** : chauves-souris qui apparaissaient au moment de les frapper → rail de caméra qui montre chaque ennemi 1,5 temps avant (minimum garanti 400 ms, médiane 1,26 s ; avant : 40 ms) et zone de frappe en l'air de 3,5 u ; lianes lâchées **au saut** (plus automatiques) ; deux mécaniques nouvelles, **cuirassés** (écraser + appui au rebond) et **notes de saut** ; intro et couplet réécrits ; règle des 120 ms sur tout le niveau sauf le pont 2 et le roulement 2 ; marges de caméra de Jeremy (0,12 / 0,2) appliquées dans la scène (elle gardait 0,08 / 0,1)
+- [ ] Cuirassé : sprite dédié (aujourd'hui l'ennemi du biome teinté métal + flèche de pixels) et son d'écrasement
+- [ ] Note de saut : sprite dédié (aujourd'hui la pièce ×2 teintée) et son (une note de la mélodie)
+- [ ] Pont 2 et roulement 2 (184-212) : passer à la règle des 120 ms et y mettre les nouvelles mécaniques
 - [ ] Portail de gravité : son dédié et sprite (aujourd'hui deux colonnes de pixels)
 - [ ] Décor qui joue avec la musique (éléments qui réagissent au temps, foule d'ennemis qui danse au fond)
 - [ ] Musique libre de droits **écrite pour le niveau** : idéalement, les sons des actions manquent dans la piste et c'est le joueur qui les joue

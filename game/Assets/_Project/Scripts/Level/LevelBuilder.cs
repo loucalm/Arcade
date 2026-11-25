@@ -17,6 +17,8 @@ namespace Kenta.Level
         const float GapDefaultLength = 0.6f;
         const float WallStartBeats = 0.4f;          // mur juste après le sommet du saut (+ coup de pouce du PlayerController) : ≥ 120 ms des deux côtés
         const float EnemyCenterBeats = 0.6f;        // ennemi 0,6 beat après son temps : ~165 ms de marge des deux côtés
+        /// <summary>Ennemi cuirassé : on le touche 0,15 beat avant son temps (fin d'un saut d'un beat), l'appui du rebond tombe sur le temps.</summary>
+        public const float StompTouchBeats = 0.15f;
         const float SlideStartBeats = 0.1f;
         const float SlideDefaultLength = 1f;
         const float SlideBarBottom = 0.62f;
@@ -43,6 +45,8 @@ namespace Kenta.Level
         public readonly List<LevelObject> Bounces = new();
         /// <summary>Lianes : on les attrape en passant, le balancier est automatique, on est lâché au beat de l'objet. Triées par x.</summary>
         public readonly List<LevelObject> Vines = new();
+        /// <summary>Notes de saut : en l'air près d'une note, un appui relance le saut vers la suivante. Triées par x.</summary>
+        public readonly List<LevelObject> Orbs = new();
         /// <summary>Changements de gravité (x = beat, y = 1 : on tombe vers le plafond, 0 : retour au sol), triés par beat.</summary>
         public readonly List<Vector2> GravityFlips = new();
         /// <summary>Événements visuels de la chart (fx_flash, camera_shake, camera_zoom, camera, section_change, screen_split,
@@ -162,22 +166,27 @@ namespace Kenta.Level
                         bool enemy = e.type == "enemy";
                         bool flying = enemy && e.lane == 1;         // ennemi en vol : à la hauteur absolue `height`
                         bool hanging = enemy && e.lane == 2;        // pendu au plafond (dessous du plafond à `height`)
+                        bool stomp = enemy && p.variant == "stomp"; // cuirassé : on lui saute dessus (appui au rebond, sur `beat`)
                         int plane = PlaneOf(e);
-                        float cx = BeatToX(e.beat + EnemyCenterBeats);
+                        float cx = BeatToX(e.beat + (stomp ? -StompTouchBeats : EnemyCenterBeats));
                         float ey = flying ? p.height : hanging ? p.height - 0.9f : plane == 1 ? BackHeightAt(cx) : HeightAt(cx);
                         var o = new LevelObject
                         {
                             kind = enemy ? LevelObjectKind.Enemy : LevelObjectKind.Block,
                             beat = e.beat,
                             plane = plane,
+                            stomp = stomp,
+                            airBeats = stomp ? (p.length > 0 ? p.length : 2f) : 0f,
                             bounds = enemy ? new Rect(cx - 0.4f, ey, 0.8f, 0.9f) : new Rect(cx - 0.45f, ey, 0.9f, 0.95f),
                         };
                         o.view = flying ? MakeFlyer(new Vector2(cx, ey), BiomeAt(e.beat))
                             : hanging ? MakeHanging(new Vector2(cx, p.height), BiomeAt(e.beat))
                             : enemy ? MakeEnemy(new Vector2(cx, ey), BiomeAt(e.beat)) : MakeBlock(new Vector2(cx, ey), BiomeAt(e.beat));
                         if (plane == 1) SendToBack(o.view);
+                        if (stomp) MarkStomp(o.view);
                         Obstacles.Add(o);
-                        AutoHitBeats.Add(e.beat);
+                        if (stomp) AutoJumpBeats.Add(e.beat);          // l'appui du grand rebond
+                        else AutoHitBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
                         break;
                     }
@@ -283,6 +292,25 @@ namespace Kenta.Level
                         lastX = Mathf.Max(lastX, x1);
                         break;
                     }
+                    case "orb":
+                    {
+                        // note de saut : centre à (x du beat, `height`) ; un appui près d'elle, en l'air, relance le saut
+                        // pour `step` beats (défaut 1) vers la note suivante ou le sol
+                        float ox = BeatToX(e.beat);
+                        var o = new LevelObject
+                        {
+                            kind = LevelObjectKind.Orb,
+                            beat = e.beat,
+                            plane = PlaneOf(e),
+                            airBeats = p.step > 0 ? p.step : 1f,
+                            bounds = new Rect(ox - 0.35f, p.height - 0.35f, 0.7f, 0.7f),
+                        };
+                        o.view = MakeOrb(new Vector2(ox, p.height));
+                        Orbs.Add(o);
+                        AutoJumpBeats.Add(e.beat);
+                        lastX = Mathf.Max(lastX, ox);
+                        break;
+                    }
                     case "gravity":
                         GravityFlips.Add(new Vector2(e.beat, e.lane == 1 ? 1f : 0f));
                         MakeGravityPortal(BeatToX(e.beat), e.lane == 1, BiomeAt(e.beat));
@@ -328,6 +356,7 @@ namespace Kenta.Level
             Lums.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
             Bounces.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
             Vines.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
+            Orbs.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
             GravityFlips.Sort((a, b) => a.x.CompareTo(b.x));
             gaps.Sort((a, b) => a.x.CompareTo(b.x));
             AutoJumpBeats.Sort();
@@ -352,6 +381,7 @@ namespace Kenta.Level
             Platforms.Clear();
             Bounces.Clear();
             Vines.Clear();
+            Orbs.Clear();
             GravityFlips.Clear();
             FxEvents.Clear();
             AutoJumpBeats.Clear();
@@ -374,6 +404,7 @@ namespace Kenta.Level
             foreach (var o in Lums) if (o.beat >= beat) o.ResetState();
             foreach (var o in Bounces) if (o.beat >= beat) o.ResetState();
             foreach (var o in Vines) if (o.grabBeat >= beat) o.ResetState();
+            foreach (var o in Orbs) if (o.beat >= beat) o.ResetState();
         }
 
         /// <summary>Centre de la caméra au beat donné, d'après le rail de la chart (NaN s'il n'y en a pas).</summary>
@@ -778,6 +809,31 @@ namespace Kenta.Level
                 for (int j = 0; j < 3; j++)
                     Box(g, "Arrow", new Color(1f, 1f, 1f, 0.8f), new Vector2(PixelScreen.Snap(x + (j - 1) * 0.1f), PixelScreen.Snap(ay + (up ? -1 : 1) * Mathf.Abs(j - 1) * 0.1f)), new Vector2(0.1f, 0.1f), 13);
             }
+        }
+
+        /// <summary>Ennemi cuirassé : l'ennemi du biome teinté métal, et une flèche de pixels au-dessus qui dit « saute dessus ».</summary>
+        void MarkStomp(GameObject view)
+        {
+            if (view == null) return;
+            foreach (var sr in view.GetComponentsInChildren<SpriteRenderer>(true)) sr.color *= new Color(0.75f, 0.85f, 1f);
+            var t = view.transform;
+            for (int k = 0; k < 2; k++)
+                for (int j = 0; j < 3; j++)
+                    Box(t, "Arrow", new Color(1f, 0.95f, 0.5f, 0.95f), new Vector2((j - 1) * 0.1f, 1.45f + k * 0.25f + Mathf.Abs(j - 1) * 0.1f), new Vector2(0.1f, 0.1f), 13).transform.localPosition =
+                        new Vector3(PixelScreen.Snap((j - 1) * 0.1f), PixelScreen.Snap(1.45f + k * 0.25f + Mathf.Abs(j - 1) * 0.1f), 0f);
+        }
+
+        /// <summary>Note de saut : une pièce agrandie ×2 (facteur entier), teintée, qui tourne.</summary>
+        GameObject MakeOrb(Vector2 center)
+        {
+            var t = Group("Orb", center);
+            var sr = Spr(t, "Sprite", theme.coinFrames[0], Vector2.zero, 14, 2f);
+            sr.color = new Color(0.55f, 1f, 0.95f);
+            sr.gameObject.AddComponent<SpriteCycle>().Setup(theme.coinFrames);
+            // halo : quatre pixels autour
+            foreach (var d in new[] { new Vector2(0.55f, 0f), new Vector2(-0.55f, 0f), new Vector2(0f, 0.55f), new Vector2(0f, -0.55f) })
+                Box(t, "Halo", new Color(0.55f, 1f, 0.95f, 0.8f), d, new Vector2(0.1f, 0.1f), 13).transform.localPosition = new Vector3(PixelScreen.Snap(d.x), PixelScreen.Snap(d.y), 0f);
+            return t.gameObject;
         }
 
         /// <summary>Ennemi pendu au plafond (dessous du plafond à `underside`) : l'ennemi du biome, la tête en bas.</summary>

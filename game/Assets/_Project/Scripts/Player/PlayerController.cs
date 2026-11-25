@@ -50,8 +50,8 @@ namespace Kenta.Player
         [SerializeField] float hitActiveBeats = 0.3f;
         [Tooltip("En l'air, la zone de frappe s'étire : de airHitBelow sous les pieds à airHitAbove au-dessus " +
                  "(on frappe ce qu'on croise en montant ou en tombant, même vite).")]
-        [SerializeField] float airHitBelow = 1.2f;
-        [SerializeField] float airHitAbove = 2.4f;
+        [SerializeField] float airHitBelow = 3.5f;
+        [SerializeField] float airHitAbove = 3.5f;
 
         public bool IsDead => dead;
         /// <summary>Gravité inversée : il court au plafond, la tête en bas.</summary>
@@ -110,6 +110,16 @@ namespace Kenta.Player
         LevelObject vine;
         int vineCursor;
         double lastJumpDownBeat = -99;
+        // Ennemi cuirassé écrasé : on attend l'appui du grand rebond (sinon petit rebond)
+        LevelObject pendingStomp;
+        int orbCursor;
+        float frameStartY, curSpb = 0.4f, curGravity = 75f;
+        /// <summary>Fenêtre de l'appui d'une note de saut ou d'un rebond sur un cuirassé, autour de son temps (beats).</summary>
+        const float PressEarlyBeats = 0.35f, PressLateBeats = 0.35f;
+        /// <summary>Portée verticale d'une note de saut : on la prend même en arrivant vite, en fin de saut.</summary>
+        const float OrbReach = 3f;
+        /// <summary>Chute ralentie (u/s) près d'une note de saut, pendant sa fenêtre d'appui.</summary>
+        const float OrbHover = 3f;
 
         LevelTerrain Terrain => plane == 1 ? level.Back : inverted ? level.CeilingMirror : level.Ground;
         /// <summary>Hauteur des pieds dans le monde (y est dans le repère de la gravité).</summary>
@@ -151,6 +161,8 @@ namespace Kenta.Player
             SetVisualPlane(0);
             vine = null;
             vineCursor = LevelBuilder.FirstIndexAfter(level.Vines, x);
+            orbCursor = LevelBuilder.FirstIndexAfter(level.Orbs, x - 2f);
+            pendingStomp = null;
             flipCursor = 0;
             while (flipCursor < level.GravityFlips.Count && level.GravityFlips[flipCursor].x <= beat) flipCursor++;
             lastJumpDownBeat = -99;
@@ -201,6 +213,8 @@ namespace Kenta.Player
             float gravity = 8f * jumpHeight / (airTime * airTime);
             float jumpVelocity = 4f * jumpHeight / airTime;
             float half = width * 0.5f;
+            curSpb = spb;
+            curGravity = gravity;
 
             // portails de gravité : le haut devient le bas (même position dans le monde, vitesse retournée)
             var flips = level.GravityFlips;
@@ -261,12 +275,22 @@ namespace Kenta.Player
             }
             sliding = nowSliding;
 
-            // Liane : on l'attrape en passant, le balancier suit un arc calé sur les beats, le lâcher est automatique
+            // Rebond sur un cuirassé : l'appui (en avance ou juste après l'avoir écrasé) donne le grand rebond
+            if (pendingStomp != null)
+            {
+                if (lastJumpDownBeat >= pendingStomp.beat - PressEarlyBeats) BigBounce(pendingStomp, beat, x);
+                else if (beat > pendingStomp.beat + PressLateBeats) pendingStomp = null;
+            }
+            // Notes de saut : en l'air près d'une note, l'appui relance le saut
+            CheckOrbs(x, beat);
+
+            // Liane : on l'attrape en passant, le balancier suit un arc calé sur les beats ; on saute pour lâcher
             if (vine == null) TryGrabVine(x);
             bool swinging = vine != null && Swing(x, beat, spb, gravity);
             if (swinging) ground = Terrain;
 
             // Intégration verticale
+            frameStartY = y;
             if (!grounded && !swinging)
             {
                 float yPrev = y;
@@ -329,42 +353,143 @@ namespace Kenta.Player
             FxPool.Instance?.Burst(new Vector2(x, y + VineView.HandHeight), new Color(0.6f, 0.8f, 0.4f), 6, 2.5f, 0.12f, 0.3f, 0f, 0f);
         }
 
+        /// <summary>Fenêtre du lâcher d'une liane autour de son temps (beats) : avant, l'appui ne compte pas ; après, on tombe.</summary>
+        const float VineEarlyBeats = 0.35f, VineLateBeats = 0.35f;
+
         /// <summary>
-        /// Balancier : pieds sur un arc (de la prise au lâcher, creux `sag`) qui avance au rythme des beats. Au lâcher,
-        /// envol calculé pour arriver pile sur la liane suivante (si elle suit) ou sur le sol, comme un tambour.
+        /// Balancier : pieds sur un arc (de la prise au lâcher prévu, creux `sag`) qui avance au rythme des beats. C'est au
+        /// joueur de sauter pour lâcher, autour du temps de la liane ; le vol est alors calculé pour arriver pile sur la
+        /// liane suivante (si elle suit) ou sur le sol, au temps prévu. Sans appui, la main glisse et on tombe.
         /// Renvoie vrai tant qu'on est pendu.
         /// </summary>
         bool Swing(float x, double beat, float spb, float gravity)
         {
             double len = vine.beat - vine.grabBeat;
-            float u = Mathf.Clamp01((float)((beat - vine.grabBeat) / len));
+            float u = (float)((beat - vine.grabBeat) / len);
             var view = vine.view != null ? vine.view.GetComponent<VineView>() : null;
-            if (u < 1f)
+            bool pressed = lastJumpDownBeat >= vine.beat - VineEarlyBeats && lastJumpDownBeat >= vine.grabBeat;
+            float arcY = Mathf.Lerp(vine.grabY, vine.releaseY, u) - vine.sag * Mathf.Sin(Mathf.PI * u);
+            float arcVy = (float)(((vine.releaseY - vine.grabY) - vine.sag * Mathf.PI * Mathf.Cos(Mathf.PI * u)) / (len * spb));
+            if (!pressed && beat <= vine.beat + VineLateBeats)
             {
-                y = Mathf.Lerp(vine.grabY, vine.releaseY, u) - vine.sag * Mathf.Sin(Mathf.PI * u);
-                vy = (float)(((vine.releaseY - vine.grabY) - vine.sag * Mathf.PI * Mathf.Cos(Mathf.PI * u)) / (len * spb));
+                y = arcY;
+                vy = arcVy;
                 grounded = false;
                 view?.Hold(new Vector2(x, y + VineView.HandHeight));
                 return true;
             }
-            // lâcher : vers la liane suivante si elle commence à la fin du vol, sinon vers le sol
-            float t = vine.airBeats * spb;
+            view?.Release();
+            var o = vine;
+            vine = null;
+            jumpBufferBeat = -99;
+            if (!pressed)
+            {
+                // trop tard : la main glisse, on tombe (dans l'eau)
+                y = arcY;
+                vy = Mathf.Min(arcVy, 0f);
+                airBeats = 0f;
+                return false;
+            }
+            // lâcher : on arrive au temps prévu (lâcher + vol) sur la liane suivante si elle commence là, sinon sur le sol
+            double arrive = o.beat + o.airBeats;
+            float t = (float)System.Math.Max(0.3, arrive - beat) * spb;
             float xLand = x + t * level.RunSpeed;
             float target = level.HeightOnPlane(xLand, plane);
             foreach (var next in level.Vines)
-                if (next != vine && Mathf.Abs(next.grabBeat - (vine.beat + vine.airBeats)) < 0.05f) { target = next.grabY; break; }
-            y = vine.releaseY;
+                if (next != o && Mathf.Abs(next.grabBeat - (float)arrive) < 0.05f) { target = next.grabY; break; }
+            y = arcY;
             vy = (target - y + 0.5f * gravity * t * t) / t;
             airStartBeat = beat;
-            airBeats = vine.airBeats;
-            jumpBufferBeat = -99;
-            if (System.Math.Abs(lastJumpDownBeat - vine.beat) <= 0.5) run.OnObstacleCleared(vine, lastJumpDownBeat);
-            else pendingBounce = vine;
-            view?.Release();
+            airBeats = (float)(arrive - beat);
+            run.OnObstacleCleared(o, lastJumpDownBeat);
             squash = Squash(0.8f, 1.25f);
             ActionSfx.Instance?.Jump();
-            vine = null;
+            FxPool.Instance?.Burst(new Vector2(x, y + VineView.HandHeight), new Color(0.6f, 0.8f, 0.4f), 8, 3f, 0.12f, 0.3f, 0f, 0f);
             return false;
+        }
+
+        /// <summary>Hauteur d'arrivée (pieds) au temps `arrive` : note de saut, cuirassé, liane qui commence là, sinon le sol.</summary>
+        float ArrivalTarget(double arrive, float xLand, out double touch)
+        {
+            touch = arrive;
+            foreach (var o in level.Orbs)
+                if (!o.passed && Mathf.Abs(o.beat - (float)arrive) < 0.05f) return o.bounds.center.y - 0.5f;
+            foreach (var o in level.Obstacles)
+                if (o.stomp && o.alive && Mathf.Abs(o.beat - (float)arrive) < 0.05f)
+                {
+                    touch = arrive - LevelBuilder.StompTouchBeats;
+                    return o.bounds.yMax;
+                }
+            foreach (var v in level.Vines)
+                if (!v.passed && Mathf.Abs(v.grabBeat - (float)arrive) < 0.05f) return v.grabY;
+            return level.HeightOnPlane(xLand, plane);
+        }
+
+        /// <summary>Envol calculé pour arriver au temps `arrive` sur la cible suivante (comme un tambour).</summary>
+        void LaunchTo(double arrive, double beat, float x)
+        {
+            float xGuess = x + (float)((arrive - beat) * curSpb) * level.RunSpeed;
+            float target = ArrivalTarget(arrive, xGuess, out double touch);
+            float t = (float)System.Math.Max(0.3, touch - beat) * curSpb;
+            vy = (target - y + 0.5f * curGravity * t * t) / t;
+            grounded = false;
+            airStartBeat = beat;
+            airBeats = (float)(touch - beat);
+            jumpBufferBeat = -99;
+            squash = Squash(0.75f, 1.3f);
+            ActionSfx.Instance?.Jump();
+        }
+
+        /// <summary>Note de saut : en l'air (ou au sol) près d'elle, un appui autour de son temps relance le saut vers la suivante.</summary>
+        void CheckOrbs(float x, double beat)
+        {
+            var orbs = level.Orbs;
+            while (orbCursor < orbs.Count && orbs[orbCursor].bounds.xMax < x - 1.5f) orbCursor++;
+            for (int i = orbCursor; i < orbs.Count; i++)
+            {
+                var o = orbs[i];
+                if (o.bounds.xMin > x + 1.5f) break;
+                if (o.passed || o.plane != plane || inverted) continue;
+                if (Mathf.Abs(o.bounds.center.x - x) > 1.2f || Mathf.Abs(o.bounds.center.y - CenterWorldY()) > OrbReach) continue;
+                if (beat < o.beat - PressEarlyBeats || beat > o.beat + PressLateBeats) continue;
+                if (lastJumpDownBeat < o.beat - PressEarlyBeats)
+                {
+                    if (!grounded) vy = Mathf.Max(vy, -OrbHover);      // la note retient le héros le temps d'appuyer
+                    continue;
+                }
+                o.passed = true;
+                LaunchTo(o.beat + o.airBeats, beat, x);
+                run.OnObstacleCleared(o, lastJumpDownBeat);
+                if (o.view != null) o.view.SetActive(false);
+                FxPool.Instance?.Burst(o.bounds.center, new Color(0.55f, 1f, 0.95f), 14, 5f, 0.15f, 0.4f, 0f, 0f);
+                CameraRig.Instance?.Punch(0.2f);
+                return;
+            }
+        }
+
+        /// <summary>Écrase un cuirassé : petit rebond tout de suite ; l'appui (déjà fait ou juste après) donne le grand rebond.</summary>
+        void Stomp(LevelObject o, double beat, float x)
+        {
+            o.alive = false;
+            run.OnEnemyStomped(o);
+            y = Mathf.Max(y, o.bounds.yMax);
+            float t = 0.5f * curSpb;                               // petit rebond : un demi-temps, retombe à la même hauteur
+            vy = 0.5f * curGravity * t;
+            grounded = false;
+            airStartBeat = beat;
+            airBeats = 0.5f;
+            squash = Squash(1.3f, 0.75f);
+            pendingStomp = o;
+            if (lastJumpDownBeat >= o.beat - PressEarlyBeats) BigBounce(o, beat, x);
+        }
+
+        void BigBounce(LevelObject o, double beat, float x)
+        {
+            pendingStomp = null;
+            LaunchTo(o.beat + o.airBeats, beat, x);
+            run.OnObstacleCleared(o, lastJumpDownBeat);
+            CameraRig.Instance?.Shake(0.1f, 0.1f);
+            FxPool.Instance?.Burst(new Vector2(x, WorldY), Color.white, 10, 5f, 0.12f, 0.3f, 3f, 0f);
         }
 
         /// <summary>Calque de l'image du héros : devant (calque acteurs) ou dans l'arrière-plan (calque monde, derrière le niveau).</summary>
@@ -495,7 +620,13 @@ namespace Kenta.Player
                     }
                     continue;
                 }
-                if (o.IsHittable && hitting && hitRect.Overlaps(o.bounds))
+                if (o.stomp && !inverted && vy <= 0f && frameStartY >= o.bounds.yMax - 0.45f && y <= o.bounds.yMax + 0.8f
+                    && Mathf.Abs(x - o.bounds.center.x) <= 1.15f)
+                {
+                    Stomp(o, beat, x);
+                    continue;
+                }
+                if (o.IsHittable && !o.stomp && hitting && hitRect.Overlaps(o.bounds))
                 {
                     o.alive = false;
                     run.OnEnemyKilled(o, LastHitPressBeat);
