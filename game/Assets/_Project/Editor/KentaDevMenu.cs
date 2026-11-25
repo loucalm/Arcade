@@ -22,7 +22,11 @@ namespace Kenta.EditorTools
         [MenuItem("Kenta/Tester le refrain (prototype)")]
         static void PlayRefrain() => PlayFrom(RefrainBeat);
 
-        /// <summary>Le pont : de liane en liane au-dessus de l'eau (64-80), après la descente du couplet.</summary>
+        /// <summary>L'intro et le couplet : cuirassés (on saute dessus et on appuie au rebond) et notes de saut (0-64).</summary>
+        [MenuItem("Kenta/Tester l'intro et le couplet (cuirassés, notes de saut)")]
+        static void PlayIntro() => PlayFrom(1f);
+
+        /// <summary>Le pont : de liane en liane au-dessus de l'eau (64-80), on saute pour lâcher chaque liane.</summary>
         [MenuItem("Kenta/Tester le pont (lianes)")]
         static void PlayVines() => PlayFrom(58.2f);
 
