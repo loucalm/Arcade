@@ -5,7 +5,7 @@ namespace Kenta.Core
     /// <summary>
     /// Point d'entrée UNIQUE pour lire la borne (manettes + clavier de dev).
     /// Ne jamais appeler Input.GetAxis / GetButton ailleurs dans le projet.
-    /// Mapping : B1 = saut, B2 = frappe, joystick bas = glissade, Start = valider.
+    /// Mapping : B1 = saut, B2 = frappe, Start = valider ; le joystick ne sert qu'aux menus (pas de glissade, ADR-030).
     /// Deux sources : l'Input Manager du toolkit (clavier de dev, et la manette à l'index 0 du navigateur) et les
     /// manettes lues directement dans le navigateur (ArcadePads, build Web) : Unity 6.3 ne voit pas une manette qui
     /// n'est pas à l'index 0, et sur la borne plus rien ne répondait. Dès qu'une manette est vue par le navigateur,
@@ -50,9 +50,6 @@ namespace Kenta.Core
         public static bool JumpUp(int player = 1) => Input.GetButtonUp(B1[Index(player)]);
 
         public static bool HitDown(int player = 1) => Input.GetButtonDown(B2[Index(player)]) || ArcadePads.Down(player, 1);
-
-        /// <summary>Glissade = joystick tenu vers le bas.</summary>
-        public static bool SlideHeld(int player = 1) => Stick(player).y < -DirectionThreshold;
 
         public static bool StartDown(int player = 1) => Input.GetButtonDown(Start[Index(player)]) || ArcadePads.Down(player, 6);
 
