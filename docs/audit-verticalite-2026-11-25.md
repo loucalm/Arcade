@@ -36,7 +36,7 @@ Objectif : faire de Kenta un vrai « niveau musical » à la Rayman, **parfait �
 | C3 portail | Vraie porte : montants et linteaux à contour, voile rayé, grosses flèches. |
 | C4 plateformes | Dessous en îlot (deux paliers de terre en retrait, 14 px). |
 | D1 refrain 2 | 2×2 au plus (×2 exact en vue 480) ; plus aucune image masquée ; neige à 30 % au plus, avec une zone dégagée autour du héros ; plus de grésillement sur la FIN ; les copies suivent les changements de zoom. |
-| D2 télégraphie | Une mesure avant chaque surprise, annonce en or qui clignote en haut de l'écran (« ▲ LE MONDE SE RETOURNE », « ► VERS L'ARRIÈRE-PLAN », « LIANES : SAUTE POUR LÂCHER », « L'ÉCRAN SE DÉDOUBLE ! »). |
+| D2 télégraphie | Une mesure avant chaque surprise, annonce en or qui clignote en haut de l'écran (« ▲ LE MONDE SE RETOURNE », « ► VERS L'ARRIÈRE-PLAN », « LIANES : SAUTE POUR LÂCHER », « L'ÉCRAN SE DÉDOUBLE ! », et pour l'écran en miroir ou retourné de Lou). |
 | D4 flash | Flash plein écran plafonné à 50 % (`ScreenFx`). |
 | E1 mondes | Décor choisi gardé tout le morceau (`LevelBuilder.BiomeAt`), « DÉCOR » dans le choix et en fin de partie. |
 | E5 héros | Un son de frappe par héros (`gen-sfx.py`) : caisse claire (Kenta), flûte (Aiko), basse (Ryo). |
@@ -48,7 +48,7 @@ Objectif : faire de Kenta un vrai « niveau musical » à la Rayman, **parfait �
 - **A3 gestes de montée et de descente** et **E4 contretemps, deux chemins** : à écrire sur la nouvelle musique.
 - **D3 arrière-plan** : l'image du héros se règle dans `PlayerController`, que je ne modifie pas. L'annonce aide déjà.
 - **B2 couleurs** (contour du héros, règles de couleur dans la DA), **A5 tuiles de pente**, **C5 sprites Gemini à refaire** (Lou), **C6 motifs du calque proche**.
-- **Pièces** ratées par l'autoplay du jeu (364/387) alors que le simulateur les prend toutes.
+- **Pièces** ratées par l'autoplay du jeu (372/395) alors que le simulateur les prend toutes : presque toutes dans les tambours du refrain 2 (beats 225 à 234).
 - **Test sur la borne.**
 
 ---

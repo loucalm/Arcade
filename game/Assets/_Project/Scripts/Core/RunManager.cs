@@ -439,7 +439,7 @@ namespace Kenta.Core
 
         /// <summary>
         /// Chaque surprise s'annonce une mesure avant (audit du 25/11, D2) : la première de chaque série seulement
-        /// (portail de gravité, passage à l'arrière-plan, écrans dédoublés, lianes).
+        /// (portail de gravité, passage à l'arrière-plan, écrans dédoublés ou retournés, lianes).
         /// </summary>
         void BuildWarnings()
         {
@@ -464,6 +464,12 @@ namespace Kenta.Core
                         break;
                     case "screen_split":
                         if (e.@params != null && e.@params.copies > 1) text = "L'ÉCRAN SE DÉDOUBLE !";
+                        break;
+                    case "screen_flip":
+                        string mode = e.@params != null ? e.@params.variant : null;
+                        if (mode == "mirror") text = "◄ L'ÉCRAN EN MIROIR";
+                        else if (mode == "up") text = "▼ L'ÉCRAN SE RETOURNE";
+                        else if (mode == "both") text = "L'ÉCRAN FAIT DEMI-TOUR !";
                         break;
                 }
                 if (text != null) warnings.Add((e.beat - perBar, text));

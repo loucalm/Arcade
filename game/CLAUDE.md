@@ -8,7 +8,7 @@ Piège : l'ancien 6000.0.40f1 bloque sur « Initialize Package Manager » sur le
 ## Configuration figée (ne pas changer sans ADR)
 - **Built-in Render Pipeline** (pas d'URP ni de HDRP). Espace couleur Gamma.
 - **Ancien Input Manager** (`activeInputHandler: 0`). Ne pas installer le package Input System.
-- Web : template **Minimal**, compression **Disabled** (le serveur Express de la borne n'envoie pas les en-têtes gzip/brotli), 1920×1080, data caching activé.
+- Web : gabarit **Kenta** (`Assets/WebGLTemplates/Kenta` : page sans défilement, rendu fixe 1920×1080 quelle que soit la mise à l'échelle de Windows ; ADR-031), build **release** (jamais Development), IL2CPP Release « vitesse », compression **Disabled** (le serveur Express de la borne n'envoie pas les en-têtes gzip/brotli), 1920×1080, data caching activé.
 - Mode éditeur par défaut en 3D : on fait de la 2D en sprites et caméra orthographique, sans changer le template.
 
 ## Arborescence
@@ -86,7 +86,11 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 - Juice = secousses en pixels entiers, flash des drops, particules en pixels (< ~300 actives). **Pas d'animation par crans sur le beat** (lu comme un tremblement) : mouvements continus ou cycles d'images.
 - Sprites pixel art : filtre Point, aucune compression (réglé par `KentaSpritePostprocessor`).
 - ⚠️ Piège : un sprite créé en code (`Sprite.Create`, ex. dégradé de 1 × 8 px) a la taille de sa texture divisée par son PPU ; pour couvrir la vue, diviser l'échelle par `sprite.bounds.size` (la brume du décor ne couvrait qu'une colonne au centre).
-- Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades.
+- Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades. Un texte qui change (score) : ne refaire la chaîne que si la valeur change.
+- **Niveau par tranches** (`LevelBuilder.BuildChunks`) : les objets sont rangés par tranches de 8 u, seules celles autour de la caméra sont actives (≈ 560 sprites actifs au lieu de 6 000). Un objet ramassé ou tué (`activeSelf` faux) le reste. Un nouvel objet de niveau doit être un enfant d'un groupe du niveau (il sera rangé tout seul) ; plus large que 12 u, il reste toujours actif.
+- **Physique du héros en pas de 1/60 s** (`PlayerController.Update` → `Step`) : une image longue (lag, GC) est rejouée en petits pas, comme le simulateur du générateur. Sans ça, sur la borne : morts sur les rampes raides et dans les cuirassés. La manette est lue une fois par image (appui au dernier pas), l'autoplay à chaque pas.
+- ⚠️ Piège : chaque « Reconstruire » ajoutait un `World/Bandana` de plus (30 dans la scène, ~1 400 sprites en fin de partie). Corrigé dans `KentaBuilder` ; vérifier `grep -c "m_Name: Bandana$" Main.unity` = 1.
+- Outils de mesure locaux (non commités, dans `Scripts/Editor/`) : partie en lag simulé (15 i/s + à-coups), sonde d'objets actifs et d'allocations. En éditeur, ~12 Ko/image sont alloués par l'éditeur lui-même (même à l'accueil) : ne pas les attribuer au jeu.
 
 ## Debug
 - `Debug/` (namespace **`Kenta.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
@@ -99,7 +103,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 - ⚠️ Piège MCP : chaque `execute_code` compile du C# dans l'éditeur et fige le jeu ~300 ms (`dt` = 0,333). Pendant une partie en autoplay, ça fait rater un saut. Pour valider une chart : lancer l'autoplay, **ne rien appeler** pendant la durée du morceau, puis lire le résultat une seule fois. Même chose pour les captures (`manage_camera screenshot`) et les gros calculs CPU (génération de sprites).
 
 ## Build → borne
-1. File > Build Profiles > **Web** → Build dans **`game/Build`** (gitignoré).
+1. Menu **Kenta > Build Web (borne)** (`Editor/KentaWebBuild`) : applique les réglages de la borne (gabarit Kenta, release, IL2CPP vitesse) et construit dans **`game/Build`** (gitignoré). Équivaut à File > Build Profiles > Web > Build, **Development Build décoché**, après le menu Kenta > Régler le projet pour la borne (Web). Le module Web doit être installé pour Unity **6000.3.23f1**.
 2. `tools/package-build.sh` : copie vers `dist/Kenta/`, ajoute `BuildExtras/{info.json,thumbnail.png,attract.mp4?}` et installe le tout dans la borne locale.
 3. `cd tools/anatidae-arcade && node server.js` → `http://localhost:3000`. Le jeu apparaît dans le menu (Entrée/B1 pour lancer). Accès direct : `http://localhost:3000/Kenta/`.
 4. Vérifier : **Échap maintenu 1,5 s → retour menu** (testé OK le 2026-09-25), AFK 60 s → menu, `GET /api/?game=Kenta` en 200, saisie du highscore, dead zone, 60 fps.
