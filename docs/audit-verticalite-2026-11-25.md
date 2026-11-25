@@ -11,6 +11,46 @@ Objectif : faire de Kenta un vrai « niveau musical » à la Rayman, **parfait �
 
 **Corrigé pendant l'audit.** La brume du décor (P1 du dernier audit) ne couvrait qu'une **colonne de 282 px au centre de l'écran** : le sprite fait 1 × 8 px, et l'échelle ne tenait pas compte de sa largeur (`BiomeBackdrop`). La brume couvre maintenant toute la vue (image 8).
 
+## État au 2026-11-25 (fin de journée, branche `feat/grand-audit`)
+
+**Second passage, après la fusion de main** (PR #17 à #22 de Lou : ennemis visibles à l'avance, cuirassés, notes de saut, gardiens Gemini derrière les montagnes, manettes de la borne, sans glissade, miroir et écran retourné).
+- Partie complète en autoplay, en 1920×1080 : niveau fini, note S.
+- Nouveaux constats :
+  - autoplay du jeu à **364 pièces sur 387** alors que le simulateur les prend toutes (déjà vrai sur main, à creuser) ;
+  - **écran gris** quand la caméra change de zoom pendant l'écran dédoublé (corrigé) ;
+  - deux **images de neige noire** (pont 2, FIN) et le **flash blanc** du final, toujours là (corrigés).
+
+**Décisions de Jeremy**
+- Un seul niveau assumé : le décor choisi est gardé tout le morceau, « DÉCOR » au lieu de « MONDE ». Cela pourra changer plus tard.
+- Vue 480 par défaut.
+- La musique sera fournie par l'équipe.
+
+**Fait**
+| Point | Ce qui a changé |
+|---|---|
+| B1 héros trop petit | Vue **480 (×4)** par défaut ; plans larges **640** posés par le générateur (`zoom_plan`) sur les tambours, les dénivelés de plus de 5,5 u en ±2 temps et les ennemis qu'on ne verrait pas venir. 43 % du morceau en plan large, surtout les refrains. Coupes nettes sur le temps, sans flash. |
+| A4 caméra | Rail calculé avec la hauteur de vue de chaque tronçon ; cadrage selon la pente sur 2 temps (sol à 24 % du bas en montée, jusqu'à 56 % en descente). |
+| A1 mur de terre | Sous 3,2 u, la profondeur des piliers s'efface par paliers (78, 56, 36, 20 %) : les grands piliers deviennent des îlots et l'on voit le paysage dessous. |
+| A2 altitude | Les calques du décor descendent avec l'altitude (proche jusqu'à 6 u, milieu 3,5 u, loin 1,5 u) ; **mer de nuages** au bas de l'image à partir de 6 u ; ciel plus froid en hauteur. Le gardien reste immobile (choix de Lou, ADR-028). |
+| C2 lianes | Corde de 4 px à contour sombre, feuilles en quinconce, nœud d'accroche de 8 px. |
+| C3 portail | Vraie porte : montants et linteaux à contour, voile rayé, grosses flèches. |
+| C4 plateformes | Dessous en îlot (deux paliers de terre en retrait, 14 px). |
+| D1 refrain 2 | 2×2 au plus (×2 exact en vue 480) ; plus aucune image masquée ; neige à 30 % au plus, avec une zone dégagée autour du héros ; plus de grésillement sur la FIN ; les copies suivent les changements de zoom. |
+| D2 télégraphie | Une mesure avant chaque surprise, annonce en or qui clignote en haut de l'écran (« ▲ LE MONDE SE RETOURNE », « ► VERS L'ARRIÈRE-PLAN », « LIANES : SAUTE POUR LÂCHER », « L'ÉCRAN SE DÉDOUBLE ! »). |
+| D4 flash | Flash plein écran plafonné à 50 % (`ScreenFx`). |
+| E1 mondes | Décor choisi gardé tout le morceau (`LevelBuilder.BiomeAt`), « DÉCOR » dans le choix et en fin de partie. |
+| E5 héros | Un son de frappe par héros (`gen-sfx.py`) : caisse claire (Kenta), flûte (Aiko), basse (Ryo). |
+| F interface | Frise du HUD calée sur les sections (largeur proportionnelle) ; l'intitulé ne nomme le décor qu'au départ. |
+| G | Décor recalé au lancement de chaque partie, même enchaînée sur la démo. |
+
+**Reste à faire**
+- **E2 musique** et **E3 boucle REMIX** : il faut d'abord le morceau de l'équipe.
+- **A3 gestes de montée et de descente** et **E4 contretemps, deux chemins** : à écrire sur la nouvelle musique.
+- **D3 arrière-plan** : l'image du héros se règle dans `PlayerController`, que je ne modifie pas. L'annonce aide déjà.
+- **B2 couleurs** (contour du héros, règles de couleur dans la DA), **A5 tuiles de pente**, **C5 sprites Gemini à refaire** (Lou), **C6 motifs du calque proche**.
+- **Pièces** ratées par l'autoplay du jeu (364/387) alors que le simulateur les prend toutes.
+- **Test sur la borne.**
+
 ---
 
 ## En bref : les 6 chantiers qui changeraient tout
