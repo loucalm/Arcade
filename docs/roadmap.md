@@ -118,7 +118,7 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [ ] **P2** En éditeur, l'AFK du toolkit (60 s sans appui) affiche « Retour au menu… » pendant une partie en autoplay : sans effet sur la borne (on y joue), mais l'accueil en cycle (logo, démo, classement) renvoie au menu de la borne après 60 s d'inactivité, comme le veut le toolkit
 
 ## Audit du 2026-11-25
-Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2026-11-25.md](audit-2026-11-25.md). Tout ce qui touche à la **verticalité** (caméra, rail, terrain, physique du héros en montée et en descente) est réservé à l'ami de Jeremy qui travaille dessus : on n'y touche pas.
+Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2026-11-25.md](audit-2026-11-25.md). La **verticalité** a finalement été traitée ici (demande de Jeremy), sans toucher à la physique de `PlayerController`.
 - [x] (2026-11-25) **P0** Décor collé à l'écran verticalement (arbres qui « volent ») → `BiomeBackdrop` pose la ligne de sol des calques sur le sol le plus bas de la vue (lu sur `CameraRig.HeightProbe`, lissé), une part par calque
 - [x] (2026-11-25) **P0** Bande vide et pâle sous les arbres → pied des calques (`kenta_art.add_foot`), étiré jusqu'au bas de la vue
 - [x] (2026-11-25) **P0** Gardien → entier, opaque, **devant** les montagnes lointaines : c'est l'élément principal du décor (choix de Jeremy, au lieu de l'enfoncer)
@@ -126,13 +126,15 @@ Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2
 - [x] (2026-11-25) **P1** « PARFAIT ! » suit le héros (`JudgePopup`)
 - [x] (2026-11-25) **P1** Traînée du bandeau → ruban plein, seulement à partir de ×4
 - [x] (2026-11-25) **P1** Pièces de 17 px, sans image de profil (aussi le point P2 des « traits parasites »)
-- [ ] **Verticalité (réservé)** Le héros **glisse** en montant une colonne de marches ou une rampe : ses pieds suivent le terrain pendant que la course continue à plat ; en descente, il tombe du bord sans transition. Piste : une pose d'escalade / d'appui sur la marche, et une réception à chaque marche descendue
-- [ ] **Verticalité (réservé), P1** Pièces parfois hors de l'image en montée (placement et rail)
-- [ ] **Verticalité (réservé), P1** Cadrage : héros au bord haut sur certains tambours, sol collé au bas avec un grand vide au-dessus (`safeMargins`, rail)
-- [ ] **Verticalité (réservé), P1** Piliers de terre encore massifs et sombres sur les marches hautes
-- [ ] **P2** Écran « BRAVO ! » : note S coincée dans une case étroite
-- [ ] **P2** Étiquette de section du HUD qui chevauche les pièces en haut de l'image
-- [ ] **P2** Arbre rose du calque proche trop gros et trop répété : au moins 3 motifs par biome
+- [x] (2026-11-25, cycles montée / descente / chute dans `HeroAnimator`) **Verticalité** Le héros **glisse** en montant une colonne de marches ou une rampe : ses pieds suivent le terrain pendant que la course continue à plat ; en descente, il tombe du bord sans transition. Piste : une pose d'escalade / d'appui sur la marche, et une réception à chaque marche descendue
+- [x] (2026-11-25, marge haute 0,2) **Verticalité, P1** Pièces parfois hors de l'image en montée (placement et rail)
+- [x] (2026-11-25, `CameraRig.safeMargins` 0,12 / 0,2) **Verticalité, P1** Cadrage : héros au bord haut sur certains tambours, sol collé au bas avec un grand vide au-dessus (`safeMargins`, rail)
+- [x] (2026-11-25, `fill_deep` éclairci vers le ciel) **Verticalité, P1** Piliers de terre encore massifs et sombres sur les marches hautes
+- [x] (2026-11-25) **P2** Écran « BRAVO ! » : note S coincée dans une case étroite
+- [x] (2026-11-25, affichée 3 s) **P2** Étiquette de section du HUD qui chevauche les pièces en haut de l'image
+- [x] (2026-11-25, 5 motifs) **P2** Arbre rose du calque proche trop gros et trop répété : au moins 3 motifs par biome
+- [x] (2026-11-25, `AuditScenarios` en 1920×1080) Limites de l'audit revues : écrans, choix du héros et du monde, 8 mondes en partie, défaite et saisie du nom
+- [ ] **P0** Tester sur la vraie borne : Firefox ESR, 60 fps, manettes, envoi du score
 
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)

@@ -334,19 +334,31 @@ def draw_mid(b, scale=BG_SCALE, foot=True):
 
 
 def draw_near(b, scale=BG_SCALE, foot=True):
+    """Calque proche : trois motifs (grand arbre, petit arbre, buissons) répartis sur la largeur. Avant : un seul grand
+    arbre, très gros et répété à l'identique, qui finissait par se voir (audit du 2026-11-25)."""
     rng = rng_for(b, "near")
     p = Pix(STRIP_W, H_SCREEN, scale=scale)
     n = b["near"]
-    for x in (40, 290):
-        h = rng.randint(66, 80)
 
-        def tree(x0, h=h):
-            p.rect(x0 - 4, GROUND_Y - h, x0 + 4, GROUND_Y, n["trunk"])
-            p.rect(x0 - 4, GROUND_Y - h, x0 - 1, GROUND_Y, shade(n["trunk"], 0.18))
-            blob(p, x0, GROUND_Y - h, 34, 22, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng, lumps=6)
-            blob(p, x0 - 18, GROUND_Y - h + 14, 14, 9, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
-            blob(p, x0 + 22, GROUND_Y - h + 10, 14, 9, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
-        tile_wrap(p, x, tree)
+    def tree(x0, h, rx, ry, lumps):
+        p.rect(x0 - 3, GROUND_Y - h, x0 + 3, GROUND_Y, n["trunk"])
+        p.rect(x0 - 3, GROUND_Y - h, x0 - 1, GROUND_Y, shade(n["trunk"], 0.18))
+        blob(p, x0, GROUND_Y - h, rx, ry, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng, lumps=lumps)
+        blob(p, x0 - rx // 2 - 2, GROUND_Y - h + ry // 2 + 2, rx // 2, ry // 2, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
+
+    def bush(x0, rx):
+        blob(p, x0, GROUND_Y - rx // 2, rx, rx // 2 + 2, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng, lumps=4)
+        blob(p, x0 + rx, GROUND_Y - rx // 3, rx // 2 + 2, rx // 3 + 2, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
+
+    motifs = [
+        (55, lambda x0: tree(x0, rng.randint(58, 68), 26, 17, 5)),        # grand arbre
+        (200, lambda x0: bush(x0, rng.randint(13, 17))),                  # buissons
+        (300, lambda x0: tree(x0, rng.randint(36, 44), 16, 11, 4)),       # petit arbre
+        (455, lambda x0: tree(x0, rng.randint(52, 62), 22, 15, 5)),       # autre grand arbre
+        (575, lambda x0: bush(x0, rng.randint(10, 14))),
+    ]
+    for x, draw in motifs:
+        tile_wrap(p, x, draw)
     if foot:                                     # sous les arbres proches : le sol de la forêt (couleur du calque milieu)
         add_foot(p, b, 1.0, base=dominant_color(draw_mid(b, scale, foot=False)))
     return p
@@ -397,12 +409,15 @@ def draw_fill(b):
 
 
 def draw_fill_deep(b):
-    """Flanc en profondeur (sous ~2 u) : la même terre, plus sombre, avec des pierres enfouies. Les piliers fonçent vers le bas."""
+    """Flanc en profondeur (sous ~2 u) : la même terre, un peu plus sombre et noyée dans l'air du biome, avec des pierres
+    enfouies. Les piliers s'effacent vers le bas au lieu de faire de grandes masses sombres (audit du 2026-11-25)."""
     g = b["ground"]
     rng = rng_for(b, "filldeep")
     p = draw_fill(b)
     a = p.array()
-    a[..., :3] = (a[..., :3] * 0.72).astype(a.dtype)
+    air = col(b["sky"][3])[:3]
+    for i in range(3):
+        a[..., i] = (a[..., i] * 0.62 + air[i] * 0.22).clip(0, 255).astype(a.dtype)
     p.im = Image.fromarray(a, "RGBA")
     p.d = ImageDraw.Draw(p.im)
     for _ in range(3):

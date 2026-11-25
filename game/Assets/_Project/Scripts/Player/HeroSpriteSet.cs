@@ -32,5 +32,11 @@ namespace Kenta.Player
         public Sprite[] slideOut;
         [Tooltip("Accroupi : réception d'un saut.")]
         public Sprite crouch;
+        [Tooltip("Montée d'une pente : course penchée en avant, genoux hauts (8 images).")]
+        public Sprite[] climbCycle;
+        [Tooltip("Descente d'une pente : course penchée en arrière, foulée retenue (8 images).")]
+        public Sprite[] descendCycle;
+        [Tooltip("Chute depuis un bord : le pas dans le vide, puis la chute en boucle.")]
+        public Sprite[] fallFrames;
     }
 }

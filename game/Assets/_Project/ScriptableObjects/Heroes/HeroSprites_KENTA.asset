@@ -57,3 +57,25 @@ MonoBehaviour:
   - {fileID: 21300000, guid: bc2f9a754e5984cba99a47d957dcb36c, type: 3}
   - {fileID: 21300000, guid: c0ac10364d89048389cf6dc4da808035, type: 3}
   crouch: {fileID: 21300000, guid: 342fb710d56a5423bab69047fe8e6794, type: 3}
+  climbCycle:
+  - {fileID: 21300000, guid: c51bb6b430a1d4d369381c5c5a71ef31, type: 3}
+  - {fileID: 21300000, guid: 94670e5dc25ac471097569c2ffee7939, type: 3}
+  - {fileID: 21300000, guid: 69dfa7ac328a84cf4a84c3f4ee4c1e33, type: 3}
+  - {fileID: 21300000, guid: ee1898d36b3654eb68bc9ca93f8d4765, type: 3}
+  - {fileID: 21300000, guid: 623a493dd4c314fd4906ced73f3bfebd, type: 3}
+  - {fileID: 21300000, guid: 7bbae78bdfdee49aaad3e4e31ea71dae, type: 3}
+  - {fileID: 21300000, guid: f99f6bedb6f47438aa8fd52fda070c13, type: 3}
+  - {fileID: 21300000, guid: 8407a43b291134bc5bd57cbb1ed066f8, type: 3}
+  descendCycle:
+  - {fileID: 21300000, guid: 7f20629d80542403e847f34409b61c87, type: 3}
+  - {fileID: 21300000, guid: 6d8fd297ae13746c5a485b04d2f615cd, type: 3}
+  - {fileID: 21300000, guid: ce9996741b3a241a3ae5ce5407182730, type: 3}
+  - {fileID: 21300000, guid: f136b0887c60f4a7aa8734f5166cabb2, type: 3}
+  - {fileID: 21300000, guid: 42d9db8222723466793e13fb12323c1e, type: 3}
+  - {fileID: 21300000, guid: b2a9a84c2f93e4be692f9911b1ca5351, type: 3}
+  - {fileID: 21300000, guid: c45b13c3d0139489188fd754a75be876, type: 3}
+  - {fileID: 21300000, guid: bd4219d0e332849ecb375be0f6018298, type: 3}
+  fallFrames:
+  - {fileID: 21300000, guid: d023e8fb38f3a47dcbba3e53ad82beb7, type: 3}
+  - {fileID: 21300000, guid: 45ab22a673504497db118d6d6f5cf599, type: 3}
+  - {fileID: 21300000, guid: d1ce9dd6ea2914cd699a72f27ad44daf, type: 3}

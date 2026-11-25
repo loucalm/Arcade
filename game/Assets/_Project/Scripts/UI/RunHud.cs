@@ -17,6 +17,10 @@ namespace Kenta.UI
         [SerializeField] PixelText multiplierText;
         [SerializeField] PixelText coinsText;
         [SerializeField] PixelText biomeText;
+        [Tooltip("Durée (s) d'affichage de l'intitulé de section en haut de l'écran : ensuite il s'efface pour ne pas masquer les pièces.")]
+        [SerializeField] float sectionLabelSeconds = 3f;
+        string sectionLabel = "";
+        float sectionLabelTimer;
         [SerializeField] PixelText bannerText;
         [SerializeField] PixelText feedbackText;
         [Tooltip("8 segments de la frise (un par biome) : fond ; le remplissage est un enfant nommé « Fill ».")]
@@ -52,7 +56,11 @@ namespace Kenta.UI
             run.OnDamaged -= HandleDamaged;
         }
 
-        void HandleRunStarted() => shownScore = 0;
+        void HandleRunStarted()
+        {
+            shownScore = 0;
+            sectionLabelTimer = sectionLabelSeconds;
+        }
 
         void HandleStats()
         {
@@ -64,13 +72,14 @@ namespace Kenta.UI
             coinsText.Text = $"{run.Lums}/{run.TotalLums}";
             var biome = run.CurrentBiome;
             string section = run.SectionName.ToUpperInvariant();
-            if (biome != null) biomeText.Text = string.IsNullOrEmpty(section) ? biome.label : $"{section} · {biome.label}";
+            if (biome != null) sectionLabel = string.IsNullOrEmpty(section) ? biome.label : $"{section} · {biome.label}";
         }
 
         void HandleSection(ChartSection section, bool perfect, int bonus)
         {
             // un niveau = un monde : pas de grand bandeau au milieu de l'action (il masquait les obstacles), l'intitulé du haut suffit
             HandleStats();
+            sectionLabelTimer = sectionLabelSeconds;
             // pas de texte au milieu de l'action : le bonus de section se voit au score (docs/level-design-musical.md § 4)
         }
 
@@ -96,6 +105,10 @@ namespace Kenta.UI
 
             UpdateFrieze();
             UpdateCountdown();
+            // intitulé de section : visible quelques secondes à chaque nouvelle section, puis effacé (il chevauchait les pièces)
+            sectionLabelTimer = Mathf.Max(0f, sectionLabelTimer - dt);
+            string label = sectionLabelTimer > 0f ? sectionLabel : "";
+            if (biomeText != null && biomeText.Text != label) biomeText.Text = label;
 
             bannerTimer = Mathf.Max(0f, bannerTimer - dt);
             if (bannerTimer <= 0f && !countdownActive) bannerText.Text = "";

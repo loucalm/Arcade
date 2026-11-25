@@ -29,8 +29,36 @@ namespace Kenta.Player
 
         public HeroSpriteSet Sprites { get => sprites; set => sprites = value; }
 
+        [Header("Pentes et chutes")]
+        [Tooltip("Pente (dy/dx) à partir de laquelle on passe au cycle de montée ou de descente.")]
+        [SerializeField] float slopeThreshold = 0.3f;
+        [Tooltip("Distance (u, le long de la pente) d'un cycle de montée. Doit valoir CLIMB_STRIDE de tools/gen-heroes.py.")]
+        [SerializeField] float climbStrideUnits = 2f;
+        [Tooltip("Distance (u, le long de la pente) d'un cycle de descente. Doit valoir DESCEND_STRIDE de tools/gen-heroes.py.")]
+        [SerializeField] float descendStrideUnits = 2.2f;
+        [Tooltip("Durée (s) du pas dans le vide quand on quitte un bord sans sauter.")]
+        [SerializeField] float fallStepSeconds = 0.1f;
+        [Tooltip("Durée (s) d'une image de la boucle de chute.")]
+        [SerializeField] float fallLoopSeconds = 0.12f;
+
         bool wasSliding;
         float slideChangedAt = -99f;
+        // lus sur la position du héros (rien n'est changé à sa physique)
+        Vector3 lastPos;
+        bool hasLastPos, wasGrounded;
+        float slope, pathDistance, airborneAt = -99f;
+
+        /// <summary>
+        /// Image d'une chute depuis un bord, `elapsed` s après avoir quitté le sol : image 0 (le pas dans le vide) pendant
+        /// `step` s, puis les autres en boucle, `loop` s chacune. -1 sans images.
+        /// </summary>
+        public static int FallFrameIndex(float elapsed, float step, float loop, int frames)
+        {
+            if (frames <= 0) return -1;
+            if (frames == 1 || elapsed < step) return 0;
+            int k = loop > 0f ? (int)((elapsed - step) / loop) : 0;
+            return 1 + k % (frames - 1);
+        }
 
         /// <summary>Image du cycle de course pour une distance donnée (boucle, jamais négative).</summary>
         public static int RunFrameIndex(float distance, float stride, int frames)
@@ -76,12 +104,45 @@ namespace Kenta.Player
         void LateUpdate()
         {
             if (player == null || target == null || sprites == null) return;
+            Track();
             if (player.IsSliding != wasSliding)
             {
                 wasSliding = player.IsSliding;
                 slideChangedAt = Time.time;
             }
             target.sprite = Pick();
+        }
+
+        /// <summary>Pente du sol et distance parcourue le long de lui, à partir du déplacement du héros.</summary>
+        void Track()
+        {
+            Vector3 p = player.transform.position;
+            bool grounded = player.IsGrounded;
+            if (!hasLastPos || Mathf.Abs(p.x - lastPos.x) > 4f)      // départ ou réapparition : on repart de là
+            {
+                hasLastPos = true;
+                lastPos = p;
+                pathDistance = p.x;
+                slope = 0f;
+                wasGrounded = grounded;
+                return;
+            }
+            float dx = p.x - lastPos.x, dy = p.y - lastPos.y;
+            if (player.IsInverted) dy = -dy;                         // au plafond, « monter » se lit à l'envers
+            if (grounded && dx > 1e-4f)
+            {
+                float s = dy / dx;
+                slope = Mathf.Lerp(slope, s, 0.5f);                  // lissé : pas de bascule d'une image à l'autre
+                pathDistance += Mathf.Sqrt(dx * dx + dy * dy);
+            }
+            else
+            {
+                if (!grounded) slope = 0f;
+                pathDistance += Mathf.Max(0f, dx);
+            }
+            if (wasGrounded && !grounded) airborneAt = Time.time;
+            wasGrounded = grounded;
+            lastPos = p;
         }
 
         Sprite Pick()
@@ -104,15 +165,23 @@ namespace Kenta.Player
                 int n = Count(sprites.slideLoop);
                 return n > 0 ? sprites.slideLoop[RunFrameIndex(player.transform.position.x, slideLoopUnits, n)] : sprites.slide;
             }
-            if (player.IsClimbing && sprites.wall != null) return sprites.wall;
-
             if (!player.IsGrounded)
             {
                 int n = Count(sprites.jumpFrames);
                 int k = JumpFrameIndex(player.JumpProgress, n);
                 if (k >= 0) return sprites.jumpFrames[k];
-                return n > 0 ? sprites.jumpFrames[n - 2] : sprites.jump;   // chute depuis un bord : bras ouverts, jambes vers le sol
+                // chute depuis un bord (sans saut) : un pas dans le vide, puis la chute bras levés, en boucle
+                int f = FallFrameIndex(Time.time - airborneAt, fallStepSeconds, fallLoopSeconds, Count(sprites.fallFrames));
+                if (f >= 0) return sprites.fallFrames[f];
+                return n > 0 ? sprites.jumpFrames[n - 2] : sprites.jump;
             }
+
+            // pentes : on grimpe penché en avant, on descend penché en arrière ; le cycle suit la distance le long du sol
+            if (slope > slopeThreshold && Count(sprites.climbCycle) > 0)
+                return sprites.climbCycle[RunFrameIndex(pathDistance, climbStrideUnits, sprites.climbCycle.Length)];
+            if (player.IsClimbing && sprites.wall != null) return sprites.wall;
+            if (slope < -slopeThreshold && Count(sprites.descendCycle) > 0)
+                return sprites.descendCycle[RunFrameIndex(pathDistance, descendStrideUnits, sprites.descendCycle.Length)];
 
             int getUp = TransitionFrameIndex(sinceSlideChange, slideOutSeconds, Count(sprites.slideOut));
             if (getUp >= 0) return sprites.slideOut[getUp];
@@ -120,7 +189,7 @@ namespace Kenta.Player
                 return sprites.crouch != null ? sprites.crouch : sprites.idle;
             var cycle = sprites.runCycle;
             if (cycle == null || cycle.Length == 0) return sprites.run;
-            return cycle[RunFrameIndex(player.transform.position.x, strideUnits, cycle.Length)];
+            return cycle[RunFrameIndex(pathDistance, strideUnits, cycle.Length)];
         }
 
         static int Count(Sprite[] frames) => frames == null ? 0 : frames.Length;

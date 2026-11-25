@@ -26,6 +26,9 @@ OUT = os.path.join(ROOT, "game", "Assets", "_Project", "Art", "Kenta", "Gen", "h
 BEAT = 0.4                  # s (150 BPM)
 SPEED = 8.0 * 40            # px/s
 STRIDE = 2.4 * 40           # px par cycle de course (deux pas) : doit valoir HeroAnimator.strideUnits × 40
+CLIMB_STRIDE = 2.0 * 40     # cycle de montée, le long de la pente : HeroAnimator.climbStrideUnits × 40
+DESCEND_STRIDE = 2.2 * 40   # cycle de descente, le long de la pente : HeroAnimator.descendStrideUnits × 40
+FALL_STEP, FALL_LOOP = 0.1, 0.12   # HeroAnimator.fallStepSeconds, fallLoopSeconds
 JUMP_H = 1.5 * 40           # px
 HIT_BEATS = 0.45            # doit valoir HeroAnimator.hitAnimBeats
 RUN_FRAMES, JUMP_FRAMES, SLIDE_FRAMES = 8, 8, 3
@@ -160,6 +163,33 @@ def run_pose(phase, lean=14.0):
     arm = 48 * math.sin(phase)
     return R.Pose(lean=lean, head=-6, thigh=(tb, tf), knee=(kb, kf), ankle=(10 * math.cos(phase + math.pi), 10 * math.cos(phase)),
                   upper=(arm, -arm), elbow=(85, 85))
+
+
+def climb_pose(phase):
+    """Montée d'une pente : penché en avant, genoux hauts, bras qui pompent."""
+    def leg(ph):
+        return 12 + 46 * math.sin(ph), 22 + 95 * max(0.0, math.cos(ph)) ** 1.2
+    tb, kb = leg(phase + math.pi)
+    tf, kf = leg(phase)
+    arm = 55 * math.sin(phase)
+    return R.Pose(lean=30, head=-18, thigh=(tb, tf), knee=(kb, kf), ankle=(15, 15), upper=(arm, -arm), elbow=(95, 95))
+
+
+def descend_pose(phase):
+    """Descente d'une pente : penché en arrière, foulée retenue, bras un peu ouverts pour l'équilibre."""
+    def leg(ph):
+        return -4 + 32 * math.sin(ph), 10 + 60 * max(0.0, math.cos(ph))
+    tb, kb = leg(phase + math.pi)
+    tf, kf = leg(phase)
+    arm = 25 * math.sin(phase)
+    return R.Pose(lean=-8, head=6, thigh=(tb, tf), knee=(kb, kf), ankle=(-5, 10), upper=(25 + arm, 25 - arm), elbow=(40, 40))
+
+
+FALL_KEYS = [  # quitter un bord : un pas dans le vide, puis la chute bras levés (2 images en boucle)
+    dict(lean=6, head=-6, thigh=(-20, 40), knee=(30, 15), upper=(40, 120), elbow=(40, 30)),
+    dict(lean=-4, head=4, thigh=(10, 30), knee=(40, 25), upper=(150, 120), elbow=(20, 30)),
+    dict(lean=-4, head=4, thigh=(20, 15), knee=(30, 45), upper=(130, 155), elbow=(30, 20)),
+]
 
 
 def crouch_pose():
@@ -338,6 +368,34 @@ def anim_slide_out(hero):
     return Take(hero).shoot(timeline, shots[-1], shots)
 
 
+def anim_slope(hero, pose_fn, stride, climb):
+    """Cycle de montée ou de descente : le héros avance le long d'une pente (le vent relatif suit la pente)."""
+    rise = 0.75 if climb else -0.6
+    speed_along = SPEED * math.hypot(1.0, rise)
+    cycle = stride / speed_along
+    warm = 3 * cycle
+
+    def timeline(t):
+        return pose_fn(2 * math.pi * speed_along * t / stride), (SPEED * t, SPEED * rise * t)
+    return Take(hero).shoot(timeline, warm + cycle, [warm + cycle * k / RUN_FRAMES for k in range(RUN_FRAMES)])
+
+
+def anim_fall(hero):
+    """Chute depuis un bord : on court, le sol disparaît, on tombe (même gravité que le saut)."""
+    warm = 0.45
+    run = running()
+    g = 8 * JUMP_H / (BEAT * BEAT)
+
+    def timeline(t):
+        if t < warm:
+            return run(t)
+        dt = t - warm
+        k = 0 if dt < FALL_STEP else 1 + int((dt - FALL_STEP) / FALL_LOOP) % 2
+        return R.Pose(**FALL_KEYS[k]), (SPEED * t, -0.5 * g * dt * dt)
+    shots = [warm + FALL_STEP * 0.5, warm + FALL_STEP + FALL_LOOP * 0.5, warm + FALL_STEP + FALL_LOOP * 1.5]
+    return Take(hero).shoot(timeline, shots[-1], shots)
+
+
 def anim_single(hero, pose, moving=True, settle=0.6, stop_at=None):
     """Une image : le héros court puis prend la pose (et s'arrête net si `stop_at`)."""
     run = running()
@@ -367,6 +425,9 @@ def all_frames(hero_id):
     f.update({f"slide_{k}": a for k, a in enumerate(anim_slide(hero))})
     f.update({f"slidein_{k}": a for k, a in enumerate(anim_slide_in(hero))})
     f.update({f"slideout_{k}": a for k, a in enumerate(anim_slide_out(hero))})
+    f.update({f"climb_{k}": a for k, a in enumerate(anim_slope(hero, climb_pose, CLIMB_STRIDE, True))})
+    f.update({f"descend_{k}": a for k, a in enumerate(anim_slope(hero, descend_pose, DESCEND_STRIDE, False))})
+    f.update({f"fall_{k}": a for k, a in enumerate(anim_fall(hero))})
     f["idle"] = anim_idle(hero)
     f["crouch"] = anim_single(hero, crouch_pose(), settle=0.04)
     f["wall"] = anim_single(hero, run_pose(math.pi / 2, lean=34), settle=0.05)

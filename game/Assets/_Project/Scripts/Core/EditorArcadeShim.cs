@@ -11,7 +11,8 @@ namespace Kenta.Core
     /// Éditeur seulement : remplace ce que le toolkit Anatidae ne sait faire que sur la borne, sans le modifier
     /// (le CLAUDE.md l'interdit). Rien de tout ça n'existe dans le build.
     /// - Classement : sans la borne locale (localhost:3000), la récupération échoue, HighscoreManager.Highscores reste
-    ///   null et HighscoreUI lève une NullReferenceException. On part d'une liste vide : le classement s'affiche vide,
+    ///   null et HighscoreUI lève une NullReferenceException. On part d'une liste vide, marquée récupérée : le classement
+    ///   s'affiche vide, la saisie du nom s'ouvre en fin de partie (le score n'est envoyé nulle part),
     ///   et l'erreur de connexion du toolkit devient un simple avertissement.
     /// - Retour au menu : MenuManager appelle BackToMenu() (jslib du build Web) après 60 s sans toucher aux commandes ou
     ///   le bouton blanc tenu 1,5 s (et en quittant le Play mode), et lève alors une exception. En éditeur, on le retire
@@ -33,6 +34,10 @@ namespace Kenta.Core
             if (HighscoreManager.Highscores != null) return;
             var setter = typeof(HighscoreManager).GetProperty(nameof(HighscoreManager.Highscores))?.GetSetMethod(true);
             setter?.Invoke(null, new object[] { new List<HighscoreManager.HighscoreEntry>() });
+            // classement « récupéré » (vide) : la saisie du nom s'ouvre en fin de partie, comme sur la borne ; si la borne
+            // locale répond, FetchHighscores remplace la liste
+            typeof(HighscoreManager).GetProperty(nameof(HighscoreManager.HasFetchedHighscores))?.GetSetMethod(true)
+                ?.Invoke(null, new object[] { true });
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -40,7 +45,13 @@ namespace Kenta.Core
         {
             var managers = FindObjectsByType<MenuManager>(FindObjectsSortMode.None);
             if (managers.Length == 0) return;
-            foreach (var m in managers) Destroy(m);         // désactivé, il recevait encore OnApplicationQuit → BackToMenu()
+            var quitText = typeof(MenuManager).GetField("quitText", BindingFlags.Instance | BindingFlags.NonPublic);
+            foreach (var m in managers)
+            {
+                // son texte « Retour au menu » (Arial) restait affiché : c'est MenuManager qui le masquait à chaque image
+                if (quitText?.GetValue(m) is Component text) text.gameObject.SetActive(false);
+                Destroy(m);                                  // désactivé, il recevait encore OnApplicationQuit → BackToMenu()
+            }
             var go = new GameObject(nameof(EditorArcadeShim));
             DontDestroyOnLoad(go);
             go.AddComponent<EditorArcadeShim>();
