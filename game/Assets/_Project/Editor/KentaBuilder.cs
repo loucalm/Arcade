@@ -192,7 +192,6 @@ namespace Kenta.EditorTools
                 b.fillDeep = Spr($"Gen/biomes/fill_{id}_deep.png");
                 b.pillarDecor = Enumerable.Range(0, 4).Select(k => Spr($"Gen/biomes/deco_{id}_{k}.png")).ToArray();
                 b.guardian = Spr($"Gen/biomes/guardian_{id}.png");
-                b.guardianAwake = Spr($"Gen/biomes/guardian_{id}_awake.png");
                 var pos = positions.FirstOrDefault(g => g.id == id);
                 b.guardianOffset = pos != null ? new Vector2(pos.x, pos.y) : Vector2.zero;
                 if (Enemies[i] == "djembe")

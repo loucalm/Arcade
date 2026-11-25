@@ -50,16 +50,15 @@ namespace Kenta.FX
         bool groundValid;
         BiomeTheme current;
         Color mood = Color.white, moodFrom = Color.white, moodTo = Color.white;
-        float moodT = 1f, moodBlend = 1f, awakeUntil = -1f;
+        float moodT = 1f, moodBlend = 1f;
 
         public BiomeTheme Current => current;
-        public bool GuardianAwake => Time.time < awakeUntil;
 
         void Awake()
         {
             if (cam == null) cam = Camera.main;
             sky = Make("Sky", firstSortingOrder);
-            guardian = Make("Guardian", firstSortingOrder + 15);   // devant les montagnes lointaines : élément principal du décor
+            guardian = Make("Guardian", firstSortingOrder + 5);    // derrière les montagnes lointaines (ADR-028)
             ground = Make("Ground", -5);
             ground.drawMode = SpriteDrawMode.Tiled;
             ground.tileMode = SpriteTileMode.Continuous;
@@ -116,7 +115,7 @@ namespace Kenta.FX
             if (biome == null) return;
             current = biome;
             sky.sprite = biome.sky;
-            guardian.sprite = GuardianAwake && biome.guardianAwake != null ? biome.guardianAwake : biome.guardian;
+            guardian.sprite = biome.guardian;
             ground.sprite = biome.ground;
             ground.size = new Vector2(8f, 0.5f);          // le sprite remet la taille à celle d'une tuile : on la rétablit
             groundFill.sprite = biome.fill;
@@ -129,15 +128,11 @@ namespace Kenta.FX
             }
         }
 
-        /// <summary>Le gardien ouvre les yeux pendant `seconds` (changement de section ; tout le refrain).</summary>
-        public void Wake(float seconds) => awakeUntil = Mathf.Max(awakeUntil, Time.time + seconds);
-
-        /// <summary>Retour à l'ambiance neutre et au gardien endormi (début de partie, accueil).</summary>
+        /// <summary>Retour à l'ambiance neutre (début de partie, accueil).</summary>
         public void ResetMood()
         {
             mood = moodFrom = moodTo = Color.white;
             moodT = moodBlend = 1f;
-            awakeUntil = -1f;
         }
 
         /// <summary>
@@ -190,8 +185,7 @@ namespace Kenta.FX
                 mood = Color.Lerp(moodFrom, moodTo, moodT * moodT * (3f - 2f * moodT));
             }
             sky.color = mood;
-            var gs = GuardianAwake && current.guardianAwake != null ? current.guardianAwake : current.guardian;
-            guardian.sprite = gs;
+            guardian.sprite = current.guardian;
             guardian.color = mood;
             guardian.transform.localScale = scale;
             float half = cam.orthographicSize * cam.aspect;

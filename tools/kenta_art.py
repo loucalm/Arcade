@@ -21,10 +21,10 @@ def rng_for(biome, salt):
 
 
 # ============================================================================
-# CIEL (320×180, fixe) : bandes, soleil / étoiles, nuages, gardien
+# CIEL (320×180, fixe) : bandes, soleil / étoiles, nuages
 # ============================================================================
-def draw_sky(b, scale=BG_SCALE, statue=False):
-    """Ciel fixe : bandes, astre, étoiles. Le gardien est un sprite à part (draw_guardian), sauf pour la jaquette."""
+def draw_sky(b, scale=BG_SCALE):
+    """Ciel fixe : bandes, astre, étoiles. Le gardien est un sprite à part (tools/gemini-gardiens/, ADR-028)."""
     rng = rng_for(b, "sky")
     p = banded_gradient(W_SCREEN, H_SCREEN, b["sky"], 0, GROUND_Y, jitter=0.35, rng=rng, scale=scale)
     p.rect(0, GROUND_Y, W_SCREEN, H_SCREEN, b["sky"][-1])
@@ -41,104 +41,7 @@ def draw_sky(b, scale=BG_SCALE, statue=False):
             if rng.random() < 0.18:
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     p.px(x + dx, y + dy, mix(b["stars"], b["sky"][1], 0.5))
-    if statue:
-        draw_statue(p, b, GUARDIAN_X, GROUND_Y)
     return p
-
-
-GUARDIAN_X = round(172 * SX)
-
-
-def draw_guardian(b, awake=False):
-    """Gardien seul (fond transparent), recadré. Renvoie (image, (dx, dy)) : décalage en px réels du centre de l'image
-    par rapport au centre de l'écran 640×360, y vers le haut (BiomeBackdrop le place comme le ciel)."""
-    p = Pix(W_SCREEN, H_SCREEN, scale=BG_SCALE)
-    draw_statue(p, b, GUARDIAN_X, GROUND_Y, awake=awake)
-    x0, y0, x1, y1 = p.im.getbbox()
-    x0, y0, x1, y1 = max(0, x0 - 1), max(0, y0 - 1), min(p.im.width, x1 + 1), min(p.im.height, y1 + 1)
-    x1 += (x1 - x0) % 2                           # dimensions paires : le centre (pivot) tombe sur un pixel entier
-    y1 += (y1 - y0) % 2
-    crop = Pix(1, 1)
-    crop.im = p.im.crop((x0, y0, x1, y1))
-    crop.w, crop.h = crop.im.size
-    dx = (x0 + x1) / 2 - p.im.width / 2
-    dy = p.im.height / 2 - (y0 + y1) / 2
-    return crop, (dx, dy)
-
-
-def draw_statue(p, b, cx, base, awake=False):
-    """Gardien : énorme statue, teintée de l'air du biome. Endormie (yeux clos) ou éveillée (yeux ouverts qui brillent)."""
-    s = b["statue"]
-    sky = b["sky"][3]
-    body = mix(s["body"], sky, 0.08)               # assez contrasté pour être lu (audit du 24/11), sans voler la vedette
-    line = s["line"]
-    kind = s["kind"]
-    hx, hy = cx, base - 54          # tête
-    # corps assis puis tête
-    p.ellipse(cx, base - 22, 38, 26, body)
-    p.ellipse(cx, base - 10, 42, 14, body)
-    # pattes
-    p.ellipse(cx - 22, base - 4, 14, 8, mix(body, line, 0.3))
-    p.ellipse(cx + 22, base - 4, 14, 8, mix(body, line, 0.3))
-    # oreilles / cornes / crêtes derrière la tête
-    ac = line
-    if kind == "deer":
-        for sgn in (-1, 1):
-            x0 = hx + sgn * 16
-            pts = [(x0, hy - 18), (x0 + sgn * 10, hy - 34), (x0 + sgn * 8, hy - 52), (x0 + sgn * 22, hy - 62)]
-            for a, c2 in zip(pts, pts[1:]):
-                p.line(a, c2, ac, 3)
-            p.line((x0 + sgn * 9, hy - 36), (x0 + sgn * 24, hy - 40), ac, 2)
-            p.line((x0 + sgn * 8, hy - 50), (x0 - sgn * 4, hy - 60), ac, 2)
-        p.ellipse(hx - 12, hy - 20, 9, 3, s["moss"])
-    elif kind == "frog":
-        for sgn in (-1, 1):
-            p.circle(hx + sgn * 19, hy - 22, 11, body)
-            p.line((hx + sgn * 14, hy - 22), (hx + sgn * 24, hy - 22), line, 2)
-    elif kind == "bat":
-        for sgn in (-1, 1):
-            p.poly([(hx + sgn * 10, hy - 18), (hx + sgn * 26, hy - 58), (hx + sgn * 30, hy - 14)], body)
-            p.poly([(hx + sgn * 30, hy - 8), (hx + sgn * 62, hy - 20), (hx + sgn * 40, hy + 14)], mix(body, line, 0.35))
-    elif kind == "bull":
-        for sgn in (-1, 1):
-            pts = [(hx + sgn * 22, hy - 14), (hx + sgn * 36, hy - 16), (hx + sgn * 42, hy - 32), (hx + sgn * 38, hy - 46)]
-            for a, c2 in zip(pts, pts[1:]):
-                p.line(a, c2, ac, 4)
-        p.rect(hx - 6, hy + 8, hx + 6, hy + 11, s["moss"])
-    elif kind in ("cat", "fox"):
-        tall = 44 if kind == "fox" else 30
-        for sgn in (-1, 1):
-            p.poly([(hx + sgn * 8, hy - 16), (hx + sgn * 24, hy - 16 - tall), (hx + sgn * 30, hy - 8)], body)
-            p.poly([(hx + sgn * 14, hy - 18), (hx + sgn * 24, hy - 12 - tall), (hx + sgn * 27, hy - 10)], mix(body, line, 0.45))
-        if kind == "fox":
-            p.ellipse(cx + 48, base - 14, 18, 8, mix(body, line, 0.25))
-    elif kind == "rabbit":
-        for sgn in (-1, 1):
-            p.ellipse(hx + sgn * 14, hy - 44, 8, 30, body)
-            p.ellipse(hx + sgn * 14, hy - 44, 4, 24, mix(body, line, 0.4))
-    elif kind == "bird":
-        for i, dx in enumerate((-16, -6, 4, 14)):
-            p.poly([(hx + dx - 5, hy - 18), (hx + dx, hy - 40 - (i % 2) * 8), (hx + dx + 5, hy - 18)], body)
-    p.ellipse(hx, hy, 33, 26, body)
-    if awake:
-        # éveillé : grands yeux clairs, pupilles de la couleur de la mousse, bouche ouverte qui chante
-        for sgn in (-1, 1):
-            p.ellipse(hx + sgn * 14, hy - 2, 6, 5, line)
-            p.ellipse(hx + sgn * 14, hy - 2, 5, 4, "#FFF6D8")
-            p.ellipse(hx + sgn * 14 + 1, hy - 1, 2, 2, s["moss"])
-        p.ellipse(hx, hy + 12, 5, 3, line)
-    else:
-        # visage endormi : yeux clos, petite bouche
-        p.line((hx - 20, hy - 2), (hx - 8, hy - 2), line, 2)
-        p.line((hx + 8, hy - 2), (hx + 20, hy - 2), line, 2)
-        p.rect(hx - 2, hy + 10, hx + 3, hy + 12, line)
-    if kind == "bird":
-        p.poly([(hx - 6, hy + 4), (hx + 6, hy + 4), (hx, hy + 16)], s["moss"])
-    if kind == "frog":
-        p.rect(hx - 14, hy + 9, hx + 15, hy + 11, line)
-    if kind == "bat":
-        p.rect(hx - 3, hy + 8, hx - 1, hy + 12, "#E8EEFF")
-        p.rect(hx + 2, hy + 8, hx + 4, hy + 12, "#E8EEFF")
 
 
 # ============================================================================
