@@ -12,7 +12,7 @@ namespace Kenta.Rhythm
     {
         public static ActionSfx Instance { get; private set; }
 
-        [SerializeField] AudioClip jump, hit, kill, slide, lum, land, hurt, checkpoint;
+        [SerializeField] AudioClip jump, hit, kill, lum, land, hurt, checkpoint;
         [SerializeField, Min(1)] int voices = 12;
         [Tooltip("Grille de quantification en beats (0,25 = double-croche).")]
         [SerializeField] float quantizeBeats = 0.25f;
@@ -47,7 +47,6 @@ namespace Kenta.Rhythm
 
         public void Hit() => Play(HeroHit != null ? HeroHit : hit, 1f, 0.6f);
         public void Kill() => Play(kill, 1f, 0.9f);
-        public void Slide() => Play(slide, 1f, 0.6f);
         public void Land() => Play(land, 1f, 0.5f, quantized: false);
         public void Hurt() => Play(hurt, 1f, 0.9f, quantized: false);
         public void Checkpoint() => Play(checkpoint, 1f, 0.8f);

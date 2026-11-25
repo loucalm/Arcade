@@ -44,7 +44,7 @@ Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à éta
 
 ## Entrées
 - Classe unique `Kenta.Core.ArcadeInput` : lit `P{n}_Horizontal`/`P{n}_Vertical` (dead zone **0,3** sur `GetAxisRaw`) et `P{n}_B1`, `P{n}_B2`, `P{n}_Start`.
-- Mapping de jeu : **B1 = saut** (maintenu = saut plus haut), **B2 = frappe**, **joystick bas = glissade**. Start = valider dans les menus.
+- Mapping de jeu : **B1 = saut**, **B2 = frappe**. Plus de glissade (ADR-030) : le joystick ne sert qu'aux menus. Start = valider dans les menus.
 - Clavier de dev (P1, AZERTY) : ZQSD, F = B1, G = B2, X = Start, **Échap = bouton blanc**. Voir [../docs/anatidae.md](../docs/anatidae.md).
 - Axe vertical manette déjà inversé dans l'InputManager : **haut = positif**.
 

@@ -135,10 +135,6 @@ namespace Kenta.EditorTools
                 set.run = set.runCycle[0];
                 set.jumpFrames = Enumerable.Range(0, 8).Select(k => Spr(g + $"jump_{k}.png")).ToArray();
                 set.jump = set.jumpFrames[1];
-                set.slideLoop = Enumerable.Range(0, 3).Select(k => Spr(g + $"slide_{k}.png")).ToArray();
-                set.slide = set.slideLoop[0];
-                set.slideIn = Enumerable.Range(0, 3).Select(k => Spr(g + $"slidein_{k}.png")).ToArray();
-                set.slideOut = Enumerable.Range(0, 3).Select(k => Spr(g + $"slideout_{k}.png")).ToArray();
                 set.hitFrames = Enumerable.Range(0, 4).Select(k => Spr(g + $"hit_{k}.png")).ToArray();
                 set.hit = set.hitFrames[1];
                 set.crouch = Spr(g + "crouch.png");
@@ -308,29 +304,27 @@ namespace Kenta.EditorTools
 
         static GameObject BuildExplain(PixelFontData font, LevelTheme theme)
         {
-            // 3 gestes, les boutons dessinés comme ceux de la borne ; le héros mime le geste en cours, sur le temps
+            // 2 gestes (ADR-030 : plus de glissade), les boutons dessinés comme ceux de la borne ; le héros mime le geste en cours
             var root = ScreenRoot("Screen_Explain");
             var tr = root.transform;
             var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(24, -6), null, new Vector2(224, 112), false);
             panel.type = Image.Type.Sliced;
             AddText(tr, font, "Title", "COMMENT JOUER", new Vector2(0, 70), Gold, 2, PixelText.Align.Center, true);
             var hero = AddImage(tr, "Hero", theme.heroes[0].sprites.run, new Vector2(-122, -50), null, null, true, new Vector2(0.5f, 0f));
-            string[] verbs = { "SAUTE", "FRAPPE", "GLISSE" };
-            string[] details = { "TROUS, MURS, MARCHES", "LES INSTRUMENTS", "SOUS LES BRANCHES" };
-            var texts = new PixelText[3];
-            var icons = new Image[3];
-            for (int i = 0; i < 3; i++)
+            string[] verbs = { "SAUTE", "FRAPPE" };
+            string[] details = { "TROUS, CUIRASSÉS, LIANES", "LES INSTRUMENTS" };
+            var texts = new PixelText[2];
+            var icons = new Image[2];
+            for (int i = 0; i < 2; i++)
             {
-                float y = 32 - i * 28;
+                float y = 26 - i * 34;
                 texts[i] = AddText(tr, font, $"Line{i}", verbs[i], new Vector2(-46, y + 4), Color.white, 2, PixelText.Align.Left);
                 AddText(tr, font, $"Detail{i}", details[i], new Vector2(-46, y - 10), Dim, 1, PixelText.Align.Left);
             }
-            icons[0] = AddImage(tr, "Btn1", Spr("Gen/ui/button_red.png"), new Vector2(-64, 32), null, null, true);
-            AddText(tr, font, "Btn1Label", "1", new Vector2(-64, 32), Color.white);
-            icons[1] = AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-64, 4), null, null, true);
-            AddText(tr, font, "Btn2Label", "2", new Vector2(-64, 4), Color.white);
-            icons[2] = AddImage(tr, "Stick", Spr("Gen/ui/stick.png"), new Vector2(-64, -24), null, null, true);
-            AddText(tr, font, "StickLabel", "▼", new Vector2(-64, -36), Gold);
+            icons[0] = AddImage(tr, "Btn1", Spr("Gen/ui/button_red.png"), new Vector2(-64, 26), null, null, true);
+            AddText(tr, font, "Btn1Label", "1", new Vector2(-64, 26), Color.white);
+            icons[1] = AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-64, -8), null, null, true);
+            AddText(tr, font, "Btn2Label", "2", new Vector2(-64, -8), Color.white);
             AddText(tr, font, "Footer", "UN SEUL COUP ET C'EST FINI !", new Vector2(24, -50), Gold, 1, PixelText.Align.Center);
             AddText(tr, font, "Hint", "BOUTON 1 POUR CONTINUER", new Vector2(0, -80), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<ExplainScreen>();
@@ -698,7 +692,6 @@ namespace Kenta.EditorTools
             Set(player, "spinOnJump", false);
             Set(player, "width", 0.5f);
             Set(player, "standHeight", 1.0f);
-            Set(player, "slideHeight", 0.5f);
             Set(player, "jumpHeight", 1.5f);
 
             var backdropGo = new GameObject("Backdrop");

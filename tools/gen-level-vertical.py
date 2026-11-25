@@ -31,7 +31,7 @@ JUMP_HEIGHT, JUMP_BEATS = 1.5, 1.0
 GRAVITY = 8 * JUMP_HEIGHT / (JUMP_BEATS * SPB) ** 2
 JUMP_V = 4 * JUMP_HEIGHT / (JUMP_BEATS * SPB)
 STEP_FACE_START = 0.5
-STEP_START, GAP_START, WALL_START, ENEMY_CENTER, SLIDE_START = 0.3, 0.2, 0.4, 0.6, 0.1
+STEP_START, GAP_START, WALL_START, ENEMY_CENTER = 0.3, 0.2, 0.4, 0.6
 AIR_HIT_BELOW, AIR_HIT_ABOVE = 3.5, 3.5             # zone de frappe en l'air (au sol : de −0,5 à +1,6)
 STOMP_TOUCH = 0.15                           # on touche un cuirassé 0,15 beat avant son temps (fin d'un saut)
 ORB_HOVER = 3.0                              # chute ralentie (u/s) près d'une note, le temps d'appuyer
@@ -115,8 +115,6 @@ class Level:
     def enemy(self, beat):
         self.add(beat, "enemy")
 
-    def slide(self, beat, length=1.0):
-        self.add(beat, "slide_bar", length=length)
 
     def lums(self, beat, count, step=0.5, lane=0):
         """Ligne de pièces posées sur la trajectoire de l'autoplay (calculée par le simulateur, voir place_lums)."""
@@ -171,6 +169,10 @@ class Level:
     def screen_split(self, beat, copies):
         self.add(beat, "screen_split", copies=copies)
 
+    def screen_flip(self, beat, mode):
+        """L'image se retourne : « mirror » (on court vers la gauche), « up » (tête en bas), « both », « none »."""
+        self.add(beat, "screen_flip", variant=mode)
+
     def glitch(self, beat, intensity, length):
         self.add(beat, "glitch", intensity=intensity, length=length)
 
@@ -183,7 +185,7 @@ class Level:
 
 def scene_intro(L):
     """0-32 : un geste nouveau toutes les deux mesures, avec de l'air autour (la musique est encore calme).
-    Sauter (4, 6), frapper (8, 10), monter (12, 14), glisser (16,5), sauter sur un cuirassé et appuyer au rebond (19 → 20),
+    Sauter (4), une souche (6), frapper (8, 10), monter (12, 14), frapper (16,5), sauter sur un cuirassé et appuyer au rebond (19 → 20),
     traverser un gouffre de note de saut en note de saut (23 → 24, 25, 26), puis la montée de grosse caisse et le
     premier tambour : envol sur le drop du couplet."""
     L.gap(4, 0.5)
@@ -192,7 +194,7 @@ def scene_intro(L):
     L.enemy(10)
     L.step(12, +1)
     L.step(14, +1)              # K
-    L.slide(16.5, 1.5)
+    L.enemy(16.5)               # (avant : une glissade, retirée du jeu)
     L.add(19, "jump")           # on saute sur le cuirassé…
     L.stomp(20, 2.0)            # S : … et on appuie au rebond : grand rebond
     L.cliff(21.25, 1.0)         # on se pose un étage plus haut (22)
@@ -223,7 +225,7 @@ def scene_couplet(L, base, variant=False):
     L.enemy(b + 15)             # 47 S
     # course sur le mur : de 48 à 49,5, +5 (+6 au passage 2), sur la note tenue
     L.ramp(b + 16, 1.5, +6 if variant else +5)
-    L.slide(b + 18.5, 1.5)      # 50,5 : au sommet, on glisse sous la branche
+    L.enemy(b + 18.5)           # 50,5 : au sommet du mur, un coup
     L.gap(b + 21.5, 2.6)        # 53,5 : dans le vide…
     L.orb(b + 22.5, 0.5)        # 54,5 S : … de note en note
     L.orb(b + 23.5, 1.5)        # 55,5 S
@@ -285,33 +287,6 @@ def scene_roulement(L, base, variant=False, launch=True):
         L.bounce(b + 15.5, 2.5, +6)                     # 95,5 → 98 : dans le ciel
 
 
-def scene_refrain(L, base, variant=False):
-    """96-120 : dans le ciel. Signature : les tambours en chaîne, un ennemi à frapper à chaque envolée.
-    Puis la grande dévalée et le plongeon vers la retombée."""
-    b = base
-    L.enemy(b + 3)              # 99 S
-    L.enemy(b + 4)              # 100 S
-    # tambours en chaîne : 102 → 104 → 106 → 108 (rebonds courts, le sol reste à l'image), coup en l'air entre deux
-    L.bounce(b + 6, 2.0, +1)
-    L.flyer(b + 6.5)            # au sommet du rebond (contact juste après)
-    L.bounce(b + 8, 2.0, +1)
-    L.flyer(b + 8.5)
-    L.bounce(b + 10, 2.0, +1)
-    L.flyer(b + 10.5)
-    if variant:
-        L.bounce(b + 12, 2.0, +1)
-        L.flyer(b + 12.5)
-        L.ramp(b + 14.5, 2.0, -11)
-    else:
-        L.ramp(b + 12.5, 2.0, -10)                      # 108,5 : la dévalée
-        L.enemy(b + 15)         # 111 S
-    L.enemy(b + 17)             # 113 S
-    L.wall(b + 18.5)            # 114,5 : une souche à sauter (un mur au lieu d'un trou, pour varier)
-    L.enemy(b + 20)             # 116 S
-    L.enemy(b + 21)             # 117 S
-    L.step(b + 22.5, -6)        # 118,5 : le plongeon (la caméra l'a anticipé)
-
-
 def scene_refrain_ciel(L, base):
     """Prototype (92-128) : le refrain comme des montagnes russes, 3 écrans de haut. Chaque geste tombe sur la
     batterie (carte : --map) et chaque action laisse au moins 120 ms de marge (--marges).
@@ -320,7 +295,7 @@ def scene_refrain_ciel(L, base):
       104,5 le roulement de grosse caisse : quatre tambours en chaîne, un par coup, on grimpe à chaque rebond
       108,5 le sommet : deux ennemis, un trou, sur la caisse claire
       112   le grand plongeon : deux dévalées en pente raide (−26 u), le sol reste toujours à l'image
-      120   on rebondit, on glisse, on finit au sol en frappant sur les derniers temps."""
+      120   on rebondit (chauve-souris au sommet), on finit au sol en frappant sur les derniers temps."""
     b = base
     L.bounce(b - 0.5, 2.5, +10)  # 95,5 → 98 : le drop
     # pas de chauve-souris sur le tambour géant : au sommet, on est trop haut pour l'avoir vue venir
@@ -341,35 +316,9 @@ def scene_refrain_ciel(L, base):
     L.bounce(b + 24.5, 1.5, +2) # 120,5 K : on rebondit
     L.flyer(b + 25)             # 121 S : au sommet du rebond
     L.enemy(b + 27)             # 123 S
-    L.slide(b + 27.75, 1.5)     # 123,75 : glissade sous la branche
+    L.enemy(b + 28)             # 124 S
     L.enemy(b + 30)             # 126 S
     L.enemy(b + 31)             # 127 S
-
-
-def scene_retombee(L, base):
-    """120-128 : on souffle. Des pièces qui chantent la mélodie, un saut, un coup, une glissade, un saut."""
-    b = base
-    L.gap(b + 0.5, 0.5)         # 120,5 K
-    L.enemy(b + 2)              # 122 S
-    L.slide(b + 3.5, 1.5)       # 123,5 : longue glissade, le morceau se pose
-    L.wall(b + 6.5)             # 126,5 K : une souche
-
-
-def scene_final(L):
-    """128-152 : la tour. Une marche par temps sur la montée, trois coups au sommet, un tambour avec un coup en
-    l'air, et la plus grande dévalée du niveau vers le couplet 2."""
-    for k in range(7):          # 129,5 … 135,5
-        L.step(129.5 + k, +1)
-    L.enemy(137)
-    L.enemy(138)
-    L.enemy(139)
-    L.bounce(140, 2.0, +3)
-    L.flyer(141)
-    L.gap(142.5)                # K
-    L.enemy(144)
-    L.wall(145.5)               # k : une souche au sommet de la tour
-    L.enemy(147)
-    L.ramp(148, 3.5, -16)       # la grande dévalée
 
 
 def scene_final_echos(L):
@@ -412,7 +361,7 @@ def scene_fin(L):
     L.enemy(249)
     L.wall(250.5)
     L.enemy(252)
-    L.slide(253.5, 1.5)         # dernière glissade sur la dernière note
+    L.enemy(254)                # le dernier coup
 
 
 def build():
@@ -429,13 +378,21 @@ def build():
     scene_roulement(L, 200, variant=True, launch=False)
     scene_refrain_ciel(L, 216)                         # le refrain 2 rejoue le refrain 1 (avant : ancien refrain + retombée)
     scene_fin(L)
-    # l'écran se détraque dès le couplet 2 (≈ 1 min), sur des passages déjà joués : la grille remplit tout l'écran
+    # l'écran se détraque dès le couplet 2 (≈ 1 min), sur des passages déjà joués, toujours sur un début de phrase
+    # (8 temps) : la grille remplit tout l'écran, l'image se retourne (miroir entier, le pixel art reste net)
     L.screen_split(152, 4)      # couplet 2 : quatre écrans (2×2)
-    L.screen_split(168, 1)      # retour à un écran pour la course sur le mur
-    L.glitch(184, 0.35, 8)      # pont 2 : un grésillement léger
+    L.screen_split(168, 1)      # un écran…
+    L.screen_flip(168, "mirror")    # … en miroir : on court vers la gauche (course sur le mur, notes de saut)
+    L.screen_flip(176, "none")
+    L.glitch(184, 0.35, 8)      # pont 2 : un grésillement léger…
+    L.screen_flip(192, "up")    # … puis la tête en bas
+    L.screen_flip(200, "none")
     L.screen_split(216, 4)      # refrain 2, sur le drop : quatre écrans (2×2, ×2 en vue 480 : le héros reste lisible)
-    L.screen_split(232, 1)      # retour à un écran…
-    L.glitch(232, 0.7, 8)       # … qui grésille sur la dévalée et les coups
+    L.screen_split(232, 1)      # un écran…
+    L.screen_flip(232, "up")    # … tête en bas pour le grand plongeon (on a l'air de monter)
+    L.glitch(232, 0.4, 8)
+    L.screen_flip(240, "mirror")    # la fin du refrain en miroir
+    L.screen_flip(248, "none")
     # la fin reste nette : c'est là qu'on savoure son score (audit du 25/11)
     for name, beat in SECTIONS:
         if beat > 0:
@@ -466,7 +423,7 @@ class World:
         self.events = events
         self.knots = []          # (x, h, linear)
         self.faces = []          # (x, h0, h1, beat)
-        self.jumps, self.hits, self.slides = [], [], []
+        self.jumps, self.hits = [], []
         h0 = 0.0
         for e in events:
             p = e.get("params", {})
@@ -489,7 +446,7 @@ class World:
         self.ceil = sorted((Span(X(e["beat"]), X(e["beat"] + e["params"].get("length", 1.0)), -e["params"]["height"],
                                  -e["params"]["height"]) for e in events if e["type"] == "ceiling"), key=lambda s_: s_.x0)
         self.flips = sorted((e["beat"], e["lane"] == 1) for e in events if e["type"] == "gravity")
-        self.gaps, self.walls, self.enemies, self.bars, self.platforms, self.bounces = [], [], [], [], [], []
+        self.gaps, self.walls, self.enemies, self.platforms, self.bounces = [], [], [], [], []
         self.orbs = []           # [x, y du centre, beat, vol, prise, plan]
         self.vines = []          # [x_prise, x_lâcher, beat_prise, beat_lâcher, y_prise, y_lâcher, creux, vol, prise_faite]
         for e in events:
@@ -518,11 +475,6 @@ class World:
             elif t == "orb":
                 self.orbs.append([X(b), p["height"], b, p.get("step", 1.0), False, plane])
                 self.jumps.append(b)
-            elif t == "slide_bar":
-                ln = p.get("length", 1.0)
-                x0, x1 = X(b + SLIDE_START), X(b + SLIDE_START + ln)
-                self.bars.append((x0, x1, self.height(x0) + 0.62))
-                self.slides.append((b - 0.05, b + SLIDE_START + ln + 0.35))
             elif t == "platform":
                 x0, x1 = X(b + STEP_START), X(b + STEP_START + p.get("length", 1.0))
                 self.platforms.append(Span(x0, x1, p["height"], p["height"], True))
@@ -680,7 +632,7 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
     offset = late if callable(late) else (lambda _b, d=late: d)
     end = NB - 1 if stop is None else min(NB - 1, stop)
     dt = 1.0 / fps
-    hw, stand, slide_h = 0.25, 1.0, 0.5
+    hw, stand = 0.25, 1.0
     y, vy, grounded = w.height(0), 0.0, True
     inv, plane = False, 0
     fi = 0
@@ -728,7 +680,6 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
             jump, ji = True, ji + 1
         while hi < len(w.hits) and w.hits[hi] + offset(w.hits[hi]) <= beat:
             hit_until, hi = beat + 0.3, hi + 1
-        sliding_cmd = any(a <= beat <= b for a, b in w.slides)
         # portails de gravité : même position et même vitesse dans le monde
         while fi < len(w.flips) and w.flips[fi][0] <= beat:
             up = w.flips[fi][1]
@@ -751,9 +702,6 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
         coyote = not grounded and vy <= 0 and beat - last_ground <= 0.12
         if beat - jump_buf <= JUMP_BUFFER and (grounded or coyote):
             vy, grounded, jump_buf = JUMP_V, False, -99
-        if not grounded and sliding_cmd and vy > -JUMP_V:
-            vy = -JUMP_V
-        sliding = sliding_cmd and grounded
         # cuirassé écrasé : l'appui (en avance ou juste après) donne le grand rebond
         if pending is not None:
             if last_press >= pending[2] - PRESS_EARLY:
@@ -827,7 +775,7 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
             vy = (land_top - y + 0.5 * GRAVITY * ta * ta) / ta
             grounded, jump_buf = False, -99
         # collisions, dans le monde
-        h = slide_h if sliding else stand
+        h = stand
         wy = -y if inv else y
         x_from = max(prev_x, x - 3)
 
@@ -875,10 +823,6 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
                 en[3] = False
             elif ov(body, r):
                 return f"touché par l'ennemi du beat {eb} au beat {beat:.2f} (y {wy:.2f}, ennemi {ey:.2f})", {}
-        if plane == 0:
-            for x0, x1, yb in w.bars:
-                if ov(body, (x0, yb, x1, yb + 8)):
-                    return f"se cogne dans un plafond au beat {beat:.2f}", {}
         cy = wy - h * 0.5 if inv else wy + h * 0.5
         if track is not None:
             track.append((beat, cy, inv, plane))
@@ -924,7 +868,7 @@ def action_windows(events, lo=0.0, hi=NB, limit=0.5, fps=60):
 
 MIN_MARGIN = 0.3                             # 120 ms : un humain peut appuyer un peu tôt ou un peu tard sans mourir
 # passages déjà passés à cette règle
-WIDE_MARGIN = [(0, 184), (212, 256)]          # tout le niveau sauf le pont 2 et le roulement 2 (encore à ±40 ms)
+WIDE_MARGIN = [(0, 256)]                     # tout le niveau
 
 
 def check_margins(events, ranges, margin=MIN_MARGIN, fps=60):
@@ -1015,8 +959,6 @@ def auto_lums(events, world, song):
         busy.append((j - 0.75, j + 1.0))
     for h in world.hits:
         busy.append((h - 0.75, h + 0.75))
-    for a, c in world.slides:
-        busy.append((a - 0.5, c + 0.5))
     for pad in world.bounces:
         busy.append((pad[3] - 0.5, pad[3] + pad[2] + 0.5))
     for v in world.vines:
@@ -1231,9 +1173,9 @@ def lint(events):
 
 
 def table(events):
-    sym = {"gap": "G", "wall": "W", "enemy": "E", "slide_bar": "S", "step": "^", "ramp": "/", "platform": "P",
+    sym = {"gap": "G", "wall": "W", "enemy": "E", "step": "^", "ramp": "/", "platform": "P",
            "bounce": "T", "camera": "c", "vine": "V", "gravity": "g", "back": "B", "ceiling": "C",
-           "screen_split": "#", "glitch": "~", "orb": "o"}
+           "screen_split": "#", "glitch": "~", "orb": "o", "screen_flip": "%"}
     rows = {}
     for e in events:
         if e["type"] not in sym:

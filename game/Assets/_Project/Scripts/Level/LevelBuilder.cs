@@ -19,9 +19,6 @@ namespace Kenta.Level
         const float EnemyCenterBeats = 0.6f;        // ennemi 0,6 beat après son temps : ~165 ms de marge des deux côtés
         /// <summary>Ennemi cuirassé : on le touche 0,15 beat avant son temps (fin d'un saut d'un beat), l'appui du rebond tombe sur le temps.</summary>
         public const float StompTouchBeats = 0.15f;
-        const float SlideStartBeats = 0.1f;
-        const float SlideDefaultLength = 1f;
-        const float SlideBarBottom = 0.62f;
         const float StepStartBeats = 0.3f;          // plateforme : comme un mur
         const float StepFaceBeats = 0.5f;           // marche : face à beat+0,5 (+ coup de pouce : ~130 ms de marge sur +1 u)
         const float MaxHeight = 60f;                // hauteur libre : le niveau grimpe et plonge (garde-fou seulement)
@@ -55,7 +52,6 @@ namespace Kenta.Level
         // Données d'autoplay (debug + démo de l'écran Attract).
         public readonly List<float> AutoJumpBeats = new();
         public readonly List<float> AutoHitBeats = new();
-        public readonly List<Vector2> AutoSlideSpans = new();
 
         readonly List<Vector2> gaps = new();
         /// <summary>
@@ -188,18 +184,6 @@ namespace Kenta.Level
                         if (stomp) AutoJumpBeats.Add(e.beat);          // l'appui du grand rebond
                         else AutoHitBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
-                        break;
-                    }
-                    case "slide_bar":
-                    {
-                        float len = p.length > 0 ? p.length : SlideDefaultLength;
-                        float x0 = BeatToX(e.beat + SlideStartBeats), x1 = BeatToX(e.beat + SlideStartBeats + len);
-                        float sh = HeightAt(x0);
-                        var o = new LevelObject { kind = LevelObjectKind.SlideBar, beat = e.beat, bounds = Rect.MinMaxRect(x0, sh + SlideBarBottom, x1, sh + 8f) };
-                        o.view = MakeSlideBar(o.bounds, BiomeAt(e.beat));
-                        Obstacles.Add(o);
-                        AutoSlideSpans.Add(new Vector2(e.beat - 0.05f, e.beat + SlideStartBeats + len + 0.35f));
-                        lastX = Mathf.Max(lastX, x1);
                         break;
                     }
                     case "lum_line":
@@ -343,6 +327,7 @@ namespace Kenta.Level
                     case "camera":
                     case "section_change":
                     case "screen_split":
+                    case "screen_flip":
                     case "glitch":
                         FxEvents.Add(e);
                         break;
@@ -386,13 +371,14 @@ namespace Kenta.Level
             FxEvents.Clear();
             AutoJumpBeats.Clear();
             AutoHitBeats.Clear();
-            AutoSlideSpans.Clear();
             gaps.Clear();
             steps.Clear();
             platforms.Clear();
             Ground.Clear();
             CeilingMirror.Clear();
             Back.Clear();
+            frontFaded.Clear();
+            frontGround = null;
             ceilingSpans.Clear();
             backProfile.Clear();
         }
@@ -478,7 +464,6 @@ namespace Kenta.Level
         // ---------- Visuels (pixel art : sprites des biomes, 40 px par unité) ----------
 
         const float TileHeight = 0.5f;          // tuile de sol de 32×20 px
-        const float CeilingBottom = SlideBarBottom;
 
         /// <summary>Biome de la section qui contient ce beat (un biome par section de la chart).</summary>
         public BiomeTheme BiomeAt(double beat)
@@ -589,6 +574,7 @@ namespace Kenta.Level
         void BuildGround(float endX)
         {
             var g = Group("Ground", Vector2.zero);
+            frontGround = g;
             float floor = Ground.LowestTop - PillarDepth;
             foreach (var s in MainSpans(endX))
             {
@@ -813,6 +799,30 @@ namespace Kenta.Level
             }
         }
 
+        Transform frontGround;
+        readonly List<SpriteRenderer> frontFaded = new();
+
+        /// <summary>
+        /// Pendant que le héros court dans l'arrière-plan, le premier plan (sol, piliers, objets du plan 0) devient
+        /// semi-transparent : on le voit passer derrière. Avant, il n'était qu'un peu assombri et se perdait.
+        /// </summary>
+        public void SetFrontFaded(bool faded)
+        {
+            if (faded && frontFaded.Count == 0 && frontGround != null)
+            {
+                frontFaded.AddRange(frontGround.GetComponentsInChildren<SpriteRenderer>(true));
+                foreach (var o in Obstacles)
+                    if (o.plane == 0 && o.view != null) frontFaded.AddRange(o.view.GetComponentsInChildren<SpriteRenderer>(true));
+            }
+            foreach (var sr in frontFaded)
+            {
+                if (sr == null) continue;
+                var c = sr.color;
+                c.a = faded ? 0.45f : 1f;
+                sr.color = c;
+            }
+        }
+
         /// <summary>Objet de l'arrière-plan : assombri et dessiné derrière le niveau.</summary>
         static void SendToBack(GameObject view, float tint = 1f)
         {
@@ -926,7 +936,8 @@ namespace Kenta.Level
             var t = Group("Vine", anchor);
             if (biome.post != null) Spr(t, "Knot", biome.post, Vector2.zero, 9);
             var view = t.gameObject.AddComponent<VineView>();
-            view.Setup(theme.pixel, new Color(0.3f, 0.45f, 0.18f), new Vector2(xg, o.grabY + VineView.HandHeight));
+            // au repos, la corde pend droit sous son nœud (jusqu'à la hauteur de la main) ; on l'attrape en passant
+            view.Setup(theme.pixel, new Color(0.3f, 0.45f, 0.18f), new Vector2(anchor.x, o.grabY + VineView.HandHeight));
             return t.gameObject;
         }
 
@@ -967,18 +978,6 @@ namespace Kenta.Level
         {
             var t = Group("Flyer", pos);
             Spr(t, "Sprite", theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
-            return t.gameObject;
-        }
-
-        GameObject MakeSlideBar(Rect r, BiomeTheme biome)
-        {
-            var t = Group("Ceiling", new Vector2(r.center.x, r.yMin - SlideBarBottom));
-            const float beam = 0.4f;                                  // tuile de 16 px
-            float postTop = 3.0f;
-            float postBottom = CeilingBottom + beam;
-            foreach (float sign in new[] { -1f, 1f })
-                Tiled(t, "Post", biome.post, new Vector2(sign * (r.width * 0.5f - 0.1f), (postTop + postBottom) * 0.5f), new Vector2(0.2f, postTop - postBottom), 9);
-            Tiled(t, "Beam", biome.ceiling, new Vector2(0f, CeilingBottom + beam * 0.5f), new Vector2(r.width, beam), 11);
             return t.gameObject;
         }
 

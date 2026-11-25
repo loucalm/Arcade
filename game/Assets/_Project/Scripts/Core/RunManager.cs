@@ -219,6 +219,9 @@ namespace Kenta.Core
                 {
                     var skipped = level.FxEvents[fxCursor++];
                     if (skipped.type == "screen_split") ScreenGlitch.Instance?.SetCopies(skipped.@params.copies);
+                    if (skipped.type == "screen_flip")
+                        ScreenGlitch.Instance?.SetFlip(skipped.@params.variant == "mirror" || skipped.@params.variant == "both",
+                                                       skipped.@params.variant == "up" || skipped.@params.variant == "both");
                 }
             }
             player.Setup(level, this, CreateInput());
@@ -499,6 +502,14 @@ namespace Kenta.Core
                     // l'image se dédouble (2, 5 ou 9 copies plus petites) jusqu'au prochain screen_split
                     ScreenGlitch.Instance?.SetCopies(e.@params.copies);
                     rig.Flash(Color.white, 0.3f);
+                    break;
+                case "screen_flip":
+                    // l'image se retourne sur le début de phrase : « mirror » (gauche-droite), « up » (tête en bas),
+                    // « both » (demi-tour), autre chose = retour à l'endroit
+                    ScreenGlitch.Instance?.SetFlip(e.@params.variant == "mirror" || e.@params.variant == "both",
+                                                   e.@params.variant == "up" || e.@params.variant == "both");
+                    rig.Flash(Color.white, 0.35f);
+                    rig.Shake(0.15f, 0.2f);
                     break;
                 case "glitch":
                     // grésillement calé sur les temps, pendant `length` beats

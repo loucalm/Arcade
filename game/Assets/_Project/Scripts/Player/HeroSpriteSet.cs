@@ -12,7 +12,6 @@ namespace Kenta.Player
         [Tooltip("Cycle de course (8 images, deux pas).")]
         public Sprite[] runCycle;
         public Sprite jump;
-        public Sprite slide;
         public Sprite hit;
         public Sprite vine;
         public Sprite wall;
@@ -24,12 +23,6 @@ namespace Kenta.Player
         public Sprite[] hitFrames;
         [Tooltip("Saut en 8 images réparties sur sa durée : impulsion, genoux remontés, vrille d'un tour, ouverture, réception.")]
         public Sprite[] jumpFrames;
-        [Tooltip("Glissade en boucle (poussière et traits de vitesse).")]
-        public Sprite[] slideLoop;
-        [Tooltip("Se jeter au sol : de la course à la glissade.")]
-        public Sprite[] slideIn;
-        [Tooltip("Se relever : de la glissade à la course.")]
-        public Sprite[] slideOut;
         [Tooltip("Accroupi : réception d'un saut.")]
         public Sprite crouch;
         [Tooltip("Montée d'une pente : course penchée en avant, genoux hauts (8 images).")]

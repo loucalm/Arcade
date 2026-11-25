@@ -7,7 +7,6 @@ namespace Kenta.Player
     {
         public bool jumpDown;
         public bool hitDown;
-        public bool slideHeld;
     }
 
     /// <summary>Source des commandes du joueur : manette/clavier ou autoplay.</summary>
@@ -27,14 +26,13 @@ namespace Kenta.Player
         {
             jumpDown = ArcadeInput.JumpDown(player),
             hitDown = ArcadeInput.HitDown(player),
-            slideHeld = ArcadeInput.SlideHeld(player),
         };
 
         public void ResetAt(double beat) { }
     }
 
     /// <summary>
-    /// Joue la chart parfaitement : saute/frappe pile sur le beat de chaque événement, glisse sur les barres.
+    /// Joue la chart parfaitement : saute/frappe pile sur le beat de chaque événement.
     /// Sert à valider une chart (aucun dégât attendu) et à la démo de l'écran Attract.
     /// </summary>
     public class AutoPlayerInput : IPlayerInput
@@ -57,8 +55,6 @@ namespace Kenta.Player
                 c.hitDown = true;
                 hitIndex++;
             }
-            foreach (var span in level.AutoSlideSpans)
-                if (beat >= span.x && beat <= span.y) { c.slideHeld = true; break; }
             return c;
         }
 

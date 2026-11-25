@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace Kenta.UI
 {
     /// <summary>
-    /// Consignes (docs/da-kenta.md § 8.3), lisibles en quelques secondes : trois gestes avec les boutons dessinés comme
+    /// Consignes (docs/da-kenta.md § 8.3), lisibles en quelques secondes : deux gestes avec les boutons dessinés comme
     /// ceux de la borne. Le héros mime le geste mis en avant, sur le temps de la musique : 2 temps par geste, la pose du
     /// geste sur le premier, la course sur le second. Sans musique, une horloge à 150 BPM prend le relais.
     /// </summary>
@@ -15,7 +15,7 @@ namespace Kenta.UI
     {
         [SerializeField] LevelTheme theme;
         [SerializeField] Image hero;
-        [Tooltip("Une ligne (texte du geste) par geste : saute, frappe, glisse.")]
+        [Tooltip("Une ligne (texte du geste) par geste : saute, frappe.")]
         [SerializeField] PixelText[] lines;
         [Tooltip("Les icônes de bouton, dans le même ordre : elles s'allument avec leur geste.")]
         [SerializeField] Image[] icons;
@@ -45,7 +45,7 @@ namespace Kenta.UI
 
             var profile = GameSession.Hero != null ? GameSession.Hero : theme.heroes[0];
             var set = profile.sprites;
-            Sprite pose = step switch { 0 => set.jump, 1 => set.hit, _ => set.slide };
+            Sprite pose = step == 0 ? set.jump : set.hit;
             Sprite sprite = posing ? pose
                 : set.runCycle != null && set.runCycle.Length > 0 ? set.runCycle[(int)(t * 10f) % set.runCycle.Length] : set.run;
             if (hero.sprite != sprite)

@@ -9,8 +9,10 @@ namespace Kenta.FX
     /// Effets d'écran pilotés par la chart : l'image du jeu se dédouble en une grille qui remplit tout l'écran, sans
     /// bande noire (4 copies en 2×2, agrandies ×1,5 : seule exception aux facteurs entiers, assumée pour l'effet ; ou
     /// 9 copies en 3×3 à ×1) et grésille (neige, image qui se décale, couleurs qui sautent, coupures d'une image) au
-    /// rythme des temps. Ils gênent la lecture sans la rendre impossible : la chart les cale sur des
-    /// passages simples. L'interface (score, multiplicateur) reste nette par-dessus.
+    /// rythme des temps, et peut se retourner (tête en bas), passer en miroir (on court vers la gauche) ou les deux
+    /// (demi-tour) : un miroir entier, pas de rotation, le pixel art reste net. Ils gênent la lecture sans la rendre
+    /// impossible : la chart les cale sur des débuts de phrase et des passages déjà joués. L'interface (score,
+    /// multiplicateur) reste à l'endroit, par-dessus.
     /// Créé par PixelScreen ; aucun réglage dans la scène.
     /// </summary>
     [DefaultExecutionOrder(100)]   // après CameraRig, qui repositionne les calques à chaque image
@@ -26,11 +28,15 @@ namespace Kenta.FX
         RawImage noise;
         Texture2D noiseTex;
         int copyCount = 1;
+        bool flipX, flipY;
         float glitchLevel;
         double glitchUntilBeat = -1;
         int frame;
 
         public int Copies => copyCount;
+        /// <summary>Image en miroir gauche-droite (X) et/ou retournée haut-bas (Y).</summary>
+        public bool FlipX => flipX;
+        public bool FlipY => flipY;
         /// <summary>Intensité du grésillement en ce moment (0 = image nette).</summary>
         public float Level { get; private set; }
 
@@ -52,6 +58,7 @@ namespace Kenta.FX
             glitchLevel = 0f;
             glitchUntilBeat = -1;
             SetCopies(1);
+            SetFlip(false, false);
             Level = 0f;
             if (noise != null) noise.enabled = false;
             ApplyMain(Vector2.zero, Color.white, true);
@@ -106,7 +113,24 @@ namespace Kenta.FX
             var r = img.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.sizeDelta = new Vector2(Mathf.Round(layer.Texture.width * k), Mathf.Round(layer.Texture.height * k));
+            img.uvRect = new Rect(flipX ? 1f : 0f, flipY ? 1f : 0f, flipX ? -1f : 1f, flipY ? -1f : 1f);
             copyImages.Add(img);
+        }
+
+        /// <summary>
+        /// Retourne l'image du jeu : miroir gauche-droite (on court vers la gauche), haut-bas (tête en bas), ou les deux.
+        /// Les copies suivent. L'interface ne bouge pas.
+        /// </summary>
+        public void SetFlip(bool mirror, bool upsideDown)
+        {
+            flipX = mirror;
+            flipY = upsideDown;
+            var uv = new Rect(flipX ? 1f : 0f, flipY ? 1f : 0f, flipX ? -1f : 1f, flipY ? -1f : 1f);
+            if (screen != null)
+                foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+                    if (layer != null && layer.Display != null) layer.Display.uvRect = uv;
+            foreach (var img in copyImages)
+                if (img != null) img.uvRect = uv;
         }
 
         /// <summary>Grésillement d'intensité 0..1 pendant `beats` beats (plus fort sur chaque temps, puis il retombe).</summary>
@@ -146,6 +170,14 @@ namespace Kenta.FX
             float phase = (float)(beat - System.Math.Floor(beat));
             Level = target * (0.45f + 0.55f * Mathf.Exp(-5f * phase));
             frame++;
+            // image retournée : le décalage sous-pixel des calques (posé par CameraRig) doit aller dans l'autre sens
+            if ((flipX || flipY) && screen != null)
+                foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+                {
+                    if (layer == null || layer.Display == null) continue;
+                    var pos = layer.Display.rectTransform.anchoredPosition;
+                    layer.Display.rectTransform.anchoredPosition = new Vector2(flipX ? -pos.x : pos.x, flipY ? -pos.y : pos.y);
+                }
             if (Level <= 0.01f)
             {
                 if (noise != null && noise.enabled) noise.enabled = false;

@@ -18,14 +18,8 @@ namespace Kenta.Player
         [SerializeField] float strideUnits = 2.4f;
         [Tooltip("Durée de l'animation de frappe (beats). Plus longue que la fenêtre active pour que le geste se lise.")]
         [SerializeField] float hitAnimBeats = 0.45f;
-        [Tooltip("Distance (unités) d'un cycle des images de glissade.")]
-        [SerializeField] float slideLoopUnits = 1f;        // 8 u/s : une image toutes les ~60 ms
         [Tooltip("Durée (s) de la pose accroupie à la réception d'un saut.")]
         [SerializeField] float crouchSeconds = 0.07f;
-        [Tooltip("Durée (s) des images « se jeter au sol » (slideIn). Doit valoir 3 × SLIDE_IN_STEP de tools/gen-heroes.py.")]
-        [SerializeField] float slideInSeconds = 0.12f;
-        [Tooltip("Durée (s) des images « se relever » (slideOut). Doit valoir 3 × SLIDE_OUT_STEP de tools/gen-heroes.py.")]
-        [SerializeField] float slideOutSeconds = 0.15f;
 
         public HeroSpriteSet Sprites { get => sprites; set => sprites = value; }
 
@@ -41,8 +35,6 @@ namespace Kenta.Player
         [Tooltip("Durée (s) d'une image de la boucle de chute.")]
         [SerializeField] float fallLoopSeconds = 0.12f;
 
-        bool wasSliding;
-        float slideChangedAt = -99f;
         // lus sur la position du héros (rien n'est changé à sa physique)
         Vector3 lastPos;
         bool hasLastPos, wasGrounded;
@@ -105,11 +97,6 @@ namespace Kenta.Player
         {
             if (player == null || target == null || sprites == null) return;
             Track();
-            if (player.IsSliding != wasSliding)
-            {
-                wasSliding = player.IsSliding;
-                slideChangedAt = Time.time;
-            }
             target.sprite = Pick();
         }
 
@@ -157,14 +144,6 @@ namespace Kenta.Player
             if (player.IsPunching) return sprites.hit;
             if (player.IsSwinging && sprites.vine != null) return sprites.vine;
 
-            float sinceSlideChange = Time.time - slideChangedAt;
-            if (player.IsSliding)
-            {
-                int turn = TransitionFrameIndex(sinceSlideChange, slideInSeconds, Count(sprites.slideIn));
-                if (turn >= 0) return sprites.slideIn[turn];
-                int n = Count(sprites.slideLoop);
-                return n > 0 ? sprites.slideLoop[RunFrameIndex(player.transform.position.x, slideLoopUnits, n)] : sprites.slide;
-            }
             if (!player.IsGrounded)
             {
                 int n = Count(sprites.jumpFrames);
@@ -183,8 +162,6 @@ namespace Kenta.Player
             if (slope < -slopeThreshold && Count(sprites.descendCycle) > 0)
                 return sprites.descendCycle[RunFrameIndex(pathDistance, descendStrideUnits, sprites.descendCycle.Length)];
 
-            int getUp = TransitionFrameIndex(sinceSlideChange, slideOutSeconds, Count(sprites.slideOut));
-            if (getUp >= 0) return sprites.slideOut[getUp];
             if (player.SinceLanded < crouchSeconds)
                 return sprites.crouch != null ? sprites.crouch : sprites.idle;
             var cycle = sprites.runCycle;
