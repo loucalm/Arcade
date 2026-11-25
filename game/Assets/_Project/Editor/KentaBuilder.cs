@@ -669,6 +669,10 @@ namespace Kenta.EditorTools
             Set(animator, "target", sr);
             Set(animator, "sprites", theme.heroes[0].sprites);
 
+            // un seul bandeau : chaque reconstruction en ajoutait un de plus (30 dans la scène, tous actifs : jusqu'à
+            // 1 400 sprites de traînée en fin de partie, une grosse part du lag de la borne)
+            for (int i = world.transform.childCount - 1; i >= 0; i--)
+                if (world.transform.GetChild(i).name == "Bandana") UnityEngine.Object.DestroyImmediate(world.transform.GetChild(i).gameObject);
             var bandanaGo = new GameObject("Bandana");
             bandanaGo.transform.SetParent(world.transform, false);
             var bandana = bandanaGo.AddComponent<BandanaTrail>();
@@ -680,7 +684,7 @@ namespace Kenta.EditorTools
             bandanaGo.layer = actorsLayer;
             var rig = cam.GetComponent<CameraRig>();
             Set(rig, "actorVisual", visual);
-            Set(rig, "defaultZoom", 640);       // vue de 16 × 9 u (×3) : une mesure d'avance devant le héros
+            Set(rig, "defaultZoom", 480);       // vue de 12 × 6,75 u (×4) : héros lisible sur la borne (audit du 25/11)
             Set(rig, "defaultFrameX", 0.22f);   // héros au quart gauche de l'écran
             Set(rig, "defaultFrameY", 0.3f);    // sol sous le héros à 30 % du bas
             Set(player, "visual", visual);

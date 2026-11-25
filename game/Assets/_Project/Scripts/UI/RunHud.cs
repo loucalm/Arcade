@@ -29,6 +29,7 @@ namespace Kenta.UI
 
         RunManager run;
         float shownScore;
+        int lastShownScore = -1;
         int lastMultiplier = 1;
         float multiplierPulse, bannerTimer, feedbackTimer;
         const float FeedbackDuration = 1.2f;
@@ -146,7 +147,12 @@ namespace Kenta.UI
             if (run == null) return;
             float dt = Time.unscaledDeltaTime;
             shownScore = Mathf.MoveTowards(shownScore, run.Score, Mathf.Max(60f, Mathf.Abs(run.Score - shownScore) * 8f) * dt);
-            scoreText.Text = Mathf.RoundToInt(shownScore).ToString("D6");
+            int shown = Mathf.RoundToInt(shownScore);
+            if (shown != lastShownScore)                         // une chaîne par changement, pas par image (GC WebGL)
+            {
+                lastShownScore = shown;
+                scoreText.Text = shown.ToString("D6");
+            }
 
             multiplierPulse = Mathf.MoveTowards(multiplierPulse, 0f, dt * 3f);
             multiplierText.Scale = multiplierPulse > 0.3f ? 3 : 2;

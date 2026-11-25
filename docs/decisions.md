@@ -101,3 +101,12 @@ Sur la borne, « rien ne répond ». Reproduit sur un build Web avec une fausse 
 
 ## ADR-030 — Retrait de la glissade ; l'écran se retourne (2026-11-25)
 Retour de test : la glissade (joystick bas) faisait une touche de plus pour rien. Elle est retirée partout : commandes (`ArcadeInput`, `PlayerCommands`), physique (hauteur réduite, chute rapide en l'air), animation, barres (`slide_bar`), pilote automatique, son, écran de consignes (deux gestes, prefab modifié depuis Unity), générateur et simulateur ; les quatre glissades du niveau sont devenues des coups de poing sur les mêmes temps. Le jeu se joue à deux boutons (saut, frappe) ; le joystick ne sert plus qu'aux menus. Les dessins de glissade du héros restent sur le disque, inutilisés. Effets d'écran : `screen_flip` retourne l'image (miroir gauche-droite, tête en bas, ou les deux) par `RawImage.uvRect` sur les calques monde et acteurs (et leurs copies), sans rotation ni échelle fractionnaire ; le décalage sous-pixel est inversé avec l'image. Ils tombent sur des débuts de phrase de 8 temps et sur des passages déjà joués. Toute la chart est maintenant vérifiée à 120 ms de marge par action.
+
+## ADR-031 — Gabarit Web « Kenta », build release, niveau par tranches, physique en pas fixes (2026-11-25)
+Retour de test sur la borne : peu de fps, la page défile (pas en plein écran), morts « dans l'escalier » et dans les cuirassés. Causes et choix :
+- **Gabarit Web** : le gabarit Minimal fixe le canvas à 1920×1080 px CSS. Avec une mise à l'échelle Windows (125 %, 150 %), la page déborde (défilement) et Unity rend à 1920×1080 × l'échelle (jusqu'à 2880×1620) sur le GPU intégré. Le gabarit `Assets/WebGLTemplates/Kenta` remplit la fenêtre sans défilement (bandes noires hors 16:9), et rend toujours en 1920×1080 (`matchWebGLToCanvasSize: false`, `devicePixelRatio: 1`), étiré à l'affichage en `pixelated`.
+- **Build release** obligatoire pour la borne (menu Kenta > Build Web (borne)) ; IL2CPP Release « vitesse ». L'overlay de debug (IMGUI) n'est compilé qu'en éditeur et en Development Build.
+- **Niveau par tranches** de 8 u autour de la caméra (le niveau entier, ≈ 6 000 sprites et 400 pièces animées, restait actif).
+- **Scène** : 30 bandeaux `World/Bandana` dupliqués par les reconstructions successives ; un seul désormais.
+- **Physique du héros en pas d'au plus 1/60 s** quand une image dure plus (jusqu'à 4 beats rattrapés) : c'est le pas du simulateur qui valide le niveau. Vérifié dans l'éditeur à 15 i/s avec des à-coups de 150 ms à 1,1 s : le niveau est fini (avant : mort au beat 6,7).
+

@@ -354,7 +354,85 @@ namespace Kenta.Level
             BuildBack();
             BuildBeatGrid(Mathf.CeilToInt(lastBeat) + 16);
             BuildCheckpoints();
+            PrepareFrontFade();
+            BuildChunks();
         }
+
+        // ---------- Tranches : seul le morceau de niveau autour de la caméra est actif ----------
+        // Le niveau entier (≈ 6 000 sprites, 400 pièces animées) restait actif toute la partie : sur la borne
+        // (i5-7200U, Firefox), le tri et les scripts de tout le niveau coûtaient chaque image. On range les objets
+        // par tranches de ChunkSize u et on n'active que celles proches de la caméra. Un objet tué ou ramassé
+        // (activeSelf faux) le reste quand sa tranche revient.
+        const float ChunkSize = 8f;
+        readonly List<GameObject> chunks = new();
+        int chunkLo = -1, chunkHi = -2;
+        float chunkOrigin;
+
+        void BuildChunks()
+        {
+            chunks.Clear();
+            chunkLo = -1; chunkHi = -2;
+            if (root == null) return;
+            var candidates = new List<Transform>();
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var c = root.GetChild(i);
+                if (beatGrid != null && c.gameObject == beatGrid) continue;
+                // conteneur (sol, trous, plafond, arrière-plan…) : ses enfants ; sinon l'objet lui-même
+                bool container = c.GetComponent<Renderer>() == null && c.localPosition == Vector3.zero && c.childCount > 0
+                                 && c.GetComponent<MonoBehaviour>() == null;
+                if (container) for (int j = 0; j < c.childCount; j++) candidates.Add(c.GetChild(j));
+                else candidates.Add(c);
+            }
+            float min = float.MaxValue;
+            var placed = new List<(Transform t, int index)>();
+            foreach (var t in candidates)
+            {
+                var rs = t.GetComponentsInChildren<Renderer>(true);
+                if (rs.Length == 0) continue;
+                var b = rs[0].bounds;
+                for (int k = 1; k < rs.Length; k++) b.Encapsulate(rs[k].bounds);
+                if (b.size.x > ChunkSize * 1.5f) continue;                 // très large : reste toujours actif
+                min = Mathf.Min(min, b.center.x);
+                placed.Add((t, Mathf.FloorToInt(b.center.x / ChunkSize)));
+            }
+            if (placed.Count == 0) return;
+            int first = Mathf.FloorToInt(min / ChunkSize);
+            chunkOrigin = first * ChunkSize;
+            foreach (var (t, index) in placed)
+            {
+                int i = index - first;
+                while (chunks.Count <= i)
+                {
+                    var go = new GameObject($"Chunk{chunks.Count}");
+                    go.transform.SetParent(root, false);
+                    go.SetActive(false);
+                    chunks.Add(go);
+                }
+                t.SetParent(chunks[i].transform, true);
+            }
+            UpdateChunks();
+        }
+
+        void UpdateChunks()
+        {
+            if (chunks.Count == 0) return;
+            var rig = CameraRig.Instance;
+            float cx = rig != null ? rig.ExactPosition.x : 0f;
+            float half = PixelScreen.Instance != null ? PixelScreen.Instance.ViewUnits.x * 0.5f : 8f;
+            // une tranche de marge de chaque côté : un objet déborde d'au plus ¾ de tranche de la sienne
+            int lo = Mathf.Max(0, Mathf.FloorToInt((cx - half - chunkOrigin) / ChunkSize) - 1);
+            int hi = Mathf.Min(chunks.Count - 1, Mathf.FloorToInt((cx + half - chunkOrigin) / ChunkSize) + 1);
+            if (lo == chunkLo && hi == chunkHi) return;
+            for (int i = Mathf.Max(0, Mathf.Min(lo, chunkLo)); i <= Mathf.Min(chunks.Count - 1, Mathf.Max(hi, chunkHi)); i++)
+            {
+                bool on = i >= lo && i <= hi;
+                if (chunks[i].activeSelf != on) chunks[i].SetActive(on);
+            }
+            chunkLo = lo; chunkHi = hi;
+        }
+
+        void LateUpdate() => UpdateChunks();
 
         public void Clear()
         {
@@ -379,6 +457,8 @@ namespace Kenta.Level
             Back.Clear();
             frontFaded.Clear();
             frontGround = null;
+            chunks.Clear();
+            chunkLo = -1; chunkHi = -2;
             ceilingSpans.Clear();
             backProfile.Clear();
         }
@@ -806,14 +886,17 @@ namespace Kenta.Level
         /// Pendant que le héros court dans l'arrière-plan, le premier plan (sol, piliers, objets du plan 0) devient
         /// semi-transparent : on le voit passer derrière. Avant, il n'était qu'un peu assombri et se perdait.
         /// </summary>
+        /// <summary>Liste du premier plan à pâlir, faite à la construction (ensuite, le sol est rangé par tranches).</summary>
+        void PrepareFrontFade()
+        {
+            frontFaded.Clear();
+            if (frontGround != null) frontFaded.AddRange(frontGround.GetComponentsInChildren<SpriteRenderer>(true));
+            foreach (var o in Obstacles)
+                if (o.plane == 0 && o.view != null) frontFaded.AddRange(o.view.GetComponentsInChildren<SpriteRenderer>(true));
+        }
+
         public void SetFrontFaded(bool faded)
         {
-            if (faded && frontFaded.Count == 0 && frontGround != null)
-            {
-                frontFaded.AddRange(frontGround.GetComponentsInChildren<SpriteRenderer>(true));
-                foreach (var o in Obstacles)
-                    if (o.plane == 0 && o.view != null) frontFaded.AddRange(o.view.GetComponentsInChildren<SpriteRenderer>(true));
-            }
             foreach (var sr in frontFaded)
             {
                 if (sr == null) continue;

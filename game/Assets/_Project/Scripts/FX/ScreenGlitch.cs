@@ -25,6 +25,10 @@ namespace Kenta.FX
         readonly List<RawImage> copyImages = new();
         readonly List<PixelLayer> copyLayers = new();
         float copyScale = 1f;
+        PixelLayer[] layers;
+        // les deux calques (monde, acteurs), en cache : ces boucles tournent à chaque image (pas d'allocation, GC WebGL)
+        PixelLayer[] Layers => layers != null && layers[0] == screen.WorldLayer && layers[1] == screen.ActorsLayer
+            ? layers : layers = new[] { screen.WorldLayer, screen.ActorsLayer };
         RawImage noise;
         Texture2D noiseTex;
         int copyCount = 1;
@@ -127,7 +131,7 @@ namespace Kenta.FX
             flipY = upsideDown;
             var uv = new Rect(flipX ? 1f : 0f, flipY ? 1f : 0f, flipX ? -1f : 1f, flipY ? -1f : 1f);
             if (screen != null)
-                foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+                foreach (var layer in Layers)
                     if (layer != null && layer.Display != null) layer.Display.uvRect = uv;
             foreach (var img in copyImages)
                 if (img != null) img.uvRect = uv;
@@ -172,7 +176,7 @@ namespace Kenta.FX
             frame++;
             // image retournée : le décalage sous-pixel des calques (posé par CameraRig) doit aller dans l'autre sens
             if ((flipX || flipY) && screen != null)
-                foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+                foreach (var layer in Layers)
                 {
                     if (layer == null || layer.Display == null) continue;
                     var pos = layer.Display.rectTransform.anchoredPosition;
@@ -209,7 +213,7 @@ namespace Kenta.FX
         void ApplyMain(Vector2 offset, Color tint, bool visible)
         {
             if (screen == null) return;
-            foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+            foreach (var layer in Layers)
             {
                 if (layer == null || layer.Display == null) continue;
                 var d = layer.Display;
@@ -222,14 +226,16 @@ namespace Kenta.FX
         void ApplyCopies(Vector2 offset, Color tint, bool visible)
         {
             if (screen != null)
-                foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+                foreach (var layer in Layers)
                     if (layer != null && layer.Display != null) layer.Display.enabled = false;
             for (int i = 0; i < copies.Count; i++)
             {
                 // chaque copie tremble un peu différemment : on ne sait plus laquelle regarder
                 copies[i].gameObject.SetActive(visible || i % 2 == 0);
-                foreach (var img in copies[i].GetComponentsInChildren<RawImage>())
+                // deux images par copie (monde, acteurs), dans l'ordre de copyImages : pas de recherche par image
+                for (int j = i * 2; j < i * 2 + 2 && j < copyImages.Count; j++)
                 {
+                    var img = copyImages[j];
                     img.color = tint;
                     img.rectTransform.anchoredPosition = i % 2 == 0 ? offset : -offset;
                 }
