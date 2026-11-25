@@ -93,7 +93,7 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-24, ADR-021) **P1** Trous et chutes → liquide du biome 1 u sous le bord, plus sombre en profondeur. Avant : : le fond d'un trou est vide (couleur de la brume). Montrer le danger : eau, ronces, obscurité ou la Sourdine en bas
 - [x] (2026-11-24, ADR-021) **P1** Un seul décor pendant 1 min 43 → ambiance par section (teinte, lumière qui baisse) ; la démo de l'accueil change de monde. Avant : : même arbre rose, même gardien, même ciel. Varier par section (heure, météo, couleurs) même sans changer de biome
 - [x] (2026-11-24, ADR-021) **P1** Le gardien (Cerf de pierre) → sprite à part, plus contrasté, yeux ouverts une mesure à chaque section et tout le refrain. Avant : est une tache grise floue derrière la brume, jamais animé : le rendre lisible et le faire réagir aux sections
-- [ ] **P2** Pièces qui tournent : les images de profil (1 à 2 px de large) se lisent comme des traits orange parasites dans les arcs. Garder des images plus larges, ou ne pas les faire tourner
+- [x] (2026-11-25) **P2** Pièces qui tournent : les images de profil (1 à 2 px de large) se lisent comme des traits orange parasites dans les arcs. Garder des images plus larges, ou ne pas les faire tourner
 - [ ] **P2** Plateformes flottantes trop fines (2 à 3 px) : elles se lisent comme des lignes. Les épaissir, avec un dessous
 - [ ] **P2** Tambours-tremplins dessinés en tonneaux : rien ne dit « rebond ». Peau tendue, couleur vive, flèche ou animation d'appel
 - [ ] **P2** Héros petit en vue 640 px (~50 px sur 360, soit 150 px d'écran) : vérifier la lisibilité à 2 m sur la borne
@@ -118,16 +118,18 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [ ] **P2** En éditeur, l'AFK du toolkit (60 s sans appui) affiche « Retour au menu… » pendant une partie en autoplay : sans effet sur la borne (on y joue), mais l'accueil en cycle (logo, démo, classement) renvoie au menu de la borne après 60 s d'inactivité, comme le veut le toolkit
 
 ## Audit du 2026-11-25
-Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2026-11-25.md](audit-2026-11-25.md).
-- [ ] **P0** Décor collé à l'écran verticalement : arbres et montagnes « volent » au-dessus du vide quand le niveau monte ou descend (`BiomeBackdrop` : calques à `y = c.y`). Parallaxe verticale ancrée à l'horizon du sol lissé
-- [ ] **P0** Bande vide et pâle sous la ligne d'arbres quand le sol est bas : dessiner un pied (sous-bois, terre) aux calques (`kenta_art.py`)
-- [ ] **P0** Gardien gris translucide au centre de l'image : le reculer (plus petit, sur le côté, opaque dans les tons du ciel, parallaxe faible)
-- [ ] **P1** Brume blanche à 32 % sur tout le décor : image délavée. Brume en dégradé ou plus légère
-- [ ] **P1** « PARFAIT ! » reste au point jugé et traîne derrière le héros (fantôme gris pendant le fondu) : le faire suivre le héros
-- [ ] **P1** Traînée du bandeau en pointillés : bruit visuel ; la supprimer (le bandeau flotte déjà) ou la refaire en ruban continu à partir de ×4
-- [ ] **P1** Pièces trop petites, parfois hors de l'image en montée
-- [ ] **P1** Cadrage : héros au bord haut sur certains tambours, sol collé au bas avec un grand vide au-dessus (`safeMargins`, rail)
-- [ ] **P1** Piliers de terre encore massifs et sombres sur les marches hautes
+Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2026-11-25.md](audit-2026-11-25.md). Tout ce qui touche à la **verticalité** (caméra, rail, terrain, physique du héros en montée et en descente) est réservé à l'ami de Jeremy qui travaille dessus : on n'y touche pas.
+- [x] (2026-11-25) **P0** Décor collé à l'écran verticalement (arbres qui « volent ») → `BiomeBackdrop` pose la ligne de sol des calques sur le sol le plus bas de la vue (lu sur `CameraRig.HeightProbe`, lissé), une part par calque
+- [x] (2026-11-25) **P0** Bande vide et pâle sous les arbres → pied des calques (`kenta_art.add_foot`), étiré jusqu'au bas de la vue
+- [x] (2026-11-25) **P0** Gardien → entier, opaque, **devant** les montagnes lointaines : c'est l'élément principal du décor (choix de Jeremy, au lieu de l'enfoncer)
+- [x] (2026-11-25) **P1** Brume blanche à 32 % → dégradé de 4 % en haut à 20 % en bas
+- [x] (2026-11-25) **P1** « PARFAIT ! » suit le héros (`JudgePopup`)
+- [x] (2026-11-25) **P1** Traînée du bandeau → ruban plein, seulement à partir de ×4
+- [x] (2026-11-25) **P1** Pièces de 17 px, sans image de profil (aussi le point P2 des « traits parasites »)
+- [ ] **Verticalité (réservé)** Le héros **glisse** en montant une colonne de marches ou une rampe : ses pieds suivent le terrain pendant que la course continue à plat ; en descente, il tombe du bord sans transition. Piste : une pose d'escalade / d'appui sur la marche, et une réception à chaque marche descendue
+- [ ] **Verticalité (réservé), P1** Pièces parfois hors de l'image en montée (placement et rail)
+- [ ] **Verticalité (réservé), P1** Cadrage : héros au bord haut sur certains tambours, sol collé au bas avec un grand vide au-dessus (`safeMargins`, rail)
+- [ ] **Verticalité (réservé), P1** Piliers de terre encore massifs et sombres sur les marches hautes
 - [ ] **P2** Écran « BRAVO ! » : note S coincée dans une case étroite
 - [ ] **P2** Étiquette de section du HUD qui chevauche les pièces en haut de l'image
 - [ ] **P2** Arbre rose du calque proche trop gros et trop répété : au moins 3 motifs par biome
