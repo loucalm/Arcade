@@ -163,3 +163,145 @@ def tile_wrap(p, x, draw):
     """Appelle draw(dx) trois fois (-W, 0, +W) pour un décor qui boucle sans couture."""
     for dx in (-p.w, 0, p.w):
         draw(x + dx)
+
+
+# ============================================================================
+# VOLUMES : forme (masque) ombrée comme dans les maquettes du PDF
+# ============================================================================
+class Shape:
+    """Masque en pixels réels construit avec les coordonnées logiques d'un Pix (même `scale`). On l'ombre ensuite
+    d'un coup (shade_into) : reflet sur le bord éclairé (haut-gauche), ombre sur le bord opposé, contour foncé."""
+
+    def __init__(self, p):
+        self.s = p.s
+        self.m = Image.new("L", p.im.size, 0)
+        self.d = ImageDraw.Draw(self.m)
+
+    def ellipse(self, cx, cy, rx, ry):
+        s = self.s
+        self.d.ellipse([(cx - rx) * s, (cy - ry) * s, (cx + rx) * s, (cy + ry) * s], fill=255)
+        return self
+
+    def circle(self, cx, cy, r):
+        return self.ellipse(cx, cy, r, r)
+
+    def poly(self, pts):
+        s = self.s
+        self.d.polygon([(int(round(x * s)), int(round(y * s))) for x, y in pts], fill=255)
+        return self
+
+    def rect(self, x0, y0, x1, y1):
+        s = self.s
+        if x1 > x0 and y1 > y0:
+            self.d.rectangle([x0 * s, y0 * s, x1 * s - 1, y1 * s - 1], fill=255)
+        return self
+
+    def line(self, a, b, width=1):
+        s = self.s
+        self.d.line([(a[0] * s, a[1] * s), (b[0] * s, b[1] * s)], fill=255, width=max(1, int(width * s)))
+        return self
+
+    def cut(self, other):
+        """Retire une autre forme (trou, échancrure)."""
+        a = np.asarray(self.m) > 0
+        b = np.asarray(other.m) > 0
+        self.m = Image.fromarray(((a & ~b) * 255).astype(np.uint8), "L")
+        self.d = ImageDraw.Draw(self.m)
+        return self
+
+    def mask(self):
+        return np.asarray(self.m) > 0
+
+
+def _shift(m, dx, dy):
+    """Masque décalé de (dx, dy) pixels (hors champ = vide)."""
+    h, w = m.shape
+    out = np.zeros_like(m)
+    ys = slice(max(0, dy), min(h, h + dy))
+    yd = slice(max(0, -dy), min(h, h - dy))
+    xs = slice(max(0, dx), min(w, w + dx))
+    xd = slice(max(0, -dx), min(w, w - dx))
+    out[ys, xs] = m[yd, xd]
+    return out
+
+
+def shade_into(p, shape, base, hi=None, lo=None, edge=None, hi_w=2, lo_w=3, light=(-1, -1), texture=None, rng=None,
+               lo2=None, lo2_w=2):
+    """Peint la forme dans p : aplat `base`, reflet `hi` (bande de hi_w px du côté de la lumière), ombre `lo` (bande de
+    lo_w px du côté opposé), contour `edge` d'1 px. texture = (couleur, densité) : mouchetis de la matière (pierre…)."""
+    m = shape.mask() if isinstance(shape, Shape) else shape
+    a = np.asarray(p.im).copy()
+    lx, ly = light
+    a[m] = col(base)
+    if texture and rng is not None:
+        tc, dens = texture
+        r = np.random.default_rng(rng.randint(0, 1 << 30)).random(m.shape)
+        a[m & (r < dens)] = col(tc)
+    if lo:
+        # pixel à l'ombre : son voisin à lo_w px vers l'ombre (opposé à la lumière) sort de la forme
+        away = _shift(m, lx * lo_w, ly * lo_w)
+        a[m & ~away] = col(lo)
+        if lo2:
+            away2 = _shift(m, lx * lo2_w, ly * lo2_w)
+            a[m & ~away2] = col(lo2)
+    if hi:
+        toward = _shift(m, -lx * hi_w, -ly * hi_w)
+        a[m & ~toward] = col(hi)
+    if edge:
+        inner = m & _shift(m, 1, 0) & _shift(m, -1, 0) & _shift(m, 0, 1) & _shift(m, 0, -1)
+        a[m & ~inner] = col(edge)
+    p.im = Image.fromarray(a, "RGBA")
+    p.d = ImageDraw.Draw(p.im)
+    return p
+
+
+def cloud(p, cx, cy, w, body, hi=None, lo=None, rng=None):
+    """Nuage pixel art des maquettes : grosses bulles au-dessus d'une base plate, reflet en haut, ombre en dessous."""
+    rng = rng or random.Random(1)
+    sh = Shape(p)
+    h = max(4, w // 4)
+    base_y = cy + h // 2
+    sh.rect(cx - w // 2 + h // 3, base_y - h // 2, cx + w // 2 - h // 3, base_y)
+    x = cx - w // 2 + h // 2
+    while x < cx + w // 2 - h // 3:
+        r = rng.randint(max(2, h // 2), max(3, int(h * 0.95)))
+        sh.circle(x, base_y - r + 1, r)
+        x += r + rng.randint(0, max(1, r // 2))
+    flat = Shape(p).rect(cx - w, base_y, cx + w, base_y + h * 2)
+    sh.cut(flat)
+    return shade_into(p, sh, body, hi=hi, lo=lo, hi_w=1, lo_w=2, light=(0, -1))
+
+
+def canopy(p, cx, cy, rx, ry, base, hi, lo, edge=None, rng=None, lumps=7):
+    """Couronne d'arbre en grappes (comme les arbres des maquettes) : chaque grappe est ombrée à part, de l'arrière
+    vers l'avant, ce qui dessine les volumes. Renvoie la liste des grappes (x, y, r)."""
+    rng = rng or random.Random(1)
+    parts = []
+    for i in range(lumps):
+        a = rng.uniform(math.pi * 0.95, math.tau * 1.05) if i < lumps - 2 else rng.uniform(0, math.tau)
+        d = rng.uniform(0.35, 0.75)
+        parts.append((cx + math.cos(a) * rx * d, cy + math.sin(a) * ry * d * 0.9, max(3, int(min(rx, ry) * rng.uniform(0.45, 0.7)))))
+    parts.append((cx, cy, int(min(rx, ry) * 0.75)))
+    parts.sort(key=lambda t: t[1])                  # l'arrière (haut) d'abord, l'avant (bas) recouvre
+    back = Shape(p)
+    for x, y, r in parts:
+        back.circle(x, y + 2, r)
+    shade_into(p, back, lo, edge=edge)               # masse sombre derrière : creux entre les grappes
+    for x, y, r in parts:
+        shade_into(p, Shape(p).circle(x, y, r), base, hi=hi, lo=lo, hi_w=2, lo_w=2)
+    return parts
+
+
+def speckle(p, shape, c, density, rng, size=1):
+    """Mouchetis dans une forme (pierre, terre) : `size` en pixels logiques."""
+    m = shape.mask() if isinstance(shape, Shape) else shape
+    ys, xs = np.nonzero(m)
+    a = np.asarray(p.im).copy()
+    s = p.s
+    n = int(len(xs) * density / max(1, (size * s) ** 2))
+    for _ in range(n):
+        k = rng.randrange(len(xs))
+        x0, y0 = xs[k] - xs[k] % (size * s), ys[k] - ys[k] % (size * s)
+        a[y0:y0 + size * s, x0:x0 + size * s][m[y0:y0 + size * s, x0:x0 + size * s]] = col(c)
+    p.im = Image.fromarray(a, "RGBA")
+    p.d = ImageDraw.Draw(p.im)

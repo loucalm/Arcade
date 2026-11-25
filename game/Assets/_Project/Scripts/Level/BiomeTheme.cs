@@ -23,8 +23,6 @@ namespace Kenta.Level
 
         [Header("Gardien (sprite à part, placé comme le ciel)")]
         public Sprite guardian;
-        [Tooltip("Gardien éveillé (yeux ouverts) : montré aux changements de section, tout le refrain.")]
-        public Sprite guardianAwake;
         [Tooltip("Centre du gardien par rapport au centre de l'écran 640×360, en px (y vers le haut). Écrit par tools/gen-kenta-assets.py.")]
         public Vector2 guardianOffset;
 

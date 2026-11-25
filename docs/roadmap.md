@@ -54,7 +54,12 @@ Règles :
   - [ ] Faire valider le nouveau gabarit par l'équipe, puis **vérifier sur la borne** : lisibilité à 2 m, rendu des héros à ×3 (vue large)
   - [ ] Animations restantes : attente animée (menus), pose de victoire, mort animée ; liane et course sur mur à brancher avec leurs mécaniques
   - [ ] Vignette (`thumbnail.png`) et pages du site : encore avec le Kenta du PDF
-  - décors des biomes plus riches (aujourd'hui générés : arbres, rochers, cristaux, volcan, ruines, nuages) : gardiens animés, éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
+  - [x] Décors mis au niveau des maquettes : gardiens repris du PDF (endormis, sans animation des yeux), nuages, volumes ombrés, forêts denses, flanc en terre et pierres (ADR-024) (2026-11-25)
+  - [ ] **P2** Gardiens : le bas du corps est prolongé à plat (caché par les arbres dans les maquettes) ; le redessiner, ou le faire générer par Gemini (Antigravity `image-generator`, en erreur HTTP 500 le 25/11)
+  - [ ] **P2** Reflet du décor dans l'eau sous le sol, comme dans toutes les maquettes du PDF (rendu à part, à chiffrer pour le GPU intégré)
+  - [ ] **P2** Obstacles (souche, tonneau, cristal, géode, basalte, glace, colonne, nuage) : même passe d'ombrage que le décor ; plateformes suspendues à des lianes comme dans les maquettes
+  - [ ] **P2** La Cité : ruines encore trop « immeubles » (arches, colonnes brisées des maquettes)
+  - éléments qui jouent sur le temps (champignons-cymbales, bulles, cristaux en arpège, geysers, aurore, éclairs…)
   - scènes de drop entre biomes (tronc qui frappe, chute vers le marais, éruption, avalanche…) : aujourd'hui flash + secousse + changement de décor
   - ennemis : variante « cassé » (pièces qui s'échappent) pour les 8, comme le djembé
   - tour REMIX : `PixelScreen.SetDivider(3)` (80×45), palette 4 tons, perturbations (voir § 9) ; il manque la version 8-bit du morceau

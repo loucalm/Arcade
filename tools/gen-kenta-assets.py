@@ -35,15 +35,10 @@ def put(out, sub, name, img, sheet=None):
 
 
 def gen_biomes(out, sheet):
-    guardians = {}
+    # les gardiens (guardian_<id>.png + guardians.json) viennent des maquettes du PDF : tools/extract-guardians.py
     for b in BIOMES:
         i = b["id"]
         put(out, "biomes", f"bg_{i}_sky", art.draw_sky(b), sheet)
-        sleep, (dx, dy) = art.draw_guardian(b, awake=False)
-        awake, _ = art.draw_guardian(b, awake=True)
-        put(out, "biomes", f"guardian_{i}", sleep, sheet)
-        put(out, "biomes", f"guardian_{i}_awake", awake, sheet)
-        guardians[i] = {"x": dx, "y": dy}
         put(out, "biomes", f"fill_{i}_deep", art.draw_fill_deep(b))
         for k in range(4):
             put(out, "biomes", f"deco_{i}_{k}", art.draw_deco(b, k), sheet)
@@ -59,9 +54,6 @@ def gen_biomes(out, sheet):
         put(out, "biomes", f"fill_{i}", art.draw_fill(b))
         put(out, "biomes", f"cliff_{i}", art.draw_cliff_top(b))
         put(out, "biomes", f"platform_{i}", art.draw_platform(b), sheet)
-    # position des gardiens (px réels depuis le centre de l'écran 640×360, y vers le haut) : lue par KentaBuilder
-    with open(os.path.join(out, "biomes", "guardians.json"), "w", encoding="utf-8") as f:
-        json.dump({"items": [{"id": k, "x": v["x"], "y": v["y"]} for k, v in guardians.items()]}, f, indent=1)
 
 
 def gen_ui(out, sheet):
@@ -94,8 +86,18 @@ def gen_font(out, sheet):
 def gen_thumbnail(out, sheet):
     """Jaquette carrée de la borne (game/BuildExtras/thumbnail.png) : la Sylve, Kenta en pleine course et le logo."""
     b = BIOMES[0]
-    scene = art.draw_sky(b, scale=1, statue=True)
-    for layer, off in ((art.draw_far(b, scale=1), 120), (art.draw_mid(b, scale=1), 150), (art.draw_near(b, scale=1), 230)):
+    scene = art.draw_sky(b, scale=1)
+    far = art.draw_far(b, scale=1)
+    scene.im.alpha_composite(far.im.crop((120, 0, 360, 135)))
+    # gardien du PDF (sprite ×2) ramené à l'échelle 1, placé comme dans le décor (guardians.json, px réels 640×360)
+    gdir = os.path.join(out, "biomes")
+    with open(os.path.join(gdir, "guardians.json"), encoding="utf-8") as f:
+        pos = {it["id"]: (it["x"], it["y"]) for it in json.load(f)["items"]}
+    g = Image.open(os.path.join(gdir, f"guardian_{b['id']}.png")).convert("RGBA")
+    g = g.resize((g.width // 2, g.height // 2), Image.NEAREST)
+    gx, gy = pos[b["id"]]
+    scene.im.alpha_composite(g, (int(160 + gx / 2 - g.width / 2), int(90 - gy / 2 - g.height / 2)))
+    for layer, off in ((art.draw_mid(b, scale=1), 150), (art.draw_near(b, scale=1), 230)):
         scene.im.alpha_composite(layer.im.crop((off, 0, off + 240, 135)))
     ground = art.draw_ground(b)
     for x in range(0, 240, 32):

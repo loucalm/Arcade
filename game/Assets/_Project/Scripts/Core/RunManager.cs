@@ -371,18 +371,13 @@ namespace Kenta.Core
         }
 
         /// <summary>
-        /// Le décor suit le morceau : ambiance de la section (teinte, lumière qui baisse), et le gardien qui s'éveille
-        /// une mesure à chaque section, tout le refrain.
+        /// Le décor suit le morceau : ambiance de la section (teinte, lumière qui baisse). Le gardien reste endormi.
         /// </summary>
         void UpdateScenery(int index)
         {
             if (backdrop == null) return;
             var section = Chart.sections[index];
             backdrop.SetSection(section.name, Progress);
-            double end = index + 1 < Chart.sections.Length ? Chart.sections[index + 1].startBeat : section.startBeat + 32;
-            double spb = Conductor.Instance.SecondsPerBeat;
-            bool refrain = section.name != null && section.name.StartsWith("refrain");
-            backdrop.Wake((float)((refrain ? end - section.startBeat : 4.0) * spb));
         }
 
         void TriggerFx(ChartEvent e)

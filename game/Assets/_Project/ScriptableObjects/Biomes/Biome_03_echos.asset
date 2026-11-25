@@ -20,8 +20,7 @@ MonoBehaviour:
   mid: {fileID: 21300000, guid: 3288e789047c3443b89024ea3356fff3, type: 3}
   near: {fileID: 21300000, guid: b9260e2c7cd9b4f7085d99e6d913e1d5, type: 3}
   guardian: {fileID: 21300000, guid: 2c474fc0c98f74de5aca2b0c32835479, type: 3}
-  guardianAwake: {fileID: 21300000, guid: d3974dc0fea6649b4a79524d86f58241, type: 3}
-  guardianOffset: {x: 139, y: 23}
+  guardianOffset: {x: 89, y: -5}
   ground: {fileID: 21300000, guid: e893dcfa029ed431dbbb571e63fb0110, type: 3}
   hazard: {fileID: 21300000, guid: f3fcb4f7fd514499aa7132428c5bed1d, type: 3}
   wall: {fileID: 21300000, guid: dd028fa7e0be34960a49f028c2e5ec5d, type: 3}

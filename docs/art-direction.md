@@ -20,7 +20,8 @@ Ce document explique **comment elle est construite dans le projet** et comment l
 | Source | Contenu | Où |
 |---|---|---|
 | **PDF de la DA** (`tools/extract-kenta-pdf.py`) | 3 héros × 8 poses + pose d'attente, 8 ennemis, djembé écrasé / étiré / cassé | `Art/Kenta/Pdf/` |
-| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel 640×360, 3 calques 1280×360, gardien endormi / éveillé + `guardians.json`, sol, trou, mur, bloc, plafond, poteau, flanc et flanc profond, 4 détails de pilier), pièces, totem, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
+| **Gardiens** (`tools/extract-guardians.py`) | les 8 statues géantes **découpées dans les maquettes de biome du PDF** (pages 6–13) : silhouette tracée, pierre recoloriée là où un arbre ou une pièce passait devant, bas du corps prolongé, ×2 ; + `guardians.json` (position) | `Art/Kenta/Gen/biomes/` |
+| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel 640×360 avec nuages, 3 calques 1280×360, sol, trou, mur, bloc, plafond, poteau, flanc et flanc profond, 4 détails de pilier), pièces, totem, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
 
 Les PNG sont **commités** : inutile de relancer les outils sauf pour modifier un décor ou si le PDF change. Dépendances : `pip install -r tools/requirements.txt` (+ `pymupdf` pour l'extraction du PDF, `librosa` pour la chart).
 - Les sprites du PDF sont recadrés pour que le pivot soit **milieu-bas** (les pieds), sans réglage dans Unity.
@@ -41,7 +42,7 @@ Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.c
 |---|---|
 | Sol à hauteur variable | `cliff_<biome>` (dessus herbu), `fill_<biome>` (flanc : bandeau clair, puis assombri), `fill_<biome>_deep` (sous 2,4 u, plus sombre), `deco_<biome>_0..3` (pierres, racines, fossiles semés sur le flanc), `platform_<biome>` (plateforme suspendue). Fond des trous : le liquide du biome (`hazard_<biome>`) juste au-dessus de la hauteur où l'on meurt |
 | 8 mondes | `Level/BiomeTheme` (SO) ; un biome = une section de la chart ; `LevelBuilder.BiomeAt(beat)` |
-| Décor | `FX/BiomeBackdrop` : ciel fixe 640×360, gardien (sprite à part, éveillé une mesure à chaque section et tout le refrain), 3 calques de 1280 px qui bouclent, brume. **Dessinés à la définition de la vue large** (`pixlib.Pix(scale=2)` : composition de l'écran 320×180, tracée en 640×360) : leurs pixels font la taille de ceux du niveau. Ambiance par section (`SetSection` : teinte par type de section, lumière qui baisse au fil du morceau) |
+| Décor | `FX/BiomeBackdrop` : ciel fixe 640×360, gardien (sprite à part, **toujours endormi, sans animation des yeux**, placé entre le lointain et le plan moyen comme dans les maquettes), 3 calques de 1280 px qui bouclent, brume. **Dessinés à la définition de la vue large** (`pixlib.Pix(scale=2)` : composition de l'écran 320×180, tracée en 640×360) : leurs pixels font la taille de ceux du niveau. Ambiance par section (`SetSection` : teinte par type de section, lumière qui baisse au fil du morceau) |
 | Héros | `Player/HeroProfile` + `HeroSpriteSet` (SO : `runCycle` 8 images, `jumpFrames` 8, `hitFrames` 4, `slideLoop` 3, `slideIn` 3, `slideOut` 3, `crouch`, poses fixes) ; `HeroAnimator` choisit l'image : course et glissade selon la distance, frappe selon le temps depuis l'appui (`PlayerController.HitAgeBeats`), saut selon son avancement (`JumpProgress`) |
 | Bandeau (traînée de combo) | `FX/BandanaTrail` : 8 à 48 px selon le multiplicateur ×1 → ×8 |
 | Ennemis | djembé : 2 images alternées sur le temps (`BeatFrames`) ; les autres : immobiles (le sautillement au beat a été retiré) |
@@ -54,3 +55,10 @@ Menu **Kenta > Reconstruire thèmes, prefabs et scène** (`Editor/KentaBuilder.c
 - Le contour noir d'1 px est dans les sprites ; ne pas en ajouter côté Unity.
 - Lisibilité d'abord : tout texte posé sur le décor a sa plaque (`plate`) ; sur la borne, vu debout à 2 m (point à tester, voir roadmap).
 - Pendant le classement du toolkit (accueil, fin de partie), nos écrans sont masqués pour qu'il ne chevauche pas le logo.
+
+## Mise à niveau des décors sur les maquettes du PDF (2026-11-25, ADR-024)
+- **Volumes** : `pixlib.Shape` + `shade_into` ombrent une forme d'un coup (reflet côté lumière en haut à gauche, ombre double de l'autre côté, contour) ; `canopy` dessine les couronnes en grappes ombrées une à une ; `cloud` les nuages à base plate des maquettes.
+- **Ciel** : nuages (sauf grotte et orage), astre avec halo. **Lointain** : montagnes à deux versants et ravines. **Plan moyen** : forêts denses sur deux rangées (rangée du fond brumeuse), arbres en grappes, mousse qui pend au Bayou ; hauteurs calées sur les maquettes (la forêt couvre le bas du gardien, pas son visage).
+- **Flanc des piliers** : terre en strates ondulées avec pierres enfouies (raccord sans couture) au lieu des briques.
+- Les gardiens générés en code ont été abandonnés (jugés moins beaux que ceux du PDF).
+

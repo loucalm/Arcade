@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Kenta.FX
 {
     /// <summary>
-    /// Décor du biome courant : un ciel fixe (640×360), le gardien (sprite à part, endormi ou éveillé) et trois calques
+    /// Décor du biome courant : un ciel fixe (640×360), le gardien (sprite à part, toujours endormi : il ne bouge pas) et trois calques
     /// de 1280×360 en parallaxe qui bouclent sans couture. Dessinés à la définition de la vue large : leurs pixels ont la
     /// même taille que ceux du niveau. Tout est placé sur la grille de pixels. SetBiome change de monde.
     /// Ambiance par section (SetSection) : teinte et luminosité qui glissent, pour que le décor change au fil du morceau.
@@ -29,16 +29,15 @@ namespace Kenta.FX
         readonly SpriteRenderer[][] layers = new SpriteRenderer[3][];
         BiomeTheme current;
         Color mood = Color.white, moodFrom = Color.white, moodTo = Color.white;
-        float moodT = 1f, moodBlend = 1f, awakeUntil = -1f;
+        float moodT = 1f, moodBlend = 1f;
 
         public BiomeTheme Current => current;
-        public bool GuardianAwake => Time.time < awakeUntil;
 
         void Awake()
         {
             if (cam == null) cam = Camera.main;
             sky = Make("Sky", firstSortingOrder);
-            guardian = Make("Guardian", firstSortingOrder + 5);
+            guardian = Make("Guardian", firstSortingOrder + 15);      // comme dans les maquettes : devant le lointain, derrière les arbres
             ground = Make("Ground", -5);
             ground.drawMode = SpriteDrawMode.Tiled;
             ground.tileMode = SpriteTileMode.Continuous;
@@ -73,7 +72,7 @@ namespace Kenta.FX
             if (biome == null) return;
             current = biome;
             sky.sprite = biome.sky;
-            guardian.sprite = GuardianAwake && biome.guardianAwake != null ? biome.guardianAwake : biome.guardian;
+            guardian.sprite = biome.guardian;
             ground.sprite = biome.ground;
             ground.size = new Vector2(8f, 0.5f);          // le sprite remet la taille à celle d'une tuile : on la rétablit
             groundFill.sprite = biome.fill;
@@ -83,15 +82,11 @@ namespace Kenta.FX
                 foreach (var sr in layers[i]) sr.sprite = strips[i];
         }
 
-        /// <summary>Le gardien ouvre les yeux pendant `seconds` (changement de section ; tout le refrain).</summary>
-        public void Wake(float seconds) => awakeUntil = Mathf.Max(awakeUntil, Time.time + seconds);
-
-        /// <summary>Retour à l'ambiance neutre et au gardien endormi (début de partie, accueil).</summary>
+        /// <summary>Retour à l'ambiance neutre (début de partie, accueil).</summary>
         public void ResetMood()
         {
             mood = moodFrom = moodTo = Color.white;
             moodT = moodBlend = 1f;
-            awakeUntil = -1f;
         }
 
         /// <summary>
@@ -144,8 +139,7 @@ namespace Kenta.FX
                 mood = Color.Lerp(moodFrom, moodTo, moodT * moodT * (3f - 2f * moodT));
             }
             sky.color = mood;
-            var gs = GuardianAwake && current.guardianAwake != null ? current.guardianAwake : current.guardian;
-            guardian.sprite = gs;
+            guardian.sprite = current.guardian;
             guardian.color = mood;
             guardian.transform.localScale = scale;
             Vector2 go = current.guardianOffset * (k / PixelScreen.Ppu);
