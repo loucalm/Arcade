@@ -8,8 +8,8 @@ Livrables : 1) le jeu Unity WebGL déposé sur la borne, 2) le site (présentati
 ## Contraintes borne — NON NÉGOCIABLES
 Toute PR qui casse un de ces points est refusée. Détails : [docs/anatidae.md](docs/anatidae.md).
 - [ ] Résolution **1920×1080**, WebGL, **Firefox ESR**, i5-7200U + **GPU intégré** → sobriété graphique.
-- [ ] **Bouton blanc** (`Coin`) → retour menu en ≤ 1,5 s. **60 s sans input** → retour menu. Géré par `MenuManager` du toolkit : ne pas le retirer des scènes.
-- [ ] **Dead zone** sur les joysticks (repos ≈ `-0.00392`) : passer par `ArcadeInput`, jamais `Input.GetAxis` directement.
+- [ ] **Bouton blanc** (`Coin`) → retour menu en ≤ 1,5 s. **60 s sans input** → retour menu. `MenuManager` du toolkit : ne pas le retirer des scènes ; en build, `Core/ArcadeMenu` le désactive au lancement et applique les mêmes règles en lisant aussi les manettes du navigateur (ADR-029).
+- [ ] **Dead zone** sur les joysticks (repos ≈ `-0.00392`) : passer par `ArcadeInput`, jamais `Input.GetAxis` directement. `ArcadeInput` lit aussi les manettes dans le navigateur (`ArcadePads`) : Unity 6.3 ne voit en Web que la manette à l'index 0 (ADR-029).
 - [ ] Dossier de build = `index.html` + `thumbnail.png` (carré) + `info.json`. Nom du dossier = `HighscoreManager.GameName` = **`Kenta`**.
 - [ ] Score + saisie de nom (3 caractères) en fin de partie via `Anatidae.HighscoreManager`.
 - [ ] 1 ou 2 joueurs, **3 boutons max** (on utilise B1 = saut, B2 = frappe, joystick bas = glissade).

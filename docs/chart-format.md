@@ -60,7 +60,7 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `bounce` + `variant` | `"to_back"` : tambour devant qui envoie sur le chemin du fond ; `"to_front"` : tambour au fond qui ramène devant ; `"back"` : tambour au fond | comme `bounce` |
 | `enemy` + `lane 2` | **pendu au plafond** (dessous à `height`) ; avec `variant: "back"` : ennemi sur le chemin du fond | comme `enemy` |
 | `jump` | saut sans trou dans le sol du niveau (trou du plafond, ou du chemin du fond avec `variant: "back"`) : jugé quand on passe le trou | comme `gap` |
-| `screen_split` | l'image se dédouble : `copies` = 1 (normal), 2, 5 ou 9 copies plus petites, jusqu'au prochain `screen_split` | — |
+| `screen_split` | l'image se dédouble en une grille qui remplit tout l'écran : `copies` = 1 (normal), 4 (2×2, agrandies ×1,5) ou 9 (3×3, ×1), jusqu'au prochain `screen_split` (2 et 5 sont lus comme 4 et 9) | — |
 | `glitch` | grésillement (neige, image qui saute, couleurs) d'intensité `intensity` (0…1) pendant `length` beats, plus fort sur chaque temps | — |
 
 Tous les obstacles (mur, ennemi, bloc, plafond, pièces) se posent **sur le sol principal à leur x** : un mur après une marche est posé en haut de la marche.

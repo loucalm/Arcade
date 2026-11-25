@@ -181,9 +181,9 @@ namespace Kenta.Level
                         };
                         o.view = flying ? MakeFlyer(new Vector2(cx, ey), BiomeAt(e.beat))
                             : hanging ? MakeHanging(new Vector2(cx, p.height), BiomeAt(e.beat))
+                            : stomp ? MakeStomper(new Vector2(cx, ey), BiomeAt(e.beat))
                             : enemy ? MakeEnemy(new Vector2(cx, ey), BiomeAt(e.beat)) : MakeBlock(new Vector2(cx, ey), BiomeAt(e.beat));
                         if (plane == 1) SendToBack(o.view);
-                        if (stomp) MarkStomp(o.view);
                         Obstacles.Add(o);
                         if (stomp) AutoJumpBeats.Add(e.beat);          // l'appui du grand rebond
                         else AutoHitBeats.Add(e.beat);
@@ -811,16 +811,29 @@ namespace Kenta.Level
             }
         }
 
-        /// <summary>Ennemi cuirassé : l'ennemi du biome teinté métal, et une flèche de pixels au-dessus qui dit « saute dessus ».</summary>
-        void MarkStomp(GameObject view)
+        /// <summary>
+        /// Cuirassé : carapace de métal et tremplin jaune (sprite commun à tous les biomes, comme la chauve-souris), le
+        /// tremplin s'écrase sur le temps, et une double flèche jaune au-dessus dit « saute dessus ». Rien à voir avec
+        /// l'ennemi du biome, qu'on frappe. Sans sprite dédié : l'ennemi du biome teinté métal.
+        /// </summary>
+        GameObject MakeStomper(Vector2 pos, BiomeTheme biome)
         {
-            if (view == null) return;
-            foreach (var sr in view.GetComponentsInChildren<SpriteRenderer>(true)) sr.color *= new Color(0.75f, 0.85f, 1f);
-            var t = view.transform;
+            var t = Group("Stomper", pos);
+            var frames = theme.stomper != null && theme.stomper.Length > 0 && theme.stomper[0] != null ? theme.stomper : biome.enemyFrames;
+            var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
+            if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);
+            if (frames == biome.enemyFrames) sr.color = new Color(0.6f, 0.75f, 1f);
+            var arrow = new GameObject("Arrow").transform;
+            arrow.SetParent(t, false);
             for (int k = 0; k < 2; k++)
-                for (int j = 0; j < 3; j++)
-                    Box(t, "Arrow", new Color(1f, 0.95f, 0.5f, 0.95f), new Vector2((j - 1) * 0.1f, 1.45f + k * 0.25f + Mathf.Abs(j - 1) * 0.1f), new Vector2(0.1f, 0.1f), 13).transform.localPosition =
-                        new Vector3(PixelScreen.Snap((j - 1) * 0.1f), PixelScreen.Snap(1.45f + k * 0.25f + Mathf.Abs(j - 1) * 0.1f), 0f);
+                for (int j = 0; j < 5; j++)
+                {
+                    float dx = (j - 2) * 0.1f, dy = 1.25f + k * 0.3f + Mathf.Abs(j - 2) * 0.1f;     // chevron pointe en bas
+                    Box(arrow, "Px", new Color(1f, 0.85f, 0.25f, 1f), Vector2.zero, new Vector2(0.1f, 0.1f), 13).transform.localPosition =
+                        new Vector3(PixelScreen.Snap(dx), PixelScreen.Snap(dy), 0f);
+                }
+            arrow.gameObject.AddComponent<BeatBob>();
+            return t.gameObject;
         }
 
         /// <summary>Note de saut : une pièce agrandie ×2 (facteur entier), teintée, qui tourne.</summary>

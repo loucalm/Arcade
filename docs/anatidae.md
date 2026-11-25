@@ -46,7 +46,9 @@ En cas de doute, **ces repos font foi**. Relire leur README si un comportement s
 
 Schéma : [img/anatidae-clavier.png](img/anatidae-clavier.png). Attention : sur l'image, les libellés P2_Vertical et P2_Horizontal sont inversés. C'est l'InputManager qui fait foi.
 ### Web (Gamepad API)
-`gamepad.axes[0]` = horizontal, `axes[1]` = vertical, `buttons[0..6]` = actions, `buttons[8]` = bouton blanc.
+`gamepad.axes[0]` = horizontal, `axes[1]` = vertical (**haut = +1** : c'est ce que lit le menu de la borne, `anatidae-arcade/src/template.js`), `buttons[0..6]` = actions, `buttons[8]` = bouton blanc.
+
+**Piège (ADR-029)** : en Web, Unity 6.3 ne voit, par l'Input Manager, que la manette à l'**index 0** de `navigator.getGamepads()` (testé avec une fausse manette : à l'index 1, aucun bouton ne passe, même après `gamepadconnected`). Le menu de la borne, lui, prend la manette quel que soit son index. Kenta lit donc aussi les manettes directement dans le navigateur (`Plugins/WebGL/KentaGamepad.jslib` → `Core/ArcadePads` → `Core/ArcadeInput`) : joueur 1 = première manette branchée, joueur 2 = deuxième. Le `MenuManager` du toolkit (bouton blanc, 60 s d'inactivité) lit l'Input Manager : en build, `Core/ArcadeMenu` le désactive au lancement (il reste dans la scène) et fait le même travail avec ces manettes. Diagnostic : l'overlay de debug (F9) affiche le nombre de manettes vues par le navigateur.
 
 ## API de la borne (`http://localhost:3000`)
 Toutes les routes prennent `?game=<GameName>`.

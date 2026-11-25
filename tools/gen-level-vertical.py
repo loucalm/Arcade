@@ -187,7 +187,7 @@ def scene_intro(L):
     traverser un gouffre de note de saut en note de saut (23 → 24, 25, 26), puis la montée de grosse caisse et le
     premier tambour : envol sur le drop du couplet."""
     L.gap(4, 0.5)
-    L.gap(6, 0.5)
+    L.wall(6)                   # une souche
     L.enemy(8)                  # k
     L.enemy(10)
     L.step(12, +1)
@@ -293,14 +293,14 @@ def scene_refrain(L, base, variant=False):
     L.enemy(b + 4)              # 100 S
     # tambours en chaîne : 102 → 104 → 106 → 108 (rebonds courts, le sol reste à l'image), coup en l'air entre deux
     L.bounce(b + 6, 2.0, +1)
-    L.flyer(b + 7)              # 103 S
+    L.flyer(b + 6.5)            # au sommet du rebond (contact juste après)
     L.bounce(b + 8, 2.0, +1)
-    L.flyer(b + 9)              # 105 S
+    L.flyer(b + 8.5)
     L.bounce(b + 10, 2.0, +1)
-    L.flyer(b + 11)             # 107 k
+    L.flyer(b + 10.5)
     if variant:
         L.bounce(b + 12, 2.0, +1)
-        L.flyer(b + 13)
+        L.flyer(b + 12.5)
         L.ramp(b + 14.5, 2.0, -11)
     else:
         L.ramp(b + 12.5, 2.0, -10)                      # 108,5 : la dévalée
@@ -323,11 +323,11 @@ def scene_refrain_ciel(L, base):
       120   on rebondit, on glisse, on finit au sol en frappant sur les derniers temps."""
     b = base
     L.bounce(b - 0.5, 2.5, +10)  # 95,5 → 98 : le drop
-    L.flyer(b + 1.5)            # 97,5 S : au sommet du vol (visible dès le décollage)
+    # pas de chauve-souris sur le tambour géant : au sommet, on est trop haut pour l'avoir vue venir
     L.enemy(b + 3)              # 99 S
     L.ramp(b + 4, 1.5, +6)      # 100 → 101,5 : course sur le mur
-    L.bounce(b + 6, 2.0, +5)    # 102 k : relance
-    L.flyer(b + 7.5)            # 103,5 S : au sommet de la relance
+    L.bounce(b + 6, 1.5, +3)    # 102 k : relance (courte : la chauve-souris reste à l'image)
+    L.flyer(b + 6.5)            # 102,5 S : juste avant le sommet, à hauteur du héros
     for k in (8.5, 9.5, 10.5, 11.5):                   # 104,5 … 107,5 : K K K K, on grimpe à chaque rebond
         L.bounce(b + k, 1.0, +2.5, lums=False)
     L.lums(b + 8.75, 15, 0.25)
@@ -338,8 +338,8 @@ def scene_refrain_ciel(L, base):
     L.ramp(b + 18.5, 2.0, -12)  # 114,5 : on replonge aussitôt
     L.enemy(b + 21.5)           # 117,5 s : en bas, une fois la caméra posée
     L.gap(b + 22.5, 0.5)        # 118,5
-    L.bounce(b + 24.5, 2.0, +4) # 120,5 K : on rebondit
-    L.flyer(b + 26)             # 122 S : en redescendant
+    L.bounce(b + 24.5, 1.5, +2) # 120,5 K : on rebondit
+    L.flyer(b + 25)             # 121 S : au sommet du rebond
     L.enemy(b + 27)             # 123 S
     L.slide(b + 27.75, 1.5)     # 123,75 : glissade sous la branche
     L.enemy(b + 30)             # 126 S
@@ -426,13 +426,14 @@ def build():
     # passage 2 : la musique de [32, 128) revient en [152, 248) : mêmes idées, variées et plus hautes
     scene_couplet(L, 152, variant=True)
     scene_pont(L, 184, variant=True)
-    scene_roulement(L, 200, variant=True)
-    scene_refrain(L, 216, variant=True)
-    scene_retombee(L, 240)
+    scene_roulement(L, 200, variant=True, launch=False)
+    scene_refrain_ciel(L, 216)                         # le refrain 2 rejoue le refrain 1 (avant : ancien refrain + retombée)
     scene_fin(L)
-    # refrain 2 : l'image se dédouble puis grésille (calé sur la musique, sur des passages déjà connus)
-    L.screen_split(216, 2)      # le drop : deux écrans
-    L.screen_split(224, 5)      # le roulement de grosse caisse : cinq écrans, en petit
+    # l'écran se détraque dès le couplet 2 (≈ 1 min), sur des passages déjà joués : la grille remplit tout l'écran
+    L.screen_split(152, 4)      # couplet 2 : quatre écrans (2×2)
+    L.screen_split(168, 1)      # retour à un écran pour la course sur le mur
+    L.glitch(184, 0.35, 8)      # pont 2 : un grésillement léger
+    L.screen_split(216, 9)      # refrain 2, sur le drop : neuf écrans (3×3), en petit
     L.screen_split(232, 1)      # retour à un écran…
     L.glitch(232, 0.7, 8)       # … qui grésille sur la dévalée et les coups
     L.glitch(248, 0.5, 6)       # la fin : un dernier grésillement
@@ -1044,6 +1045,7 @@ def auto_lums(events, world, song):
 
 
 SAFE_BOTTOM, SAFE_TOP = 0.12, 0.2               # marges de CameraRig.safeMargins (le haut : sous le HUD)
+FLYER_BELOW, FLYER_ABOVE = 0.6, 2.4               # chauve-souris par rapport au centre du héros, à l'appui
 ENEMY_LEAD = 1.5                                # un ennemi est dans l'image au moins 1,5 temps (600 ms) avant son coup
 
 
@@ -1070,8 +1072,8 @@ def camera_rail(track, step=0.25, enemies=()):
     ehi = [math.inf] * n
     for eb, y0, y1 in enemies:
         for i in range(max(0, int((eb - ENEMY_LEAD) / step)), min(n, int(eb / step) + 1)):
-            elo[i] = max(elo[i], y1 - VIEW_H * (0.5 - SAFE_TOP))
-            ehi[i] = min(ehi[i], y0 - 0.3 + VIEW_H * 0.5)
+            elo[i] = max(elo[i], y1 + 0.05 - VIEW_H * (0.5 - SAFE_TOP))     # 0,05 u de plus que la vérification
+            ehi[i] = min(ehi[i], y0 - 0.35 + VIEW_H * 0.5)
     # le sol sous le héros à FRAME_Y du bas ; au plafond, le plafond à FRAME_Y du haut
     target = [f - VIEW_H * (0.5 - FRAME_Y) if v else f + VIEW_H * (0.5 - FRAME_Y) for f, v in zip(feet, inv)]
 
@@ -1227,6 +1229,18 @@ def generate():
             problems.append(f"appuis décalés de {late * SPB * 1000:+.0f} ms : {err}")
     # passages réécrits avec la nouvelle règle : chaque action laisse au moins 120 ms de marge, seule, des deux côtés
     problems += check_margins(events, WIDE_MARGIN)
+    # lisibilité : au moment de l'appui, une chauve-souris est à hauteur du héros ou au-dessus (jamais en bas du saut)
+    track = []
+    simulate(events, 120, track)
+    beats = [tr[0] for tr in track]
+    for e in events:
+        if e["type"] == "enemy" and e["lane"] == 1:
+            inv, _ = track_state(track, beats, e["beat"])
+            hero_c = track_at(track, beats, e["beat"])
+            bat_c = e["params"]["height"] + 0.45
+            if bat_c < hero_c - FLYER_BELOW or bat_c > hero_c + FLYER_ABOVE:
+                problems.append(f"chauve-souris du beat {e['beat']} à {bat_c - hero_c:+.1f} u du héros au moment de la frapper "
+                                f"(de −{FLYER_BELOW} à +{FLYER_ABOVE} u)")
     # lisibilité : chaque ennemi apparaît assez tôt pour qu'on ait le temps de le voir venir
     for eb, lead in enemy_leads(rail, World(events)):
         if lead < 1.0 - 1e-6:

@@ -220,6 +220,7 @@ namespace Kenta.EditorTools
             t.coinFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/coin_{i}.png")).ToArray();
             t.totem = Spr("Gen/world/totem.png");
             t.flyer = Spr("Pdf/enemy_chauve.png");        // ennemi volant commun (niveaux verticaux)
+            t.stomper = new[] { Spr("Gen/world/stomper_0.png"), Spr("Gen/world/stomper_1.png") };   // cuirassé commun
             t.pixel = Spr("Gen/world/px.png");
             EditorUtility.SetDirty(t);
             return t;

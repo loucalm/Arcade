@@ -75,6 +75,7 @@ namespace Kenta.DebugTools
             infoText = c == null
                 ? $"{state} | pas de Conductor | {fpsText}"
                 : $"{state} | {(c.IsPlaying ? "▶" : "■")} {c.Bpm:0} BPM | t {c.SongTime:0.000}s | beat {c.SongBeat:0.00} | dérive {c.LastDrift * 1000:0.0} ms | {fpsText}";
+            infoText += $" | manettes {ArcadePads.Count}";   // manettes vues par le navigateur (build Web), 0 en éditeur
         }
 
         void OnGUI()
