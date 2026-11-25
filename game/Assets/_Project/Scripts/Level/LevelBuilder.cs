@@ -15,13 +15,13 @@ namespace Kenta.Level
         // Décalages (en beats) entre le beat d'action et l'obstacle : ils définissent la fenêtre de tolérance.
         const float GapStartBeats = 0.2f;
         const float GapDefaultLength = 0.6f;
-        const float WallStartBeats = 0.36f;         // mur centré sur le sommet du saut : ~±45 ms de marge
-        const float EnemyCenterBeats = 0.4f;
+        const float WallStartBeats = 0.4f;          // mur juste après le sommet du saut (+ coup de pouce du PlayerController) : ≥ 120 ms des deux côtés
+        const float EnemyCenterBeats = 0.6f;        // ennemi 0,6 beat après son temps : ~165 ms de marge des deux côtés
         const float SlideStartBeats = 0.1f;
         const float SlideDefaultLength = 1f;
         const float SlideBarBottom = 0.62f;
         const float StepStartBeats = 0.3f;          // plateforme : comme un mur
-        const float StepFaceBeats = 0.5f;           // marche : face à beat+0,5 → ~85 ms de marge pour un saut en retard sur +1 u
+        const float StepFaceBeats = 0.5f;           // marche : face à beat+0,5 (+ coup de pouce : ~130 ms de marge sur +1 u)
         const float MaxHeight = 60f;                // hauteur libre : le niveau grimpe et plonge (garde-fou seulement)
         const float StepFaceMin = 0.25f;            // une montée plus haute que ça se saute (face mortelle)
         const float BounceDefaultBeats = 2f;
@@ -41,7 +41,12 @@ namespace Kenta.Level
         public readonly List<LevelObject> Platforms = new();
         /// <summary>Tremplins (tambours) : lancent le héros très haut, triés par x.</summary>
         public readonly List<LevelObject> Bounces = new();
-        /// <summary>Événements visuels de la chart (fx_flash, camera_shake, camera_zoom, camera, section_change), triés par beat.</summary>
+        /// <summary>Lianes : on les attrape en passant, le balancier est automatique, on est lâché au beat de l'objet. Triées par x.</summary>
+        public readonly List<LevelObject> Vines = new();
+        /// <summary>Changements de gravité (x = beat, y = 1 : on tombe vers le plafond, 0 : retour au sol), triés par beat.</summary>
+        public readonly List<Vector2> GravityFlips = new();
+        /// <summary>Événements visuels de la chart (fx_flash, camera_shake, camera_zoom, camera, section_change, screen_split,
+        /// glitch), triés par beat.</summary>
         public readonly List<ChartEvent> FxEvents = new();
         // Données d'autoplay (debug + démo de l'écran Attract).
         public readonly List<float> AutoJumpBeats = new();
@@ -58,6 +63,14 @@ namespace Kenta.Level
 
         /// <summary>Sol du niveau (marches, trous, plateformes) : lu par le joueur et la caméra.</summary>
         public LevelTerrain Ground { get; } = new LevelTerrain();
+        /// <summary>
+        /// Plafond, en miroir (dessus = −dessous du plafond) : en gravité inversée, le joueur calcule dans ce repère
+        /// retourné (y' = −y) et réutilise toute la logique du sol.
+        /// </summary>
+        public LevelTerrain CeilingMirror { get; } = new LevelTerrain();
+        /// <summary>Chemin de l'arrière-plan (plan 1), derrière le niveau : on y saute par un tambour.</summary>
+        public LevelTerrain Back { get; } = new LevelTerrain();
+        readonly List<GroundSpan> ceilingSpans = new();       // dessous réel du plafond (pas en miroir)
         float secondsPerBeat = 0.5f;
         Transform root;
         GameObject beatGrid;
@@ -109,6 +122,12 @@ namespace Kenta.Level
 
             float lastX = 0f;
             foreach (var e in chart.events)
+                if (e.type == "back")
+                {
+                    float len = e.@params.length > 0 ? e.@params.length : 1f;
+                    backProfile.Add(new GroundSpan(BeatToX(e.beat), BeatToX(e.beat + len), e.@params.height, false));
+                }
+            foreach (var e in chart.events)
             {
                 var p = e.@params;
                 switch (e.type)
@@ -142,16 +161,21 @@ namespace Kenta.Level
                     {
                         bool enemy = e.type == "enemy";
                         bool flying = enemy && e.lane == 1;         // ennemi en vol : à la hauteur absolue `height`
+                        bool hanging = enemy && e.lane == 2;        // pendu au plafond (dessous du plafond à `height`)
+                        int plane = PlaneOf(e);
                         float cx = BeatToX(e.beat + EnemyCenterBeats);
-                        float ey = flying ? p.height : HeightAt(cx);
+                        float ey = flying ? p.height : hanging ? p.height - 0.9f : plane == 1 ? BackHeightAt(cx) : HeightAt(cx);
                         var o = new LevelObject
                         {
                             kind = enemy ? LevelObjectKind.Enemy : LevelObjectKind.Block,
                             beat = e.beat,
+                            plane = plane,
                             bounds = enemy ? new Rect(cx - 0.4f, ey, 0.8f, 0.9f) : new Rect(cx - 0.45f, ey, 0.9f, 0.95f),
                         };
                         o.view = flying ? MakeFlyer(new Vector2(cx, ey), BiomeAt(e.beat))
+                            : hanging ? MakeHanging(new Vector2(cx, p.height), BiomeAt(e.beat))
                             : enemy ? MakeEnemy(new Vector2(cx, ey), BiomeAt(e.beat)) : MakeBlock(new Vector2(cx, ey), BiomeAt(e.beat));
+                        if (plane == 1) SendToBack(o.view);
                         Obstacles.Add(o);
                         AutoHitBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
@@ -194,16 +218,21 @@ namespace Kenta.Level
                     case "bounce":
                     {
                         // tambour-tremplin : posé sur le sol au beat ; le héros qui passe dessus s'envole (sauter pile dessus est jugé)
+                        // variant : « to_back » (envoie dans l'arrière-plan), « to_front » (posé au fond, ramène devant), « back »
                         float cx = BeatToX(e.beat);
-                        float top = HeightAt(cx);
+                        int plane = PlaneOf(e);
+                        float top = plane == 1 ? BackHeightAt(cx) : HeightAt(cx);
                         var o = new LevelObject
                         {
                             kind = LevelObjectKind.Bounce,
                             beat = e.beat,
+                            plane = plane,
+                            targetPlane = p.variant == "to_back" ? 1 : p.variant == "to_front" ? 0 : plane,
                             airBeats = p.length > 0 ? p.length : BounceDefaultBeats,
                             bounds = new Rect(cx - 0.45f, top, 0.9f, 0.35f),   // tambour enfoncé dans le sol : seule la peau dépasse
                         };
                         o.view = MakeBounce(new Vector2(cx, top - 0.6f), BiomeAt(e.beat));
+                        if (plane == 1) SendToBack(o.view);
                         Bounces.Add(o);
                         AutoJumpBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, cx);
@@ -214,8 +243,9 @@ namespace Kenta.Level
                         // pièce à une hauteur absolue (arcs des tremplins, chutes)
                         float x = BeatToX(e.beat);
                         float ly = p.height;
-                        var o = new LevelObject { kind = LevelObjectKind.Lum, beat = e.beat, sequenceIndex = e.lane, hasNote = p.hasNote, note = p.note, bounds = new Rect(x - 0.3f, ly - 0.3f, 0.6f, 0.6f) };
+                        var o = new LevelObject { kind = LevelObjectKind.Lum, beat = e.beat, sequenceIndex = e.lane, hasNote = p.hasNote, note = p.note, plane = PlaneOf(e), bounds = new Rect(x - 0.3f, ly - 0.3f, 0.6f, 0.6f) };
                         o.view = MakeLum(new Vector2(x, ly));
+                        if (o.plane == 1) SendToBack(o.view, 0.75f);
                         Lums.Add(o);
                         lastX = Mathf.Max(lastX, x);
                         break;
@@ -232,11 +262,60 @@ namespace Kenta.Level
                         lastX = Mathf.Max(lastX, x1);
                         break;
                     }
+                    case "ceiling":
+                    {
+                        // plafond : dessous à `height`, de beat à beat + length (en gravité inversée, on court dessous)
+                        float x0 = BeatToX(e.beat), x1 = BeatToX(e.beat + (p.length > 0 ? p.length : 1f));
+                        ceilingSpans.Add(new GroundSpan(x0, x1, p.height, false));
+                        lastX = Mathf.Max(lastX, x1);
+                        break;
+                    }
+                    case "back":
+                        // chemin de l'arrière-plan (lu au 1er passage, dans backProfile)
+                        lastX = Mathf.Max(lastX, BeatToX(e.beat + (p.length > 0 ? p.length : 1f)));
+                        break;
+                    case "jump":
+                    {
+                        // saut sans trou dans le sol du niveau (trou du plafond, du chemin du fond) : jugé quand on le passe
+                        float x0 = BeatToX(e.beat + GapStartBeats), x1 = BeatToX(e.beat + GapStartBeats + GapDefaultLength);
+                        Obstacles.Add(new LevelObject { kind = LevelObjectKind.Gap, beat = e.beat, plane = PlaneOf(e), bounds = Rect.MinMaxRect(x0, -1000f, x1, -999f) });
+                        AutoJumpBeats.Add(e.beat);
+                        lastX = Mathf.Max(lastX, x1);
+                        break;
+                    }
+                    case "gravity":
+                        GravityFlips.Add(new Vector2(e.beat, e.lane == 1 ? 1f : 0f));
+                        MakeGravityPortal(BeatToX(e.beat), e.lane == 1, BiomeAt(e.beat));
+                        break;
+                    case "vine":
+                    {
+                        // liane : prise au beat, balancier de `length` beats (pieds de `height` à `releaseHeight`, creux `sag`),
+                        // lâcher jugé, puis `step` beats de vol (vers la liane suivante ou le sol)
+                        float len = p.length > 0 ? p.length : 2f;
+                        var o = new LevelObject
+                        {
+                            kind = LevelObjectKind.Vine,
+                            beat = e.beat + len,
+                            grabBeat = e.beat,
+                            grabY = p.height,
+                            releaseY = p.releaseHeight,
+                            sag = p.sag,
+                            airBeats = p.step > 0 ? p.step : 1f,
+                            bounds = Rect.MinMaxRect(BeatToX(e.beat), Mathf.Min(p.height, p.releaseHeight) - p.sag, BeatToX(e.beat + len), Mathf.Max(p.height, p.releaseHeight)),
+                        };
+                        o.view = MakeVine(o, BiomeAt(e.beat));
+                        Vines.Add(o);
+                        AutoJumpBeats.Add(o.beat);
+                        lastX = Mathf.Max(lastX, o.bounds.xMax);
+                        break;
+                    }
                     case "fx_flash":
                     case "camera_shake":
                     case "camera_zoom":
                     case "camera":
                     case "section_change":
+                    case "screen_split":
+                    case "glitch":
                         FxEvents.Add(e);
                         break;
                     default:
@@ -248,6 +327,8 @@ namespace Kenta.Level
             Obstacles.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
             Lums.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
             Bounces.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
+            Vines.Sort((a, b) => a.bounds.xMin.CompareTo(b.bounds.xMin));
+            GravityFlips.Sort((a, b) => a.x.CompareTo(b.x));
             gaps.Sort((a, b) => a.x.CompareTo(b.x));
             AutoJumpBeats.Sort();
             AutoHitBeats.Sort();
@@ -255,6 +336,8 @@ namespace Kenta.Level
             float lastBeat = chart.events.Length > 0 ? chart.events[^1].beat : 0f;
             BuildTerrain(lastX + 60f);
             BuildGround(lastX + 60f);
+            BuildCeiling();
+            BuildBack();
             BuildBeatGrid(Mathf.CeilToInt(lastBeat) + 16);
             BuildCheckpoints();
         }
@@ -268,6 +351,8 @@ namespace Kenta.Level
             Lums.Clear();
             Platforms.Clear();
             Bounces.Clear();
+            Vines.Clear();
+            GravityFlips.Clear();
             FxEvents.Clear();
             AutoJumpBeats.Clear();
             AutoHitBeats.Clear();
@@ -276,6 +361,10 @@ namespace Kenta.Level
             steps.Clear();
             platforms.Clear();
             Ground.Clear();
+            CeilingMirror.Clear();
+            Back.Clear();
+            ceilingSpans.Clear();
+            backProfile.Clear();
         }
 
         /// <summary>Respawn : réactive tout ce qui est après le checkpoint.</summary>
@@ -284,6 +373,7 @@ namespace Kenta.Level
             foreach (var o in Obstacles) if (o.beat >= beat) o.ResetState();
             foreach (var o in Lums) if (o.beat >= beat) o.ResetState();
             foreach (var o in Bounces) if (o.beat >= beat) o.ResetState();
+            foreach (var o in Vines) if (o.grabBeat >= beat) o.ResetState();
         }
 
         /// <summary>Centre de la caméra au beat donné, d'après le rail de la chart (NaN s'il n'y en a pas).</summary>
@@ -311,6 +401,25 @@ namespace Kenta.Level
             }
             return h;
         }
+
+        readonly List<GroundSpan> backProfile = new();
+
+        /// <summary>Hauteur du chemin de l'arrière-plan en x (le segment qui couvre x, sinon le plus proche).</summary>
+        public float BackHeightAt(float x)
+        {
+            float best = 0f, dist = float.PositiveInfinity;
+            foreach (var s in backProfile)
+            {
+                float d = x < s.x0 ? s.x0 - x : x > s.x1 ? x - s.x1 : 0f;
+                if (d < dist) { dist = d; best = s.top; }
+            }
+            return best;
+        }
+
+        /// <summary>Hauteur d'arrivée sur un plan donné (0 = sol du niveau, 1 = arrière-plan).</summary>
+        public float HeightOnPlane(float x, int plane) => plane == 1 ? BackHeightAt(x) : HeightAt(x);
+
+        static int PlaneOf(ChartEvent e) => e.@params.variant == "back" || e.@params.variant == "to_front" ? 1 : 0;
 
         /// <summary>Base des pièces en x : le dessus d'une plateforme si elle est là, sinon le sol principal.</summary>
         float LumBaseAt(float x)
@@ -343,8 +452,13 @@ namespace Kenta.Level
         /// <summary>Biome de la section qui contient ce beat (un biome par section de la chart).</summary>
         public BiomeTheme BiomeAt(double beat)
         {
-            if (LevelBiome != null) return LevelBiome;
             int i = Chart != null ? Chart.SectionIndexAt(beat) : 0;
+            // une section peut changer de monde (ex. le refrain monte dans l'orage) : elle nomme l'asset du biome
+            string named = Chart != null && Chart.sections.Length > 0 ? Chart.sections[Mathf.Clamp(i, 0, Chart.sections.Length - 1)].biome : null;
+            if (!string.IsNullOrEmpty(named))
+                foreach (var b in theme.biomes)
+                    if (b != null && b.name == named) return b;
+            if (LevelBiome != null) return LevelBiome;
             return theme.biomes[Mathf.Clamp(i, 0, theme.biomes.Length - 1)];
         }
 
@@ -396,6 +510,10 @@ namespace Kenta.Level
             foreach (var span in MainSpans(endX)) Ground.Add(span);
             foreach (var pl in platforms) Ground.Add(pl);
             Ground.Build();
+            foreach (var c in ceilingSpans) CeilingMirror.Add(new GroundSpan(c.x0, c.x1, -c.top, false));
+            CeilingMirror.Build();
+            foreach (var b in backProfile) Back.Add(b);
+            Back.Build();
         }
 
         IEnumerable<GroundSpan> MainSpans(float endX)
@@ -591,6 +709,98 @@ namespace Kenta.Level
             var g = Group("Totems", Vector2.zero);
             for (int i = 1; i < Chart.sections.Length; i++)
                 Spr(g, "Totem", theme.totem, new Vector2(BeatToX(Chart.sections[i].startBeat) - 0.6f, 0f), 4);
+        }
+
+        // ---------- Plafond, arrière-plan, lianes, portails de gravité ----------
+
+        static readonly Color BackTint = new(0.5f, 0.5f, 0.66f);         // l'arrière-plan : plus sombre, bleuté
+        const int BackOrder = -50;                                       // derrière le niveau, devant la brume du décor
+
+        /// <summary>Plafond : le sol retourné (herbe en dessous, terre au-dessus), suspendu au-dessus du chemin.</summary>
+        void BuildCeiling()
+        {
+            if (ceilingSpans.Count == 0) return;
+            var g = Group("Ceiling", Vector2.zero);
+            foreach (var c in ceilingSpans)
+            {
+                var biome = BiomeAtX((c.x0 + c.x1) * 0.5f);
+                if (biome.fill == null || biome.cliff == null) continue;
+                float cx = (c.x0 + c.x1) * 0.5f, w = c.x1 - c.x0, h = c.top;
+                Tiled(g, "Grass", biome.cliff, new Vector2(cx, h + 0.1f), new Vector2(w, 0.2f), 2).flipY = true;
+                Tiled(g, "Lip", biome.fill, new Vector2(cx, h + 0.2f + LipDepth * 0.5f), new Vector2(w, LipDepth), 1).flipY = true;
+                var deep = Tiled(g, "Fill", biome.fill, new Vector2(cx, h + 0.2f + LipDepth + 5f), new Vector2(w, 10f), 1);
+                deep.flipY = true;
+                deep.color = DeepFill;
+            }
+        }
+
+        /// <summary>Chemin de l'arrière-plan : piliers plus sombres, derrière le niveau (le héros y passe derrière le premier plan).</summary>
+        void BuildBack()
+        {
+            if (backProfile.Count == 0) return;
+            var g = Group("Back", Vector2.zero);
+            foreach (var s in backProfile)
+            {
+                var biome = BiomeAtX((s.x0 + s.x1) * 0.5f);
+                if (biome.fill == null || biome.cliff == null) continue;
+                float cx = (s.x0 + s.x1) * 0.5f, w = s.x1 - s.x0;
+                Tiled(g, "Top", biome.cliff, new Vector2(cx, s.top - 0.1f), new Vector2(w, 0.2f), BackOrder + 1).color = BackTint;
+                Tiled(g, "Fill", biome.fill, new Vector2(cx, s.top - 0.2f - 6f), new Vector2(w, 12f), BackOrder).color = BackTint * DeepFill;
+            }
+        }
+
+        /// <summary>Objet de l'arrière-plan : assombri et dessiné derrière le niveau.</summary>
+        static void SendToBack(GameObject view, float tint = 1f)
+        {
+            if (view == null) return;
+            foreach (var sr in view.GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                sr.sortingOrder = BackOrder + 4;
+                sr.color *= Color.Lerp(Color.white, BackTint, tint);
+            }
+        }
+
+        /// <summary>Portail de gravité : deux colonnes de lumière qui barrent l'écran ; on les traverse et le haut devient le bas.</summary>
+        void MakeGravityPortal(float x, bool up, BiomeTheme biome)
+        {
+            var g = Group(up ? "GravityUp" : "GravityDown", Vector2.zero);
+            float y0 = HeightAt(x) - 1f, y1 = y0 + 9f;
+            var c = biome.spark;
+            for (int i = 0; i < 2; i++)
+            {
+                float px = PixelScreen.Snap(x - 0.15f + i * 0.3f);
+                Box(g, "Beam", new Color(c.r, c.g, c.b, i == 0 ? 0.35f : 0.7f), new Vector2(px, (y0 + y1) * 0.5f), new Vector2(i == 0 ? 0.3f : 0.1f, y1 - y0), 12);
+            }
+            // flèches (pixels) qui indiquent le sens de la chute
+            for (int k = 0; k < 4; k++)
+            {
+                float ay = y0 + 1.5f + k * 2f;
+                for (int j = 0; j < 3; j++)
+                    Box(g, "Arrow", new Color(1f, 1f, 1f, 0.8f), new Vector2(PixelScreen.Snap(x + (j - 1) * 0.1f), PixelScreen.Snap(ay + (up ? -1 : 1) * Mathf.Abs(j - 1) * 0.1f)), new Vector2(0.1f, 0.1f), 13);
+            }
+        }
+
+        /// <summary>Ennemi pendu au plafond (dessous du plafond à `underside`) : l'ennemi du biome, la tête en bas.</summary>
+        GameObject MakeHanging(Vector2 underside, BiomeTheme biome)
+        {
+            var t = Group("Hanging", underside);
+            var frames = biome.enemyFrames;
+            var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
+            sr.flipY = true;
+            if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);
+            return t.gameObject;
+        }
+
+        /// <summary>Liane : un nœud accroché en haut, la corde (pixels) qui pend vers l'endroit où on l'attrape.</summary>
+        GameObject MakeVine(LevelObject o, BiomeTheme biome)
+        {
+            float xg = BeatToX(o.grabBeat), xr = o.bounds.xMax;
+            var anchor = new Vector2(PixelScreen.Snap((xg + xr) * 0.5f), PixelScreen.Snap(Mathf.Max(o.grabY, o.releaseY) + VineView.HandHeight + 2.2f));
+            var t = Group("Vine", anchor);
+            if (biome.post != null) Spr(t, "Knot", biome.post, Vector2.zero, 9);
+            var view = t.gameObject.AddComponent<VineView>();
+            view.Setup(theme.pixel, new Color(0.3f, 0.45f, 0.18f), new Vector2(xg, o.grabY + VineView.HandHeight));
+            return t.gameObject;
         }
 
         GameObject MakeWall(Rect r, BiomeTheme biome)

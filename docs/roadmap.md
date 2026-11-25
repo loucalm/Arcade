@@ -30,7 +30,14 @@ Règles :
 - [ ] (Lucas) **Tester le niveau vertical à la main** (clavier puis borne) : lisibilité des tambours, des chutes et des changements de zoom ; régler `gen-level-vertical.py`
 - [ ] Chutes de plus de ~6 u : en vue 640 px, le sol d'arrivée n'apparaît qu'en cours de chute (la vue fait 9 u de haut). Option : vue encore plus large pour les plongeons, ou chutes en deux paliers
 - [x] **Niveau musical, 2ᵉ passe** (docs/level-design-musical.md) : carte du morceau (`tools/analyse-song.py`), actions sur les attaques (grosse caisse → sauts, caisse claire → coups), pièces qui jouent la mélodie et dessinent le chemin, ennemis en vol, tambours en chaîne, caméra large sur rail précalculé sans coupes, brume de fond et piliers ombrés, HUD sans texte au milieu (2026-11-24)
-- [ ] `hook` : lianes / crochets (automatique ; pose `vine` déjà extraite)
+- [x] (2026-11-25) **Prototype du refrain** (beats 96-128, testé depuis 78,5, `scene_refrain_ciel`) : 33 u de dénivelé, tambours en chaîne sur le roulement, grand plongeon en deux dévalées raides (−26 u, sol toujours à l'image) ; marge de survie ≥ 120 ms par action (avant : 48 à 83 ms), mesurée par `gen-level-vertical.py --marges` ; menu éditeur **Kenta > Tester le refrain (prototype)**
+- [ ] (Lucas) **Tester le prototype du refrain à la main** ; s'il plaît, passer tout le niveau 01 à la même règle (marge ≥ 120 ms partout, `WIDE_MARGIN` = tout le morceau) et à 10-12 écrans de dénivelé
+- [x] (2026-11-25, ADR-025) **Le niveau qui change** : lianes au pont (`vine`), changement de monde par section (refrain dans l'Orage, final dans les Échos), gravité inversée et course au plafond (`gravity`, `ceiling`), saut dans l'arrière-plan (`bounce` `to_back`/`to_front`, `back`), écran dédoublé et grésillement au refrain 2 (`screen_split`, `glitch`) ; menus **Kenta > Tester …** pour chaque passage ; règle des 120 ms étendue au pont, au final et au refrain 2
+- [ ] (Lucas) **Tester à la main** le pont, le final et le refrain 2 (lisibilité du plafond, de l'arrière-plan, des 5 écrans)
+- [ ] Le reste du niveau 01 (intro, couplets, pont 2, roulement 2) n'a que ±40 ms de marge par endroits (marches juste après un trou : 64 ms) : à repasser à la règle des 120 ms (`WIDE_MARGIN`)
+- [ ] Arrière-plan plus lisible : aujourd'hui seulement assombri et derrière les piliers ; idées : décor du premier plan qui s'assombrit pendant le passage, son étouffé
+- [ ] Lianes : sprite de nœud dédié (aujourd'hui la tuile de poteau du biome), corde au repos qui pend verticalement
+- [ ] Portail de gravité : son dédié et sprite (aujourd'hui deux colonnes de pixels)
 - [ ] Décor qui joue avec la musique (éléments qui réagissent au temps, foule d'ennemis qui danse au fond)
 - [ ] Musique libre de droits **écrite pour le niveau** : idéalement, les sons des actions manquent dans la piste et c'est le joueur qui les joue
 - [ ] Tambour : animation d'écrasement au rebond et son dédié (aujourd'hui : son de saut)

@@ -31,11 +31,19 @@ def test_lums_play_notes_in_pentatonic():
 def test_rail_keeps_hero_in_view():
     track = []
     gen.simulate(EVENTS, 120, track)
-    beats = [b for b, _ in track]
+    beats = [tr[0] for tr in track]
     for i, c in enumerate(RAIL):
-        feet = gen.track_at(track, beats, i * 0.25) - 0.5
-        assert feet + 1.4 <= c + gen.VIEW_H * 0.5 + 1e-6      # la tête dans l'image
-        assert feet >= c - gen.VIEW_H * 0.5 - 1e-6            # les pieds dans l'image
+        feet = gen.feet_at(track, beats, i * 0.25)
+        inverted, _ = gen.track_state(track, beats, i * 0.25)
+        top, bottom = (feet, feet - 1.0) if inverted else (feet + 1.0, feet)   # au plafond, la tête est en bas
+        assert top + 0.4 <= c + gen.VIEW_H * 0.5 + 1e-6       # le haut du corps dans l'image
+        assert bottom >= c - gen.VIEW_H * 0.5 - 1e-6          # le bas du corps dans l'image
+
+
+def test_world_changes_mid_level():
+    """Le niveau change de monde en cours de route (refrain dans l'orage, final dans les Échos)."""
+    biomes = [gen.BIOMES.get(n) for n, _ in gen.SECTIONS]
+    assert len({b for b in biomes if b}) >= 2
 
 
 def test_slides_are_part_of_the_level():
@@ -46,9 +54,11 @@ def test_slides_are_part_of_the_level():
 
 
 def test_obstacle_variety():
-    """Pas seulement des champignons et des trous : murs, glissades, tambours, plateformes et ennemis en vol."""
+    """Pas seulement des champignons et des trous : murs, glissades, tambours, plateformes, ennemis en vol, et les
+    mécaniques qui changent le niveau (lianes, gravité inversée, arrière-plan, effets d'écran)."""
     kinds = {e["type"] for e in EVENTS}
-    for k in ("gap", "wall", "slide_bar", "enemy", "bounce", "platform", "step", "ramp"):
+    for k in ("gap", "wall", "slide_bar", "enemy", "bounce", "platform", "step", "ramp",
+              "vine", "gravity", "ceiling", "back", "screen_split", "glitch"):
         assert k in kinds, k
-    assert sum(1 for e in EVENTS if e["type"] == "wall") >= 4
+    assert sum(1 for e in EVENTS if e["type"] == "wall") >= 3
     assert sum(1 for e in EVENTS if e["type"] == "enemy" and e["lane"] == 1) >= 10

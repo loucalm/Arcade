@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Kenta.Level
 {
-    public enum LevelObjectKind { Gap, Wall, Enemy, Block, SlideBar, Lum, StepFace, Platform, Bounce }
+    public enum LevelObjectKind { Gap, Wall, Enemy, Block, SlideBar, Lum, StepFace, Platform, Bounce, Vine }
 
     /// <summary>
     /// Donnée runtime d'un élément du niveau (collision gérée à la main, pas de moteur physique : ADR-009).
@@ -28,6 +28,13 @@ namespace Kenta.Level
         /// <summary>Pièce : note jouée (demi-tons par rapport au la du son de pièce), si hasNote.</summary>
         public bool hasNote;
         public int note;
+        /// <summary>Plan : 0 = premier plan, 1 = arrière-plan (on n'y touche que ce qui est sur le même plan que le héros).</summary>
+        public int plane;
+        /// <summary>Tremplin : plan où il envoie (−1 = le même).</summary>
+        public int targetPlane = -1;
+        /// <summary>Liane : beat où on l'attrape (le beat jugé est celui du lâcher), hauteur des pieds à la prise et au lâcher,
+        /// creux du balancier.</summary>
+        public float grabBeat, grabY, releaseY, sag;
 
         public bool IsHittable => kind == LevelObjectKind.Enemy || kind == LevelObjectKind.Block;
 

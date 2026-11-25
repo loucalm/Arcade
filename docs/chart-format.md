@@ -34,15 +34,15 @@ Un fichier par niveau dans `game/Assets/_Project/Charts/<id>.json`, chargé comm
 - `zoom` (optionnel) : largeur de vue de la caméra pour ce niveau (320, 384, 480 ou 640 px de jeu). Le niveau 01 est en 640 (×3) : une mesure d'avance devant le héros.
 - `rail`, `railStep` (optionnels) : **rail de caméra** précalculé par le générateur, hauteur du centre de la caméra tous les `railStep` beats (trajectoire idéale lissée dans les deux sens : la caméra monte avant une envolée et descend avant un plongeon). Sans rail, la caméra suit le terrain.
 - `beat` : en temps (float). Granularité minimale : **0,25** (double-croche).
-- Les `sections` servent aussi de **checkpoints** et de **biomes** : la section n° i charge le `BiomeTheme` n° i de `Theme_Kenta` (8 sections de 32 beats pour le niveau 01).
+- Les `sections` servent aussi de **checkpoints** et de **biomes** : la section n° i charge le `BiomeTheme` n° i de `Theme_Kenta` (8 sections de 32 beats pour le niveau 01). Un niveau a un monde (`LevelDef.biome`), mais une section peut en changer avec `"biome": "Biome_08_orage"` (nom de l'asset) : flash et nouveau décor au passage (niveau 01 : refrain dans l'Orage, final dans les Échos).
 
 ## Placement (important)
 Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (appuyer). L'obstacle est placé juste après par `LevelBuilder` (constantes en tête de fichier) :
 | type | géométrie | fenêtre de réussite (≈, en beats autour de `beat`) |
 |---|---|---|
 | `gap` | trou de `beat+0,2` à `beat+0,2+length` (défaut 0,6). **`lane 1` = vide** sous une suite de plateformes : ni jugé ni sauté par l'autoplay | −0,18 … +0,42 |
-| `wall` | bloc de 0,9 u à `beat+0,3`, hauteur `height` (défaut 0,8) | −0,29 … +0,11 |
-| `enemy` / `block` | centre à `beat+0,4`. **`enemy` en `lane 1` = ennemi en vol** (chauve-souris), posé à la hauteur absolue `height` : à frapper en plein saut ou en pleine envolée | −0,46 … +0,22 |
+| `wall` | souche de 0,9 u à `beat+0,4` (hitbox 0,7 × 0,75 u) ; pieds à moins de 0,4 u de son sommet : on passe dessus (coup de pouce) | ≥ ±0,3 (120 ms) |
+| `enemy` / `block` | centre à `beat+0,6`. **`enemy` en `lane 1` = ennemi en vol** (chauve-souris), posé à la hauteur absolue `height` : à frapper en plein saut ou en pleine envolée (en l'air, la frappe porte de 1,2 u sous les pieds à 2,4 u au-dessus) | ≈ ±0,4 (165 ms) |
 | `slide_bar` | plafond de `beat+0,1` à `beat+0,1+length` (défaut 1), bas à 0,62 u | tenir le bas tout du long |
 | `lum_line` | lums aux beats `beat + i×step`, hauteur selon `lane` **au-dessus du sol en x** (ou d'une plateforme) : 0 → 0,45 u, 1 → 1,9 u, 2 → 2,4 u | — |
 | `step` | à partir de `beat+0,5`, le sol principal passe à `height` (absolue, libre : −60 … 60 u). Montée de plus de 0,25 u = face de marche mortelle : sauter sur `beat`. Descente = on tombe (une grande chute vers un sol plus bas n'est pas mortelle). **`lane 1` = falaise** : montée atteinte en vol (tambour), pas de saut attendu ni jugé | comme `wall` |
@@ -51,6 +51,15 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `lum_at` | une pièce à la hauteur absolue `height` (pièces posées sur la trajectoire par le générateur). Avec `hasNote: true`, elle joue la note `note` (demi-tons par rapport au la du son de pièce) : les pièces jouent la mélodie | — |
 | `camera` | nouveau plan : `zoom` = largeur de vue en px de jeu (320, 384, 480, 640 → ×6, ×5, ×4, ×3 : changement net, petit flash), `frameX` = place du héros (0 gauche … 1 droite), `frameY` = hauteur du sol sous le héros (0 bas … 1 haut). 0 = inchangé | — |
 | `platform` | plateforme de `beat+0,3` à `beat+0,3+length` (défaut 1) à `height`, traversable par en dessous ; sauter sur `beat` | sommet du saut au-dessus de `height` avant `beat+0,3` |
+| `vine` | **liane** attrapée en passant à `beat` (pieds à ±1,6 u de `height`), balancier automatique de `length` beats (pieds de `height` à `releaseHeight`, creux `sag`), lâchée à `beat+length` (appui de saut jugé, pas obligatoire), puis `step` beats de vol (défaut 1) vers la liane suivante si elle commence là, sinon vers le sol | lâcher à ±0,5 beat |
+| `ceiling` | **plafond** : dessous à `height`, de `beat` à `beat+length` (les trous entre deux plafonds se sautent) | — |
+| `gravity` | **portail de gravité** à `beat` : `lane 1` = on tombe vers le plafond et on y court la tête en bas, `lane 0` = retour au sol | — |
+| `back` | **chemin de l'arrière-plan** : sol plat à `height`, de `beat` à `beat+length`, dessiné derrière le niveau | — |
+| `bounce` + `variant` | `"to_back"` : tambour devant qui envoie sur le chemin du fond ; `"to_front"` : tambour au fond qui ramène devant ; `"back"` : tambour au fond | comme `bounce` |
+| `enemy` + `lane 2` | **pendu au plafond** (dessous à `height`) ; avec `variant: "back"` : ennemi sur le chemin du fond | comme `enemy` |
+| `jump` | saut sans trou dans le sol du niveau (trou du plafond, ou du chemin du fond avec `variant: "back"`) : jugé quand on passe le trou | comme `gap` |
+| `screen_split` | l'image se dédouble : `copies` = 1 (normal), 2, 5 ou 9 copies plus petites, jusqu'au prochain `screen_split` | — |
+| `glitch` | grésillement (neige, image qui saute, couleurs) d'intensité `intensity` (0…1) pendant `length` beats, plus fort sur chaque temps | — |
 
 Tous les obstacles (mur, ennemi, bloc, plafond, pièces) se posent **sur le sol principal à leur x** : un mur après une marche est posé en haut de la marche.
 
@@ -75,7 +84,10 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus 
 | `bounce` | rien (automatique) ; sauter sur le temps = jugé | `length` (durée du vol) |
 | `camera` | — (mise en scène) | `zoom`, `frameX`, `frameY` |
 | `lum_at` | collecter | `height` |
-| `hook` | automatique, liane/crochet (**pas encore implémenté**) | `length` |
+| `vine` | rien (automatique) ; sauter au lâcher = jugé | `length`, `height`, `releaseHeight`, `sag`, `step` |
+| `ceiling`, `back`, `gravity` | rien (décor et portails) ; on saute les trous (`jump`) | `length`, `height` |
+| `jump` | sauter (trou du plafond ou du chemin du fond) | `variant` |
+| `screen_split`, `glitch` | — (effets d'écran) | `copies` ; `intensity`, `length` |
 | `lum_line` | collecter | `count`, `step` (beats entre lums) |
 | `fx_flash` | — (visuel) | `intensity` |
 | `camera_shake` | — | `intensity`, `length` |

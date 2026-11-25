@@ -22,6 +22,11 @@ namespace Kenta.Level
         /// <summary>lum_at : la pièce joue une note (demi-tons par rapport au son de pièce, un la).</summary>
         public bool hasNote;
         public int note;
+        /// <summary>screen_split : nombre de copies de l'image (1, 2, 5 ou 9).</summary>
+        public int copies;
+        /// <summary>vine : hauteur des pieds au lâcher (la prise est à `height`) et creux du balancier (u).</summary>
+        public float releaseHeight;
+        public float sag;
     }
 
     [Serializable]
@@ -38,6 +43,8 @@ namespace Kenta.Level
     {
         public string name;
         public float startBeat;
+        /// <summary>Optionnel : nom de l'asset du biome de cette section (ex. « Biome_08_orage ») ; vide = biome du niveau.</summary>
+        public string biome;
     }
 
     /// <summary>Chart d'un niveau. Format : docs/chart-format.md.</summary>
