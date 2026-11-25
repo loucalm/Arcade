@@ -95,7 +95,7 @@ def gen_thumbnail(out, sheet):
     """Jaquette carrée de la borne (game/BuildExtras/thumbnail.png) : la Sylve, Kenta en pleine course et le logo."""
     b = BIOMES[0]
     scene = art.draw_sky(b, scale=1, statue=True)
-    for layer, off in ((art.draw_far(b, scale=1), 120), (art.draw_mid(b, scale=1), 150), (art.draw_near(b, scale=1), 230)):
+    for layer, off in ((art.draw_far(b, scale=1, foot=False), 120), (art.draw_mid(b, scale=1, foot=False), 150), (art.draw_near(b, scale=1, foot=False), 230)):
         scene.im.alpha_composite(layer.im.crop((off, 0, off + 240, 135)))
     ground = art.draw_ground(b)
     for x in range(0, 240, 32):

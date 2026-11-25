@@ -144,6 +144,33 @@ def draw_statue(p, b, cx, base, awake=False):
 # ============================================================================
 # CALQUES EN PARALLAXE (640×180, boucle sans couture)
 # ============================================================================
+
+def dominant_color(p):
+    """Couleur la plus présente juste au-dessus de la ligne de sol d'un calque (RGB), ou None s'il est vide là."""
+    import numpy as np
+    from collections import Counter
+    s = p.s
+    band = np.asarray(p.im)[max(0, (GROUND_Y - 8) * s):GROUND_Y * s].reshape(-1, 4)
+    opaque = [tuple(int(v) for v in px[:3]) for px in band if px[3] >= 200]
+    return Counter(opaque).most_common(1)[0][0] if opaque else None
+
+
+def add_foot(p, b, depth, base=None):
+    """Pied du calque sous sa ligne de sol (sous-bois, terre) jusqu'au bas de l'image : en jeu, BiomeBackdrop ancre
+    les calques au sol du niveau, et sans pied on voyait un vide pâle sous les arbres dès que le sol était bas.
+    `base` : couleur de départ (par défaut, la couleur dominante du calque juste au-dessus du sol), assombrie selon la
+    profondeur (`depth` : 0 = loin, plus clair et proche du ciel ; 1 = proche, plus sombre). Deux tons, une arête
+    claire ; la dernière rangée est unie : BiomeBackdrop l'étire pour prolonger le pied sous l'image."""
+    base = base or dominant_color(p) or col(b["sky"][-1])[:3]
+    air = 0.35 * (1 - depth)
+    rim = mix(shade(base, -0.05), b["sky"][3], air)
+    top = mix(shade(base, -0.25 - 0.2 * depth), b["sky"][3], air)
+    deep = mix(shade(base, -0.4 - 0.2 * depth), b["sky"][3], air)
+    p.rect(0, GROUND_Y, STRIP_W, GROUND_Y + 1, rim)
+    p.rect(0, GROUND_Y + 1, STRIP_W, GROUND_Y + 7, top)
+    p.rect(0, GROUND_Y + 7, STRIP_W, H_SCREEN, deep)
+
+
 def pine(p, x, base, h, c, snow=None):
     w = int(h * 0.62)
     tiers = 3
@@ -159,7 +186,7 @@ def pine(p, x, base, h, c, snow=None):
             p.poly([(x, top), (x - half // 2, top + (bot - top) // 2), (x + half // 2, top + (bot - top) // 2)], snow)
 
 
-def draw_far(b, scale=BG_SCALE):
+def draw_far(b, scale=BG_SCALE, foot=True):
     rng = rng_for(b, "far")
     p = Pix(STRIP_W, H_SCREEN, scale=scale)
     f = b["far"]
@@ -243,10 +270,12 @@ def draw_far(b, scale=BG_SCALE):
             tile_wrap(p, x, lambda x0, y=y, rx=rx: blob(p, x0, y, rx, rx // 2, f["body"], hi=f["snow"], lo=f["shade"], rng=rng))
         for x in (90, 330):
             tile_wrap(p, x, lambda x0: p.poly([(x0, 0), (x0 - 7, 36), (x0 - 1, 36), (x0 - 9, 74), (x0 + 6, 28), (x0, 28)], "#FFFFFF"))
+    if foot:
+        add_foot(p, b, 0.0)
     return p
 
 
-def draw_mid(b, scale=BG_SCALE):
+def draw_mid(b, scale=BG_SCALE, foot=True):
     rng = rng_for(b, "mid")
     p = Pix(STRIP_W, H_SCREEN, scale=scale)
     m = b["mid"]
@@ -299,10 +328,12 @@ def draw_mid(b, scale=BG_SCALE):
             tile_wrap(p, x, col_)
         elif k == "cloudpuffs":
             tile_wrap(p, x, lambda x0, h=h: blob(p, x0, GROUND_Y - 4 - h // 3, 28, 14, m["mid"], hi=m["light"], lo=m["dark"], rng=rng))
+    if foot:
+        add_foot(p, b, 0.5)
     return p
 
 
-def draw_near(b, scale=BG_SCALE):
+def draw_near(b, scale=BG_SCALE, foot=True):
     rng = rng_for(b, "near")
     p = Pix(STRIP_W, H_SCREEN, scale=scale)
     n = b["near"]
@@ -316,6 +347,8 @@ def draw_near(b, scale=BG_SCALE):
             blob(p, x0 - 18, GROUND_Y - h + 14, 14, 9, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
             blob(p, x0 + 22, GROUND_Y - h + 10, 14, 9, n["crown"], hi=n["hi"], lo=n["lo"], rng=rng)
         tile_wrap(p, x, tree)
+    if foot:                                     # sous les arbres proches : le sol de la forêt (couleur du calque milieu)
+        add_foot(p, b, 1.0, base=dominant_color(draw_mid(b, scale, foot=False)))
     return p
 
 

@@ -110,6 +110,21 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [ ] **P2** Liquide des trous parfois hors de l'image quand la caméra anticipe une montée (le sol est alors en bas de l'écran)
 - [ ] **P2** En éditeur, l'AFK du toolkit (60 s sans appui) affiche « Retour au menu… » pendant une partie en autoplay : sans effet sur la borne (on y joue), mais l'accueil en cycle (logo, démo, classement) renvoie au menu de la borne après 60 s d'inactivité, comme le veut le toolkit
 
+## Audit du 2026-11-25
+Partie complète en autoplay, 784 captures. Détail, causes et pistes : [audit-2026-11-25.md](audit-2026-11-25.md).
+- [ ] **P0** Décor collé à l'écran verticalement : arbres et montagnes « volent » au-dessus du vide quand le niveau monte ou descend (`BiomeBackdrop` : calques à `y = c.y`). Parallaxe verticale ancrée à l'horizon du sol lissé
+- [ ] **P0** Bande vide et pâle sous la ligne d'arbres quand le sol est bas : dessiner un pied (sous-bois, terre) aux calques (`kenta_art.py`)
+- [ ] **P0** Gardien gris translucide au centre de l'image : le reculer (plus petit, sur le côté, opaque dans les tons du ciel, parallaxe faible)
+- [ ] **P1** Brume blanche à 32 % sur tout le décor : image délavée. Brume en dégradé ou plus légère
+- [ ] **P1** « PARFAIT ! » reste au point jugé et traîne derrière le héros (fantôme gris pendant le fondu) : le faire suivre le héros
+- [ ] **P1** Traînée du bandeau en pointillés : bruit visuel ; la supprimer (le bandeau flotte déjà) ou la refaire en ruban continu à partir de ×4
+- [ ] **P1** Pièces trop petites, parfois hors de l'image en montée
+- [ ] **P1** Cadrage : héros au bord haut sur certains tambours, sol collé au bas avec un grand vide au-dessus (`safeMargins`, rail)
+- [ ] **P1** Piliers de terre encore massifs et sombres sur les marches hautes
+- [ ] **P2** Écran « BRAVO ! » : note S coincée dans une case étroite
+- [ ] **P2** Étiquette de section du HUD qui chevauche les pièces en haut de l'image
+- [ ] **P2** Arbre rose du calque proche trop gros et trop répété : au moins 3 motifs par biome
+
 ## Outils
 - [ ] Outil pour écrire une chart plus vite (tap au rythme → JSON, ou visualiseur de chart)
 - [ ] Tests EditMode : `ChartData.Parse`, faisabilité d'une chart en autoplay

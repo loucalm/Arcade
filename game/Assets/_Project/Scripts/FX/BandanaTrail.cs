@@ -4,8 +4,10 @@ using UnityEngine;
 namespace Kenta.FX
 {
     /// <summary>
-    /// Les deux pans du bandeau (docs/da-kenta.md § 4) : ils s'allongent avec le multiplicateur de combo (×1 à ×8) et
-    /// forment la traînée. Chaîne de petits carrés qui suivent l'historique des positions du héros, sur la grille de pixels.
+    /// Les deux pans du bandeau (docs/da-kenta.md § 4) : ils s'allongent avec le multiplicateur de combo et forment la
+    /// traînée. Chaîne de carrés de 2 px (un ruban plein) qui suivent l'historique des positions du héros, sur la grille
+    /// de pixels. Elle n'apparaît qu'à partir de ×minMultiplier : en dessous, le bandeau du héros (qui flotte déjà,
+    /// ADR-022) suffit, et la traînée en pointillés faisait du bruit (audit du 2026-11-25).
     /// </summary>
     public class BandanaTrail : MonoBehaviour
     {
@@ -16,6 +18,8 @@ namespace Kenta.FX
         [Tooltip("Retard (s) entre deux pixels de la traînée : 1 px à la vitesse de course.")]
         [SerializeField] float segmentSpacing = 0.0032f;
         [SerializeField] Color color = Color.white;
+        [Tooltip("Multiplicateur à partir duquel la traînée apparaît (récompense du combo).")]
+        [SerializeField] int minMultiplier = 4;
 
         SpriteRenderer[] segs;
         Vector2[] history;
@@ -63,7 +67,7 @@ namespace Kenta.FX
 
             int mult = RunManager.Instance != null ? RunManager.Instance.Multiplier : 1;
             Vector2 shift = CameraRig.Instance != null ? CameraRig.Instance.ActorShift : Vector2.zero;
-            int length = Mathf.Min(maxSegments, 8 + mult * 5);
+            int length = mult < minMultiplier ? 0 : Mathf.Min(maxSegments, 12 + (mult - minMultiplier) * 9);
             for (int pan = 0; pan < 2; pan++)
             {
                 for (int i = 0; i < maxSegments; i++)
@@ -79,7 +83,7 @@ namespace Kenta.FX
                     sr.transform.position = pos;
                     float fade = 1f - i / (float)maxSegments * 0.7f;
                     sr.color = new Color(color.r, color.g, color.b, fade);
-                    sr.transform.localScale = Vector3.one * (i < 10 ? 2f : 1f);
+                    sr.transform.localScale = Vector3.one * 2f;
                     sr.gameObject.SetActive(true);
                 }
             }

@@ -14,8 +14,8 @@ namespace Kenta.Core
     ///   null et HighscoreUI lève une NullReferenceException. On part d'une liste vide : le classement s'affiche vide,
     ///   et l'erreur de connexion du toolkit devient un simple avertissement.
     /// - Retour au menu : MenuManager appelle BackToMenu() (jslib du build Web) après 60 s sans toucher aux commandes ou
-    ///   le bouton blanc tenu 1,5 s, et lève alors une exception à chaque image. En éditeur, on le coupe et on revient
-    ///   à l'écran d'accueil à la place.
+    ///   le bouton blanc tenu 1,5 s (et en quittant le Play mode), et lève alors une exception. En éditeur, on le retire
+    ///   et on revient à l'écran d'accueil à la place.
     /// </summary>
     public class EditorArcadeShim : MonoBehaviour
     {
@@ -40,7 +40,7 @@ namespace Kenta.Core
         {
             var managers = FindObjectsByType<MenuManager>(FindObjectsSortMode.None);
             if (managers.Length == 0) return;
-            foreach (var m in managers) m.enabled = false;
+            foreach (var m in managers) Destroy(m);         // désactivé, il recevait encore OnApplicationQuit → BackToMenu()
             var go = new GameObject(nameof(EditorArcadeShim));
             DontDestroyOnLoad(go);
             go.AddComponent<EditorArcadeShim>();
@@ -49,7 +49,9 @@ namespace Kenta.Core
         void Update()
         {
             held = Input.GetButton("Coin") ? held + Time.unscaledDeltaTime : 0f;
-            afk = AnyInput() ? 0f : afk + Time.unscaledDeltaTime;
+            // l'autoplay de debug (F10) n'appuie sur rien : ce n'est pas un joueur parti, on ne le renvoie pas à l'accueil
+            bool autoplay = RunManager.Instance != null && RunManager.Instance.IsRunning && RunManager.Instance.Autoplay;
+            afk = AnyInput() || autoplay ? 0f : afk + Time.unscaledDeltaTime;
             if (held < HeldQuitTime && afk < AfkTime) return;
 
             bool afkTimeout = afk >= AfkTime;
