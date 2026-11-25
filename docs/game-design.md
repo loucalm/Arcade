@@ -7,12 +7,11 @@ Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en sc
 
 **Univers, héros, huit mondes, ennemis, écrans** : voir [da-kenta.md](da-kenta.md). Les « pièces » du PDF sont les `lum` / `lum_line` du code et des charts.
 
-## Commandes (3 boutons max)
+## Commandes (deux boutons)
 | Action | Entrée | Son |
 |---|---|---|
 | Sauter (hauteur fixe, le saut dure **1 beat**, avec une vrille) | **B1** | accent/percussion quantifié |
 | Frapper (casse blocs et ennemis) | **B2** | caisse claire/impact |
-| Glisser (sous les obstacles) ; en l'air = chute rapide | **joystick bas** | swoosh |
 | Course sur les murs, lianes, crochets | **contextuel, automatique** | note |
 | Menus : valider | Start ou B1 | — |
 
@@ -30,7 +29,7 @@ Inspiration : les « music levels » de Rayman Legends. Un plateformeur 2D en sc
 - Fin du morceau → **tour REMIX 8-bit** : même chart, clip chiptune séparé, perturbations visuelles croissantes (brouillage, zoom, tremblements, zones sombres, image inversée). On boucle en ajoutant une perturbation à chaque tour, jusqu'à la mort.
 - Durée cible d'une partie : **2 à 4 min**.
 - **Score** (implémenté dans `RunManager`, réglable dans l'inspecteur) : lum 10, ennemi/bloc cassé 50, obstacle franchi 20 (× facteur du jugement), **× multiplicateur** à paliers croissants (2026-11-24, `RunManager.MultiplierFor`) : ×2 à 4 actions de combo, ×3 à 12, ×4 à 24, ×5 à 40, ×6 à 60, ×7 à 84, ×8 à 112 (passer de ×m à ×m+1 demande m × 4 actions de plus). Le combo gagne +1 par action PARFAIT/BIEN et retombe à 0 sur un BOF ; **les pièces ne comptent pas dans le combo** (elles rapportent seulement des points). Sur le niveau 01 joué parfaitement, ×8 arrive vers les 4/5 du morceau. Bonus : section sans faute +500, niveau terminé +2000.
-- **Jugement du timing** (`Core/TimingJudge`) : chaque action attendue (saut d'un trou / mur / marche, frappe, glissade) est jugée sur l'écart entre l'appui (buffer compris) et son beat dans la chart : **PARFAIT ≤ 45 ms**, **BIEN ≤ 90 ms**, **BOF** au-delà. Points de base × 1,0 / 0,6 / 0,2 × multiplicateur ; PARFAIT et BIEN font monter le combo, **BOF le casse**. Le jugement ne fait jamais mourir (invariant n°4) ; un objet n'est jugé qu'une fois. Le mot s'affiche au-dessus du héros (`UI/JudgePopup`).
+- **Jugement du timing** (`Core/TimingJudge`) : chaque action attendue (saut d'un trou / mur / marche, frappe) est jugée sur l'écart entre l'appui (buffer compris) et son beat dans la chart : **PARFAIT ≤ 45 ms**, **BIEN ≤ 90 ms**, **BOF** au-delà. Points de base × 1,0 / 0,6 / 0,2 × multiplicateur ; PARFAIT et BIEN font monter le combo, **BOF le casse**. Le jugement ne fait jamais mourir (invariant n°4) ; un objet n'est jugé qu'une fois. Le mot s'affiche au-dessus du héros (`UI/JudgePopup`).
 - **Note de fin** (`Core/GradeCalculator`) : précision = (PARFAIT + 0,6 × BIEN + 0,2 × BOF) / actions. **S+** = tout PARFAIT et toutes les pièces ; **S** ≥ 0,95 et pièces ≥ 90 % ; **A** ≥ 0,85 ; **B** ≥ 0,70 ; **C** ≥ 0,50 ; sinon **D**. Niveau non fini : note plafonnée à C. L'autoplay joue PARFAIT (vérifie qu'un S+ est atteignable).
 - État actuel de la démo : fin du morceau = fin de partie. Le tour REMIX est dans [roadmap.md](roadmap.md) (P0).
 - **2 joueurs** : hot-seat en alternance (P1 puis P2 sur le même morceau, comparaison à la fin). À faire **après le MVP**.
@@ -57,7 +56,7 @@ Démarrage → [1 Attract + HighScore] ⟲ (tourne en boucle)
 | # | Écran | Contenu Kenta | Toolkit |
 |---|---|---|---|
 | 1 | **Attract + HighScore** | Cycle en trois temps : logo KENTA sur la Sylve (8 s) → **démo jouée en autoplay** (20 s, un monde différent à chaque passage, `RunManager.BeginRun(level, demo: true)`) → classement top 10 (8 s). « APPUIE SUR START » respire entre l'or et le blanc. N'importe quel bouton → écran 2. Cet appui débloque aussi l'audio du navigateur. | `HighscoreBoard` (données du toolkit) |
-| 2 | **Explain (How to play)** | Trois gestes avec les boutons dessinés comme ceux de la borne (1 SAUTE, 2 FRAPPE, ▼ GLISSE) ; le héros mime le geste mis en avant, sur le temps (2 temps par geste). « UN SEUL COUP ET C'EST FINI ! ». B1/Start pour passer, sinon passage auto après ~6 s. | — |
+| 2 | **Explain (How to play)** | Deux gestes avec les boutons dessinés comme ceux de la borne (1 SAUTE, 2 FRAPPE ; plus de glissade, ADR-030) ; le héros mime le geste mis en avant, sur le temps (2 temps par geste). « UN SEUL COUP ET C'EST FINI ! ». B1/Start pour passer, sinon passage auto après ~6 s. | — |
 | 3 | **Config** : héros et monde | Kenta, Aiko ou Ryo (joystick gauche/droite) et l'un des 8 mondes (haut/bas, le décor change derrière), bouton 1. Au bout de 12 s, on part avec la sélection en cours. Le 2e joueur (hot-seat) viendra plus tard. | — |
 | 4 | **Game** | HUD : score, multiplicateur, cœurs, progression du morceau, section, tour de remix. | — |
 | 5 | **Game Over + score + liste** | « GAME OVER » (ou « BRAVO ! » et feu d'artifice), note S+ … D, score, pièces, jugements, puis le classement. Chaque panneau se passe au bouton 1. | `HighscoreBoard` |

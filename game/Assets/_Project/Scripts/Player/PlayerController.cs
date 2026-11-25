@@ -29,7 +29,6 @@ namespace Kenta.Player
         [Header("Corps")]
         [SerializeField] float width = 0.5f;
         [SerializeField] float standHeight = 1.0f;
-        [SerializeField] float slideHeight = 0.5f;
         [SerializeField] float pickupRadius = 0.7f;
         [Tooltip("Collisions balayées entre deux frames (à-coup du navigateur) jusqu'à cette distance max.")]
         [SerializeField] float maxSweep = 3f;
@@ -60,7 +59,6 @@ namespace Kenta.Player
         public int Plane => plane;
         /// <summary>Pendu à une liane (balancier automatique).</summary>
         public bool IsSwinging => vine != null;
-        public bool IsSliding => sliding;
         public bool IsGrounded => grounded;
         /// <summary>Course sur une rampe raide (pose « mur »).</summary>
         public bool IsClimbing { get; private set; }
@@ -73,8 +71,6 @@ namespace Kenta.Player
         public double LastJumpPressBeat { get; private set; } = -99;
         /// <summary>Beat du dernier appui sur « frappe ».</summary>
         public double LastHitPressBeat { get; private set; } = -99;
-        /// <summary>Beat du début de la glissade en cours.</summary>
-        public double SlideStartBeat { get; private set; } = -99;
         /// <summary>Secondes depuis le dernier atterrissage.</summary>
         public float SinceLanded => Time.time - landedAt;
         /// <summary>Avancement du saut ou du rebond en cours (0 au décollage, 1 à l'atterrissage prévu) ; -1 au sol
@@ -89,7 +85,7 @@ namespace Kenta.Player
 
         float y, vy;
         float groundTop;                      // dessus du dernier sol touché
-        bool grounded, sliding, dead;
+        bool grounded, dead;
         double lastGroundedBeat, jumpBufferBeat = -99, hitUntilBeat = -99, jumpStartBeat;
         bool spinning;
         int obstacleCursor, lumCursor;
@@ -143,10 +139,9 @@ namespace Kenta.Player
             dead = false;
             vy = 0f;
             grounded = true;
-            sliding = false;
             spinning = false;
             jumpBufferBeat = hitUntilBeat = -99;
-            LastJumpPressBeat = LastHitPressBeat = SlideStartBeat = -99;
+            LastJumpPressBeat = LastHitPressBeat = -99;
             lastGroundedBeat = beat;
             nowBeat = beat;
             airBeats = 0f;
@@ -264,17 +259,6 @@ namespace Kenta.Player
                 squash = Squash(1.2f, 0.92f);
             }
 
-            // Glissade au sol, chute rapide en l'air
-            if (!grounded && cmd.slideHeld && vy > -jumpVelocity) vy = -jumpVelocity;
-            bool nowSliding = cmd.slideHeld && grounded;
-            if (nowSliding && !sliding)
-            {
-                SlideStartBeat = beat;
-                ActionSfx.Instance?.Slide();
-                FxPool.Instance?.Burst(new Vector2(x - 0.3f, y + 0.05f), Color.white, 6, 3f, 0.12f, 0.3f, 2f, -0.2f);
-            }
-            sliding = nowSliding;
-
             // Rebond sur un cuirassé : l'appui (en avance ou juste après l'avoir écrasé) donne le grand rebond
             if (pendingStomp != null)
             {
@@ -315,7 +299,7 @@ namespace Kenta.Player
             prevCenterY = CenterWorldY();
         }
 
-        float CenterWorldY() => WorldY + (inverted ? -1f : 1f) * (sliding ? slideHeight : standHeight) * 0.5f;
+        float CenterWorldY() => WorldY + (inverted ? -1f : 1f) * standHeight * 0.5f;
 
         /// <summary>Traverse un portail de gravité : on garde la position et la vitesse dans le monde, on tombe vers l'autre côté.</summary>
         void SetGravity(bool up, float x)
@@ -508,6 +492,7 @@ namespace Kenta.Player
                 sr.color = p == 1 ? new Color(0.62f, 0.62f, 0.78f) : Color.white;
             }
             if (CameraRig.Instance != null) CameraRig.Instance.ActorInWorld = p == 1;
+            level?.SetFrontFaded(p == 1);              // le premier plan s'efface pour qu'on voie le héros passer derrière
         }
 
         readonly System.Collections.Generic.Dictionary<SpriteRenderer, int> baseOrders = new();
@@ -595,7 +580,7 @@ namespace Kenta.Player
         /// <summary>Retourne vrai si le joueur a été touché (la frame s'arrête là).</summary>
         bool CheckCollisions(float x, float sweepFrom, double beat)
         {
-            float h = sliding ? slideHeight : standHeight;
+            float h = standHeight;
             float wy = WorldY;
             var bodyRect = BodyRect(sweepFrom, x, wy, h);
             bool hitting = beat <= hitUntilBeat;
@@ -649,7 +634,7 @@ namespace Kenta.Player
                 if (!o.passed && x - width * 0.5f > o.bounds.xMax)
                 {
                     o.passed = true;
-                    run.OnObstacleCleared(o, o.kind == LevelObjectKind.SlideBar ? SlideStartBeat : LastJumpPressBeat);
+                    run.OnObstacleCleared(o, LastJumpPressBeat);
                 }
             }
             return false;

@@ -46,18 +46,11 @@ def test_world_changes_mid_level():
     assert len({b for b in biomes if b}) >= 2
 
 
-def test_slides_are_part_of_the_level():
-    """La glissade est 1 des 3 commandes : elle doit revenir plusieurs fois, dans les deux passages du morceau."""
-    slides = [e["beat"] for e in EVENTS if e["type"] == "slide_bar"]
-    assert len(slides) >= 5
-    assert any(b < 128 for b in slides) and any(b >= 152 for b in slides)
-
-
 def test_obstacle_variety():
-    """Pas seulement des champignons et des trous : murs, glissades, tambours, plateformes, ennemis en vol, et les
+    """Pas seulement des champignons et des trous : murs, tambours, plateformes, ennemis en vol, et les
     mécaniques qui changent le niveau (lianes, gravité inversée, arrière-plan, effets d'écran)."""
     kinds = {e["type"] for e in EVENTS}
-    for k in ("gap", "wall", "slide_bar", "enemy", "bounce", "platform", "step", "ramp",
+    for k in ("gap", "wall", "enemy", "bounce", "platform", "step", "ramp",
               "vine", "gravity", "ceiling", "back", "screen_split", "glitch"):
         assert k in kinds, k
     assert sum(1 for e in EVENTS if e["type"] == "wall") >= 2

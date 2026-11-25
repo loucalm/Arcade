@@ -12,7 +12,7 @@ Toute PR qui casse un de ces points est refusée. Détails : [docs/anatidae.md](
 - [ ] **Dead zone** sur les joysticks (repos ≈ `-0.00392`) : passer par `ArcadeInput`, jamais `Input.GetAxis` directement. `ArcadeInput` lit aussi les manettes dans le navigateur (`ArcadePads`) : Unity 6.3 ne voit en Web que la manette à l'index 0 (ADR-029).
 - [ ] Dossier de build = `index.html` + `thumbnail.png` (carré) + `info.json`. Nom du dossier = `HighscoreManager.GameName` = **`Kenta`**.
 - [ ] Score + saisie de nom (3 caractères) en fin de partie via `Anatidae.HighscoreManager`.
-- [ ] 1 ou 2 joueurs, **3 boutons max** (on utilise B1 = saut, B2 = frappe, joystick bas = glissade).
+- [ ] 1 ou 2 joueurs, **3 boutons max** (on en utilise deux : B1 = saut, B2 = frappe ; plus de glissade, ADR-030 ; le joystick ne sert qu'aux menus).
 - [ ] Jeu compréhensible en 10 s, difficulté croissante, partie de quelques minutes max.
 - [ ] **Flow d'écrans imposé** : Attract+HighScore → Explain → Config (facultatif) → Game → Game Over + scores → enregistrement si top 10 → Attract. Voir [docs/game-design.md](docs/game-design.md#écrans-flow-imposé-par-lenseignant).
 

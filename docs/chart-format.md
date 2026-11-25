@@ -43,7 +43,6 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `gap` | trou de `beat+0,2` à `beat+0,2+length` (défaut 0,6). **`lane 1` = vide** sous une suite de plateformes : ni jugé ni sauté par l'autoplay | −0,18 … +0,42 |
 | `wall` | souche de 0,9 u à `beat+0,4` (hitbox 0,7 × 0,75 u) ; pieds à moins de 0,4 u de son sommet : on passe dessus (coup de pouce) | ≥ ±0,3 (120 ms) |
 | `enemy` / `block` | centre à `beat+0,6`. **`enemy` en `lane 1` = ennemi en vol** (chauve-souris), posé à la hauteur absolue `height` : à frapper en plein saut ou en pleine envolée (en l'air, la frappe porte de 1,2 u sous les pieds à 2,4 u au-dessus) | ≈ ±0,4 (165 ms) |
-| `slide_bar` | plafond de `beat+0,1` à `beat+0,1+length` (défaut 1), bas à 0,62 u | tenir le bas tout du long |
 | `lum_line` | lums aux beats `beat + i×step`, hauteur selon `lane` **au-dessus du sol en x** (ou d'une plateforme) : 0 → 0,45 u, 1 → 1,9 u, 2 → 2,4 u | — |
 | `step` | à partir de `beat+0,5`, le sol principal passe à `height` (absolue, libre : −60 … 60 u). Montée de plus de 0,25 u = face de marche mortelle : sauter sur `beat`. Descente = on tombe (une grande chute vers un sol plus bas n'est pas mortelle). **`lane 1` = falaise** : montée atteinte en vol (tambour), pas de saut attendu ni jugé | comme `wall` |
 | `ramp` | de `beat` à `beat+length`, le sol monte ou descend en ligne droite jusqu'à `height` (automatique). Raide en montée = course sur le mur (pose « mur »). Dessinée en escalier de 8 px | — |
@@ -61,6 +60,7 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `enemy` + `lane 2` | **pendu au plafond** (dessous à `height`) ; avec `variant: "back"` : ennemi sur le chemin du fond | comme `enemy` |
 | `jump` | saut sans trou dans le sol du niveau (trou du plafond, ou du chemin du fond avec `variant: "back"`) : jugé quand on passe le trou | comme `gap` |
 | `screen_split` | l'image se dédouble en une grille qui remplit tout l'écran : `copies` = 1 (normal), 4 (2×2, agrandies ×1,5) ou 9 (3×3, ×1), jusqu'au prochain `screen_split` (2 et 5 sont lus comme 4 et 9) | — |
+| `screen_flip` | l'image se retourne jusqu'au prochain `screen_flip` : `variant` = `"mirror"` (gauche-droite : on court vers la gauche), `"up"` (tête en bas), `"both"` (demi-tour), autre = à l'endroit. Miroir entier (pixel art net) ; l'interface reste à l'endroit | — |
 | `glitch` | grésillement (neige, image qui saute, couleurs) d'intensité `intensity` (0…1) pendant `length` beats, plus fort sur chaque temps | — |
 
 Tous les obstacles (mur, ennemi, bloc, plafond, pièces) se posent **sur le sol principal à leur x** : un mur après une marche est posé en haut de la marche.
@@ -69,7 +69,6 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus 
 - une montée (`step` ou `platform`) ne dépasse jamais **+1,0 u** par rapport au sol d'où l'on saute ;
 - deux sauts (gap/wall) espacés d'**au moins 1 beat** ;
 - pas d'ennemi pendant un saut (entre `j` et `j+1`), sauf pile à l'atterrissage `j+1` ;
-- pas de saut entre `slide_bar.beat − 1,2` et la fin de la barre ;
 - lums `lane 1` au-dessus d'un saut lancé en `j` : de `j+0,25` à `j+0,75`.
 
 ## Types d'événements
@@ -78,7 +77,6 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus 
 | `gap` | sauter | `length` (en beats) |
 | `enemy` | frapper | `variant` |
 | `block` | frapper (cassable) | `variant` |
-| `slide_bar` | glisser | `length` |
 | `wall` | sauter (mur à franchir) | `height` |
 | `step` | sauter si ça monte (marche) ; rien si ça descend | `height` |
 | `platform` | sauter dessus | `length`, `height` |
@@ -91,7 +89,7 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus 
 | `orb` | sauter en passant dessus | `height`, `step` |
 | `ceiling`, `back`, `gravity` | rien (décor et portails) ; on saute les trous (`jump`) | `length`, `height` |
 | `jump` | sauter (trou du plafond ou du chemin du fond) | `variant` |
-| `screen_split`, `glitch` | — (effets d'écran) | `copies` ; `intensity`, `length` |
+| `screen_split`, `screen_flip`, `glitch` | — (effets d'écran) | `copies` ; `variant` ; `intensity`, `length` |
 | `lum_line` | collecter | `count`, `step` (beats entre lums) |
 | `fx_flash` | — (visuel) | `intensity` |
 | `camera_shake` | — | `intensity`, `length` |
