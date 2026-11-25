@@ -27,7 +27,7 @@ Les `.gitkeep` gardent les dossiers vides dans git (Unity ignore les fichiers qu
 
 ## Toolkit Anatidae — ce qu'on réutilise
 - `HighscoreManager.GameName` → **`"Kenta"`** (`Assets/Anatidae/Scripts/HighscoreManager.cs`). Doit être identique au nom du dossier de build.
-- Le prefab **`AnatidaeInterface`** doit être présent dans **chaque scène**. Il contient `MenuManager` (bouton blanc 1,5 s + AFK 60 s), `HighscoreNameInput` et `HighscoreUI`. En build Web, `Core/ArcadeMenu` désactive `MenuManager` au lancement et fait son travail avec `ArcadeInput` (manettes lues dans le navigateur, ADR-028).
+- Le prefab **`AnatidaeInterface`** doit être présent dans **chaque scène**. Il contient `MenuManager` (bouton blanc 1,5 s + AFK 60 s), `HighscoreNameInput` et `HighscoreUI`. En build Web, `Core/ArcadeMenu` désactive `MenuManager` au lancement et fait son travail avec `ArcadeInput` (manettes lues dans le navigateur, ADR-029).
 - **Manettes en build Web** : `Plugins/WebGL/KentaGamepad.jslib` + `Core/ArcadePads` (joueur 1 = première manette branchée, haut = +1 comme le menu de la borne). Tester sans borne : servir le build et injecter une fausse manette dans `navigator.getGamepads()` (index ≠ 0 pour reproduire le piège).
 - Au démarrage : `StartCoroutine(HighscoreManager.FetchHighscores())`, **avant** tout `IsHighscore()`.
 - Fin de partie : `if (HighscoreManager.IsHighscore(score))` → **notre** écran `UI/NameEntryScreen` (pixel art), puis `StartCoroutine(HighscoreManager.SetHighscore(nom, score))`. Le classement s'affiche avec **notre** `UI/HighscoreBoard` (données : `HighscoreManager.Highscores`). L'interface du toolkit (`HighscoreUI`, `HighscoreNameInput`, police Arial) n'est plus montrée (ADR-021) ; ses données et l'envoi restent ceux du toolkit.
