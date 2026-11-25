@@ -20,7 +20,8 @@ Ce document explique **comment elle est construite dans le projet** et comment l
 | Source | Contenu | Où |
 |---|---|---|
 | **PDF de la DA** (`tools/extract-kenta-pdf.py`) | 3 héros × 8 poses + pose d'attente, 8 ennemis, djembé écrasé / étiré / cassé | `Art/Kenta/Pdf/` |
-| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel 640×360, 3 calques 1280×360, gardien endormi / éveillé + `guardians.json`, sol, trou, mur, bloc, plafond, poteau, flanc et flanc profond, 4 détails de pilier), pièces, totem, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
+| **Générateur** (`tools/gen-kenta-assets.py`) | 8 biomes (ciel 640×360, 3 calques 1280×360, gardien endormi / éveillé + `guardians.json`, sol, trou, flanc et flanc profond, 4 détails de pilier), pièces, totem, logo, cœurs, cadres, police 5×7 | `Art/Kenta/Gen/` |
+| **Gemini** (`tools/gemini-obstacles/`, ADR-026) | obstacles des 8 biomes : mur 38×34, bloc 40×40, plafond 16×16, poteau 8×16, plateforme 32×10. Planches Gemini (`raw/sheets/`) → `cut_sheets.py` → `clean.py --install` (palette du biome, plus proche voisin, contour 1 px, tuiles raccordées) | `Art/Kenta/Gen/biomes/` |
 
 Les PNG sont **commités** : inutile de relancer les outils sauf pour modifier un décor ou si le PDF change. Dépendances : `pip install -r tools/requirements.txt` (+ `pymupdf` pour l'extraction du PDF, `librosa` pour la chart).
 - Les sprites du PDF sont recadrés pour que le pivot soit **milieu-bas** (les pieds), sans réglage dans Unity.

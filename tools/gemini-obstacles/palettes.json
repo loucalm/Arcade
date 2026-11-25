@@ -1,0 +1,130 @@
+{
+ "sylve": {
+  "label": "LA SYLVE",
+  "colors": [
+   "#14101C",
+   "#6B4A32",
+   "#4F3624",
+   "#C79A62",
+   "#4F9A3A",
+   "#8A5A32",
+   "#5A3A22",
+   "#C8C0A8",
+   "#2C6E4E",
+   "#1F5A3E",
+   "#6CC24A",
+   "#5A3A2A",
+   "#3E9A3A",
+   "#AAD3CE",
+   "#8EBDB8",
+   "#FFFFFF"
+  ]
+ },
+ "bayou": {
+  "label": "LE BAYOU",
+  "colors": [
+   "#14101C",
+   "#5A4A44",
+   "#3E322E",
+   "#7A9A5A",
+   "#6A4A3A",
+   "#4A3228",
+   "#B88AA8",
+   "#4A6E44",
+   "#2E4A30",
+   "#3A2E3E",
+   "#4C3A4A",
+   "#3A2C3C",
+   "#594B6D",
+   "#3E3A6B"
+  ]
+ },
+ "echos": {
+  "label": "LES ÉCHOS",
+  "colors": [
+   "#14101C",
+   "#555BA0",
+   "#353A78",
+   "#8E9BFF",
+   "#3A3F7A",
+   "#262A5A",
+   "#8A6AE0",
+   "#2B2E66",
+   "#1E2050",
+   "#2E3366"
+  ]
+ },
+ "forge": {
+  "label": "LA FORGE",
+  "colors": [
+   "#14101C",
+   "#5A3A30",
+   "#3A1A16",
+   "#FF7A1A",
+   "#FFA040",
+   "#D8401A",
+   "#2D0C08",
+   "#8A1A0A"
+  ]
+ },
+ "echine": {
+  "label": "L'ÉCHINE",
+  "colors": [
+   "#14101C",
+   "#8C8F9C",
+   "#5A5E6E",
+   "#C6C9D4",
+   "#79BC7A",
+   "#E8A030",
+   "#6A6E7E",
+   "#86C860",
+   "#7A6A5A",
+   "#5A4A3E",
+   "#9CADD3",
+   "#7C8FC0",
+   "#FFFFFF"
+  ]
+ },
+ "givre": {
+  "label": "LE GIVRE",
+  "colors": [
+   "#14101C",
+   "#A8CCF0",
+   "#6C9BCC",
+   "#FFFFFF",
+   "#BCD6F4",
+   "#8FB4E0",
+   "#E8F4FF",
+   "#477EBB"
+  ]
+ },
+ "cite": {
+  "label": "LA CITÉ SOURDE",
+  "colors": [
+   "#14101C",
+   "#D49A70",
+   "#9A6A48",
+   "#EDB88A",
+   "#B8845A",
+   "#8A6444",
+   "#E8C8B0",
+   "#9EB0BE",
+   "#82A6C7",
+   "#FFFFFF"
+  ]
+ },
+ "orage": {
+  "label": "LE GRAND ORAGE",
+  "colors": [
+   "#14101C",
+   "#6A78C0",
+   "#4A5598",
+   "#A8B4F0",
+   "#2E3570",
+   "#E0B040",
+   "#FFFFFF",
+   "#2F7088",
+   "#245170"
+  ]
+ }
+}
