@@ -9,7 +9,6 @@ Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,fon
 Dossier par défaut : game/Assets/_Project/Art/Kenta/Gen   (dépendances : tools/requirements.txt)
 """
 import argparse
-import json
 import os
 import sys
 
@@ -35,15 +34,11 @@ def put(out, sub, name, img, sheet=None):
 
 
 def gen_biomes(out, sheet):
-    guardians = {}
+    # gardiens (guardian_<id>.png + guardians.json) : dessinés par Gemini, nettoyés par tools/gemini-gardiens/clean.py
+    # (ADR-028). Ils ne sont plus générés ici : ne pas les réécraser.
     for b in BIOMES:
         i = b["id"]
         put(out, "biomes", f"bg_{i}_sky", art.draw_sky(b), sheet)
-        sleep, (dx, dy) = art.draw_guardian(b, awake=False)
-        awake, _ = art.draw_guardian(b, awake=True)
-        put(out, "biomes", f"guardian_{i}", sleep, sheet)
-        put(out, "biomes", f"guardian_{i}_awake", awake, sheet)
-        guardians[i] = {"x": dx, "y": dy}
         put(out, "biomes", f"fill_{i}_deep", art.draw_fill_deep(b))
         for k in range(4):
             put(out, "biomes", f"deco_{i}_{k}", art.draw_deco(b, k), sheet)
@@ -56,9 +51,6 @@ def gen_biomes(out, sheet):
         put(out, "biomes", f"cliff_{i}", art.draw_cliff_top(b))
         # obstacles (wall, block, ceil, post, platform) : dessinés par Gemini, nettoyés par tools/gemini-obstacles/clean.py
         # (ADR-026). Ils ne sont plus générés ici : ne pas les réécraser.
-    # position des gardiens (px réels depuis le centre de l'écran 640×360, y vers le haut) : lue par KentaBuilder
-    with open(os.path.join(out, "biomes", "guardians.json"), "w", encoding="utf-8") as f:
-        json.dump({"items": [{"id": k, "x": v["x"], "y": v["y"]} for k, v in guardians.items()]}, f, indent=1)
 
 
 def gen_ui(out, sheet):
@@ -118,7 +110,7 @@ def gen_thumbnail(out, sheet):
     """Jaquette carrée de la borne (game/BuildExtras/thumbnail.png) : la Sylve, Kenta (marionnette, ADR-022) en pleine
     course, le logo, et un bandeau rouge « DÉMO » en bas."""
     b = BIOMES[0]
-    scene = art.draw_sky(b, scale=1, statue=True)
+    scene = art.draw_sky(b, scale=1)
     for layer, off in ((art.draw_far(b, scale=1, foot=False), 120), (art.draw_mid(b, scale=1, foot=False), 150), (art.draw_near(b, scale=1, foot=False), 230)):
         scene.im.alpha_composite(layer.im.crop((off, 0, off + 240, 135)))
     ground = art.draw_ground(b)
