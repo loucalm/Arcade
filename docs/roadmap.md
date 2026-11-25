@@ -16,7 +16,7 @@ Règles :
 ## Jeu — P0 (rendu / borne)
 - [ ] **Tester sur la vraie borne** : 60 fps dans Firefox ESR, manettes (correctif ADR-029 : à vérifier sur la vraie machine, et le sens haut/bas du joystick), bouton blanc, AFK 60 s, et surtout **l'audio démarre-t-il après un appui manette ?** (politique d'autoplay du navigateur)
 - [ ] **Tester le ressenti dans Firefox** : durée et hauteur du saut, fenêtres de tolérance, latence des sons quantifiés (jusqu'à ~60 ms)
-- [ ] **Réduire le build** (`Build.wasm` ≈ 31 Mo) : Managed Stripping Level = High, IL2CPP « Optimize Size », retirer les packages inutiles (navigation, multiplayer center, timeline, modules VR/XR…)
+- [ ] **Réduire le build** (`Build.wasm` ≈ 31 Mo) : Managed Stripping Level = High (à tester sur un build : réflexion du toolkit), IL2CPP réglé sur la vitesse depuis le 25/11 (ADR-031), retirer les packages inutiles (navigation, multiplayer center, timeline, modules VR/XR…)
 - [ ] **Musique libre de droits** : le niveau utilise provisoirement « Main Theme » de Shovel Knight (protégé, voir `Audio/LICENSES.md`) ; la remplacer par un morceau original ou libre (110–160 BPM, sections marquées), avec sa **version 8-bit** au même BPM + licence dans `Audio/LICENSES.md`
 - [x] Chart recalée sur la structure réelle de « Main Theme » : obstacles posés sur les attaques de la musique, sections alignées, `tools/gen-level-chart.py` (2026-11-03)
 - [ ] **Vérifier à l'oreille** que le niveau colle à la musique (offset 0,18 s : sinon essayer 0,38 s dans `SongData` et `tools/gen-level-chart.py`)
@@ -24,6 +24,13 @@ Règles :
 - [ ] **Communication jeu → site** (exigée par le sujet) : `Scripts/Net/` + `NetConfig`, `POST /api/runs/*` et `GET /api/live-config` via `AnatidaeProxyWebRequest`. Contrat : [api-contract.md](api-contract.md)
 - [x] `thumbnail.png` Kenta (la Sylve, le héros et le logo ; `tools/gen-kenta-assets.py --only thumbnail`) (2026-11-03)
 - [ ] `attract.mp4` (≤ 20 s, muet) en option : trailer pour le mode attract de la borne
+
+**Perf et bugs borne (2026-11-25, ADR-031)**
+- [x] (2026-11-25) Page qui défile, pas en plein écran → gabarit Web « Kenta » (rendu fixe 1920×1080, sans défilement)
+- [x] (2026-11-25) Peu de fps → niveau par tranches (≈ 560 sprites actifs au lieu de 6 000), un seul bandeau dans la scène (au lieu de 30), build release, moins d'allocations par image
+- [x] (2026-11-25) Morts « dans l'escalier » et dans les cuirassés au lieu du rebond → physique du héros en pas de 1/60 s (vérifié à 15 i/s avec des à-coups)
+- [ ] **P0** Refaire un build Web (menu Kenta > Build Web (borne), module Web de 6000.3.23f1) et vérifier sur la borne : fps (overlay F9 absent en release : compter à l'œil ou via le panneau des performances de Firefox), plein écran, plus de morts sur les rampes
+- [ ] **P1** L'autoplay de Unity ramasse 373 pièces sur 395, le simulateur du générateur 395/395 : écart à trouver (déjà avant le 25/11)
 
 ## Jeu — P1 (gameplay « music level »)
 - [x] **Niveau vertical** (ADR-018) : hauteur libre, rampes et course sur le mur (`ramp`), tambours-tremplins (`bounce`), caméra par plans (zoom ×3 à ×6, cadrage), niveau 01 réécrit scène par scène avec simulateur de l'autoplay (2026-11-24)
