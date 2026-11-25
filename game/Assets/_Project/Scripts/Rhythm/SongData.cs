@@ -19,5 +19,7 @@ namespace Kenta.Rhythm
         [Min(1)] public int beatsPerBar = 4;
         [Tooltip("Chart JSON du niveau (voir docs/chart-format.md). Optionnel pour un morceau de menu.")]
         public TextAsset chart;
+        [Tooltip("Début de l'extrait joué à l'écran de sélection de niveau (beat).")]
+        [Min(0f)] public float previewBeat;
     }
 }

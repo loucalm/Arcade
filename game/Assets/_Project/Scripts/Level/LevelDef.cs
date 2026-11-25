@@ -4,8 +4,9 @@ using UnityEngine;
 namespace Kenta.Level
 {
     /// <summary>
-    /// Un niveau = un monde (biome) + un morceau + une chart. Pour l'instant les 8 niveaux partagent le même morceau et
-    /// la même chart ; plus tard chacun aura les siens (sans code : changer les références ici).
+    /// Un niveau = un thème (biome) + un morceau + une chart, choisi à l'écran de sélection (ADR-030). Chaque niveau a
+    /// son SongData ; provisoirement, tous pointent vers le même clip et la même chart. Donner à un niveau sa musique et
+    /// sa chart = changer les références de son SongData, sans code (la reconstruction ne les écrase pas).
     /// </summary>
     [CreateAssetMenu(fileName = "Level_", menuName = "Kenta/Level")]
     public class LevelDef : ScriptableObject
@@ -17,6 +18,8 @@ namespace Kenta.Level
         [Tooltip("Chart du niveau ; vide = celle du SongData.")]
         public TextAsset chart;
         [Range(1, 5)] public int stars = 1;
+        [Tooltip("Vignette 40×24 de la liste des niveaux (Gen/ui/thumb_<biome>.png).")]
+        public Sprite thumbnail;
 
         public TextAsset Chart => chart != null ? chart : (song != null ? song.chart : null);
         public string Label => biome != null ? biome.label : id;
