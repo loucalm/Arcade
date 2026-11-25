@@ -15,6 +15,7 @@ MonoBehaviour:
   id: sylve
   number: 1
   biome: {fileID: 11400000, guid: babbf7734508742ccbf9b4935175b60e, type: 2}
-  song: {fileID: 11400000, guid: 4c7d4371930ee40dca097ad5471f74db, type: 2}
+  song: {fileID: 11400000, guid: 009210e12b6d54d2698d07a1ca156269, type: 2}
   chart: {fileID: 0}
   stars: 1
+  thumbnail: {fileID: 21300000, guid: 2aa3cc89a414843f89520fafb1ad80cf, type: 3}

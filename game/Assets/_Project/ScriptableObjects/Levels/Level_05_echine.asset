@@ -15,6 +15,7 @@ MonoBehaviour:
   id: echine
   number: 5
   biome: {fileID: 11400000, guid: 82f1064527a5e443aba522239a509306, type: 2}
-  song: {fileID: 11400000, guid: 4c7d4371930ee40dca097ad5471f74db, type: 2}
+  song: {fileID: 11400000, guid: 62b9d575dab01409daf61eaa71db6693, type: 2}
   chart: {fileID: 0}
   stars: 3
+  thumbnail: {fileID: 21300000, guid: e93f74efeca04454e87ebf8793092dd4, type: 3}

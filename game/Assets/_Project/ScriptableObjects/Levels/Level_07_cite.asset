@@ -15,6 +15,7 @@ MonoBehaviour:
   id: cite
   number: 7
   biome: {fileID: 11400000, guid: f032c48912aed45beb5f11139baad463, type: 2}
-  song: {fileID: 11400000, guid: 4c7d4371930ee40dca097ad5471f74db, type: 2}
+  song: {fileID: 11400000, guid: a984f26461b9e44629c4d567446afeb7, type: 2}
   chart: {fileID: 0}
   stars: 4
+  thumbnail: {fileID: 21300000, guid: 880f4a4adb3874ab3a5b9f0ca1c2d27a, type: 3}

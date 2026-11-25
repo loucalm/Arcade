@@ -345,7 +345,6 @@ namespace Kenta.EditorTools
             var tr = root.transform;
             AddText(tr, font, "Title", "CHOISIS TON HÉROS", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
             var timer = AddText(tr, font, "Timer", "12", new Vector2(146, 72), Color.white, 1, PixelText.Align.Center, true);
-            var world = AddText(tr, font, "World", "▲  MONDE 1/8 : LA SYLVE  ▼", new Vector2(0, 50), Color.white, 1, PixelText.Align.Center, true);
             var portraits = new Image[3];
             var frames = new Image[3];
             var names = new PixelText[3];
@@ -357,15 +356,114 @@ namespace Kenta.EditorTools
                 portraits[i] = AddImage(tr, $"Portrait{i}", theme.heroes[i].sprites.idle, new Vector2(x, -42), null, null, true, new Vector2(0.5f, 0f));
                 names[i] = AddText(tr, font, $"Name{i}", theme.heroes[i].displayName, new Vector2(x, -68), Color.white, 1, PixelText.Align.Center, true);
             }
-            AddText(tr, font, "Hint", "◄ ► HÉROS   ▲ ▼ MONDE   1 VALIDER", new Vector2(0, -84), Color.white, 1, PixelText.Align.Center, true);
+            AddText(tr, font, "Hint", "◄ ► HÉROS   1 VALIDER", new Vector2(0, -84), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<HeroSelectScreen>();
             Set(comp, "theme", theme);
             Set(comp, "timerText", timer);
-            Set(comp, "worldText", world);
             SetArray(comp, "portraits", portraits);
             SetArray(comp, "frames", frames);
             SetArray(comp, "names", names);
             return SavePrefab(root, "Screen_HeroSelect");
+        }
+
+        static void Stretch(RectTransform rt, float inset)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = new Vector2(inset, inset);
+            rt.offsetMax = new Vector2(-inset, -inset);
+        }
+
+        static void Anchor(Component c, float x, float y)
+        {
+            var rt = (RectTransform)c.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(x, y);
+        }
+
+        /// <summary>
+        /// Choix du niveau (ADR-030), maquette docs/img/selection-niveau-maquette.png : liste façon osu! à droite (cartes
+        /// créées en jeu depuis la carte modèle), infos et top 5 du niveau à gauche, bandeaux en haut et en bas.
+        /// Coordonnées : pixels d'interface, origine au centre de l'écran 320×180.
+        /// </summary>
+        static GameObject BuildLevelSelect(PixelFontData font, LevelTheme theme)
+        {
+            var root = ScreenRoot("Screen_LevelSelect");
+            var tr = root.transform;
+            var px = Spr("Gen/ui/pixel.png");
+            var star = Spr("Gen/ui/star.png");
+            var ink = new Color(20 / 255f, 16 / 255f, 28 / 255f);
+            var rowDim = new Color(90 / 255f, 84 / 255f, 130 / 255f);
+            AddImage(tr, "Veil", px, Vector2.zero, new Color(ink.r, ink.g, ink.b, 90 / 255f), new Vector2(PixelScreen.Width, PixelScreen.Height), false);
+
+            // liste : la carte modèle (inactive) est copiée en jeu, une par niveau du catalogue
+            var list = NewRect("List", tr, Vector2.zero);
+            var card = NewRect("CardTemplate", list, Vector2.zero, new Vector2(174, 28));
+            card.pivot = new Vector2(0f, 0.5f);
+            var frame = AddImage(card, "Frame", px, Vector2.zero, Gold, null, false);
+            Stretch(frame.rectTransform, 0f);
+            var fill = AddImage(card, "Fill", px, Vector2.zero, new Color(29 / 255f, 24 / 255f, 48 / 255f, 235 / 255f), null, false);
+            Stretch(fill.rectTransform, 1f);
+            var thumb = AddImage(card, "Thumb", Spr("Gen/ui/thumb_sylve.png"), new Vector2(2, 0), null, new Vector2(40, 24), false, new Vector2(0f, 0.5f));
+            Anchor(thumb, 0f, 0.5f);
+            var title = AddText(card, font, "Title", "1 LA SYLVE", new Vector2(46, 5), Color.white, 1, PixelText.Align.Left);
+            Anchor(title, 0f, 0.5f);
+            var song = AddText(card, font, "Song", "MAIN THEME", new Vector2(46, -6), Dim, 1, PixelText.Align.Left);
+            Anchor(song, 0f, 0.5f);
+            var cardStars = new Image[5];
+            for (int i = 0; i < cardStars.Length; i++)
+            {
+                cardStars[i] = AddImage(card, $"Star{i}", star, new Vector2(-38 + 7 * i, -9), Gold, null, true, Vector2.zero);
+                Anchor(cardStars[i], 1f, 0.5f);
+            }
+            var lc = card.gameObject.AddComponent<LevelCard>();
+            Set(lc, "frame", frame);
+            Set(lc, "fill", fill);
+            Set(lc, "thumb", thumb);
+            Set(lc, "title", title);
+            Set(lc, "song", song);
+            SetArray(lc, "stars", cardStars);
+            card.gameObject.SetActive(false);
+
+            // bandeau du haut (au-dessus de la liste)
+            AddImage(tr, "TopBar", px, new Vector2(0, 82), new Color(ink.r, ink.g, ink.b, 230 / 255f), new Vector2(PixelScreen.Width, 16), false);
+            AddText(tr, font, "Header", "CHOISIS TON NIVEAU", new Vector2(-154, 82), Gold, 1, PixelText.Align.Left);
+            var timer = AddText(tr, font, "Timer", "15", new Vector2(148, 82), Color.white);
+
+            // panneau d'infos à gauche
+            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(-87, -1), null, new Vector2(134, 142), false);
+            panel.type = Image.Type.Sliced;
+            var name = AddText(tr, font, "Name", "LA SYLVE", new Vector2(-146, 50), Color.white, 2, PixelText.Align.Left);
+            var songText = AddText(tr, font, "SongTitle", "MAIN THEME", new Vector2(-146, 30), Dim, 1, PixelText.Align.Left);
+            var info = AddText(tr, font, "Info", "150 BPM  1:43", new Vector2(-146, 18), Dim, 1, PixelText.Align.Left);
+            var stars = new Image[5];
+            for (int i = 0; i < stars.Length; i++) stars[i] = AddImage(tr, $"Star{i}", star, new Vector2(-146 + 7 * i, 5), Gold, null, true, Vector2.zero);
+            AddImage(tr, "Rule", px, new Vector2(-146, -3), rowDim, new Vector2(118, 1), false, Vector2.zero);
+            AddText(tr, font, "BoardTitle", "CLASSEMENT DU NIVEAU", new Vector2(-146, -12), Gold, 1, PixelText.Align.Left);
+            var boardNames = new PixelText[5];
+            var boardScores = new PixelText[5];
+            for (int k = 0; k < boardNames.Length; k++)
+            {
+                float y = -23 - 10 * k;
+                boardNames[k] = AddText(tr, font, $"BoardName{k}", $"{k + 1} ---", new Vector2(-146, y), rowDim, 1, PixelText.Align.Left);
+                boardScores[k] = AddText(tr, font, $"BoardScore{k}", "", new Vector2(-30, y), rowDim, 1, PixelText.Align.Right);
+            }
+
+            // bandeau du bas
+            AddImage(tr, "BottomBar", px, new Vector2(0, -83), new Color(ink.r, ink.g, ink.b, 200 / 255f), new Vector2(PixelScreen.Width, 14), false);
+            AddText(tr, font, "Hint", "▲▼ NIVEAU   1 JOUER   2 RETOUR", new Vector2(0, -83), Color.white);
+
+            var comp = root.AddComponent<LevelSelectScreen>();
+            Set(comp, "listRoot", list);
+            Set(comp, "cardTemplate", lc);
+            Set(comp, "nameText", name);
+            Set(comp, "songText", songText);
+            Set(comp, "infoText", info);
+            Set(comp, "timerText", timer);
+            SetArray(comp, "stars", stars);
+            SetArray(comp, "boardNames", boardNames);
+            SetArray(comp, "boardScores", boardScores);
+            Set(comp, "font", font);
+            return SavePrefab(root, "Screen_LevelSelect");
         }
 
         static GameObject BuildHud(PixelFontData font, LevelTheme theme)
@@ -442,7 +540,7 @@ namespace Kenta.EditorTools
             // classement en pixel art : rang, nom, score ; pièces or / argent / bronze devant les trois premiers
             var root = ScreenRoot("Screen_Highscores");
             var tr = root.transform;
-            AddText(tr, font, "Title", "MEILLEURS SCORES", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
+            var title = AddText(tr, font, "Title", "MEILLEURS SCORES", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
             var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(0, -6), null, new Vector2(176, 128), false);
             panel.type = Image.Type.Sliced;
             const int rows = 10;
@@ -465,6 +563,8 @@ namespace Kenta.EditorTools
             SetArray(comp, "scores", scores);
             SetArray(comp, "medals", medals);
             Set(comp, "emptyText", empty);
+            Set(comp, "title", title);
+            Set(comp, "font", font);
             return SavePrefab(root, "Screen_Highscores");
         }
 
@@ -534,11 +634,14 @@ namespace Kenta.EditorTools
             foreach (Transform t in go.transform) SetLayerRecursive(t.gameObject, layer);
         }
 
-        /// <summary>Un niveau par biome ; pour l'instant tous sur le même morceau et la même chart (le thème change).</summary>
+        /// <summary>
+        /// Un niveau par biome, chacun avec son SongData (Song_0N_&lt;biome&gt;), créé s'il manque en recopiant Song_Level01
+        /// (ADR-030). Ne remplace jamais le morceau, la chart ou la vignette qu'un niveau a déjà reçus.
+        /// </summary>
         static LevelCatalog BuildLevels(BiomeTheme[] biomes)
         {
             int[] stars = { 1, 1, 2, 3, 3, 4, 4, 5 };
-            var song = AssetDatabase.LoadAssetAtPath<SongData>(SoDir + "Songs/Song_Level01.asset");
+            var shared = AssetDatabase.LoadAssetAtPath<SongData>(SoDir + "Songs/Song_Level01.asset");
             EnsureFolder(SoDir + "Levels");
             var levels = new LevelDef[biomes.Length];
             for (int i = 0; i < biomes.Length; i++)
@@ -547,8 +650,8 @@ namespace Kenta.EditorTools
                 l.id = BiomeIds[i];
                 l.number = i + 1;
                 l.biome = biomes[i];
-                l.song = song;
-                l.chart = null;                        // celle du morceau
+                if (l.song == null || l.song == shared) l.song = LevelSong(i, shared);
+                if (l.thumbnail == null) l.thumbnail = AssetDatabase.LoadAssetAtPath<Sprite>(Art + $"Gen/ui/thumb_{BiomeIds[i]}.png");
                 l.stars = stars[Mathf.Min(i, stars.Length - 1)];
                 EditorUtility.SetDirty(l);
                 levels[i] = l;
@@ -557,6 +660,28 @@ namespace Kenta.EditorTools
             catalog.levels = levels;
             EditorUtility.SetDirty(catalog);
             return catalog;
+        }
+
+        /// <summary>Morceau propre au niveau i : créé s'il n'existe pas (copie du morceau commun), jamais réécrit.</summary>
+        static SongData LevelSong(int i, SongData shared)
+        {
+            string path = SoDir + $"Songs/Song_{i + 1:00}_{BiomeIds[i]}.asset";
+            var song = AssetDatabase.LoadAssetAtPath<SongData>(path);
+            if (song != null) return song;
+            song = ScriptableObject.CreateInstance<SongData>();
+            if (shared != null)
+            {
+                song.clip = shared.clip;
+                song.remixClip = shared.remixClip;
+                song.bpm = shared.bpm;
+                song.offsetSeconds = shared.offsetSeconds;
+                song.beatsPerBar = shared.beatsPerBar;
+                song.chart = shared.chart;
+            }
+            song.title = "MAIN THEME";
+            song.previewBeat = 96f;                    // début du refrain de « Main Theme »
+            AssetDatabase.CreateAsset(song, path);
+            return song;
         }
 
         static string BuildScene(LevelTheme theme, PixelFontData font, GameObject[] prefabs, LevelCatalog catalog)
@@ -636,7 +761,8 @@ namespace Kenta.EditorTools
             var screens = prefabs.Select(p => (GameObject)PrefabUtility.InstantiatePrefab(p, uiGo.transform)).ToArray();
             foreach (var s in screens) { var r = (RectTransform)s.transform; r.anchoredPosition = Vector2.zero; s.SetActive(false); }
             GameObject attract = screens[0], explain = screens[1], hero = screens[2], hud = screens[3], over = screens[4],
-                       board = screens[5], nameEntry = screens[6];
+                       board = screens[5], nameEntry = screens[6], levelSel = screens[7];
+            levelSel.transform.SetSiblingIndex(hero.transform.GetSiblingIndex() + 1);   // juste après le héros
 
             var flashRt = NewRect("ScreenFx", uiGo.transform, Vector2.zero);
             flashRt.anchorMin = Vector2.zero;
@@ -718,13 +844,11 @@ namespace Kenta.EditorTools
             var flow = UnityEngine.Object.FindFirstObjectByType<GameFlow>();
             Set(flow, "attractScreen", attract);
             Set(flow, "explainScreen", explain);
-            Set(flow, "configScreen", hero);
             Set(flow, "playingScreen", hud);
             Set(flow, "gameOverScreen", over);
-            Set(flow, "heroSelect", hero.GetComponent<HeroSelectScreen>());
+            WireScreens(flow, hero, levelSel, board);
             Set(flow, "theme", theme);
             Set(flow, "backdrop", backdrop);
-            Set(flow, "highscoreBoard", board.GetComponent<HighscoreBoard>());
             Set(flow, "nameEntry", nameEntry.GetComponent<NameEntryScreen>());
             Set(flow, "gameOverDuration", 4.5f);    // titre, note puis panneau : le temps de lire (bouton 1 pour passer)
             Set(flow, "gameOverHighscoreDuration", 3.5f);
@@ -739,6 +863,70 @@ namespace Kenta.EditorTools
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             return "scène câblée";
+        }
+
+        /// <summary>Écrans câblés à GameFlow : héros (Config), niveaux (LevelSelect), classement.</summary>
+        static void WireScreens(GameFlow flow, GameObject hero, GameObject levelSelect, GameObject board)
+        {
+            Set(flow, "configScreen", hero);
+            Set(flow, "heroSelect", hero.GetComponent<HeroSelectScreen>());
+            Set(flow, "levelSelectScreen", levelSelect);
+            Set(flow, "levelSelect", levelSelect.GetComponent<LevelSelectScreen>());
+            Set(flow, "highscoreBoard", board.GetComponent<HighscoreBoard>());
+        }
+
+        /// <summary>Remplace (ou ajoute) l'instance d'un écran sous le canvas, au même rang (ou au rang donné).</summary>
+        static GameObject ReplaceScreen(Transform canvas, GameObject prefab, int index = -1)
+        {
+            var old = canvas.Find(prefab.name);
+            int at = old != null ? old.GetSiblingIndex() : canvas.childCount;
+            if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, canvas);
+            ((RectTransform)go.transform).anchoredPosition = Vector2.zero;
+            go.SetActive(false);
+            go.transform.SetSiblingIndex(Mathf.Clamp(index >= 0 ? index : at, 0, canvas.childCount - 1));
+            return go;
+        }
+
+        /// <summary>
+        /// Construit seulement l'écran des niveaux (ADR-030) : morceaux et vignettes des niveaux, prefabs du héros, des
+        /// niveaux et du classement, puis les branche dans la scène ouverte. Ne touche à rien d'autre (la reconstruction
+        /// complète ajoute un objet « Bandana » à la scène).
+        /// </summary>
+        [MenuItem("Kenta/Construire l'écran de niveaux")]
+        public static void BuildLevelSelectMenu() => Debug.Log(BuildLevelSelectOnly());
+
+        public static string BuildLevelSelectOnly()
+        {
+            AssetDatabase.Refresh();
+            var font = AssetDatabase.LoadAssetAtPath<PixelFontData>(SoDir + "PixelFont.asset");
+            var theme = AssetDatabase.LoadAssetAtPath<LevelTheme>(SoDir + "Theme_Kenta.asset");
+            if (font == null || theme == null) throw new Exception("PixelFont ou Theme_Kenta absent : lancer d'abord « Reconstruire thèmes, prefabs et scène ».");
+            var catalog = BuildLevels(theme.biomes);
+            AssetDatabase.SaveAssets();
+            var heroPrefab = BuildHeroSelect(font, theme);
+            var boardPrefab = BuildHighscores(font, theme);
+            var levelPrefab = BuildLevelSelect(font, theme);
+            AssetDatabase.SaveAssets();
+
+            var scene = EditorSceneManager.GetActiveScene();
+            if (scene.path != "Assets/_Project/Scenes/Main.unity")
+                scene = EditorSceneManager.OpenScene("Assets/_Project/Scenes/Main.unity");
+            var ui = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .FirstOrDefault(c => c.name == "PixelUI" && c.transform.parent == null);
+            if (ui == null) throw new Exception("Canvas « PixelUI » absent de la scène : lancer « Reconstruire thèmes, prefabs et scène ».");
+            var hero = ReplaceScreen(ui.transform, heroPrefab);
+            var board = ReplaceScreen(ui.transform, boardPrefab);
+            var levelSel = ReplaceScreen(ui.transform, levelPrefab, hero.transform.GetSiblingIndex() + 1);
+            int uiLayer = LayerMask.NameToLayer("UI");
+            foreach (var go in new[] { hero, board, levelSel }) SetLayerRecursive(go, uiLayer);
+
+            var flow = UnityEngine.Object.FindFirstObjectByType<GameFlow>(FindObjectsInactive.Include);
+            WireScreens(flow, hero, levelSel, board);
+            Set(flow, "catalog", catalog);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            return $"écran des niveaux construit ; {catalog.levels.Length} niveaux";
         }
 
         // ------------------------------------------------------------------ point d'entrée
@@ -757,7 +945,7 @@ namespace Kenta.EditorTools
             var prefabs = new[]
             {
                 BuildAttract(font, theme), BuildExplain(font, theme), BuildHeroSelect(font, theme), BuildHud(font, theme), BuildGameOver(font),
-                BuildHighscores(font, theme), BuildNameEntry(font, theme),
+                BuildHighscores(font, theme), BuildNameEntry(font, theme), BuildLevelSelect(font, theme),
             };
             AssetDatabase.SaveAssets();
             string result = BuildScene(theme, font, prefabs, catalog);

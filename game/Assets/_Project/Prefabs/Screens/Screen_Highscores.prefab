@@ -176,6 +176,8 @@ MonoBehaviour:
   - {fileID: 8098978431138705897}
   - {fileID: 4339633439954105691}
   emptyText: {fileID: 6325409409679372699}
+  title: {fileID: 5092269619189466826}
+  font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
 --- !u!1 &1203312812760936372
 GameObject:
   m_ObjectHideFlags: 0
