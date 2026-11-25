@@ -1,11 +1,11 @@
 {
   "name": "Kenta",
-  "description": "Cours au rythme de la musique à travers huit mondes : chaque saut, coup et glissade tombe sur le beat. Ne laisse pas la Sourdine avaler le son !",
+  "description": "Démo. Cours au rythme de la musique à travers huit mondes : saute, frappe et glisse sur le beat. Lianes, gravité inversée, saut dans l'arrière-plan : le niveau change à chaque section. Un faux pas et c'est fini !",
   "creator": "Lou Calmes, Lucas Corrieras, Jeremy Hordé",
   "year": 2026,
   "type": "Runner rythmique",
   "players": "1",
-  "catchphrase": "La course en rythme",
+  "catchphrase": "La course en rythme (démo)",
   "config": {
     "scoreType": "score",
     "scoreSort": "desc"
