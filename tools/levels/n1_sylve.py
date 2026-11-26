@@ -1,4 +1,4 @@
-"""Niveau 1 — La Sylve, sur *We're the Resistors* (Eric Skiff, *Resistor Anthems*, CC BY 4.0), 117 BPM (ADR-034).
+"""Niveau 1 — La Sylve, sur *We're the Resistors* (Eric Skiff, *Resistor Anthems*, CC BY 4.0), 117 BPM (ADR-035).
 
 Le niveau qui apprend le jeu. Deux gestes seulement : **sauter** (trous, souches, marches) et **frapper** (ennemis
 au sol). Ni piège, ni écran qui bouge, ni plan large : la vue reste fixe (480 px), et tout tombe sur des temps :
@@ -122,7 +122,7 @@ FICHE = Fiche(
     zoom=480, zoom_wide=480,                 # vue fixe : aucun changement de plan au niveau 1
     scale=(0, 3, 5, 7, 10),                  # do mineur pentatonique (do, mi♭, fa, sol, si♭) : la mélodie du morceau
     mechanics=frozenset({"gap", "wall", "step", "enemy"}),
-    # le niveau le plus tolérant (ADR-034 ; 120 ms ailleurs). 180 ms était visé, mais un saut en retard plafonne vers
+    # le niveau le plus tolérant (ADR-035 ; 120 ms ailleurs). 180 ms était visé, mais un saut en retard plafonne vers
     # 170 ms à 117 BPM (on peut sauter 0,12 temps après avoir quitté le bord) ; mesuré : 161 à 196 ms pour les sauts,
     # 200 à 225 ms pour les frappes (à une image près : ±17 ms)
     margin_ms=160.0,

@@ -1,4 +1,4 @@
-"""Moteur commun des niveaux (ADR-034) : simulateur de l'autoplay, pièces, rail de caméra, vérifications, écriture.
+"""Moteur commun des niveaux (ADR-035) : simulateur de l'autoplay, pièces, rail de caméra, vérifications, écriture.
 
 Le simulateur reproduit la physique du jeu (miroir de PlayerController et LevelBuilder : saut 1,5 u en 1 beat,
 tambours, pentes, lianes, gravité inversée, arrière-plan, mort sous KillY) et joue l'autoplay image par image : une
@@ -949,7 +949,7 @@ def check_mechanics(events):
 
 
 def density(events):
-    """Actions (sauts et frappes) par mesure, en moyenne sur le niveau (grille de difficulté, ADR-034)."""
+    """Actions (sauts et frappes) par mesure, en moyenne sur le niveau (grille de difficulté, ADR-035)."""
     w = World(events)
     return round((len(w.jumps) + len(w.hits)) / (NB / 4), 2)
 

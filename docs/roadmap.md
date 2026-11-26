@@ -58,9 +58,10 @@ Règles :
 - [x] (2026-11-25, ADR-030) **Glissade retirée** (une touche de plus pour rien) : commandes, physique, animation, barres, consignes (2 gestes), chart et simulateur ; les 4 glissades du niveau sont devenues des coups
 - [x] (2026-11-25, ADR-030) Effets d'écran : **miroir** et **tête en bas** (`screen_flip`), sur des débuts de phrase ; cordes de liane qui pendent droit au repos ; premier plan semi-transparent quand le héros court dans l'arrière-plan
 - [x] (2026-11-25, ADR-033) **Die and retry** : 10 vies, 23 points de reprise dans le niveau 01 (rejoués par le générateur), cœur et vies dans le HUD, bonus par vie restante ; décompte « 3 2 1 GO » retiré (il tombait pendant le niveau) ; halo clair qui pulse derrière les chauves-souris (invisibles sur les lianes) ; jeu en plein cadre hors 1920×1080 (`PixelScreen.FitScale`, interface calculée sur le cadre) ; optimisation (pièces animées seulement à l'écran ; le reste est venu avec l'ADR-031)
-- [ ] Choisir entre 10 et 15 vies pour Kenta après test (réglage `HeroProfile.lives`, ADR-035)
-- [x] (2026-11-26, ADR-035) **La difficulté dépend du héros** : Kenta facile (10 vies, reprise au point), Aiko moyen (3 essais, reprise au début, le meilleur compte), Ryo dur (une seule vie) ; `Core/RetryRules` + tests ; écran du héros (FACILE / MOYEN / DUR, règle du héros) ; consignes « TON HÉROS FIXE LA DIFFICULTÉ »
+- [ ] Choisir entre 10 et 15 vies pour Kenta après test (réglage `HeroProfile.lives`, ADR-036)
+- [x] (2026-11-26, ADR-036) **La difficulté dépend du héros** : Kenta facile (10 vies, reprise au point), Aiko moyen (3 essais, reprise au début, le meilleur compte), Ryo dur (une seule vie) ; `Core/RetryRules` + tests ; écran du héros (FACILE / MOYEN / DUR, règle du héros) ; consignes « TON HÉROS FIXE LA DIFFICULTÉ »
 - [ ] **P1** Difficulté par héros : tester en jeu (reprise au début avec la musique, le décor, la caméra, la gravité inversée, les lianes ; HUD à chaque nouvel essai ; placement des textes de l'écran du héros)
+- [x] (2026-11-26, retour de Lucas) Gravité inversée : la traînée du bandeau restait au-dessus du héros retourné → elle part de sa tête, et se retourne avec lui au portail (sens gardé dans l'historique, `BandanaTrail.AnchorPoint`, test) ; poussière du saut au plafond qui apparaissait de l'autre côté de l'écran (`y` retourné au lieu de la position monde) et éclat du portail : corrigés (`PlayerController.BodySideY`)
 - [ ] **P2** Reprise au point (Kenta) : les plateformes déjà franchies après le point de reprise ne rapportent plus de points (défaut existant)
 - [ ] **P2** Faut-il un bonus de score pour les héros plus durs (×1,5 Aiko, ×2 Ryo) ? Sans lui, le classement favorise Kenta
 - [ ] Dessins de glissade du héros (`slide_*`, `slidein_*`, `slideout_*`) et leur génération (`tools/gen-heroes.py`, `test_heroes.py`) : inutilisés depuis ADR-030, à retirer côté art
@@ -82,11 +83,11 @@ Règles :
 
 ## Niveaux par monde (plan proposé le 2026-11-26, à valider)
 Détail : [superpowers/specs/2026-11-26-niveaux-par-monde-design.md](superpowers/specs/2026-11-26-niveaux-par-monde-design.md). 6 niveaux, un par monde, du plus facile au plus dur ; le niveau 01 actuel devient le brouillon du niveau 6.
-- [x] (2026-11-26, ADR-034, choix de Lucas) 6 niveaux : Sylve, Bayou, Échos, Forge, Givre, Grand Orage (Échine et Cité en réserve), grille de difficulté et musiques du plan ; tour REMIX en bonus P2
-- [ ] **P0** Présenter l'ADR-034 à Lou et Jeremy
+- [x] (2026-11-26, ADR-035, choix de Lucas) 6 niveaux : Sylve, Bayou, Échos, Forge, Givre, Grand Orage (Échine et Cité en réserve), grille de difficulté et musiques du plan ; tour REMIX en bonus P2
+- [ ] **P0** Présenter l'ADR-035 à Lou et Jeremy
 - [ ] **P1** Niveau 2 : choisir entre *Arpanauts* et *HHavok-main* (Skiff, 120 BPM)
 - [x] (2026-11-26) Musiques : short-list téléchargée dans `tools/music-candidates/` (gitignoré : Eric Skiff *Resistor Anthems* CC BY 4.0, Juhani Junkala *Adventure* et *Action* CC0) et mesurée (BPM, dérive, durée) ; échelle proposée 117 → 120 → 140 → 154 → 162 → 174 BPM (tableau dans le plan)
-- [ ] **P0** Musiques retenues (ADR-034) : les installer dans `Audio/Music/` (coupe sur une fin de phrase, Vorbis), licences dans `Audio/LICENSES.md`, crédit CC BY sur la carte du niveau et sur le site. Abstraction (*Three Red Hearts*, CC0) reste à télécharger à la main depuis itch.io
+- [ ] **P0** Musiques retenues (ADR-035) : les installer dans `Audio/Music/` (coupe sur une fin de phrase, Vorbis), licences dans `Audio/LICENSES.md`, crédit CC BY sur la carte du niveau et sur le site. Abstraction (*Three Red Hearts*, CC0) reste à télécharger à la main depuis itch.io
 - [x] (2026-11-26) Générateur découpé : moteur commun `tools/levelgen/` + un fichier par niveau `tools/levels/` avec sa fiche (mécaniques autorisées, marge en ms, vue, gamme des pièces) ; commande `python3 tools/gen-level.py <niveau>` ; le niveau 01 ressort **à l'identique** (`shovel_knight`, test `test_generated_chart_is_the_committed_one`) ; densité affichée (2,27 actions par mesure pour le niveau 01)
 - [x] (2026-11-26) Marges, tolérance (±40 ms), délai pour voir un ennemi (400 / 600 ms) et point de reprise (500 ms) en ms, convertis au tempo ; vitesse de 3,2 u par temps (à 117 BPM et 8 u/s, une frappe 150 ms en avance ratait l'ennemi)
 - [ ] **P1** Fenêtres du jeu encore en beats dans `PlayerController` (tampon de saut, lâcher de liane, appui des notes : 0,35 temps) : 140 ms à 150 BPM, 121 ms à 174 BPM. Le simulateur les vérifie à chaque niveau (marge de la fiche) ; à passer en ms si le niveau 6 coince

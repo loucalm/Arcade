@@ -1,4 +1,4 @@
-"""Niveau 2 — Le Bayou, sur *Arpanauts* (Eric Skiff, *Resistor Anthems*, CC BY 4.0), 120 BPM (ADR-034).
+"""Niveau 2 — Le Bayou, sur *Arpanauts* (Eric Skiff, *Resistor Anthems*, CC BY 4.0), 120 BPM (ADR-035).
 
 Deux mécaniques nouvelles, apprises l'une après l'autre (seule, répétée, variée, combinée) :
 - les **cuirassés** : on leur saute dessus, et un appui au rebond donne le grand rebond (couplet) ;

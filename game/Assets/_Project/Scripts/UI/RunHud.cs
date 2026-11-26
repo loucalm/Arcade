@@ -13,7 +13,7 @@ namespace Kenta.UI
     /// au début, dès le 2ᵉ essai, une couronne et le meilleur score des essais, en discret.
     /// Milieu : frise des sections du niveau (une par section, largeur selon sa durée, section en cours en or) ; dessous,
     /// un intitulé en fondu (section, annonce d'une surprise, meilleur score au début d'un essai, mot de la mort).
-    /// Droite : vies selon la difficulté du héros (ADR-035, lu sur RunManager) — cœur et nombre (reprise au point),
+    /// Droite : vies selon la difficulté du héros (ADR-036, lu sur RunManager) — cœur et nombre (reprise au point),
     /// « ESSAI 2/3 » (reprise au début), cœur seul (une seule vie) — puis les pièces.
     /// Grille commune (UI/HudLayout) : marge 4 px, plaque de 14 px (cadre 1 + marge 2 + texte 8), 4 px entre deux
     /// éléments, 2 px entre une icône et son nombre. Une plaque qui couvre le héros, une pièce ou un ennemi s'efface.

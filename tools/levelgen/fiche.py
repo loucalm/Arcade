@@ -1,12 +1,12 @@
 """Fiche d'un niveau : son morceau, son tempo, ses sections et ce qu'il a le droit de demander au joueur.
 
-La fiche est la règle de difficulté du niveau (ADR-034) : le moteur refuse une chart qui utilise une mécanique
+La fiche est la règle de difficulté du niveau (ADR-035) : le moteur refuse une chart qui utilise une mécanique
 absente de `mechanics`, ou dont une action laisse moins de `margin_ms` de marge pour ne pas mourir.
 """
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-# Les mécaniques, dans l'ordre où le joueur les découvre (plan des 6 niveaux, ADR-034).
+# Les mécaniques, dans l'ordre où le joueur les découvre (plan des 6 niveaux, ADR-035).
 MECHANICS = {
     "gap": "trou à sauter",
     "step": "marche à monter (ou descente)",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Monte le morceau d'un niveau : garde des mesures entières d'un morceau à tempo fixe, les recolle bout à bout et
-écrit un .ogg (Vorbis) pour Unity (ADR-034).
+écrit un .ogg (Vorbis) pour Unity (ADR-035).
 
 Les coupes tombent sur des débuts de mesure, avec un fondu enchaîné très court (15 ms, fini pile sur la coupe) :
 la grille des temps reste exacte, donc le beat 0 du niveau est à `--offset` secondes, comme dans le morceau

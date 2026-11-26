@@ -1,6 +1,6 @@
 """Les niveaux doivent rester faisables et lisibles : autoplay à 60 et 30 i/s, appuis décalés de ±40 ms, toutes les
 pièces sur la trajectoire, un rail de caméra qui garde le héros dans l'image, et seulement les mécaniques de leur
-fiche (ADR-034). Le moteur commun doit aussi marcher à un autre tempo que celui du niveau 01."""
+fiche (ADR-035). Le moteur commun doit aussi marcher à un autre tempo que celui du niveau 01."""
 import importlib
 import json
 import os
@@ -85,7 +85,7 @@ def test_level_keeps_one_world(name):
 
 
 def test_level_1_only_teaches_jump_and_hit():
-    """Niveau 1 (ADR-034) : sauter et frapper seulement, vue fixe, tout sur des temps (sauts sur le 1, frappes sur
+    """Niveau 1 (ADR-035) : sauter et frapper seulement, vue fixe, tout sur des temps (sauts sur le 1, frappes sur
     le 2 ou le 4), une action par mesure environ."""
     events, _, stats, _ = RESULTS["n1_sylve"]
     assert {e["type"] for e in events} <= {"gap", "wall", "step", "enemy", "lum_at", "section_change"}
@@ -99,7 +99,7 @@ def test_level_1_only_teaches_jump_and_hit():
 
 
 def test_difficulty_increases_from_one_level_to_the_next():
-    """ADR-034 : chaque niveau garde les mécaniques du précédent et en ajoute, il est plus dense, plus rapide, et sa
+    """ADR-035 : chaque niveau garde les mécaniques du précédent et en ajoute, il est plus dense, plus rapide, et sa
     marge de survie n'est jamais plus large."""
     ordered = sorted(n for n in NAMES if n[0] == "n" and n[1:2].isdigit())
     assert ordered[:2] == ["n1_sylve", "n2_bayou"]

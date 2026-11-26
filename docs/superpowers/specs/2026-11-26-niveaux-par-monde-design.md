@@ -1,6 +1,6 @@
 # Kenta — un niveau par monde, difficulté croissante (proposition)
 
-Date : 2026-11-26. Statut : **retenue par Lucas (ADR-034)**, à partager avec Lou et Jeremy. Branche : `feat/niveaux-par-monde`.
+Date : 2026-11-26. Statut : **retenue par Lucas (ADR-035)**, à partager avec Lou et Jeremy. Branche : `feat/niveaux-par-monde`.
 Demande : « un die and retry en rythme ; régler d'abord le level design et la DA ; puis un niveau par monde (aujourd'hui seulement cosmétiques), choisis dès le lancement, avec une difficulté croissante : niveau 1 facile, presque pas de pièges, pas d'écran qui bouge, peu de monstres, juste les mécaniques du jeu ; niveau 2 plus de mécaniques et plus de vitesse ; puis 3, 4, 5 (écran qui se retourne, etc.) ; pourquoi pas un niveau 6 qui cumule tout. Chaque niveau a sa musique. » Pas d'idée de musique : la short-list est plus bas.
 
 ## 1. Constat : pourquoi le niveau actuel ne marche pas encore

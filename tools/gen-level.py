@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère la chart d'un niveau à partir de sa fiche et de ses scènes (`tools/levels/<niveau>.py`, ADR-034).
+"""Génère la chart d'un niveau à partir de sa fiche et de ses scènes (`tools/levels/<niveau>.py`, ADR-035).
 
 La chart n'est écrite que si l'autoplay finit le niveau sans mourir (à 60 et 30 i/s, appuis décalés de ±40 ms), si
 chaque action laisse la marge de la fiche des deux côtés, si chaque point de reprise est rejouable, si chaque ennemi

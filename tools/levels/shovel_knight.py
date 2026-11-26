@@ -1,5 +1,5 @@
 """Niveau « Main Theme » (Shovel Knight, 150 BPM, 256 beats) : la chart commune aux 8 niveaux aujourd'hui
-(`level01_shovel_knight.json`), et le brouillon du niveau 6, le Grand Orage, qui cumule tout (ADR-034).
+(`level01_shovel_knight.json`), et le brouillon du niveau 6, le Grand Orage, qui cumule tout (ADR-035).
 
 Le morceau est découpé en scènes calées sur sa structure. Chaque scène a une idée de mise en scène : escalier qu'on
 grimpe sur les temps, tambour qui projette dans le ciel au drop, lianes au-dessus de l'eau, course au plafond, passage

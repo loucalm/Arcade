@@ -72,7 +72,7 @@ namespace Kenta.UI
             + (best ? Gap + IconSize + IconGap + DigitsWidth(scoreDigits) : 0);
 
         /// <summary>
-        /// Largeur des vies selon la difficulté du héros (ADR-035) : un cœur et le nombre de vies (reprise au point), un
+        /// Largeur des vies selon la difficulté du héros (ADR-036) : un cœur et le nombre de vies (reprise au point), un
         /// cœur seul (une seule vie), ou le texte « ESSAI 2/3 » de largeur <paramref name="triesTextWidth"/> (reprise au début).
         /// </summary>
         public static int LivesWidth(RetryMode mode, int lives, int triesTextWidth) => mode switch

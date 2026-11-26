@@ -1,4 +1,4 @@
-"""Niveau 3 — Les Échos, sur *Stage 1* (Juhani Junkala, *4 Chiptunes (Adventure)*, CC0), 140 BPM (ADR-034).
+"""Niveau 3 — Les Échos, sur *Stage 1* (Juhani Junkala, *4 Chiptunes (Adventure)*, CC0), 140 BPM (ADR-035).
 
 Une grotte de cristal. Trois nouveautés, une par section, apprises en 4 temps (seule, répétée, variée, combinée) :
 - les **chauves-souris** (couplet) : on les frappe en l'air, au milieu d'un balancier de liane ou entre deux notes de
