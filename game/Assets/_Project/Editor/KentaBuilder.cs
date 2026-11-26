@@ -123,6 +123,9 @@ namespace Kenta.EditorTools
             string[] names = { "KENTA", "AIKO", "RYO" };
             string[] roles = { "LE BATTEUR", "LA FLÛTISTE", "LE BASSISTE" };
             string[] accents = { "#FF6A30", "#8A5AE0", "#E03A3A" };
+            // difficulté dans l'ordre de l'écran du héros : reprise au point, reprise au début, une seule vie.
+            // `lives` n'est pas touché : 0 = valeur du mode (10 vies, 3 essais), à régler dans l'inspecteur si besoin.
+            RetryMode[] modes = { RetryMode.Checkpoint, RetryMode.Restart, RetryMode.OneLife };
             var result = new HeroProfile[3];
             for (int i = 0; i < 3; i++)
             {
@@ -151,6 +154,7 @@ namespace Kenta.EditorTools
                 p.role = roles[i];
                 p.sprites = set;
                 p.accent = Hex(accents[i]);
+                p.retryMode = modes[i];
                 // son de frappe du héros (tools/gen-sfx.py) : caisse claire, flûte, basse
                 p.hitSound = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/_Project/Audio/Sfx/sfx_hit_{names[i].ToLowerInvariant()}.wav");
                 EditorUtility.SetDirty(p);
@@ -325,11 +329,13 @@ namespace Kenta.EditorTools
             AddText(tr, font, "Btn1Label", "1", new Vector2(-64, 26), Color.white);
             icons[1] = AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-64, -8), null, null, true);
             AddText(tr, font, "Btn2Label", "2", new Vector2(-64, -8), Color.white);
-            AddText(tr, font, "Footer", "10 VIES : ON REPART AU DERNIER POINT", new Vector2(24, -50), Gold, 1, PixelText.Align.Center);
+            // la difficulté dépend du héros (choisi à l'écran suivant) : un pied de page vrai pour les trois
+            var footer = AddText(tr, font, "Footer", ExplainScreen.FooterText, new Vector2(24, -50), Gold, 1, PixelText.Align.Center);
             AddText(tr, font, "Hint", "BOUTON 1 POUR CONTINUER", new Vector2(0, -80), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<ExplainScreen>();
             Set(comp, "theme", theme);
             Set(comp, "hero", hero);
+            Set(comp, "footer", footer);
             SetArray(comp, "lines", texts);
             SetArray(comp, "icons", icons);
             return SavePrefab(root, "Screen_Explain");
@@ -465,43 +471,157 @@ namespace Kenta.EditorTools
         static GameObject BuildHud(PixelFontData font, LevelTheme theme)
         {
             var root = ScreenRoot("Screen_Playing");
+            FillHud(root, font);
+            return SavePrefab(root, "Screen_Playing");
+        }
+
+        /// <summary>
+        /// Refait le HUD dans le prefab existant (Screen_Playing) sans le remplacer : la racine, ses composants et donc
+        /// l'instance de la scène Main et ses références restent les mêmes ; seuls les enfants sont recréés. Ne touche ni
+        /// à la scène ni aux autres écrans (la reconstruction complète ajoute un objet « Bandana » à la scène).
+        /// </summary>
+        [MenuItem("Kenta/Construire le HUD")]
+        public static void BuildHudMenu() => Debug.Log(BuildHudInPlace());
+
+        public static string BuildHudInPlace()
+        {
+            AssetDatabase.Refresh();
+            var font = AssetDatabase.LoadAssetAtPath<PixelFontData>(SoDir + "PixelFont.asset");
+            if (font == null) throw new Exception("PixelFont absent : lancer d'abord « Reconstruire thèmes, prefabs et scène ».");
+            string path = PrefabDir + "Screen_Playing.prefab";
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                for (int i = root.transform.childCount - 1; i >= 0; i--) UnityEngine.Object.DestroyImmediate(root.transform.GetChild(i).gameObject);
+                FillHud(root, font);
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+            return "HUD reconstruit dans " + path;
+        }
+
+        /// <summary>
+        /// HUD en partie (RunHud) : trois plaques en haut, collées à 4 px d'écart (score | frise | vies et pièces), un
+        /// intitulé sous la frise, le mot PARFAIT / BIEN / BOF au-dessus du héros (JudgePopup). Grille : UI/HudLayout.
+        /// Les positions fines sont posées par RunHud.Layout au départ de chaque partie (vies, nombre de pièces).
+        /// </summary>
+        static void FillHud(GameObject root, PixelFontData font)
+        {
             var tr = root.transform;
-            var score = AddText(tr, font, "Score", "000000", new Vector2(-154, 80), Color.white, 1, PixelText.Align.Left, true);
-            var mult = AddText(tr, font, "Multiplier", "×1", new Vector2(-154, 62), Gold, 2, PixelText.Align.Left, true);
-            AddImage(tr, "CoinIcon", theme.coinFrames[0], new Vector2(96, 80));     // « 252/252 » commence vers x = 117
-            var coins = AddText(tr, font, "Coins", "0/0", new Vector2(154, 80), Color.white, 1, PixelText.Align.Right, true);
-            // frise : 12 segments au plus ; RunHud les cale sur les sections du niveau (largeur proportionnelle)
+            var px = Spr("Gen/ui/pixel.png");
+            var group = root.GetComponent<CanvasGroup>();
+            if (group == null) group = root.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+
+            var scorePlate = HudPlateNode(tr, "ScorePlate", px);
+            var score = HudNumberNode(scorePlate.transform, font, "Score", 6, true, Color.white);
+            var multGroup = NewRect("Multiplier", scorePlate.transform, Vector2.zero);
+            var multSign = AddText(multGroup, font, "Sign", "×", Vector2.zero, Gold, 1, PixelText.Align.Left);
+            var multNumber = HudNumberNode(multGroup, font, "Digits", 1, false, Gold);
+            var bestIcon = AddImage(scorePlate.transform, "BestIcon", Spr("Gen/ui/hud_best.png"), Vector2.zero, null, null, true, Vector2.zero);
+            var bestNumber = HudNumberNode(scorePlate.transform, font, "Best", 6, true, Dim);
+
+            var friezePlate = HudPlateNode(tr, "FriezePlate", px);
             var friezeBack = new Image[12];
             var friezeFill = new Image[12];
             for (int i = 0; i < friezeBack.Length; i++)
             {
-                float x = -72 + i * 12 + 5;
-                var back = AddImage(tr, $"Seg{i}", Spr("Gen/ui/pixel.png"), new Vector2(x, 82), new Color(0.18f, 0.15f, 0.28f), new Vector2(10, 3), false);
-                var fill = AddImage(back.transform, "Fill", Spr("Gen/ui/pixel.png"), Vector2.zero, Gold, null, false);
-                var frt = (RectTransform)fill.transform;
+                var back = AddImage(friezePlate.transform, $"Seg{i}", px, Vector2.zero, null, new Vector2(8, HudLayout.FriezeHeight), false, Vector2.zero);
+                var fill = AddImage(back.transform, "Fill", px, Vector2.zero, Gold, null, false, new Vector2(0f, 0.5f));
+                var frt = fill.rectTransform;
                 frt.anchorMin = new Vector2(0, 0);
-                frt.anchorMax = new Vector2(1, 1);       // RunHud pilote anchorMax.x (0 → 1) pour remplir le segment
-                frt.pivot = new Vector2(0, 0.5f);
-                frt.offsetMin = frt.offsetMax = Vector2.zero;
+                frt.anchorMax = new Vector2(0, 1);       // RunHud règle sa largeur en pixels entiers
+                frt.sizeDelta = Vector2.zero;
                 friezeBack[i] = back;
                 friezeFill[i] = fill;
             }
-            var biome = AddText(tr, font, "BiomeLabel", "INTRO · LA SYLVE", new Vector2(0, 70), Color.white, 1, PixelText.Align.Center, true);
-            var banner = AddText(tr, font, "Banner", "", new Vector2(0, 24), Color.white, 2, PixelText.Align.Center, true);
-            var feedback = AddText(tr, font, "Feedback", "", new Vector2(0, 4), Gold, 1, PixelText.Align.Center, true);
+
+            var statsPlate = HudPlateNode(tr, "StatsPlate", px);
+            var heart = AddImage(statsPlate.transform, "Heart", Spr("Gen/ui/hud_heart.png"), Vector2.zero, null, null, true, Vector2.zero);
+            var lives = HudNumberNode(statsPlate.transform, font, "Lives", 2, false, Color.white);
+            var triesWord = AddText(statsPlate.transform, font, "TriesWord", "ESSAI", Vector2.zero, Dim, 1, PixelText.Align.Left);
+            var tries = AddText(statsPlate.transform, font, "Tries", "1/3", Vector2.zero, Color.white, 1, PixelText.Align.Left);
+            var coinIcon = AddImage(statsPlate.transform, "CoinIcon", Spr("Gen/ui/hud_coin.png"), Vector2.zero, null, null, true, Vector2.zero);
+            var coins = HudNumberNode(statsPlate.transform, font, "Coins", 4, true, Color.white);
+            var slash = AddText(statsPlate.transform, font, "Slash", "/", Vector2.zero, Dim, 1, PixelText.Align.Left);
+            var total = HudNumberNode(statsPlate.transform, font, "CoinsTotal", 4, true, Dim);
+
+            var labelPlate = HudPlateNode(tr, "LabelPlate", px);
+            var label = AddText(labelPlate.transform, font, "Label", "", Vector2.zero, Color.white, 1, PixelText.Align.Left);
+
             var judgeLabel = AddText(tr, font, "Judge", "", Vector2.zero, Gold, 1, PixelText.Align.Center, true);
-            var popup = root.AddComponent<JudgePopup>();
+            var popup = root.GetComponent<JudgePopup>();
+            if (popup == null) popup = root.AddComponent<JudgePopup>();
             Set(popup, "label", judgeLabel);
-            var comp = root.AddComponent<RunHud>();
-            Set(comp, "scoreText", score);
-            Set(comp, "multiplierText", mult);
-            Set(comp, "coinsText", coins);
-            Set(comp, "biomeText", biome);
-            Set(comp, "bannerText", banner);
-            Set(comp, "feedbackText", feedback);
+
+            var comp = root.GetComponent<RunHud>();
+            if (comp == null) comp = root.AddComponent<RunHud>();
+            Set(comp, "scorePlate", scorePlate);
+            Set(comp, "friezePlate", friezePlate);
+            Set(comp, "statsPlate", statsPlate);
+            Set(comp, "labelPlate", labelPlate);
+            Set(comp, "scoreNumber", score);
+            Set(comp, "multiplierGroup", multGroup);
+            Set(comp, "multiplierSign", multSign);
+            Set(comp, "multiplierNumber", multNumber);
+            Set(comp, "bestIcon", bestIcon);
+            Set(comp, "bestNumber", bestNumber);
             SetArray(comp, "friezeBack", friezeBack);
             SetArray(comp, "friezeFill", friezeFill);
-            return SavePrefab(root, "Screen_Playing");
+            Set(comp, "heart", heart);
+            Set(comp, "heartFull", Spr("Gen/ui/hud_heart.png"));
+            Set(comp, "heartEmpty", Spr("Gen/ui/hud_heart_empty.png"));
+            Set(comp, "livesNumber", lives);
+            Set(comp, "triesWord", triesWord);
+            Set(comp, "triesText", tries);
+            Set(comp, "coinIcon", coinIcon);
+            Set(comp, "coinsNumber", coins);
+            Set(comp, "coinsSlash", slash);
+            Set(comp, "coinsTotal", total);
+            Set(comp, "labelText", label);
+            comp.Layout(RetryMode.Checkpoint, 10, 1, 122, false);   // aperçu du prefab : Kenta (10 vies), niveau 1 (122 pièces)
+        }
+
+        /// <summary>Plaque du HUD : fond translucide, cadre d'1 px aux coins coupés (4 bords), ancrée en haut à gauche.</summary>
+        static HudPlate HudPlateNode(Transform parent, string name, Sprite px)
+        {
+            var rt = NewRect(name, parent, new Vector2(HudLayout.Margin, -HudLayout.Margin), new Vector2(40, HudLayout.PlateHeight));
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.gameObject.AddComponent<CanvasGroup>();
+            var fill = AddImage(rt, "Fill", px, Vector2.zero, new Color(29 / 255f, 24 / 255f, 48 / 255f, 220 / 255f), null, false);
+            Stretch(fill.rectTransform, 1f);
+            var frame = new Image[4];
+            string[] names = { "Top", "Bottom", "Left", "Right" };
+            for (int i = 0; i < 4; i++)
+            {
+                frame[i] = AddImage(rt, names[i], px, Vector2.zero, new Color(90 / 255f, 80 / 255f, 136 / 255f), null, false);
+                var f = frame[i].rectTransform;
+                bool horizontal = i < 2;
+                // bords d'1 px, raccourcis d'1 px à chaque bout : coins coupés, comme panel.png
+                f.anchorMin = horizontal ? new Vector2(0f, i == 0 ? 1f : 0f) : new Vector2(i == 2 ? 0f : 1f, 0f);
+                f.anchorMax = horizontal ? new Vector2(1f, i == 0 ? 1f : 0f) : new Vector2(i == 2 ? 0f : 1f, 1f);
+                f.pivot = horizontal ? new Vector2(0.5f, i == 0 ? 1f : 0f) : new Vector2(i == 2 ? 0f : 1f, 0.5f);
+                f.anchoredPosition = Vector2.zero;
+                f.sizeDelta = horizontal ? new Vector2(-2f, 1f) : new Vector2(1f, -2f);
+            }
+            var plate = rt.gameObject.AddComponent<HudPlate>();
+            Set(plate, "fill", fill);
+            SetArray(plate, "frame", frame);
+            return plate;
+        }
+
+        /// <summary>Nombre en colonnes fixes de 6 px : un PixelText par chiffre (voir UI/HudNumber).</summary>
+        static HudNumber HudNumberNode(Transform parent, PixelFontData font, string name, int cells, bool zeroPad, Color color)
+        {
+            var rt = NewRect(name, parent, Vector2.zero);
+            var texts = new UnityEngine.Object[cells];
+            for (int i = 0; i < cells; i++) texts[i] = AddText(rt, font, $"D{i}", "0", Vector2.zero, color, 1, PixelText.Align.Center);
+            var n = rt.gameObject.AddComponent<HudNumber>();
+            SetArray(n, "cells", texts);
+            Set(n, "zeroPad", zeroPad);
+            return n;
         }
 
         static GameObject BuildGameOver(PixelFontData font)

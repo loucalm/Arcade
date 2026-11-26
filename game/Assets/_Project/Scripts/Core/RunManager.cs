@@ -11,7 +11,9 @@ namespace Kenta.Core
 {
     /// <summary>
     /// Une partie : construit le niveau, lance la musique, gère score et combo. Die and retry (ADR-033) : un coup
-    /// (obstacle, chute) coûte une vie et on reprend au dernier point de reprise ; à 0 vie, la partie se termine.
+    /// (obstacle, chute) coûte une vie ; la suite dépend de la difficulté du héros (HeroProfile.retryMode, règles dans
+    /// RetryRules) : reprise au dernier point de reprise (facile), le niveau qui recommence au début, le meilleur essai
+    /// comptant (moyen), ou fin de partie à la première mort (dur). À 0 vie, la partie se termine.
     /// Mode démo = autoplay sans perte de cœur (écran Attract).
     /// </summary>
     public class RunManager : MonoBehaviour
@@ -29,10 +31,8 @@ namespace Kenta.Core
         [Header("Règles")]
         [Tooltip("Temps (s) pendant lequel on voit la pose de mort avant l'écran de fin.")]
         [SerializeField] float deathDelay = 0.8f;
-        [Header("Die and retry (ADR-033)")]
-        [Tooltip("Vies au départ : à chaque mort, on reprend au dernier point de reprise de la chart ; à zéro, fin de partie.")]
-        [SerializeField] int startLives = 10;
-        [Tooltip("Pause (s) entre la mort et la reprise : on voit la pose de mort, puis on repart.")]
+        [Header("Die and retry (ADR-033) : vies et difficulté dans le HeroProfile du héros choisi")]
+        [Tooltip("Pause (s) entre la mort et la reprise (au point ou au début) : on voit la pose de mort, puis on repart.")]
         [SerializeField] float respawnDelay = 0.7f;
         [Tooltip("Bonus par vie restante quand on finit le niveau.")]
         [SerializeField] int lifeBonus = 500;
@@ -46,9 +46,16 @@ namespace Kenta.Core
         [SerializeField] int perfectSectionBonus = 500;
         [SerializeField] int completionBonus = 2000;
 
+        /// <summary>Score de l'essai en cours ; en fin de partie, celui du meilleur essai (reprise au début).</summary>
         public int Score { get; private set; }
-        /// <summary>Vies restantes (die and retry).</summary>
+        /// <summary>Vies restantes (die and retry) : vies en reprise au point, essais en reprise au début, 1 en une seule vie.</summary>
         public int Lives { get; private set; }
+        /// <summary>Difficulté de la partie : celle du héros choisi.</summary>
+        public RetryMode Difficulty { get; private set; }
+        /// <summary>Numéro de l'essai (1 au départ, +1 à chaque reprise au début).</summary>
+        public int Attempt { get; private set; }
+        /// <summary>Meilleur score des essais, celui en cours compris (reprise au début ; sinon = Score).</summary>
+        public int BestScore => hasBestAttempt && bestAttempt.score > Score ? bestAttempt.score : Score;
         public int Combo { get; private set; }
         public int Lums { get; private set; }
         public int TotalLums { get; private set; }
@@ -103,14 +110,17 @@ namespace Kenta.Core
             get
             {
                 float ratio = TotalLums > 0 ? (float)Lums / TotalLums : 0f;
-                if (!Completed) return ratio >= 0.3f ? "BRONZE" : "AUCUNE";
+                if (!ResultCompleted) return ratio >= 0.3f ? "BRONZE" : "AUCUNE";
                 return ratio >= 0.9f ? "OR" : ratio >= 0.6f ? "ARGENT" : "BRONZE";
             }
         }
 
         public RunJudgeStats JudgeStats => judgeStats;
-        /// <summary>Note de fin de niveau (S+ … D).</summary>
-        public string Grade => GradeCalculator.Grade(judgeStats.perfect, judgeStats.good, judgeStats.meh, Lums, TotalLums, Completed);
+        /// <summary>Note de fin de niveau (S+ … D), celle de l'essai retenu.</summary>
+        public string Grade => GradeCalculator.Grade(judgeStats.perfect, judgeStats.good, judgeStats.meh, Lums, TotalLums, ResultCompleted);
+
+        /// <summary>L'essai retenu a fini le niveau (faux si c'est un essai précédent, mort en route, qui a fait mieux).</summary>
+        bool ResultCompleted => Completed && !keptEarlierAttempt;
 
         /// <summary>(jugement, position monde) : mot PARFAIT / BIEN / BOF près du héros.</summary>
         public event Action<Judgement, Vector2> OnJudged;
@@ -134,6 +144,17 @@ namespace Kenta.Core
         bool sectionClean;
         int fxCursor;
         Conductor subscribed;
+
+        /// <summary>Un essai fini par une mort (reprise au début) : le meilleur est retenu en fin de partie.</summary>
+        struct AttemptResult
+        {
+            public int score, lums;
+            public RunJudgeStats judges;
+        }
+        AttemptResult bestAttempt;
+        bool hasBestAttempt;
+        bool keptEarlierAttempt;      // fin de partie : un essai précédent a fait mieux que le dernier
+        double runStartBeat;          // beat de départ de la partie (0, sauf test d'un passage dans l'éditeur)
 
         void Awake()
         {
@@ -193,17 +214,19 @@ namespace Kenta.Core
             level.Build(Chart, song.bpm, biome);
 
             TotalLums = level.Lums.Count;
-            Score = Combo = Lums = 0;
-            Lives = startLives;
-            judgeStats = default;
-            Completed = false;
-            SectionIndex = 0;
-            sectionClean = true;
-            fxCursor = 0;
+            ResetAttemptStats();
             BuildWarnings();
 
+            // difficulté du héros choisi : vies (ou essais) au départ et suite d'une mort (RetryRules)
+            var hero = CurrentHero();
+            Difficulty = hero != null ? hero.retryMode : RetryMode.Checkpoint;
+            Lives = hero != null ? hero.StartLives : RetryRules.DefaultLives(Difficulty);
+            Attempt = 1;
+            bestAttempt = default;
+            hasBestAttempt = keptEarlierAttempt = false;
+
             world.SetActive(true);
-            ApplyHero();
+            ApplyHero(hero);
             ApplyBiome(0);
             if (backdrop != null)
             {
@@ -213,6 +236,7 @@ namespace Kenta.Core
             // test d'un passage dans l'éditeur (menu Kenta > Tester le refrain) : on démarre au beat demandé
             ScreenGlitch.Instance?.ResetAll();
             double start = demo ? 0 : DevStart.Beat;
+            runStartBeat = start;
             if (start > 0) PrepareStartAt(start);
             player.Setup(level, this, CreateInput());
             player.Spawn(start);
@@ -229,6 +253,18 @@ namespace Kenta.Core
 
             OnRunStarted?.Invoke();
             OnStatsChanged?.Invoke();
+        }
+
+        /// <summary>Score, combo, pièces, jugements, section et curseurs remis à zéro : départ de la partie ou d'un nouvel essai.</summary>
+        void ResetAttemptStats()
+        {
+            Score = Combo = Lums = 0;
+            judgeStats = default;
+            Completed = false;
+            SectionIndex = 0;
+            sectionClean = true;
+            fxCursor = 0;
+            warnCursor = 0;
         }
 
         /// <summary>
@@ -266,21 +302,10 @@ namespace Kenta.Core
             while (warnCursor < warnings.Count && warnings[warnCursor].beat < start) warnCursor++;
         }
 
-        /// <summary>Point de reprise après une mort : le dernier point sûr de la chart avant la mort (0 sinon).</summary>
-        double CheckpointBefore(double beat)
-        {
-            double best = 0;
-            var cps = Chart.checkpoints;
-            if (cps != null)
-                foreach (var c in cps)
-                    if (c <= beat && c > best) best = c;
-            return best;
-        }
-
-        IEnumerator RespawnAfterDeath(double deathBeat)
+        /// <summary>Reprise au point (héros facile) : cp = le dernier point sûr de la chart avant la mort (RetryRules.CheckpointBefore).</summary>
+        IEnumerator RespawnAfterDeath(double cp)
         {
             yield return new WaitForSecondsRealtime(respawnDelay);
-            double cp = CheckpointBefore(deathBeat);
             // on rejoue depuis le point de reprise : obstacles, ennemis, tambours, lianes et notes reviennent
             // (les pièces déjà prises restent prises)
             level.ResetObstaclesFrom((float)cp);
@@ -297,9 +322,74 @@ namespace Kenta.Core
             OnStatsChanged?.Invoke();
         }
 
-        void ApplyHero()
+        /// <summary>
+        /// Reprise au début (héros moyen) : le niveau recommence à son beat de départ comme une partie neuve, sans repasser
+        /// par les écrans. Tout le niveau revient (pièces comprises) ; musique, effets d'écran, décor, section, score,
+        /// combo et jugements de l'essai repartent de zéro. Les vies (essais) et le meilleur essai sont gardés.
+        /// </summary>
+        IEnumerator RestartAfterDeath(double start)
         {
-            var hero = GameSession.Hero != null ? GameSession.Hero : (level.Theme.heroes != null && level.Theme.heroes.Length > 0 ? level.Theme.heroes[0] : null);
+            yield return new WaitForSecondsRealtime(respawnDelay);
+            level.ResetObstaclesFrom(float.MinValue);         // obstacles, ennemis, cuirassés, tambours, lianes, notes
+            var lums = level.Lums;
+            for (int i = 0; i < lums.Count; i++) lums[i].ResetState();
+            var platforms = level.Platforms;                  // atterrissages : rejugés (sans vue, rien d'autre à rallumer)
+            for (int i = 0; i < platforms.Count; i++) platforms[i].ResetState();
+            Attempt++;
+            ResetAttemptStats();
+            ApplyBiome(0);
+            if (backdrop != null)
+            {
+                backdrop.ResetMood();
+                backdrop.SetSection(Chart.sections.Length > 0 ? Chart.sections[0].name : "", 0f, 0.01f);
+            }
+            ScreenGlitch.Instance?.ResetAll();
+            if (start > 0) PrepareStartAt(start);
+            player.Spawn(start);
+            player.SetInput(CreateInput(), start);           // l'autoplay (F10) repart aussi du début
+            if (CameraRig.Instance != null)
+            {
+                CameraRig.Instance.ResetShot(Chart.zoom);
+                CameraRig.Instance.Snap();
+            }
+            Conductor.Instance.Play(song, start, loop: false);
+            IsRunning = true;
+            CameraRig.Instance?.Flash(Color.white, 0.5f);
+            OnRunStarted?.Invoke();                           // le HUD repart de zéro (score, intitulé, frise)
+            OnStatsChanged?.Invoke();
+        }
+
+        /// <summary>Essai fini par une mort (reprise au début) : on le garde s'il fait au moins aussi bien que le meilleur.</summary>
+        void RecordAttempt()
+        {
+            if (!RetryRules.KeepEarlier(hasBestAttempt, bestAttempt.score, Score))
+                bestAttempt = new AttemptResult { score = Score, lums = Lums, judges = judgeStats };
+            hasBestAttempt = true;
+        }
+
+        /// <summary>
+        /// Fin de partie : si un essai précédent a fait mieux que le dernier (reprise au début), c'est lui qui compte :
+        /// son score (envoyé au classement), ses pièces, ses jugements et sa note.
+        /// </summary>
+        void KeepBestAttempt()
+        {
+            keptEarlierAttempt = !IsDemo && RetryRules.KeepEarlier(hasBestAttempt, bestAttempt.score, Score);
+            if (!keptEarlierAttempt) return;
+            Score = bestAttempt.score;
+            Lums = bestAttempt.lums;
+            judgeStats = bestAttempt.judges;
+        }
+
+        /// <summary>Héros de la partie : celui choisi, sinon le premier du thème (démo, test d'un passage).</summary>
+        HeroProfile CurrentHero()
+        {
+            if (GameSession.Hero != null) return GameSession.Hero;
+            var heroes = level.Theme != null ? level.Theme.heroes : null;
+            return heroes != null && heroes.Length > 0 ? heroes[0] : null;
+        }
+
+        void ApplyHero(HeroProfile hero)
+        {
             if (hero == null) return;
             if (heroAnimator != null) heroAnimator.Sprites = hero.sprites;
             if (bandana != null) bandana.Color = hero.accent;
@@ -434,7 +524,10 @@ namespace Kenta.Core
             return true;
         }
 
-        /// <summary>Mort : pose de mort, une vie de moins, puis reprise au dernier point (ADR-033) ou écran de fin.</summary>
+        /// <summary>
+        /// Mort : pose de mort, une vie de moins, puis selon la difficulté du héros (RetryRules.Decide) : reprise au
+        /// dernier point (ADR-033), reprise au début du niveau, ou écran de fin.
+        /// </summary>
         public void Damage()
         {
             if (!IsRunning) return;
@@ -449,12 +542,18 @@ namespace Kenta.Core
             CameraRig.Instance?.Flash(new Color(0.88f, 0.14f, 0.27f), 0.8f);
             Conductor.Instance.Stop();
 
-            // die and retry : une vie de moins ; s'il en reste, on reprend au dernier point sûr, sinon fin de partie
+            // die and retry : une vie de moins ; la difficulté du héros dit la suite. La démo ne perd jamais de vie.
             if (!IsDemo) Lives = Mathf.Max(0, Lives - 1);
+            var next = IsDemo ? RetryDecision.End : RetryRules.Decide(Difficulty, Lives, deathBeat, Chart.checkpoints, runStartBeat);
+            if (next.action == RetryAction.Restart) RecordAttempt();      // cet essai est fini : on garde le meilleur
             OnDamaged?.Invoke();
             OnStatsChanged?.Invoke();
-            if (!IsDemo && Lives > 0) StartCoroutine(RespawnAfterDeath(deathBeat));
-            else StartCoroutine(FinishAfterDeath());
+            switch (next.action)
+            {
+                case RetryAction.Resume: StartCoroutine(RespawnAfterDeath(next.beat)); break;
+                case RetryAction.Restart: StartCoroutine(RestartAfterDeath(next.beat)); break;
+                default: StartCoroutine(FinishAfterDeath()); break;
+            }
         }
 
         IEnumerator FinishAfterDeath()
@@ -598,6 +697,8 @@ namespace Kenta.Core
         void Finish(bool completed)
         {
             IsRunning = false;
+            KeepBestAttempt();                       // reprise au début : le meilleur essai est celui qui compte
+            if (keptEarlierAttempt) OnStatsChanged?.Invoke();
             OnFinished?.Invoke(completed);
             if (IsDemo) StartCoroutine(RestartDemo());
             else if (GameFlow.Instance != null) GameFlow.Instance.EndRun();

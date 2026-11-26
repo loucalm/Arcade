@@ -194,7 +194,7 @@ namespace Kenta.Player
         // Pas de physique d'au plus 1/60 s : sur la borne, une image longue (lag, ramasse-miettes du navigateur) faisait
         // avancer le héros de 0,5 à 1 u d'un coup. Il perdait alors le sol sur les rampes raides (mort « dans l'escalier »)
         // et passait d'« en dessous » à « dans » un cuirassé sans jamais être au-dessus (mort au lieu du rebond).
-        // Le simulateur du générateur (tools/gen-level-vertical.py) valide le niveau à 60 i/s : on rejoue ce pas-là.
+        // Le simulateur du générateur (tools/levelgen/engine.py) valide le niveau à 60 i/s : on rejoue ce pas-là.
         const float MaxStepSeconds = 1f / 60f;
         const int MaxSubSteps = 64;                       // jusqu'à ~1 s d'à-coup rattrapé en pas de 1/60 s
         double lastStepBeat = double.NaN;

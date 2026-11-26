@@ -5,7 +5,7 @@ Les sprites des ennemis ne sont PAS générés : ils viennent du PDF de la DA (t
 non plus : ils viennent de Gemini (tools/gemini-obstacles/, ADR-026). Ici : 8 biomes (ciel, 3 calques en parallaxe,
 sol, trou), pièces, totem, logo, cœurs, cadres et police pixel.
 
-Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,font,thumbs] [--sheet planche.png]
+Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,hud,font,thumbs] [--sheet planche.png]
 Dossier par défaut : game/Assets/_Project/Art/Kenta/Gen   (dépendances : tools/requirements.txt)
 """
 import argparse
@@ -157,8 +157,17 @@ def gen_thumbs(out, sheet):
     put(out, "ui", "star", ui.draw_star(), sheet)
 
 
-GENERATORS = {"biomes": gen_biomes, "ui": gen_ui, "font": gen_font, "heroes": gen_heroes, "thumbnail": gen_thumbnail,
-              "thumbs": gen_thumbs}
+def gen_hud(out, sheet):
+    """Icônes du HUD en partie (ui/hud_*.png, 9×9 : corps 7×7 à la hauteur des lettres + contour). Seules : relancer
+    avec --only hud ne réécrit rien d'autre."""
+    put(out, "ui", "hud_heart", ui.draw_hud_heart(True), sheet)
+    put(out, "ui", "hud_heart_empty", ui.draw_hud_heart(False), sheet)
+    put(out, "ui", "hud_coin", ui.draw_hud_coin(), sheet)
+    put(out, "ui", "hud_best", ui.draw_hud_best(), sheet)
+
+
+GENERATORS = {"biomes": gen_biomes, "ui": gen_ui, "hud": gen_hud, "font": gen_font, "heroes": gen_heroes,
+              "thumbnail": gen_thumbnail, "thumbs": gen_thumbs}
 
 
 def contact_sheet(imgs, path, width=1500, scale=2, bg=(60, 60, 80)):

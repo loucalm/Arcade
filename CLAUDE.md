@@ -49,6 +49,10 @@ python3 tools/gen-kenta-assets.py --only thumbs
 (cd tools/gemini-obstacles && python3 cut_sheets.py && python3 clean.py --install)
 # Gardiens (images Gemini dans tools/gemini-gardiens/raw/sheets/) : nettoyage et installation dans le jeu
 python3 tools/gemini-gardiens/clean.py --install
+# Chart d'un niveau (fiche + scènes dans tools/levels/, moteur dans tools/levelgen/, ADR-034) ; --liste pour les niveaux
+python3 tools/gen-level.py n1_sylve
+# Morceau d'un niveau : mesures gardées et recollées, en .ogg (la commande exacte est en tête de tools/levels/<niveau>.py)
+python3 tools/cut-song.py source.mp3 game/Assets/_Project/Audio/Music/<niveau>.ogg --bpm 117 --offset 0.054 --bars 0-31,64-end
 # Lancer la borne locale → http://localhost:3000 (ou preview "borne-locale" de .claude/launch.json)
 cd tools/anatidae-arcade && node server.js
 # Site + API en local → http://localhost:8080 (VPS plus tard, ADR-006)
