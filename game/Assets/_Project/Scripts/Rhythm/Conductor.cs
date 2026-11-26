@@ -127,23 +127,41 @@ namespace Kenta.Rhythm
         public static bool ReachedEnd(double smoothedTime, double lastRawTime, double clipLength)
             => clipLength > 0 && (smoothedTime >= clipLength - 0.05 || lastRawTime >= clipLength - 0.5);
 
+        /// <summary>
+        /// Fin d'un morceau joué une fois (pas en boucle), dans les trois cas rencontrés :
+        /// 1. le temps du morceau a atteint la longueur du clip, que la source se dise arrêtée ou non : en build Web (la
+        ///    borne), une source peut rester « en lecture » après la fin, sa position figée ; sans ce test, la fin n'était
+        ///    jamais vue et le héros courait dans le vide jusqu'à mourir (bug du 26/11 sur la borne) ;
+        /// 2. la position audio est revenue d'un coup au début alors qu'on était dans la seconde moitié du clip : c'est la
+        ///    source qui a fini et repart à 0 (sinon la correction de dérive faisait recommencer le niveau) ;
+        /// 3. la source s'est arrêtée juste après sa dernière position lue (temps lissé un peu en retard, voir ReachedEnd).
+        /// Avant l'autorisation du son en WebGL, la source est arrêtée au début : ce n'est pas une fin.
+        /// </summary>
+        public static bool SongEnded(bool loop, bool sourcePlaying, double smoothedTime, double lastRawTime,
+                                     double rawTime, double clipLength)
+        {
+            if (loop || clipLength <= 0) return false;
+            if (smoothedTime >= clipLength - 0.05) return true;
+            if (rawTime < lastRawTime - clipLength * 0.5) return true;
+            return !sourcePlaying && ReachedEnd(smoothedTime, lastRawTime, clipLength);
+        }
+
         void Update()
         {
             if (!IsPlaying) return;
             if (!IsClipReady()) return;
             if (!double.IsNaN(pendingSeekBeat)) Seek(pendingSeekBeat);
 
-            // Fin de morceau. On vérifie la position : sur WebGL, isPlaying peut être faux tant que
-            // le navigateur n'a pas autorisé l'audio (aucune interaction encore).
+            // Fin de morceau (SongEnded) : sur le temps du morceau, pas sur isPlaying seul. En WebGL, isPlaying peut être
+            // faux tant que le navigateur n'a pas autorisé l'audio, et rester vrai après la fin du clip.
             bool stopped = !source.isPlaying && !source.loop;
-            if (stopped && ReachedEnd(smoothedAudioTime, lastRawAudioTime, clipLength))
+            double rawAudioTime = (double)source.timeSamples / source.clip.frequency;
+            if (SongEnded(source.loop, source.isPlaying, smoothedAudioTime, lastRawAudioTime, rawAudioTime, clipLength))
             {
                 IsPlaying = false;
                 OnSongEnd?.Invoke();
                 return;
             }
-
-            double rawAudioTime = (double)source.timeSamples / source.clip.frequency;
 
             // Bouclage du clip : la position audio repart de 0.
             if (source.loop && rawAudioTime < lastRawAudioTime - clipLength * 0.5)
