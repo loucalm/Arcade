@@ -57,6 +57,8 @@ Règles :
 - [ ] Pont 2 et roulement 2 : y mettre les nouvelles mécaniques (aujourd'hui plateformes et escalier, comme avant)
 - [x] (2026-11-25, ADR-030) **Glissade retirée** (une touche de plus pour rien) : commandes, physique, animation, barres, consignes (2 gestes), chart et simulateur ; les 4 glissades du niveau sont devenues des coups
 - [x] (2026-11-25, ADR-030) Effets d'écran : **miroir** et **tête en bas** (`screen_flip`), sur des débuts de phrase ; cordes de liane qui pendent droit au repos ; premier plan semi-transparent quand le héros court dans l'arrière-plan
+- [x] (2026-11-25, ADR-033) **Die and retry** : 10 vies, 23 points de reprise dans le niveau 01 (rejoués par le générateur), cœur et vies dans le HUD, bonus par vie restante ; décompte « 3 2 1 GO » retiré (il tombait pendant le niveau) ; halo clair qui pulse derrière les chauves-souris (invisibles sur les lianes) ; jeu en plein cadre hors 1920×1080 (`PixelScreen.FitScale`, interface calculée sur le cadre) ; optimisation (pièces animées seulement à l'écran ; le reste est venu avec l'ADR-031)
+- [ ] Choisir entre 10 et 15 vies après test (réglage `RunManager.startLives`)
 - [ ] Dessins de glissade du héros (`slide_*`, `slidein_*`, `slideout_*`) et leur génération (`tools/gen-heroes.py`, `test_heroes.py`) : inutilisés depuis ADR-030, à retirer côté art
 - [ ] Portail de gravité : son dédié et sprite (aujourd'hui deux colonnes de pixels)
 - [ ] Décor qui joue avec la musique (éléments qui réagissent au temps, foule d'ennemis qui danse au fond)
@@ -142,10 +144,10 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-24, les menus sont aussi en vue large) **P2** Retour à l'accueil après une partie : le zoom de la partie (640 px) n'est pas remis à 320, et l'accueil change d'échelle après la première partie (`GameFlow.Enter(Attract)`)
 - [x] (2026-11-24, vérifié en 1920×1080) **P1** Faux problème : le HUD est bien dessiné au-dessus de la Sourdine ; l'impression venait du texte de debug (F9) qui le recouvre en éditeur. Constat initial : le score et le multiplicateur (HUD en haut à gauche) passent sous la Sourdine : la masse et le voile recouvrent la plaque du score, même à ×8. Dessiner le HUD au-dessus de la Sourdine, ou le décaler
 - [ ] **P2** Feu d'artifice de victoire en particules simples : gerbes petites, sans fusée ni traînée
-- [ ] **P2** Hors 1920×1080 (confirmé le 24/11 : en 1920×1080 dans l'éditeur, HUD et panneaux sont entiers) (fenêtre de l'éditeur), l'interface 320×180 est rognée au cadre du monde : le HUD disparaît et le panneau de fin est coupé. Sur 1920×1080 les deux cadres font la même taille (×3 et ×6) : à confirmer dans un build
+- [x] (2026-11-25, ADR-033 : agrandissement de l'interface calculé sur le cadre ; vérifié dans un build en 1024×768 et 1600×900) **P2** Hors 1920×1080 (confirmé le 24/11 : en 1920×1080 dans l'éditeur, HUD et panneaux sont entiers) (fenêtre de l'éditeur), l'interface 320×180 est rognée au cadre du monde : le HUD disparaît et le panneau de fin est coupé. Sur 1920×1080 les deux cadres font la même taille (×3 et ×6) : à confirmer dans un build
 
 **Nouveaux points (après les P1)**
-- [ ] **P2** « SILENCE… » s'affiche encore au milieu de l'écran à la mort (`RunHud.HandleDamaged`), contre la règle « rien au milieu »
+- [ ] **P2** « SILENCE… » et « ENCORE ! » (reprise après une mort, ADR-033) s'affichent encore au milieu de l'écran à la mort (`RunHud.HandleDamaged`), contre la règle « rien au milieu »
 - [ ] **P2** Liquide des trous parfois hors de l'image quand la caméra anticipe une montée (le sol est alors en bas de l'écran)
 - [x] (2026-11-25, ignoré pendant l'autoplay et texte masqué par `EditorArcadeShim`) **P2** En éditeur, l'AFK du toolkit (60 s sans appui) affiche « Retour au menu… » pendant une partie en autoplay : sans effet sur la borne (on y joue), mais l'accueil en cycle (logo, démo, classement) renvoie au menu de la borne après 60 s d'inactivité, comme le veut le toolkit
 

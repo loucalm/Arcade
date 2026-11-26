@@ -9,7 +9,8 @@ namespace Kenta.UI
     /// <summary>
     /// HUD de la partie (docs/da-kenta.md § 7) : tout en haut, rien au milieu.
     /// Gauche : score et multiplicateur. Centre : frise des sections du niveau (barre de progression) et son intitulé, ou l'annonce d'une surprise.
-    /// Droite : pièces ramassées. Mort subite : pas de cœurs. Dans le monde : « PRÊT ? 1 2 3 GO ! », PARFAIT !
+    /// Droite : pièces ramassées et vies (die and retry, ADR-033 : un cœur et le nombre de vies). Pas de décompte au
+    /// départ (il tombait sur la première action) ; dans le monde : PARFAIT !
     /// </summary>
     public class RunHud : MonoBehaviour
     {
@@ -26,6 +27,12 @@ namespace Kenta.UI
         [Tooltip("Segments de la frise (un par section du niveau, 12 au plus) : fond ; le remplissage est un enfant nommé « Fill ».")]
         [SerializeField] Image[] friezeBack;
         [SerializeField] Image[] friezeFill;
+        [Tooltip("Cœur affiché à côté du nombre de vies (créés à l'exécution sous le compteur de pièces).")]
+        [SerializeField] Sprite heartSprite;
+        PixelText livesText;
+        Image heart;
+        int shownLives = -1;
+        float livesPulse;
 
         RunManager run;
         float shownScore;
@@ -43,6 +50,7 @@ namespace Kenta.UI
             run.OnStatsChanged += HandleStats;
             run.OnSectionChanged += HandleSection;
             run.OnDamaged += HandleDamaged;
+            EnsureLivesDisplay();
             run.OnWarning += HandleWarning;
             shownScore = run.Score;
             bannerTimer = feedbackTimer = 0f;
@@ -132,7 +140,32 @@ namespace Kenta.UI
             // pas de texte au milieu de l'action : le bonus de section se voit au score (docs/level-design-musical.md § 4)
         }
 
-        void HandleDamaged() => ShowFeedback("SILENCE…", new Color(1f, 0.35f, 0.4f));
+        void HandleDamaged() => ShowFeedback(run != null && run.Lives > 0 ? "ENCORE !" : "SILENCE…", new Color(1f, 0.35f, 0.4f));
+
+        /// <summary>Le cœur et le nombre de vies, sous le compteur de pièces (copie de son texte : même police, même style).</summary>
+        void EnsureLivesDisplay()
+        {
+            if (livesText != null || coinsText == null) return;
+            var go = Instantiate(coinsText.gameObject, coinsText.transform.parent);
+            go.name = "Lives";
+            var rt = (RectTransform)go.transform;
+            var crt = (RectTransform)coinsText.transform;
+            rt.anchoredPosition = crt.anchoredPosition + new Vector2(0f, -16f);
+            livesText = go.GetComponent<PixelText>();
+            if (heartSprite != null)
+            {
+                heart = new GameObject("Heart", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+                heart.transform.SetParent(coinsText.transform.parent, false);
+                heart.sprite = heartSprite;
+                heart.raycastTarget = false;
+                var hrt = heart.rectTransform;
+                hrt.anchorMin = crt.anchorMin;
+                hrt.anchorMax = crt.anchorMax;
+                hrt.pivot = new Vector2(0.5f, 0.5f);
+                hrt.sizeDelta = heartSprite.rect.size;                       // pixels du sprite (canvas 320×180)
+                hrt.anchoredPosition = rt.anchoredPosition + new Vector2(-40f, 0f);
+            }
+        }
 
         void ShowFeedback(string t, Color c)
         {
@@ -158,7 +191,7 @@ namespace Kenta.UI
             multiplierText.Scale = multiplierPulse > 0.3f ? 3 : 2;
 
             UpdateFrieze();
-            UpdateCountdown();
+            UpdateLives(dt);
             // intitulé de section : visible quelques secondes à chaque nouvelle section, puis effacé (il chevauchait les pièces)
             sectionLabelTimer = Mathf.Max(0f, sectionLabelTimer - dt);
             warningTimer = Mathf.Max(0f, warningTimer - dt);
@@ -178,27 +211,29 @@ namespace Kenta.UI
             }
 
             bannerTimer = Mathf.Max(0f, bannerTimer - dt);
-            if (bannerTimer <= 0f && !countdownActive) bannerText.Text = "";
+            if (bannerTimer <= 0f) bannerText.Text = "";
             feedbackTimer = Mathf.Max(0f, feedbackTimer - dt);
             if (feedbackTimer <= 0f) feedbackText.Text = "";
             else if (feedbackTimer < 0.3f) feedbackText.Color = new Color(feedbackColor.r, feedbackColor.g, feedbackColor.b, 0.6f);
         }
 
-        bool countdownActive;
-
-        /// <summary>« PRÊT ? 1 2 3 GO ! » : le décompte suit les 4 temps de la mesure d'intro.</summary>
-        void UpdateCountdown()
+        /// <summary>Vies restantes : le nombre grossit un instant quand on en perd une. Rien en démo.</summary>
+        void UpdateLives(float dt)
         {
-            var c = Conductor.Instance;
-            countdownActive = false;
-            if (run == null || c == null || !run.IsRunning || run.IsDemo || run.SectionIndex != 0) return;
-            double beat = c.SongBeat;
-            if (beat < 0 || beat >= 5.2) return;
-            string[] steps = { "PRÊT ?", "1", "2", "3", "GO !" };
-            countdownActive = true;
-            bannerText.Text = steps[Mathf.Clamp((int)beat, 0, 4)];
-            bannerText.Scale = 3;
-            bannerTimer = 0.05f;
+            if (livesText == null) return;
+            bool show = !run.IsDemo;
+            livesText.gameObject.SetActive(show);
+            if (heart != null) heart.gameObject.SetActive(show);
+            if (!show) return;
+            if (run.Lives != shownLives)
+            {
+                if (shownLives >= 0 && run.Lives < shownLives) livesPulse = 1f;
+                shownLives = run.Lives;
+                livesText.Text = $"×{run.Lives}";
+            }
+            livesPulse = Mathf.MoveTowards(livesPulse, 0f, dt * 2f);
+            livesText.Color = livesPulse > 0.01f ? new Color(1f, 0.35f, 0.4f) : Color.white;
+            livesText.Scale = livesPulse > 0.5f ? 2 : 1;
         }
 
         /// <summary>Barre de progression du niveau en 8 segments égaux (le segment en cours est doré).</summary>

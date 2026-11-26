@@ -47,6 +47,7 @@ namespace Kenta.Level
             alive = true;
             passed = false;
             judged = false;
+            bumped = false;                                  // reprise après une mort : le cuirassé redevient dangereux
             if (view != null)
             {
                 view.SetActive(true);

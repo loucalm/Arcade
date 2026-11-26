@@ -10,8 +10,8 @@ using UnityEngine;
 namespace Kenta.Core
 {
     /// <summary>
-    /// Une partie : construit le niveau, lance la musique, gère score et combo. Mort subite : un coup
-    /// (obstacle, chute) termine la partie.
+    /// Une partie : construit le niveau, lance la musique, gère score et combo. Die and retry (ADR-033) : un coup
+    /// (obstacle, chute) coûte une vie et on reprend au dernier point de reprise ; à 0 vie, la partie se termine.
     /// Mode démo = autoplay sans perte de cœur (écran Attract).
     /// </summary>
     public class RunManager : MonoBehaviour
@@ -26,9 +26,16 @@ namespace Kenta.Core
         [Tooltip("Racine du monde de jeu (niveau + joueur), masquée hors partie.")]
         [SerializeField] GameObject world;
 
-        [Header("Règles (mort subite : un coup suffit)")]
+        [Header("Règles")]
         [Tooltip("Temps (s) pendant lequel on voit la pose de mort avant l'écran de fin.")]
         [SerializeField] float deathDelay = 0.8f;
+        [Header("Die and retry (ADR-033)")]
+        [Tooltip("Vies au départ : à chaque mort, on reprend au dernier point de reprise de la chart ; à zéro, fin de partie.")]
+        [SerializeField] int startLives = 10;
+        [Tooltip("Pause (s) entre la mort et la reprise : on voit la pose de mort, puis on repart.")]
+        [SerializeField] float respawnDelay = 0.7f;
+        [Tooltip("Bonus par vie restante quand on finit le niveau.")]
+        [SerializeField] int lifeBonus = 500;
         [SerializeField] int comboPerMultiplier = 8;
         [SerializeField] int maxMultiplier = 8;
 
@@ -40,6 +47,8 @@ namespace Kenta.Core
         [SerializeField] int completionBonus = 2000;
 
         public int Score { get; private set; }
+        /// <summary>Vies restantes (die and retry).</summary>
+        public int Lives { get; private set; }
         public int Combo { get; private set; }
         public int Lums { get; private set; }
         public int TotalLums { get; private set; }
@@ -185,6 +194,7 @@ namespace Kenta.Core
 
             TotalLums = level.Lums.Count;
             Score = Combo = Lums = 0;
+            Lives = startLives;
             judgeStats = default;
             Completed = false;
             SectionIndex = 0;
@@ -203,27 +213,7 @@ namespace Kenta.Core
             // test d'un passage dans l'éditeur (menu Kenta > Tester le refrain) : on démarre au beat demandé
             ScreenGlitch.Instance?.ResetAll();
             double start = demo ? 0 : DevStart.Beat;
-            if (start > 0)
-            {
-                SectionIndex = Mathf.Max(0, Chart.SectionIndexAt(start));
-                ApplyBiome(SectionIndex);
-                // rien ne doit chevaucher le point de départ (ennemi dont le temps est juste avant)
-                float sx = level.BeatToX(start);
-                foreach (var o in level.Obstacles)
-                    if (o.bounds.xMin < sx + 0.5f && o.bounds.xMax > sx - 0.5f && o.kind != LevelObjectKind.Gap)
-                    {
-                        o.alive = false;
-                        if (o.view != null) o.view.SetActive(false);
-                    }
-                while (fxCursor < level.FxEvents.Count && level.FxEvents[fxCursor].beat < start)
-                {
-                    var skipped = level.FxEvents[fxCursor++];
-                    if (skipped.type == "screen_split") ScreenGlitch.Instance?.SetCopies(skipped.@params.copies);
-                    if (skipped.type == "screen_flip")
-                        ScreenGlitch.Instance?.SetFlip(skipped.@params.variant == "mirror" || skipped.@params.variant == "both",
-                                                       skipped.@params.variant == "up" || skipped.@params.variant == "both");
-                }
-            }
+            if (start > 0) PrepareStartAt(start);
             player.Setup(level, this, CreateInput());
             player.Spawn(start);
             if (CameraRig.Instance != null)
@@ -238,6 +228,72 @@ namespace Kenta.Core
             IsRunning = true;
 
             OnRunStarted?.Invoke();
+            OnStatsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Met le niveau dans l'état d'un beat donné (départ de test ou reprise après une mort) : section et biome, effets
+        /// d'écran en cours (copies, image retournée), curseur des effets, et rien qui chevauche le point de départ.
+        /// </summary>
+        void PrepareStartAt(double start)
+        {
+            int section = Mathf.Max(0, Chart.SectionIndexAt(start));
+            if (section != SectionIndex || start <= 0)
+            {
+                SectionIndex = section;
+                ApplyBiome(SectionIndex);
+                if (backdrop != null && Chart.sections.Length > 0) backdrop.SetSection(Chart.sections[SectionIndex].name, Progress, 0.01f);
+            }
+            float sx = level.BeatToX(start);
+            foreach (var o in level.Obstacles)
+                if (o.bounds.xMin < sx + 0.5f && o.bounds.xMax > sx - 0.5f && o.kind != LevelObjectKind.Gap)
+                {
+                    o.alive = false;
+                    if (o.view != null) o.view.SetActive(false);
+                }
+            var glitch = ScreenGlitch.Instance;
+            glitch?.ResetAll();
+            fxCursor = 0;
+            while (fxCursor < level.FxEvents.Count && level.FxEvents[fxCursor].beat < start)
+            {
+                var e = level.FxEvents[fxCursor++];
+                if (e.type == "screen_split") glitch?.SetCopies(e.@params.copies);
+                if (e.type == "screen_flip")
+                    glitch?.SetFlip(e.@params.variant == "mirror" || e.@params.variant == "both", e.@params.variant == "up" || e.@params.variant == "both");
+            }
+            // annonces des surprises : on reprend à partir de ce beat (une reprise rejoue celles qui suivent le point)
+            warnCursor = 0;
+            while (warnCursor < warnings.Count && warnings[warnCursor].beat < start) warnCursor++;
+        }
+
+        /// <summary>Point de reprise après une mort : le dernier point sûr de la chart avant la mort (0 sinon).</summary>
+        double CheckpointBefore(double beat)
+        {
+            double best = 0;
+            var cps = Chart.checkpoints;
+            if (cps != null)
+                foreach (var c in cps)
+                    if (c <= beat && c > best) best = c;
+            return best;
+        }
+
+        IEnumerator RespawnAfterDeath(double deathBeat)
+        {
+            yield return new WaitForSecondsRealtime(respawnDelay);
+            double cp = CheckpointBefore(deathBeat);
+            // on rejoue depuis le point de reprise : obstacles, ennemis, tambours, lianes et notes reviennent
+            // (les pièces déjà prises restent prises)
+            level.ResetObstaclesFrom((float)cp);
+            PrepareStartAt(cp);
+            player.Spawn(cp);
+            // entrée recalée sur le point de reprise : sinon l'autoplay (démo, F10) garde son curseur au beat de la mort
+            // et ne rejoue pas les actions d'après le point (il meurt en boucle)
+            player.SetInput(CreateInput(), cp);
+            CameraRig.Instance?.Snap();
+            Conductor.Instance.Play(song, cp, loop: false);
+            Combo = 0;
+            IsRunning = true;
+            CameraRig.Instance?.Flash(Color.white, 0.5f);
             OnStatsChanged?.Invoke();
         }
 
@@ -378,7 +434,7 @@ namespace Kenta.Core
             return true;
         }
 
-        /// <summary>Mort subite : pose de mort, puis l'écran de fin.</summary>
+        /// <summary>Mort : pose de mort, une vie de moins, puis reprise au dernier point (ADR-033) ou écran de fin.</summary>
         public void Damage()
         {
             if (!IsRunning) return;
@@ -386,15 +442,19 @@ namespace Kenta.Core
             Combo = 0;
             sectionClean = false;
 
+            double deathBeat = Conductor.Instance.SongBeat;
             player.Die();
             ActionSfx.Instance?.Hurt();
             CameraRig.Instance?.Shake(0.6f, 0.5f);
             CameraRig.Instance?.Flash(new Color(0.88f, 0.14f, 0.27f), 0.8f);
             Conductor.Instance.Stop();
 
+            // die and retry : une vie de moins ; s'il en reste, on reprend au dernier point sûr, sinon fin de partie
+            if (!IsDemo) Lives = Mathf.Max(0, Lives - 1);
             OnDamaged?.Invoke();
             OnStatsChanged?.Invoke();
-            StartCoroutine(FinishAfterDeath());
+            if (!IsDemo && Lives > 0) StartCoroutine(RespawnAfterDeath(deathBeat));
+            else StartCoroutine(FinishAfterDeath());
         }
 
         IEnumerator FinishAfterDeath()
@@ -530,7 +590,7 @@ namespace Kenta.Core
         {
             if (!IsRunning) return;
             Completed = true;
-            if (!IsDemo) Score += completionBonus;
+            if (!IsDemo) Score += completionBonus + Lives * lifeBonus;
             OnStatsChanged?.Invoke();
             Finish(true);
         }

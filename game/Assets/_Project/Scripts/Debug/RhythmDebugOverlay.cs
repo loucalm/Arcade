@@ -54,7 +54,7 @@ namespace Kenta.DebugTools
 
             frames++;
             fpsTimer += Time.unscaledDeltaTime;
-            if (fpsTimer >= 0.25f)
+            if (fpsTimer >= 0.25f && Visible)                  // caché (borne) : aucun texte construit
             {
                 fpsText = $"{frames / fpsTimer:0} fps";
                 frames = 0;

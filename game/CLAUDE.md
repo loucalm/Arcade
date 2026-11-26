@@ -62,10 +62,10 @@ Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à éta
 - Clips musicaux : Vorbis, `Compressed In Memory`, `Preload Audio Data` activé. SFX courts : `Decompress On Load`.
 
 ## Gameplay et DA Kenta (voir [../docs/art-direction.md](../docs/art-direction.md))
-Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à 640 px de large selon le plan de caméra, interface en 320 × 180 ×6 (ADR-018 ; 3 calques : monde, acteurs, interface ; défilement au sous-pixel, voir docs/art-direction.md). Monde : 40 px/unité. Hitbox héros 0,5 × 1,0 u (glissade 0,5 u), saut 1,5 u en 1 beat, vitesse 8 u/s. Mort subite.
+Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à 640 px de large selon le plan de caméra, interface en 320 × 180 ×6 (ADR-018 ; 3 calques : monde, acteurs, interface ; défilement au sous-pixel, voir docs/art-direction.md). Monde : 40 px/unité. Hitbox héros 0,5 × 1,0 u, saut 1,5 u en 1 beat, vitesse 8 u/s. Die and retry : 10 vies, reprise au dernier point de reprise de la chart (ADR-033).
 | Script | Rôle |
 |---|---|
-| `Core/RunManager` | Une partie : build du niveau, score/combo, drops (flash, secousse), **mort subite** (un coup = fin de partie, pas de cœurs ni de checkpoint). |
+| `Core/RunManager` | Une partie : build du niveau, score/combo, drops (flash, secousse), **die and retry** (ADR-033) : 10 vies, à chaque mort reprise au dernier point de `checkpoints` de la chart (musique recalée, obstacles réactivés, pièces gardées), fin de partie à 0 vie, bonus par vie restante à la victoire. |
 | `Core/GameFlow` | Flow d'écrans imposé : Attract (logo, démo, classement) → Explain → Config (héros) → LevelSelect (niveau) → Playing → GameOver → NameEntry. |
 | `Core/GameSession`, `Core/LevelScores` | Héros et niveau choisis (statique) ; classements par niveau (Extradata de la borne). |
 | `Core/TimingJudge`, `Core/GradeCalculator`, `UI/JudgePopup` | Jugement PARFAIT / BIEN / BOF de chaque action (score, combo) et note de fin S+ … D (règles : docs/game-design.md). |
@@ -101,7 +101,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 
 - **Tests** : Unity Test Framework, tests EditMode sans asmdef dans `Assets/_Project/Editor/Tests/` (MCP `run_tests`, mode EditMode). Tests Python des générateurs : `pytest tools/tests`.
 - ⚠️ Piège MCP : `manage_camera screenshot` recompose mal les calques pixel (image fausse). Pour voir le vrai rendu : `ScreenCapture.CaptureScreenshot("Temp/gv.png")` via `execute_code`, puis lire le fichier.
-- ⚠️ Piège : avec une Game view qui n'est pas en 1920×1080 (écran Retina, « Free Aspect »), l'interface 320×180 et la vue du monde n'ont pas le même agrandissement : l'interface est rognée au cadre du monde (HUD absent, PARFAIT décalé). Pour juger l'interface, choisir une résolution fixe 1920×1080 dans la Game view.
+- Hors 1920×1080 (Game view « Free Aspect » ; en build, le gabarit rend toujours en 1920×1080), `PixelScreen` agrandit tout le cadre pour remplir l'écran et calcule l'agrandissement de l'interface sur le cadre (ADR-033) : plus d'interface rognée. Pixels un peu inégaux dans ce cas : pour juger la netteté, Game view en 1920×1080.
 - ⚠️ Piège : une capture d'écran (`ScreenCapture`) fige l'éditeur ~100 ms ; une par seconde pendant l'autoplay suffit à faire rater un saut (mort au beat ~48). Pour juger une chart, pas de capture pendant la partie.
 - ⚠️ Piège MCP : chaque `execute_code` compile du C# dans l'éditeur et fige le jeu ~300 ms (`dt` = 0,333). Pendant une partie en autoplay, ça fait rater un saut. Pour valider une chart : lancer l'autoplay, **ne rien appeler** pendant la durée du morceau, puis lire le résultat une seule fois. Même chose pour les captures (`manage_camera screenshot`) et les gros calculs CPU (génération de sprites).
 

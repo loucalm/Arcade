@@ -463,6 +463,22 @@ namespace Kenta.Level
             backProfile.Clear();
         }
 
+        /// <summary>
+        /// Reprise après une mort (die and retry) : réactive les obstacles, ennemis, tambours, lianes et notes après le point
+        /// de reprise ; les pièces déjà prises restent prises (le compteur ne compte pas deux fois).
+        /// </summary>
+        public void ResetObstaclesFrom(float beat)
+        {
+            foreach (var o in Obstacles) if (o.beat >= beat) o.ResetState();
+            foreach (var o in Bounces) if (o.beat >= beat) o.ResetState();
+            foreach (var o in Orbs) if (o.beat >= beat) o.ResetState();
+            foreach (var o in Vines)
+            {
+                if (o.grabBeat >= beat) o.ResetState();
+                if (o.view != null) o.view.GetComponent<VineView>()?.Release();
+            }
+        }
+
         /// <summary>Respawn : réactive tout ce qui est après le checkpoint.</summary>
         public void ResetFrom(float beat)
         {
@@ -1061,7 +1077,35 @@ namespace Kenta.Level
         {
             var t = Group("Flyer", pos);
             Spr(t, "Sprite", theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
+            // halo clair derrière la chauve-souris : elle ressort sur tous les décors (retour de test : on ne la voyait
+            // presque pas sur les lianes) ; il s'illumine sur chaque temps
+            var halo = Spr(t, "Halo", HaloSprite(), new Vector2(0f, PixelScreen.Snap(0.6f)), 9);
+            halo.color = new Color(1f, 0.95f, 0.7f, 0.55f);
+            halo.gameObject.AddComponent<BeatGlow>();
             return t.gameObject;
+        }
+
+        static Sprite haloSprite;
+
+        /// <summary>Halo en pixels (64 px : anneau net de 3 px et fond léger), dessiné une fois par le code.</summary>
+        static Sprite HaloSprite()
+        {
+            if (haloSprite != null) return haloSprite;
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[size * size];
+            float c = (size - 1) * 0.5f;
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
+                    byte a = d > 31f ? (byte)0 : d > 28f ? (byte)255 : (byte)90;
+                    px[y * size + x] = new Color32(255, 255, 255, a);
+                }
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            haloSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), PixelScreen.Ppu);
+            return haloSprite;
         }
 
         GameObject MakeLum(Vector2 center)

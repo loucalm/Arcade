@@ -325,7 +325,7 @@ namespace Kenta.EditorTools
             AddText(tr, font, "Btn1Label", "1", new Vector2(-64, 26), Color.white);
             icons[1] = AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-64, -8), null, null, true);
             AddText(tr, font, "Btn2Label", "2", new Vector2(-64, -8), Color.white);
-            AddText(tr, font, "Footer", "UN SEUL COUP ET C'EST FINI !", new Vector2(24, -50), Gold, 1, PixelText.Align.Center);
+            AddText(tr, font, "Footer", "10 VIES : ON REPART AU DERNIER POINT", new Vector2(24, -50), Gold, 1, PixelText.Align.Center);
             AddText(tr, font, "Hint", "BOUTON 1 POUR CONTINUER", new Vector2(0, -80), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<ExplainScreen>();
             Set(comp, "theme", theme);
