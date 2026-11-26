@@ -15,6 +15,7 @@ MonoBehaviour:
   id: givre
   number: 6
   biome: {fileID: 11400000, guid: 177a5f1cf9cf3414fb0edd8a1354d6ab, type: 2}
-  song: {fileID: 11400000, guid: 4c7d4371930ee40dca097ad5471f74db, type: 2}
+  song: {fileID: 11400000, guid: 38e1e14dc68d54c8bbcc94295696bd37, type: 2}
   chart: {fileID: 0}
   stars: 4
+  thumbnail: {fileID: 21300000, guid: 546126fe96ce242b1913778c614f01d2, type: 3}

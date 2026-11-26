@@ -190,6 +190,16 @@ def draw_panel():
     return p
 
 
+def draw_star():
+    """Étoile de difficulté 5×5, blanche (teintée or ou atténuée dans Unity) : écran de sélection de niveau."""
+    p = Pix(5, 5)
+    for y, row in enumerate(("..#..", ".###.", "#####", ".###.", ".#.#.")):
+        for x, ch in enumerate(row):
+            if ch == "#":
+                p.px(x, y, "#FFFFFF")
+    return p
+
+
 def draw_plate():
     """Plaque 8×8 (9-slice, bordure 3) : fond sombre translucide aux coins arrondis, sous les textes posés sur le décor."""
     p = Pix(8, 8)

@@ -66,6 +66,11 @@ Règles :
 - [ ] **Télégraphie** : chaque obstacle s'annonce 1 mesure avant (couleur, clignotement, animation)
 - [x] Ennemis en hauteur (`lane 1`) à frapper pendant un saut : chauves-souris du niveau 01 (2026-11-24, PR de Lucas)
 - [ ] **Écran Config** : 1 ou 2 joueurs
+- [x] (2026-11-25, ADR-032) **Sélection de niveau** : écran dédié après le héros, liste façon osu! avec vignettes, extrait du morceau, top 5 du niveau ; un `SongData` par niveau ; un thème par niveau (plus de changement de monde dans la chart) ; **classement par niveau** (top 10 dans l'Extradata de la borne, le score part aussi dans la liste officielle). Provisoire : les 8 niveaux gardent le même morceau et la même chart
+- [ ] Choisir le score envoyé à la liste officielle de la borne (aujourd'hui le score brut, tous niveaux mélangés : cumul des meilleurs scores par niveau ?)
+- [ ] Écran des niveaux : son au déplacement et à la validation ; tester à la main sur la borne (défilement maintenu, extrait, retour au héros)
+- [ ] **Contenu unique par niveau** : un morceau et une chart propres à chacun des 8 niveaux (aujourd'hui tous sur « Main Theme » et `level01_shovel_knight.json`). Un thème par niveau, sans changement de monde en cours de partie
+- [ ] **États du thème** au fil d'un niveau : pluie, nuit, lever du jour… Visuels par biome (particules, palette, ciel) + un champ par section dans la chart, appliqué au décor par `RunManager`. À écrire avec la chart propre à chaque niveau (un orage se cale sur un drop du morceau)
 - [ ] **Mode 2 joueurs** hot-seat (P1 puis P2 sur le même morceau, comparaison à la fin)
 - [ ] Stems audio : couches (batterie, mélodie) qui montent selon le combo ou la section
 

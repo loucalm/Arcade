@@ -1,6 +1,7 @@
 """Le niveau vertical doit rester faisable et lisible : autoplay à 60 et 30 i/s, appuis décalés de ±40 ms,
 toutes les pièces sur la trajectoire, un vrai dénivelé, un rail de caméra qui garde le héros dans l'image."""
 import importlib.util
+import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -42,10 +43,12 @@ def test_rail_keeps_hero_in_view():
         assert bottom >= c - vh * 0.5 - 1e-6, (i * 0.25, "pieds")        # le bas du corps dans l'image
 
 
-def test_world_changes_mid_level():
-    """Le niveau change de monde en cours de route (refrain dans l'orage, final dans les Échos)."""
-    biomes = [gen.BIOMES.get(n) for n, _ in gen.SECTIONS]
-    assert len({b for b in biomes if b}) >= 2
+def test_level_keeps_one_world():
+    """Un niveau = un thème : aucune section ne change de monde (le décor suit le LevelDef, ADR-032)."""
+    assert gen.BIOMES == {}
+    with open(gen.DEFAULT_OUT, encoding="utf-8") as f:
+        chart = json.load(f)
+    assert all("biome" not in s for s in chart["sections"])
 
 
 def test_obstacle_variety():

@@ -43,6 +43,8 @@ git clone https://github.com/XariusExcl/anatidae-arcade tools/anatidae-arcade &&
 # Après chaque build Unity (sortie game/Build) : package → dist/Kenta + borne locale
 tools/package-build.sh
 # Après un changement de sprites : python3 tools/gen-kenta-assets.py puis, dans Unity, menu Kenta > Reconstruire thèmes, prefabs et scène
+# Après un changement de décor : vignettes des niveaux (écran de sélection)
+python3 tools/gen-kenta-assets.py --only thumbs
 # Obstacles (planches Gemini dans tools/gemini-obstacles/raw/sheets/) : découpe, nettoyage, installation dans le jeu
 (cd tools/gemini-obstacles && python3 cut_sheets.py && python3 clean.py --install)
 # Gardiens (images Gemini dans tools/gemini-gardiens/raw/sheets/) : nettoyage et installation dans le jeu
