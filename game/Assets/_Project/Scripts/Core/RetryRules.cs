@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace Kenta.Core
 {
     /// <summary>Difficulté d'un héros : ce qui se passe quand on meurt (réglée dans HeroProfile).</summary>
@@ -79,6 +81,36 @@ namespace Kenta.Core
         /// <summary>Reprise au début : faux si l'essai en cours fait au moins aussi bien que le meilleur des précédents.</summary>
         public static bool KeepEarlier(bool hasEarlier, int earlierScore, int currentScore) =>
             hasEarlier && earlierScore > currentScore;
+
+        /// <summary>
+        /// Bonus de score de la difficulté (choix de Lucas, 2026-11-26) : chaque point gagné est multiplié, pour qu'un bon
+        /// score en DUR passe devant un score FACILE dans un même classement au score. ×1 facile, ×1,5 moyen, ×2 dur.
+        /// </summary>
+        public static float ScoreFactor(RetryMode mode) => mode switch
+        {
+            RetryMode.Restart => 1.5f,
+            RetryMode.OneLife => 2f,
+            _ => 1f,
+        };
+
+        /// <summary>Points après le bonus de difficulté (arrondis au plus proche).</summary>
+        public static int WithBonus(int points, float factor) =>
+            (int)System.Math.Round(points * (double)factor, System.MidpointRounding.AwayFromZero);
+
+        /// <summary>« ×1,5 » : le bonus tel qu'il s'affiche (rien en facile).</summary>
+        public static string FactorLabel(float factor) =>
+            factor <= 1f ? "" : factor == Mathf.Floor(factor) ? $"×{(int)factor}" : $"×{factor:0.#}".Replace('.', ',');
+
+        /// <summary>
+        /// Couleur de la difficulté, la même partout (cadre du héros, classement) : vert facile, ambre moyen (distinct de
+        /// l'or des médailles et du score mis en avant), rouge franc dur (« on voit que le joueur est chaud »).
+        /// </summary>
+        public static Color DifficultyColor(RetryMode mode) => mode switch
+        {
+            RetryMode.Checkpoint => new Color(0.5f, 0.9f, 0.45f),
+            RetryMode.Restart => new Color(1f, 0.62f, 0.18f),
+            _ => new Color(1f, 0.2f, 0.22f),
+        };
 
         /// <summary>Mot de la difficulté, écrit dans le cadre du héros.</summary>
         public static string DifficultyLabel(RetryMode mode) => mode switch

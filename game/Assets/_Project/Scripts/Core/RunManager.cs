@@ -52,6 +52,8 @@ namespace Kenta.Core
         public int Lives { get; private set; }
         /// <summary>Difficulté de la partie : celle du héros choisi.</summary>
         public RetryMode Difficulty { get; private set; }
+        /// <summary>Bonus de score de la difficulté (×1, ×1,5, ×2 ; ×1 en démo) : chaque point gagné est multiplié.</summary>
+        public float ScoreFactor { get; private set; } = 1f;
         /// <summary>Numéro de l'essai (1 au départ, +1 à chaque reprise au début).</summary>
         public int Attempt { get; private set; }
         /// <summary>Meilleur score des essais, celui en cours compris (reprise au début ; sinon = Score).</summary>
@@ -221,6 +223,7 @@ namespace Kenta.Core
             var hero = CurrentHero();
             Difficulty = hero != null ? hero.retryMode : RetryMode.Checkpoint;
             Lives = hero != null ? hero.StartLives : RetryRules.DefaultLives(Difficulty);
+            ScoreFactor = demo ? 1f : RetryRules.ScoreFactor(Difficulty);
             Attempt = 1;
             bestAttempt = default;
             hasBestAttempt = keptEarlierAttempt = false;
@@ -456,7 +459,7 @@ namespace Kenta.Core
         public void OnLumCollected(LevelObject lum)
         {
             Lums++;                            // les pièces rapportent des points, mais seul le timing des actions fait le combo
-            Score += lumPoints * Multiplier;
+            AddPoints(lumPoints * Multiplier);
             if (lum.hasNote) ActionSfx.Instance?.LumNote(lum.note);
             else ActionSfx.Instance?.Lum(lum.sequenceIndex);
             FxPool.Instance?.Burst(lum.bounds.center, new Color(1f, 0.82f, 0.23f), 8, 4f, 0.14f, 0.35f, 0f, 0f);
@@ -506,7 +509,7 @@ namespace Kenta.Core
             if (!ApplyJudgement(ref judgeStats, o, j)) return;
             if (j == Judgement.Meh) Combo = 0;
             else Combo++;
-            Score += Mathf.RoundToInt(basePoints * TimingJudge.Factor(j) * Multiplier);
+            AddPoints(Mathf.RoundToInt(basePoints * TimingJudge.Factor(j) * Multiplier));
             OnJudged?.Invoke(j, new Vector2(player.transform.position.x, player.transform.position.y + 1.4f));
         }
 
@@ -566,7 +569,7 @@ namespace Kenta.Core
         {
             bool perfect = sectionClean && !IsDemo;
             int bonus = perfect ? perfectSectionBonus : 0;
-            Score += bonus;
+            AddPoints(bonus);
             SectionIndex = index;
             sectionClean = true;
 
@@ -685,11 +688,14 @@ namespace Kenta.Core
             }
         }
 
+        /// <summary>Points gagnés, après le bonus de difficulté du héros (RetryRules.ScoreFactor).</summary>
+        void AddPoints(int points) => Score += RetryRules.WithBonus(points, ScoreFactor);
+
         void HandleSongEnd()
         {
             if (!IsRunning) return;
             Completed = true;
-            if (!IsDemo) Score += completionBonus + Lives * lifeBonus;
+            if (!IsDemo) AddPoints(completionBonus + Lives * lifeBonus);
             OnStatsChanged?.Invoke();
             Finish(true);
         }

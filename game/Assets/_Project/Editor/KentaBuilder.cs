@@ -661,35 +661,107 @@ namespace Kenta.EditorTools
 
         static GameObject BuildHighscores(PixelFontData font, LevelTheme theme)
         {
-            // classement en pixel art : rang, nom, score ; pièces or / argent / bronze devant les trois premiers
             var root = ScreenRoot("Screen_Highscores");
+            root.AddComponent<HighscoreBoard>();
+            FillHighscores(root, font);
+            return SavePrefab(root, "Screen_Highscores");
+        }
+
+        /// <summary>
+        /// Refait le classement dans le prefab existant (Screen_Highscores) sans le remplacer : racine et composant gardés,
+        /// donc la scène Main et ses références ne bougent pas ; seuls les enfants sont recréés (comme Construire le HUD).
+        /// </summary>
+        [MenuItem("Kenta/Construire le classement")]
+        public static void BuildHighscoresMenu() => Debug.Log(BuildHighscoresInPlace());
+
+        public static string BuildHighscoresInPlace()
+        {
+            AssetDatabase.Refresh();
+            var font = AssetDatabase.LoadAssetAtPath<PixelFontData>(SoDir + "PixelFont.asset");
+            if (font == null) throw new Exception("PixelFont absent : lancer d'abord « Reconstruire thèmes, prefabs et scène ».");
+            string path = PrefabDir + "Screen_Highscores.prefab";
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                for (int i = root.transform.childCount - 1; i >= 0; i--) UnityEngine.Object.DestroyImmediate(root.transform.GetChild(i).gameObject);
+                FillHighscores(root, font);
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+            return "Classement reconstruit dans " + path;
+        }
+
+        /// <summary>
+        /// Classement en pixel art (UI/HighscoreBoard) : titre, plaque, en-têtes RANG / NOM / HÉROS / SCORE, dix lignes à
+        /// 10 px (bande une sur deux, rouge sur toute la ligne pour un score en DUR, liseré à gauche), petites pièces or /
+        /// argent / bronze devant les trois premiers, héros à la couleur de sa difficulté et son bonus, légende en bas.
+        /// Colonnes (px de l'interface 320×180, origine au centre) : pièce −88, rang −80, nom −62, héros −38, bonus −6,
+        /// score 92 (calé à droite).
+        /// </summary>
+        static void FillHighscores(GameObject root, PixelFontData font)
+        {
             var tr = root.transform;
+            var px = Spr("Gen/ui/pixel.png");
+            var coin = Spr("Gen/ui/hud_coin.png");
             var title = AddText(tr, font, "Title", "MEILLEURS SCORES", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
-            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(0, -6), null, new Vector2(176, 128), false);
+            var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(0, -6), null, new Vector2(204, 140), false);
             panel.type = Image.Type.Sliced;
+
+            var header = NewRect("Header", tr, Vector2.zero);
+            AddText(header, font, "Rank", "RANG", new Vector2(-92, 54), Dim, 1, PixelText.Align.Left);   // au-dessus des pièces : « NOM » commence à −62
+            AddText(header, font, "Name", "NOM", new Vector2(-62, 54), Dim, 1, PixelText.Align.Left);
+            AddText(header, font, "Hero", "HÉROS", new Vector2(-38, 54), Dim, 1, PixelText.Align.Left);
+            AddText(header, font, "Score", "SCORE", new Vector2(92, 54), Dim, 1, PixelText.Align.Right);
+            AddImage(header, "Rule", px, new Vector2(0, 48), new Color(Dim.r, Dim.g, Dim.b, 0.5f), new Vector2(192, 1), false);
+
             const int rows = 10;
+            var bands = new Image[rows];
+            var accents = new Image[rows];
+            var medals = new Image[3];
             var ranks = new PixelText[rows];
             var names = new PixelText[rows];
+            var heroes = new PixelText[rows];
+            var bonuses = new PixelText[rows];
             var scores = new PixelText[rows];
-            var medals = new Image[3];
             for (int i = 0; i < rows; i++)
             {
-                float y = 48 - i * 11;
-                ranks[i] = AddText(tr, font, $"Rank{i}", "01", new Vector2(-58, y), Color.white, 1, PixelText.Align.Left);
-                names[i] = AddText(tr, font, $"Name{i}", "AAA", new Vector2(-30, y), Color.white, 1, PixelText.Align.Left);
-                scores[i] = AddText(tr, font, $"Score{i}", "000000", new Vector2(72, y), Color.white, 1, PixelText.Align.Right);
-                if (i < 3) medals[i] = AddImage(tr, $"Medal{i}", theme.coinFrames[0], new Vector2(-70, y));
+                float y = 41 - i * 10;
+                bands[i] = AddImage(tr, $"Band{i}", px, new Vector2(0, y), new Color(1f, 1f, 1f, 0.05f), new Vector2(192, 9), false);
+                accents[i] = AddImage(tr, $"Accent{i}", px, new Vector2(-95, y), Color.red, new Vector2(2, 9), false);
+                if (i < 3) medals[i] = AddImage(tr, $"Medal{i}", coin, new Vector2(-88, y));
+                ranks[i] = AddText(tr, font, $"Rank{i}", "01", new Vector2(-80, y), Color.white, 1, PixelText.Align.Left);
+                names[i] = AddText(tr, font, $"Name{i}", "AAA", new Vector2(-62, y), Color.white, 1, PixelText.Align.Left);
+                heroes[i] = AddText(tr, font, $"Hero{i}", "KENTA", new Vector2(-38, y), Color.white, 1, PixelText.Align.Left);
+                bonuses[i] = AddText(tr, font, $"Bonus{i}", "×2", new Vector2(-6, y), Color.white, 1, PixelText.Align.Left);
+                scores[i] = AddText(tr, font, $"Score{i}", "000000", new Vector2(92, y), Color.white, 1, PixelText.Align.Right);
             }
+
+            // légende : la couleur de chaque difficulté et son bonus de score
+            var legend = NewRect("Legend", tr, Vector2.zero);
+            AddImage(legend, "RuleBottom", px, new Vector2(0, -60), new Color(Dim.r, Dim.g, Dim.b, 0.5f), new Vector2(192, 1), false);
+            (string label, RetryMode mode, float x)[] items =
+                { ("FACILE", RetryMode.Checkpoint, -90), ("MOYEN ×1,5", RetryMode.Restart, -36), ("DUR ×2", RetryMode.OneLife, 36) };
+            foreach (var (label, mode, x) in items)
+            {
+                var c = RetryRules.DifficultyColor(mode);
+                AddImage(legend, "Swatch" + mode, px, new Vector2(x, -67), c, new Vector2(5, 5), false);
+                AddText(legend, font, "Label" + mode, label, new Vector2(x + 6, -67), c, 1, PixelText.Align.Left);
+            }
+
             var empty = AddText(tr, font, "Empty", "AUCUN SCORE : À TOI DE JOUER !", new Vector2(0, -6), Color.white);
-            var comp = root.AddComponent<HighscoreBoard>();
+            var comp = root.GetComponent<HighscoreBoard>();
             SetArray(comp, "ranks", ranks);
             SetArray(comp, "namesText", names);
+            SetArray(comp, "heroes", heroes);
+            SetArray(comp, "bonuses", bonuses);
             SetArray(comp, "scores", scores);
+            SetArray(comp, "bands", bands);
+            SetArray(comp, "accents", accents);
             SetArray(comp, "medals", medals);
+            SetArray(comp, "decorations", new UnityEngine.Object[] { header.gameObject, legend.gameObject });
             Set(comp, "emptyText", empty);
             Set(comp, "title", title);
             Set(comp, "font", font);
-            return SavePrefab(root, "Screen_Highscores");
         }
 
         static GameObject BuildNameEntry(PixelFontData font, LevelTheme theme)

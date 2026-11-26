@@ -22,9 +22,6 @@ namespace Kenta.UI
         [SerializeField] PixelText timerText;
         [SerializeField] float seconds = 12f;
 
-        static readonly Color EasyColor = new(0.5f, 0.9f, 0.45f);
-        static readonly Color MediumColor = new(1f, 0.82f, 0.23f);
-        static readonly Color HardColor = new(1f, 0.35f, 0.4f);
         // en pixels d'interface : le mot sous le bord haut du cadre (au-dessus de la tête du héros), la règle entre le titre et les cadres
         const float WordBelowFrameTop = 11f, RuleAboveFrameTop = 12f;
 
@@ -142,11 +139,6 @@ namespace Kenta.UI
 
         static float FrameTop(RectTransform frame) => frame.anchoredPosition.y + frame.sizeDelta.y * (1f - frame.pivot.y);
 
-        static Color DifficultyColor(RetryMode mode) => mode switch
-        {
-            RetryMode.Checkpoint => EasyColor,
-            RetryMode.Restart => MediumColor,
-            _ => HardColor,
-        };
+        static Color DifficultyColor(RetryMode mode) => RetryRules.DifficultyColor(mode);   // la même couleur au classement
     }
 }

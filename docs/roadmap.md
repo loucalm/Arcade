@@ -66,7 +66,8 @@ Règles :
 - [x] (2026-11-26, retour de Lucas) Chauves-souris : peu visibles et halo jaune qui se lisait comme un bouclier → battement d'ailes en 4 images tirées du PDF et liseré clair d'1 px (`tools/gen-bat.py`, test), halo retiré (`BeatGlow` supprimé) ; puis aussi au sol (ennemi des Échos) et au plafond, avec un vol stationnaire de ±4 px (`FX/Hover`, test)
 - [ ] **P2** Une ligne de pièces passe parfois sur une chauve-souris (pièces posées sur la trajectoire de l'autoplay) : les écarter de l'ennemi dans `auto_lums`
 - [ ] **P2** Reprise au point (Kenta) : les plateformes déjà franchies après le point de reprise ne rapportent plus de points (défaut existant)
-- [ ] **P2** Faut-il un bonus de score pour les héros plus durs (×1,5 Aiko, ×2 Ryo) ? Sans lui, le classement favorise Kenta
+- [x] (2026-11-26, ADR-037) Bonus de score par difficulté (×1,5 Aiko, ×2 Ryo) ; classement refait : une ligne par trigramme avec son héros et sa couleur (rouge franc en DUR), légende des bonus ; musique calme des menus (*Behind the waterfall…*, `Song_Menu`)
+- [ ] **P2** Liste officielle de la borne (« MEILLEURS SCORES ») : le serveur ne garde que nom et score, ses lignes restent sans héros ni couleur
 - [ ] Dessins de glissade du héros (`slide_*`, `slidein_*`, `slideout_*`) et leur génération (`tools/gen-heroes.py`, `test_heroes.py`) : inutilisés depuis ADR-030, à retirer côté art
 - [ ] Portail de gravité : son dédié et sprite (aujourd'hui deux colonnes de pixels)
 - [ ] Décor qui joue avec la musique (éléments qui réagissent au temps, foule d'ennemis qui danse au fond)
