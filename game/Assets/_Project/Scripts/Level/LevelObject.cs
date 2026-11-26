@@ -37,6 +37,8 @@ namespace Kenta.Level
         public float grabBeat, grabY, releaseY, sag;
         /// <summary>Ennemi cuirassé : on ne le frappe pas, on lui saute dessus (appui au rebond = grand rebond).</summary>
         public bool stomp;
+        /// <summary>Cuirassé déjà rebondi : il reste en place (tremplin) et ne blesse plus.</summary>
+        public bool bumped;
 
         public bool IsHittable => kind == LevelObjectKind.Enemy || kind == LevelObjectKind.Block;
 

@@ -31,6 +31,9 @@ Règles :
 - [x] (2026-11-25) Morts « dans l'escalier » et dans les cuirassés au lieu du rebond → physique du héros en pas de 1/60 s (vérifié à 15 i/s avec des à-coups)
 - [ ] **P0** Refaire un build Web (menu Kenta > Build Web (borne), module Web de 6000.3.23f1) et vérifier sur la borne : fps (overlay F9 absent en release : compter à l'œil ou via le panneau des performances de Firefox), plein écran, plus de morts sur les rampes
 - [ ] **P1** L'autoplay de Unity ramasse 373 pièces sur 395, le simulateur du générateur 395/395 : écart à trouver (déjà avant le 25/11)
+- [x] (2026-11-26) Trop de changements de zoom (10 plans larges, laids) → 4 : chaque refrain entier et deux phrases de 8 temps (beats 40 et 160) pour voir venir des chauves-souris
+- [x] (2026-11-26) Les cuirassés mouraient au rebond → ils restent en place (tremplin, son ressort s'écrase) et ne blessent plus une fois touchés
+- [x] (2026-11-26) Saut sur un cuirassé qui tuait au lieu de faire rebondir → rebond aussi si on le touche les pieds à moins de 0,6 u sous son dessus (saut un peu court ou encore en montée)
 
 ## Jeu — P1 (gameplay « music level »)
 - [x] **Niveau vertical** (ADR-018) : hauteur libre, rampes et course sur le mur (`ramp`), tambours-tremplins (`bounce`), caméra par plans (zoom ×3 à ×6, cadrage), niveau 01 réécrit scène par scène avec simulateur de l'autoplay (2026-11-24)
