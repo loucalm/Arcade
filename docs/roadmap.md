@@ -109,6 +109,8 @@ Détail : [superpowers/specs/2026-11-26-niveaux-par-monde-design.md](superpowers
 - [ ] **P1** Niveau 4 : le réécrire sur *Stage 2* (Junkala, 154 BPM, CC0) avec les tambours, rampes et l'arrière-plan, pour retirer Shovel Knight ; les effets d'écran iront au niveau 5
 - [ ] **P1** Niveau 5 (Givre : écrans retournés) ; niveaux 6 à 8 : encore sur la chart de base, identiques au niveau 4
 - [ ] **P1** Niveau 6 (Grand Orage) : le niveau 01 actuel réécrit sur sa musique, avec contretemps et doubles croches
+- [x] (2026-11-26, Lou) **Niveau 8, Le Grand Orage, l'épreuve ultime** (`tools/levels/n8_orage.py`) : 180 BPM, toutes les mécaniques, marge 100 ms (120 ailleurs), effets d'écran sur chaque phrase (dédoublé, miroir, tête en bas, demi-tour, grésillement), 22 points de reprise ; fini par l'autoplay en jeu (10 vies sur 10)
+- [ ] **P1** Niveau 8 : renseigner l'auteur, le titre et la licence de `n8_orage.ogg` (`Audio/LICENSES.md`) ; faire tester le niveau par un humain (difficulté réelle)
 - [ ] **P1** DA : règle de couleur (héros, ennemis, pièces jamais dans les couleurs du fond) vérifiée par script sur les palettes des mondes
 
 ## Jeu — P2 (juice / direction artistique)
