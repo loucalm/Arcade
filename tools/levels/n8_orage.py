@@ -1,268 +1,233 @@
 """Niveau 8 — Le Grand Orage, l'épreuve ultime, sur le morceau fourni par Lou (`Niveau8.ogg`), 180 BPM.
 
-Le niveau le plus dur : 180 BPM (9,6 u/s), toutes les mécaniques, des croches, et un écran qui se détraque au rythme
-de la musique (dédoublé, en miroir, tête en bas, grésillement), même pendant les passages denses. Il demande de
-connaître les sept autres niveaux : rien n'y est appris, tout y est combiné.
+Le niveau le plus dur : 180 BPM, le tempo le plus rapide du jeu (9,6 u/s ; plus vite, les frappes en avance ratent
+l'ennemi : tolérances réglées pour 3,2 u par temps), toutes les mécaniques, des rafales de frappes en croches sur les passages où la musique tape en croches (la sensation d'un
+tempo doublé, sans raccourcir les sauts), et un écran qui se détraque au rythme du morceau : tremblements et coups de
+zoom sur les frappes, dédoublé, miroir, tête en bas, grésillement sur les phrases. Rien n'y est appris.
 
-Morceau (1 min 53, 336 temps à 180 BPM ; la structure se lit à 90, en demi-temps) :
+**Chaque action tombe sur une attaque du morceau** (carte des accents, mesure par mesure, dans le commentaire de
+chaque scène : # forte, sinon moyenne). Le morceau a des blancs (56-64, 232-240) : on y vole ou on y dévale, sans appui.
+
+Morceau (1 min 53, 336 temps ; la structure se lit à 90, en demi-temps) :
   python3 tools/analyse-song.py game/Assets/_Project/Audio/Music/n8_orage.ogg tools/data/n8_orage_analysis.json \
-      --bpm 180 --offset 0.055 --beats 336
-Forme (temps) : intro 0-48 (calme), montée 48-64, couplet 64-96 (grosse caisse sur les temps), refrain 96-128 (le
-drop), couplet 2 128-160, pont 160-224 (caisse claire seule, grosse caisse rare), montée 2 224-240, couplet 3 240-272,
-refrain final 272-304 (le plus fort), fin 304-336.
+      --bpm 180 --offset 0.035 --beats 336
+Forme (temps) : A 0-56, blanc 56-64, B 64-96, C (drop) 96-128, D 128-160, E (rafales) 160-176, A' 176-232,
+blanc 232-240, B' 240-272, C' (drop final) 272-304, D' (fin) 304-336.
 """
 from levelgen.builder import Level, cuirasses, grotte, lianes, notes
 from levelgen.fiche import ALL, Fiche
 
-SECTIONS = [("intro", 0), ("montée", 48), ("couplet", 64), ("refrain", 96), ("couplet 2", 128), ("pont", 160),
-            ("montée 2", 224), ("couplet 3", 240), ("refrain 2", 272), ("fin", 304)]
+SECTIONS = [("intro", 0), ("blanc", 56), ("couplet", 64), ("refrain", 96), ("couplet 2", 128), ("tempête", 160),
+            ("reprise", 176), ("blanc 2", 232), ("couplet 3", 240), ("refrain 2", 272), ("fin", 304)]
 
 
-def scene_intro(L):
-    """0-48 : la musique est calme, le niveau ne l'est pas. Coups sur les temps et les « et », souches, trous et
-    marches serrés : de quoi vérifier qu'on est prêt."""
-    L.enemy(4)
-    L.enemy(5)
-    L.gap(6, 0.5)
-    L.enemy(8)
-    L.wall(10)
-    L.enemy(11.5)
-    L.step(13, +1)
-    L.enemy(14.5)
-    L.enemy(15.5)
-    L.gap(17, 0.5)
-    L.wall(19)
-    L.enemy(20.5)
-    L.enemy(21.5)
-    L.step(23, +1)
-    L.step(24, +1)
-    L.enemy(25.5)
-    cuirasses(L, 28)                            # 27 saut, 28 appui, → 30
-    L.enemy(31)
-    L.enemy(32)
-    L.gap(33, 0.5)
-    L.enemy(34.5)
-    lianes(L, 36, [1.25])                       # → 39
-    L.flyer(37)
-    L.enemy(41.5)
-    L.wall(43)
-    L.enemy(44.5)
-    L.step(46, -2)
-    L.enemy(47)
+def hits(L, *beats):
+    for b in beats:
+        L.enemy(b)
 
 
-def scene_montee(L):
-    """48-64 : la grosse caisse revient : on gravit un escalier, une marche par coup, de toit en toit, et le
-    tambour lance le couplet."""
-    for k in (49, 50, 51, 52):
-        L.step(k, +1)
-    L.enemy(53)
-    L.gap(54, 0.5)
-    L.step(55.5, +1)
-    L.gap(56.5, 0.5)
-    L.step(57.5, +1)
-    L.enemy(58.5)
-    L.enemy(59.5)
-    L.bounce(62, 2.0, +3)                       # → 64 : on atterrit sur le premier temps du couplet
+def scene_a(L, b, second=False):
+    """A (0-56, puis 176-232). Accents : 4 5 6 7 | 8 9 10 11# | 12# 13 14 15# | 16# 16,5 17 17,5 18,5 19# |
+    20 21# 22 22,5 23# | 24 24,5 25# 26 26,5 27 27,5 | 28,5# 29,5 30 31# | 32# 33 34 35 | 36# 37# 38# 39 |
+    40 41 42,5 43 | 44 45# 46# 47# | 48# 48,5 49 49,5 50,5# 51# 51,5 | 52# 52,5# 53 54# 54,5# 55 | 56# 57."""
+    hits(L, b + 4, b + 5)
+    L.gap(b + 6, 0.5)
+    L.wall(b + 7)
+    hits(L, b + 9, b + 10)
+    L.step(b + 11, +1)
+    hits(L, b + 12, b + 13, b + 14)
+    L.gap(b + 15, 0.5)
+    if not second:
+        hits(L, b + 16, b + 16.5, b + 17)
+        L.wall(b + 19)
+        hits(L, b + 20, b + 21, b + 22, b + 22.5)
+        L.gap(b + 23, 0.5)
+        hits(L, b + 24, b + 24.5)
+        cuirasses(L, b + 26, (1.5,))            # 25# saut, 26 appui, → 27,5
+        L.gap(b + 28.5, 0.5)
+        hits(L, b + 29.5, b + 30)
+        L.wall(b + 31)
+    else:
+        # la reprise : le monde se retourne sur la même musique
+        grotte(L, b + 16, b + 31, jumps=(b + 19, b + 23, b + 28.5), hanging=(b + 21, b + 25, b + 27, b + 30))
+    hits(L, b + 32, b + 33, b + 34)
+    L.step(b + 35, +1)
+    if not second:
+        hits(L, b + 36, b + 37)
+        L.gap(b + 38, 0.5)
+        lianes(L, b + 40, [1.75])               # 40 saut, lâcher 42,5, → 43,5
+    else:
+        # l'arrière-plan : on passe derrière le premier plan
+        h = L.h
+        L.to_plane(b + 36, 1.5, "to_back")      # → 37,5
+        L.back(b + 37, 2.2, 1.0)                # trou de 39,2 à 39,7
+        L.back(b + 39.7, 4.3, 1.0)
+        L.add(b + 39, "jump", variant="back")
+        L.back_enemy(b + 38)
+        L.back_enemy(b + 40)
+        L.back_enemy(b + 41)
+        L.to_plane(b + 43, 1.0, "to_front")     # → 44
+        L.h = h
+    hits(L, b + 45, b + 46)                    # 43,5-45 : on reprend pied (point de reprise)
+    L.gap(b + 47, 0.5)
+    hits(L, b + 48, b + 48.5, b + 49, b + 49.5)
+    L.step(b + 50.5, +1)
+    hits(L, b + 52, b + 52.5)
+    L.gap(b + 53, 0.5)
+    hits(L, b + 54, b + 54.5)
+    L.wall(b + 55)
+    L.enemy(b + 56)
+    # le blanc : la musique s'arrête, on s'envole et on dévale sans un appui
+    L.bounce(b + 57, 2.5, +4)                   # 57 → 59,5
+    L.ramp(b + 60, 2.0, -8)
 
 
-def scene_couplet(L, b):
-    """64-96 : la grosse caisse tape tous les temps : cuirassés en chaîne, lianes avec chauves-souris, notes de
-    saut au-dessus du vide, un coup entre chaque geste."""
-    L.enemy(b + 1)
-    cuirasses(L, b + 3, (1.0, 1.5))             # 2 saut, 3, 4 → 5,5
-    L.enemy(b + 6.5)
-    L.enemy(b + 7.5)
-    lianes(L, b + 8, [1.25, 1.0])               # → 13
-    L.flyer(b + 9)
-    L.enemy(b + 14)
-    notes(L, b + 16, [0.5, 1.5, 2.5], rise=1.0) # 17, 18, 19 → 20
-    L.enemy(b + 21)
-    L.enemy(b + 22)
+def scene_b(L, b, third=False):
+    """B (64-96, puis 240-272). Accents : 64# 67 | 69 71 | 72 72,5 73 74 75# | 76 77# 78 79 | 81 83 | 85# 87 |
+    88 88,5 89 90,5 91 | 92 93 94 94,5 95 95,5."""
+    L.enemy(b + 0)
+    L.gap(b + 3, 0.5)
+    L.enemy(b + 5)
+    cuirasses(L, b + 8, (1.0, 1.0, 1.0))        # 7 saut, 8 9 10 appuis, → 11
+    hits(L, b + 13, b + 14)                    # 11-13 : on reprend pied (point de reprise)
+    L.gap(b + 15, 0.5)
+    if not third:
+        lianes(L, b + 17, [1.25, 1.0])          # 17 saut, lâchers 19 et 21, → 22
+        L.flyer(b + 18)
+    else:
+        notes(L, b + 17, [0.5, 1.5, 2.5, 1.5])  # 17 saut, notes 18 19 20 21, → 22
     L.wall(b + 23)
-    L.enemy(b + 24.5)
-    lianes(L, b + 25, [1.25])                   # → 28
-    L.flyer(b + 26)
-    L.step(b + 29, -2)
-    L.enemy(b + 30)
-    L.enemy(b + 31)
+    hits(L, b + 24, b + 24.5, b + 25)
+    L.gap(b + 26.5, 0.5)
+    hits(L, b + 28, b + 29, b + 30, b + 30.5)
+    L.bounce(b + 31.5, 1.5, +2)                 # 95,5 → 97 : le drop
 
 
-def scene_refrain(L, b):
-    """96-128 : le drop. Tambour dans le ciel, course sur le mur, tambours en chaîne sur la grosse caisse, puis le
-    grand plongeon en pente raide et des coups à la réception."""
-    L.bounce(b - 0.5, 2.5, +6)                  # 95,5 → 98
+def scene_c(L, b, final=False):
+    """C, le drop (96-128, puis 272-304). Accents : 96 97# 99 | 100 101# 101,5 102 102,5 103 |
+    104 105 105,5# 106# 106,5 107# 107,5# | 108-111,5 : toutes les croches # | 112-114 # 114,5 115 115,5 |
+    116# 116,5 117# 118 119# | 120 121# 121,5 122 122,5# 123# | 124# 124,5 125# 126# 127# 127,5."""
     L.enemy(b + 3)
-    L.ramp(b + 4, 1.5, +5)                      # course sur le mur
-    L.enemy(b + 6.5)
-    L.bounce(b + 7.5, 1.5, +2)
-    L.flyer(b + 8)
-    for k in (10, 11, 12, 13):                  # quatre tambours, un par temps
-        L.bounce(b + k, 1.0, +2.0, lums=False)
-    L.lums(b + 10.25, 15, 0.25)
-    L.enemy(b + 15)
-    L.enemy(b + 16)
-    L.gap(b + 17, 0.5)
-    L.enemy(b + 18.5)
-    L.ramp(b + 19.5, 2.0, -12)                  # le plongeon
-    L.ramp(b + 22, 1.5, -6)
-    L.enemy(b + 24.5)
-    L.enemy(b + 25.5)
-    notes(L, b + 26, [0.5, 1.5])                # 27, 28 → 29
-    L.enemy(b + 30)
-    L.enemy(b + 31)
-
-
-def scene_couplet2(L, b):
-    """128-160 : la gravité s'inverse deux fois ; entre les deux, des cuirassés."""
-    grotte(L, b + 1, b + 11, jumps=(b + 3, b + 6, b + 9), hanging=(b + 4, b + 7.5, b + 10))
-    L.enemy(b + 13)
-    cuirasses(L, b + 15, (1.0, 2.0))            # 14 saut, 15, 16 → 18
-    L.enemy(b + 19)
-    grotte(L, b + 21, b + 30, jumps=(b + 23, b + 26), hanging=(b + 24, b + 27.5, b + 29))
-    L.enemy(b + 31)
-
-
-def scene_pont(L, b):
-    """160-224 : la caisse claire seule. L'arrière-plan (160-176), les lianes au-dessus du vide (176-192), les
-    notes (192-208) et des plateformes qui flottent (208-224)."""
-    h = L.h
-    L.to_plane(b + 1, 1.5, "to_back")           # 161 → 162,5
-    L.back(b + 2, 3.7, 1.0)                     # 162 → 165,7
-    L.back(b + 6.2, 3.5, 1.0)                   # 166,2 → 169,7 (trou de 165,7 à 166,2)
-    L.back(b + 10.2, 4.3, 1.0)                  # 170,2 → 174,5 (trou de 169,7 à 170,2)
-    L.add(b + 5.5, "jump", variant="back")
-    L.add(b + 9.5, "jump", variant="back")
-    L.back_enemy(b + 4)
-    L.back_enemy(b + 7.5)
-    L.back_enemy(b + 11)
-    L.back_enemy(b + 12)
-    L.to_plane(b + 13, 1.5, "to_front")         # 173 → 174,5
-    L.h = h
-    L.enemy(b + 15.5)
-    # 176-192 : lianes
-    lianes(L, b + 16, [1.25, 1.0, 1.0])         # → 23
-    L.flyer(b + 17)
-    L.step(b + 24, -2)
-    L.enemy(b + 25)
-    lianes(L, b + 26, [1.25, 1.0])              # → 31
-    L.flyer(b + 27)
-    # 192-208 : notes
-    L.enemy(b + 32)
-    notes(L, b + 33, [0.5, 1.5, 2.5, 1.5], rise=1.0)   # 34 … 37 → 38
-    L.enemy(b + 39)
-    L.enemy(b + 40)
-    notes(L, b + 41, [0.5, 1.5, 2.5], rise=1.0)        # → 45
-    L.flyer(b + 43.5)
-    L.enemy(b + 46)
-    L.enemy(b + 47)
-    # 208-224 : plateformes au-dessus du vide, chauves-souris entre deux sauts
-    L.void(b + 48.5, 13.0)
-    h0 = L.h
-    for i, r in enumerate([1, 2, 1, 2, 3, 2, 1]):
-        L.add(b + 48 + 2 * i, "platform", length=1.9, height=h0 + r)
-        if i in (1, 3):
-            L.flyer(b + 48 + 2 * i + 1)
-    L.h = h0
-    L.enemy(b + 63)
-
-
-def scene_montee2(L, b):
-    """224-240 : escalier sur les « et », puis on file dans la pente et un tambour lance le couplet 3."""
-    for k in (0.5, 1.5, 2.5, 3.5):
-        L.step(b + k, +1)
-    L.enemy(b + 4.5)
-    L.gap(b + 5.5, 0.5)
-    L.enemy(b + 7)
-    L.ramp(b + 8, 1.5, -6)
-    L.enemy(b + 10.5)
-    L.enemy(b + 11.5)
-    L.bounce(b + 14, 2.0, +2)                   # → 240
-
-
-def scene_couplet3(L, b):
-    """240-272 : tout, vite."""
-    L.enemy(b + 1)
-    cuirasses(L, b + 3, (1.0, 1.0, 1.5))        # 2 saut, 3, 4, 5 → 6,5
-    L.enemy(b + 7.5)
-    lianes(L, b + 8, [1.25, 1.0])               # → 13
-    L.flyer(b + 9)
-    L.enemy(b + 14)
-    grotte(L, b + 16, b + 24, jumps=(b + 18, b + 21), hanging=(b + 19, b + 22.5))
-    L.enemy(b + 25.5)
-    notes(L, b + 26.5, [0.5, 1.5], rise=1.0)    # → 29,5
-    L.enemy(b + 30.5)
-
-
-def scene_refrain2(L, b):
-    """272-304 : le refrain le plus fort : le drop rejoué plus haut et plus serré."""
-    L.bounce(b - 0.5, 2.5, +6)
-    L.enemy(b + 3)
-    L.ramp(b + 4, 1.5, +6)
-    L.enemy(b + 6.5)
-    L.bounce(b + 7.5, 1.5, +2)
-    L.flyer(b + 8)
-    for k in (10, 11, 12, 13):
-        L.bounce(b + k, 1.0, +2.5, lums=False)
-    L.lums(b + 10.25, 15, 0.25)
-    L.enemy(b + 15)
+    if not final:
+        hits(L, b + 5, b + 5.5)
+        L.gap(b + 6.5, 0.5)
+    else:                                       # le drop final : 276,5 277# 278 279
+        hits(L, b + 4.5, b + 5)
+        L.gap(b + 6, 0.5)
+    cuirasses(L, b + 9, (1.0, 1.0))             # 8 saut, 9 et 10 appuis, → 11
+    # 108-112 : la rafale, une frappe par croche (la musique double)
+    hits(L, b + 12, b + 12.5, b + 13, b + 13.5, b + 14, b + 14.5, b + 15, b + 15.5)
     L.gap(b + 16, 0.5)
-    L.enemy(b + 17.5)
-    L.enemy(b + 18.5)
-    L.ramp(b + 19.5, 2.0, -14)
-    L.ramp(b + 22, 1.5, -6)
-    L.enemy(b + 24.5)
-    cuirasses(L, b + 27, (1.0, 1.0))            # 26 saut, 27, 28 → 29
-    L.enemy(b + 30)
-    L.enemy(b + 31)
+    hits(L, b + 17, b + 17.5, b + 18)
+    L.wall(b + 19)
+    hits(L, b + 20, b + 20.5, b + 21)
+    L.step(b + 22, +1)
+    L.enemy(b + 23)
+    L.ramp(b + 24, 1.5, -6 if not final else -8)   # la dévalée sur 124-125
+    if not final:
+        hits(L, b + 26, b + 27, b + 27.5)
+    else:
+        hits(L, b + 26, b + 26.5, b + 27)
+
+
+def scene_d(L, b):
+    """D (128-160). Accents : 128# 129 130 131 | 133 135 | 136 137 138 138,5 139# 139,5 | 140# 140,5 141# 142# 143 |
+    145 147 | 149 150 151 | 152 152,5 153 155# | 156 157 158 158,5 159,5."""
+    grotte(L, b + 0, b + 8, jumps=(b + 2,), hanging=(b + 3, b + 5, b + 7))
+    hits(L, b + 9, b + 10, b + 10.5)
+    L.wall(b + 11)
+    hits(L, b + 12, b + 12.5, b + 13)
+    L.gap(b + 14, 0.5)
+    L.enemy(b + 15)
+    lianes(L, b + 17, [1.25, 1.0])              # 17 saut, lâchers 19 et 21, → 22
+    L.flyer(b + 18)
+    hits(L, b + 22, b + 23)
+    L.gap(b + 24, 0.5)
+    hits(L, b + 25)
+    L.step(b + 27, +1)
+    hits(L, b + 28, b + 29, b + 30, b + 30.5, b + 31.5)
+
+
+def scene_e(L, b):
+    """E, la tempête (160-176) : croches et doubles croches. Accents : 160 161# 162 163 163,5 |
+    164# 164,5# 165# 165,75 166# 167,5# 167,75 | 168# 168,5# 169# 170# 171 | 172# 172,5# 173# 173,5 174# 175 175,75."""
+    notes(L, b + 0, [0.5, 1.5, 2.5])            # 160 saut, notes 161 162 163, → 164
+    hits(L, b + 4.5, b + 5)
+    L.gap(b + 6, 0.5)
+    hits(L, b + 7.5, b + 8, b + 8.5, b + 9)
+    L.wall(b + 10)
+    hits(L, b + 11, b + 12, b + 12.5, b + 13)
+    L.step(b + 14, +1)
+    L.enemy(b + 15)
 
 
 def scene_fin(L, b):
-    """304-336 : la tempête retombe ; quelques coups, puis on savoure son score (écran net)."""
-    L.enemy(b + 1)
-    L.enemy(b + 2)
+    """D' (304-336), la tempête retombe. Accents : 304# 305 306 307 | 309 311 | 312 314 314,5 315# |
+    316# 316,5 317# 318# 319 | 320 321 | 325 327 | 328 328,5 329 331 | 332 333 334 334,5 335,5."""
+    hits(L, b + 0, b + 1, b + 2)
     L.gap(b + 3, 0.5)
     L.enemy(b + 5)
-    L.wall(b + 6)
-    L.enemy(b + 9)
-    L.step(b + 11, -2)
-    L.enemy(b + 13)
-    L.enemy(b + 17)
-    L.enemy(b + 21)
-    L.enemy(b + 25)
+    L.wall(b + 7)
+    hits(L, b + 8, b + 10, b + 10.5)
+    L.gap(b + 11, 0.5)
+    hits(L, b + 12, b + 12.5, b + 13, b + 14)
+    L.step(b + 15, -2)
+    hits(L, b + 16, b + 17, b + 21, b + 23, b + 24, b + 25, b + 27, b + 28)
 
 
 def effects(L):
-    """L'écran suit la musique : il se dédouble sur les drops, se retourne à chaque phrase du refrain, grésille sur
-    les montées. Toujours sur un début de phrase de 8 temps ; la fin reste nette."""
-    L.glitch(56, 0.3, 8)                        # montée : l'image grésille
-    L.screen_split(64, 4)                       # couplet : 2×2
+    """L'écran suit la musique. Sur les phrases : dédoublé, miroir, tête en bas, demi-tour, grésillement (la fin
+    reste nette). Sur les frappes : tremblements (rafales de croches) et coups de zoom (grosse caisse des drops).
+    Pas de flash en rafale (au plus un tous les 2 temps : épilepsie photosensible)."""
+    def shake(beats, k=0.6, length=0.3):
+        for x in beats:
+            L.add(x, "camera_shake", intensity=k, length=length)
+
+    def punch(beats, k=0.8):
+        for x in beats:
+            L.add(x, "camera_zoom", intensity=k, length=0.25)
+
+    def eighths(a, z):
+        return [a + i * 0.5 for i in range(int((z - a) * 2))]
+
+    for base in (96, 272):                      # les deux drops
+        punch([base + 1, base + 5, base + 9.5, base + 10, base + 11, base + 20, base + 21, base + 25, base + 26,
+               base + 27])
+        shake(eighths(base + 12, base + 18), 0.7, 0.25)      # la rafale tremble à chaque croche
+    shake([164, 164.5, 165, 166, 167.5, 168, 168.5, 169, 170, 172, 172.5, 173, 174], 0.6, 0.25)   # la tempête
+    shake([52, 52.5, 54, 54.5, 228, 228.5, 230, 230.5], 0.5, 0.25)                                # avant les blancs
+    for x in (57, 59, 61, 63, 233, 235, 237, 239):                                                # les blancs : éclairs
+        L.add(x, "fx_flash", intensity=0.5)
+    # phrases
+    L.glitch(48, 0.3, 8)
+    L.screen_split(64, 4)
     L.screen_split(80, 1)
-    L.screen_flip(80, "mirror")                 # on court vers la gauche
+    L.screen_flip(80, "mirror")
     L.screen_flip(88, "none")
-    L.screen_split(96, 4)                       # le drop : 2×2…
+    L.screen_split(96, 4)
     L.screen_split(104, 1)
-    L.screen_flip(104, "up")                    # … tête en bas pour les tambours
-    L.screen_flip(112, "both")                  # demi-tour pour le plongeon
+    L.screen_flip(104, "up")
+    L.screen_flip(112, "both")
     L.screen_flip(120, "none")
     L.glitch(120, 0.4, 8)
-    L.screen_flip(136, "mirror")                # la gravité inversée en miroir
+    L.screen_flip(136, "mirror")
     L.screen_flip(144, "none")
-    L.screen_flip(152, "up")                    # gravité inversée tête en bas : on a l'air de courir au sol
-    L.screen_flip(160, "none")
-    L.glitch(176, 0.3, 8)                       # pont : grésillement sur les lianes
-    L.screen_flip(192, "mirror")                # notes en miroir
-    L.screen_flip(200, "up")
-    L.screen_flip(208, "none")
-    L.screen_split(208, 4)                      # plateformes en 2×2
-    L.screen_split(216, 1)
-    L.glitch(224, 0.5, 16)                      # montée 2 : le grésillement monte
-    L.screen_split(240, 4)                      # couplet 3
+    L.screen_flip(152, "up")
+    L.glitch(160, 0.5, 16)                      # la tempête grésille…
+    L.screen_flip(168, "both")                  # … et fait demi-tour
+    L.screen_flip(176, "none")
+    L.screen_split(184, 4)
+    L.screen_split(192, 1)
+    L.screen_flip(200, "up")                    # la grotte de la reprise, tête en bas
+    L.screen_flip(208, "mirror")                # l'arrière-plan en miroir
+    L.screen_flip(216, "none")
+    L.glitch(224, 0.5, 8)
+    L.screen_split(240, 4)
     L.screen_split(248, 1)
     L.screen_flip(248, "both")
     L.screen_flip(256, "mirror")
     L.screen_flip(264, "none")
-    L.screen_split(272, 4)                      # refrain final : tout à la fois
+    L.screen_split(272, 4)
     L.screen_split(280, 1)
     L.screen_flip(280, "up")
     L.glitch(280, 0.4, 8)
@@ -273,15 +238,14 @@ def effects(L):
 
 def build():
     L = Level()
-    scene_intro(L)
-    scene_montee(L)
-    scene_couplet(L, 64)
-    scene_refrain(L, 96)
-    scene_couplet2(L, 128)
-    scene_pont(L, 160)
-    scene_montee2(L, 224)
-    scene_couplet3(L, 240)
-    scene_refrain2(L, 272)
+    scene_a(L, 0)
+    scene_b(L, 64)
+    scene_c(L, 96)
+    scene_d(L, 128)
+    scene_e(L, 160)
+    scene_a(L, 176, second=True)
+    scene_b(L, 240, third=True)
+    scene_c(L, 272, final=True)
     scene_fin(L, 304)
     effects(L)
     for name, beat in SECTIONS:
@@ -294,12 +258,12 @@ def build():
 FICHE = Fiche(
     id="n8_orage",
     title="Le Grand Orage",
-    bpm=180.0, offset=0.055, beats=336,
+    bpm=180.0, offset=0.035, beats=336,
     sections=SECTIONS,
     analysis="n8_orage_analysis.json",
     build=build,
     zoom=480, zoom_wide=640,
     scale=(4, 7, 9, 11, 2),                     # mi mineur pentatonique (tonique estimée : mi)
-    mechanics=ALL,                              # tout
+    mechanics=ALL,
     margin_ms=100.0,                            # le plus serré des niveaux (120 ailleurs)
 )
