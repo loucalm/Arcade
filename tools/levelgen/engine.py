@@ -1,35 +1,26 @@
-#!/usr/bin/env python3
-"""Génère la chart du niveau 01 « vertical » : un parcours façon niveau musical, écrit à la main scène par scène.
+"""Moteur commun des niveaux (ADR-035) : simulateur de l'autoplay, pièces, rail de caméra, vérifications, écriture.
 
-Le morceau (« Main Theme », 150 BPM, 256 beats) est découpé en scènes calées sur sa structure. Chaque scène a
-une idée de mise en scène : escalier qu'on grimpe sur les temps, tambour qui projette dans le ciel au drop,
-plongeon dans un puits, plateformes au-dessus du vide, dévalée d'une pente, tour à gravir sur le refrain final.
-Les temps des actions reprennent les attaques fortes de la musique (mesurées par l'ancien générateur, librosa).
+Le simulateur reproduit la physique du jeu (miroir de PlayerController et LevelBuilder : saut 1,5 u en 1 beat,
+tambours, pentes, lianes, gravité inversée, arrière-plan, mort sous KillY) et joue l'autoplay image par image : une
+chart n'est écrite que si l'autoplay finit le niveau sans mourir et si chaque action laisse la marge de la fiche.
 
-Les hauteurs sont relatives (on monte de +1, on plonge de −8…) : le passage 2 rejoue le passage 1 à partir de la
-hauteur où l'on est. Un simulateur reproduit la physique du jeu (PlayerController : saut 1,5 u en 1 beat,
-8 u/s, tambours, pentes, mort sous KillY) et joue l'autoplay image par image : la chart n'est écrite que si
-l'autoplay finit le niveau sans mourir.
-
-Usage : python3 tools/gen-level-vertical.py [sortie.json] [--table]
-Format des événements : docs/chart-format.md.
+Le moteur sert **un niveau à la fois** : `use(fiche)` pose le tempo et les réglages du niveau dans les variables du
+module (BPM, SPB, NB, X()…), puis toutes les fonctions les lisent. `generate(fiche)` le fait lui-même.
+Temps : la physique du jeu est réglée en beats (comme PlayerController) ; les durées faites pour un humain (marge de
+survie, tolérance, délai pour voir venir un ennemi ou se remettre d'une mort) sont en ms et converties au tempo.
 """
-import argparse
 import json
 import math
 import os
-import sys
 
-BPM, OFFSET, NB = 150.0, 0.18, 256
-SPB = 60.0 / BPM
-RUN_SPEED = 8.0
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_OUT = os.path.join(ROOT, "game", "Assets", "_Project", "Charts", "level01_shovel_knight.json")
+from levelgen.fiche import MECHANICS, UNITS_PER_BEAT, mechanics_of
 
-# Physique (identique à PlayerController / LevelBuilder)
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CHARTS = os.path.join(ROOT, "game", "Assets", "_Project", "Charts")
+DATA = os.path.join(ROOT, "tools", "data")
+
+# Physique (identique à PlayerController / LevelBuilder), en beats
 JUMP_HEIGHT, JUMP_BEATS = 1.5, 1.0
-GRAVITY = 8 * JUMP_HEIGHT / (JUMP_BEATS * SPB) ** 2
-JUMP_V = 4 * JUMP_HEIGHT / (JUMP_BEATS * SPB)
 STEP_FACE_START = 0.5
 STEP_START, GAP_START, WALL_START, ENEMY_CENTER = 0.3, 0.2, 0.4, 0.6
 AIR_HIT_BELOW, AIR_HIT_ABOVE = 3.5, 3.5             # zone de frappe en l'air (au sol : de −0,5 à +1,6)
@@ -38,368 +29,65 @@ ORB_HOVER = 3.0                              # chute ralentie (u/s) près d'une 
 ORB_REACH = 3.0                              # note de saut : portée verticale (on la prend même en tombant vite)
 PRESS_EARLY = PRESS_LATE = 0.35              # appui d'une note de saut ou d'un grand rebond : fenêtre autour du temps
 VINE_EARLY = VINE_LATE = 0.35                # lâcher d'une liane : fenêtre autour de son temps (PlayerController)
-JUMP_BUFFER = 0.35                           # appui en l'air juste avant d'atterrir : le saut part à l'atterrissage (140 ms)
+JUMP_BUFFER = 0.35                           # appui en l'air juste avant d'atterrir : le saut part à l'atterrissage
 LEDGE_ASSIST = 0.4                           # pieds à moins de 0,4 u sous le haut d'une marche ou d'un mur : on passe dessus
 STEP_FACE = 0.25
 MAX_RISE = 1.0
 LUM_LANE_Y = (0.45, 1.9, 2.4)
 PICKUP = 0.7
 
-# Changements de monde en cours de niveau (nom de l'asset du biome) ; les autres sections gardent le biome du niveau.
-# Vide : un thème par niveau (ADR-032). Le mécanisme reste pour une future chart propre à un niveau.
-BIOMES = {}
+# Durées faites pour un humain (ms), converties en beats au tempo du niveau par use()
+HUMAN_JITTER_MS = 40.0                       # tout le niveau survit à des appuis tous en avance ou tous en retard de 40 ms
+ENEMY_LEAD_MS = 600.0                        # le rail cherche à montrer chaque ennemi 600 ms avant son coup…
+MIN_LEAD_MS = 400.0                          # … et le générateur refuse un ennemi vu moins de 400 ms avant
+CHECKPOINT_LEAD_MS = 500.0                   # un point de reprise laisse 500 ms avant la prochaine action (+ 0,7 s de pose de mort)
 
-SECTIONS = [
-    ("intro", 0), ("couplet", 32), ("pont", 64), ("roulement", 80), ("refrain", 96), ("final", 128),
-    ("couplet 2", 152), ("pont 2", 184), ("roulement 2", 200), ("refrain 2", 216), ("fin", 248),
-]
+# Réglages du niveau en cours (posés par use)
+FICHE = None
+BPM = OFFSET = SPB = RUN_SPEED = GRAVITY = JUMP_V = None
+NB = 0
+SECTIONS, BIOMES = [], {}
+ZOOM = ZOOM_WIDE = 480
+PENTA = ()
+ANALYSIS = None
+MIN_MARGIN = HUMAN_JITTER = ENEMY_LEAD = MIN_LEAD = CHECKPOINT_LEAD = None
+WIDE_MARGIN = []
+CHECKPOINT_EVERY = 8
+
+
+def ms_to_beats(ms):
+    return ms * BPM / 60000.0
+
+
+def use(fiche):
+    """Pose le niveau en cours : tempo, longueur, sections, vue, gamme, marges (converties en beats)."""
+    global FICHE, BPM, OFFSET, SPB, RUN_SPEED, GRAVITY, JUMP_V, NB, SECTIONS, BIOMES, ZOOM, ZOOM_WIDE, PENTA
+    global ANALYSIS, MIN_MARGIN, HUMAN_JITTER, ENEMY_LEAD, MIN_LEAD, CHECKPOINT_LEAD, WIDE_MARGIN, CHECKPOINT_EVERY
+    FICHE = fiche
+    BPM, OFFSET, NB = float(fiche.bpm), fiche.offset, fiche.beats
+    SPB = 60.0 / BPM
+    RUN_SPEED = fiche.run_speed if fiche.run_speed is not None else round(UNITS_PER_BEAT * BPM / 60.0, 4)
+    GRAVITY = 8 * JUMP_HEIGHT / (JUMP_BEATS * SPB) ** 2
+    JUMP_V = 4 * JUMP_HEIGHT / (JUMP_BEATS * SPB)
+    SECTIONS, BIOMES = list(fiche.sections), dict(fiche.biomes)
+    ZOOM, ZOOM_WIDE = fiche.zoom, fiche.zoom_wide
+    PENTA = tuple(fiche.scale)
+    ANALYSIS = os.path.join(DATA, fiche.analysis)
+    MIN_MARGIN = ms_to_beats(fiche.margin_ms)
+    HUMAN_JITTER = ms_to_beats(HUMAN_JITTER_MS)
+    ENEMY_LEAD = ms_to_beats(ENEMY_LEAD_MS)
+    MIN_LEAD = ms_to_beats(MIN_LEAD_MS)
+    CHECKPOINT_LEAD = ms_to_beats(CHECKPOINT_LEAD_MS)
+    WIDE_MARGIN = list(fiche.margin_ranges) if fiche.margin_ranges is not None else [(0, NB)]
+    CHECKPOINT_EVERY = fiche.checkpoint_every
+
+
+def chart_path(fiche):
+    return os.path.join(CHARTS, fiche.id + ".json")
 
 
 def X(beat):
     return beat * SPB * RUN_SPEED
-
-
-class Level:
-    """Construit les événements ; suit la hauteur du sol (relative) au fil de l'écriture."""
-
-    def __init__(self):
-        self.ev = []
-        self.h = 0.0
-
-    def add(self, beat, t, lane=0, **params):
-        e = {"beat": round(beat, 3), "type": t, "lane": lane}
-        if params:
-            e["params"] = {k: (round(v, 3) if isinstance(v, float) else v) for k, v in params.items()}
-        self.ev.append(e)
-        return e
-
-    # --- sol ---
-    def step(self, beat, dh):
-        """Marche : montée (à sauter sur `beat`, ≤ +1) ou descente (on tombe)."""
-        self.h += dh
-        self.add(beat, "step", height=self.h)
-
-    def cliff(self, beat, dh):
-        """Falaise atteinte en vol (tambour) : pas de saut attendu."""
-        self.h += dh
-        self.add(beat, "step", lane=1, height=self.h)
-
-    def ramp(self, beat, length, dh):
-        """Rampe automatique (raide = course sur le mur)."""
-        self.h += dh
-        self.add(beat, "ramp", length=length, height=self.h)
-
-    def bounce(self, beat, air, dh, lums=True):
-        """Tambour au beat : envol de `air` beats, on retombe `dh` plus haut (ou plus bas)."""
-        h0 = self.h
-        self.add(beat, "bounce", length=air)
-        if dh > 0:
-            self.cliff(beat + air - 1.0, dh)
-        elif dh < 0:
-            self.cliff(beat + 1.0, dh)
-        if lums:
-            self.lums(beat + 0.25, int(air * 4) - 1, 0.25)   # l'arc de l'envolée
-
-    # --- obstacles ---
-    def gap(self, beat, length=0.6):
-        self.add(beat, "gap", length=length)
-
-    def void(self, beat, length):
-        self.add(beat, "gap", lane=1, length=length)
-
-    def platform(self, beat, length, dh_from_ground):
-        self.add(beat, "platform", length=length, height=self.h + dh_from_ground)
-
-    def wall(self, beat):
-        self.add(beat, "wall")
-
-    def enemy(self, beat):
-        self.add(beat, "enemy")
-
-
-    def lums(self, beat, count, step=0.5, lane=0):
-        """Ligne de pièces posées sur la trajectoire de l'autoplay (calculée par le simulateur, voir place_lums)."""
-        for i in range(count):
-            self.add(beat + i * step, "lum_trail", lane=i)
-
-    def flyer(self, beat):
-        """Ennemi en vol à frapper sur `beat` : sa hauteur est posée sur la trajectoire simulée (resolve)."""
-        self.add(beat, "enemy_air", lane=1)
-
-    # --- mécaniques du « niveau qui change » (lianes, gravité, arrière-plan, effets d'écran)
-    def vine(self, beat, length, grab, release, sag=1.6, air=1.0):
-        """Liane prise au beat (pieds à self.h + grab), balancier de `length` beats, lâchée à self.h + release, puis
-        `air` beats de vol vers la liane suivante (si elle commence là) ou vers le sol. Le lâcher est jugé."""
-        self.add(beat, "vine", length=length, height=self.h + grab, releaseHeight=self.h + release, sag=sag, step=air)
-        self.lums(beat + 0.25, int(length * 4) - 1, 0.25)
-
-    def ceiling(self, beat, length, above):
-        """Plafond (dessous à self.h + above) de beat à beat + length : on y court en gravité inversée."""
-        self.add(beat, "ceiling", length=length, height=self.h + above)
-
-    def gravity(self, beat, up):
-        """Portail : on tombe vers le plafond (up) ou on revient au sol."""
-        self.add(beat, "gravity", lane=1 if up else 0)
-
-    def hanging(self, beat, above):
-        """Ennemi pendu au plafond (dessous à self.h + above), à frapper en courant au plafond."""
-        self.add(beat, "enemy", lane=2, height=self.h + above)
-
-    def back(self, beat, length, dh):
-        """Chemin de l'arrière-plan à self.h + dh, de beat à beat + length."""
-        self.add(beat, "back", length=length, height=self.h + dh)
-
-    def back_enemy(self, beat):
-        self.add(beat, "enemy", variant="back")
-
-    def to_plane(self, beat, air, where):
-        """Tambour qui change de plan : « to_back » (posé devant) ou « to_front » (posé au fond)."""
-        self.add(beat, "bounce", length=air, variant=where)
-        self.lums(beat + 0.25, int(air * 4) - 1, 0.25)
-
-    def stomp(self, beat, air=2.0):
-        """Ennemi cuirassé : on lui saute dessus (on le touche juste avant `beat`), on appuie sur `beat` pour le grand
-        rebond de `air` beats (vers le cuirassé suivant, une note, ou le sol)."""
-        self.add(beat, "enemy", variant="stomp", length=air)
-
-    def orb(self, beat, dy, air=1.0):
-        """Note de saut au beat, centre à self.h + dy : en l'air près d'elle, on appuie sur `beat` pour relancer le saut
-        pendant `air` beats (vers la note suivante, un cuirassé ou le sol)."""
-        self.add(beat, "orb", height=self.h + dy, step=air)
-
-    def screen_split(self, beat, copies):
-        self.add(beat, "screen_split", copies=copies)
-
-    def screen_flip(self, beat, mode):
-        """L'image se retourne : « mirror » (on court vers la gauche), « up » (tête en bas), « both », « none »."""
-        self.add(beat, "screen_flip", variant=mode)
-
-    def glitch(self, beat, intensity, length):
-        self.add(beat, "glitch", intensity=intensity, length=length)
-
-
-# ---------------------------------------------------------------- les scènes
-# Principes : docs/level-design-musical.md. Les temps viennent de la carte du morceau (tools/data/level01_analysis.json,
-# voir `python3 tools/gen-level-vertical.py --map`) : grosse caisse → sauts, caisse claire → coups de poing.
-# Les pièces (arcs au-dessus des sauts, lignes de mélodie) et la hauteur des ennemis volants sont posées ensuite,
-# automatiquement, sur la trajectoire simulée (resolve).
-
-def scene_intro(L):
-    """0-32 : un geste nouveau toutes les deux mesures, avec de l'air autour (la musique est encore calme).
-    Sauter (4), une souche (6), frapper (8, 10), monter (12, 14), frapper (16,5), sauter sur un cuirassé et appuyer au rebond (19 → 20),
-    traverser un gouffre de note de saut en note de saut (23 → 24, 25, 26), puis la montée de grosse caisse et le
-    premier tambour : envol sur le drop du couplet."""
-    L.gap(4, 0.5)
-    L.wall(6)                   # une souche
-    L.enemy(8)                  # k
-    L.enemy(10)
-    L.step(12, +1)
-    L.step(14, +1)              # K
-    L.enemy(16.5)               # (avant : une glissade, retirée du jeu)
-    L.add(19, "jump")           # on saute sur le cuirassé…
-    L.stomp(20, 2.0)            # S : … et on appuie au rebond : grand rebond
-    L.cliff(21.25, 1.0)         # on se pose un étage plus haut (22)
-    L.gap(23, 3.6)              # le gouffre : on saute…
-    h = L.h
-    L.orb(24, 0.5)              # … et on relance de note en note
-    L.orb(25, 1.8)
-    L.orb(26, 2.5)
-    L.cliff(26.25, 2.0)         # l'autre bord, plus haut (27)
-    L.gap(28.5, 0.5)            # K : la montée commence
-    L.bounce(30, 2.0, +5)       # X X : envol, on atterrit sur le premier temps du couplet
-
-
-def scene_couplet(L, base, variant=False):
-    """32-64 : on grimpe en suivant la caisse claire. Coups par deux, une marche, deux cuirassés enchaînés (on rebondit
-    de l'un à l'autre en appuyant sur 41 et 43), la course sur le mur (note tenue), une glissade, deux notes de saut
-    au-dessus du vide (54,5 ; 55,5), puis la dévalée."""
-    b = base
-    L.enemy(b + 1)              # 33 S
-    L.enemy(b + 2)              # 34 S
-    L.enemy(b + 4)              # 36 S
-    L.enemy(b + 5)              # 37 S
-    L.step(b + 6, +1)           # 38 k : une marche
-    L.add(b + 8, "jump")        # 40 : on saute sur le premier cuirassé
-    L.stomp(b + 9, 1.5)         # 41 S : rebond vers le second (bas : le second reste à l'image)
-    L.stomp(b + 10.5, 2.0)      # 42,5 k : rebond vers la falaise
-    L.cliff(b + 11.75, 1.0)     # on se pose plus haut (44,5)
-    L.enemy(b + 15)             # 47 S
-    # course sur le mur : de 48 à 49,5, +5 (+6 au passage 2), sur la note tenue
-    L.ramp(b + 16, 1.5, +6 if variant else +5)
-    L.enemy(b + 18.5)           # 50,5 : au sommet du mur, un coup
-    L.gap(b + 21.5, 2.6)        # 53,5 : dans le vide…
-    L.orb(b + 22.5, 0.5)        # 54,5 S : … de note en note
-    L.orb(b + 23.5, 1.5)        # 55,5 S
-    L.cliff(b + 23.75, 1.0)     # l'autre bord (56,5)
-    L.enemy(b + 25)             # 57 S
-    # la dévalée : on file dans la pente sur un temps et demi
-    L.ramp(b + 25.5, 1.5, -8)
-    L.enemy(b + 28)             # 60 S
-    L.enemy(b + 29)             # 61 S
-    L.gap(b + 31, 0.5)          # 63
-
-
-def scene_pont(L, base, variant=False):
-    """64-80 : on flotte. Le sol disparaît ; plateformes à la hauteur de la mélodie, une par caisse claire paire,
-    et des ennemis en vol à frapper entre deux sauts."""
-    b = base
-    L.void(b + 0.5, 13.0)
-    rises = [1, 2, 1, 2, 3, 2, 1] if not variant else [1, 2, 3, 2, 3, 4, 3]
-    h0 = L.h
-    for i, r in enumerate(rises):
-        L.add(b + 2 * i, "platform", length=1.9, height=h0 + r)
-        if i in (2, 4, 5):
-            L.flyer(b + 2 * i + 1)
-    L.h = h0
-    if rises[-1] > 1:
-        L.cliff(b + 13.5, rises[-1] - 1)   # on reprend pied un cran plus haut
-
-
-def scene_pont_lianes(L, base):
-    """64-80 : au-dessus de l'eau, de liane en liane. On saute dans le vide (64,5), on attrape la première liane,
-    chaque lâcher tombe sur un temps (67, 70, 73, 76) et on frappe une chauve-souris à chaque balancier (caisse claire
-    66, 69, 72). On remonte d'une liane à l'autre et on se pose sur une falaise (77,5)."""
-    b = base
-    L.gap(b + 0.5, 12.6)        # 64,5 : le saut dans le vide (on attrape la liane en l'air)
-    h0 = L.h
-    L.vine(b + 1.25, 1.75, 1.1, 1.6)                   # 65,25 → 67
-    L.flyer(b + 2)              # 66 S
-    L.vine(b + 4, 2.0, 2.1, 2.6)                       # 68 → 70
-    L.flyer(b + 5)              # 69 S
-    L.vine(b + 7, 2.0, 3.1, 3.6)                       # 71 → 73
-    L.flyer(b + 8)              # 72 s
-    L.vine(b + 10, 2.0, 4.1, 4.6, air=1.5)             # 74 → 76, vol jusqu'à 77,5
-    L.h = h0
-    L.cliff(b + 12.75, 4.0)     # la falaise où l'on se pose (atteinte en vol)
-
-
-def scene_roulement(L, base, variant=False, launch=True):
-    """80-96 : la grosse caisse tape à contretemps : on gravit un escalier, une marche par coup, puis on saute
-    de toit en toit. Le tambour géant ouvre le refrain."""
-    b = base
-    for k in (1.5, 2.5, 3.5, 4.5, 5.5, 6.5):          # 81,5 … 86,5 : X X S X K K
-        L.step(b + k, +1)
-    for k, kind in ((8.5, "gap"), (9.5, "step"), (10.5, "gap"), (11.5, "step"), (12.5, "gap"), (13.5, "step")):
-        if kind == "gap":
-            L.gap(b + k, 0.5)
-        else:
-            L.step(b + k, +1)
-    if launch:
-        L.bounce(b + 15.5, 2.5, +6)                     # 95,5 → 98 : dans le ciel
-
-
-def scene_refrain_ciel(L, base):
-    """Prototype (92-128) : le refrain comme des montagnes russes, 3 écrans de haut. Chaque geste tombe sur la
-    batterie (carte : --map) et chaque action laisse au moins 120 ms de marge (--marges).
-      95,5  tambour géant sur le drop : on décolle de 14 u, coup de poing en plein vol sur la caisse claire (97)
-      100   course sur le mur (automatique) sur la note tenue, puis un tambour qui relance (102)
-      104,5 le roulement de grosse caisse : quatre tambours en chaîne, un par coup, on grimpe à chaque rebond
-      108,5 le sommet : deux ennemis, un trou, sur la caisse claire
-      112   le grand plongeon : deux dévalées en pente raide (−26 u), le sol reste toujours à l'image
-      120   on rebondit (chauve-souris au sommet), on finit au sol en frappant sur les derniers temps."""
-    b = base
-    L.bounce(b - 0.5, 2.5, +10)  # 95,5 → 98 : le drop
-    # pas de chauve-souris sur le tambour géant : au sommet, on est trop haut pour l'avoir vue venir
-    L.enemy(b + 3)              # 99 S
-    L.ramp(b + 4, 1.5, +6)      # 100 → 101,5 : course sur le mur
-    L.bounce(b + 6, 1.5, +3)    # 102 k : relance (courte : la chauve-souris reste à l'image)
-    L.flyer(b + 6.5)            # 102,5 S : juste avant le sommet, à hauteur du héros
-    for k in (8.5, 9.5, 10.5, 11.5):                   # 104,5 … 107,5 : K K K K, on grimpe à chaque rebond
-        L.bounce(b + k, 1.0, +2.5, lums=False)
-    L.lums(b + 8.75, 15, 0.25)
-    L.enemy(b + 13)             # 109 S : au sommet
-    L.gap(b + 14, 0.5)          # 110 k
-    L.enemy(b + 15)             # 111 S
-    L.ramp(b + 16, 2.5, -14)    # 112 : le plongeon, en pente raide (le sol reste à l'image, pas de chute dans le vide)
-    L.ramp(b + 18.5, 2.0, -12)  # 114,5 : on replonge aussitôt
-    L.enemy(b + 21.5)           # 117,5 s : en bas, une fois la caméra posée
-    L.gap(b + 22.5, 0.5)        # 118,5
-    L.bounce(b + 24.5, 1.5, +2) # 120,5 K : on rebondit
-    L.flyer(b + 25)             # 121 S : au sommet du rebond
-    L.enemy(b + 27)             # 123 S
-    L.enemy(b + 28)             # 124 S
-    L.enemy(b + 30)             # 126 S
-    L.enemy(b + 31)             # 127 S
-
-
-def scene_final_echos(L):
-    """128-152 (les Échos) : le monde se retourne. Portail (128,5) : on tombe vers le plafond et on court la tête en
-    bas, on saute ses trous (130,5 ; 132,5) et on frappe les ennemis pendus (133 ; 135). Portail retour (136), un coup
-    au sol (137), puis un tambour nous envoie dans l'arrière-plan (138) : on court derrière les piliers du premier
-    plan (trou 142,5 ; coups 141, 144, 146), et un tambour nous ramène devant (148)."""
-    h = L.h
-    up = 4.5
-    # plafond de 127 à 136,5, troué aux sauts (comme un trou : de beat + 0,2 à beat + 0,7)
-    L.ceiling(127, 3.7, up)                            # 127 → 130,7
-    L.ceiling(131.2, 1.5, up)                          # 131,2 → 132,7
-    L.ceiling(133.2, 3.3, up)                          # 133,2 → 136,5
-    L.gravity(128.5, True)
-    L.add(130.5, "jump")                               # sauts au plafond (par-dessus les trous)
-    L.add(132.5, "jump")
-    L.hanging(133, up)          # 133 S
-    L.hanging(135, up)          # 135 S
-    L.gravity(136, False)       # retour au sol (temps creux)
-    L.enemy(137.5)              # 137,5 : à la réception
-    # l'arrière-plan : chemin du fond 1 u plus haut, deux piliers du premier plan passent devant le héros
-    L.to_plane(138.5, 1.5, "to_back")                  # 138,5 → 140
-    L.back(139.5, 3.2, 1.0)                            # 139,5 → 142,7
-    L.back(143.2, 5.8, 1.0)                            # 143,2 → 149 (trou de 142,7 à 143,2)
-    L.add(142.5, "jump", variant="back")               # 142,5 K
-    L.back_enemy(141)           # 141 S
-    L.back_enemy(144)           # 144 S
-    L.back_enemy(146)           # 146 S
-    # deux piliers du premier plan, plus hauts que le héros : il passe derrière (jamais devant un ennemi)
-    L.cliff(142.75, 2.5)        # de 143,25 …
-    L.cliff(143.4, -2.5)        # … à 143,9
-    L.cliff(144.5, 2.5)         # de 145 …
-    L.cliff(145.3, -2.5)        # … à 145,8
-    L.to_plane(148.5, 1.5, "to_front")                 # 148,5 → 150 : retour devant
-    L.h = h
-    L.enemy(151)                # 151 S
-
-
-def scene_fin(L):
-    L.enemy(249)
-    L.wall(250.5)
-    L.enemy(252)
-    L.enemy(254)                # le dernier coup
-
-
-def build():
-    L = Level()
-    scene_intro(L)
-    scene_couplet(L, 32)
-    scene_pont_lianes(L, 64)                           # avant : scene_pont (plateformes)
-    scene_roulement(L, 80, launch=False)
-    scene_refrain_ciel(L, 96)                          # prototype du refrain (avant : scene_refrain + scene_retombee)
-    scene_final_echos(L)                               # avant : scene_final (la tour)
-    # passage 2 : la musique de [32, 128) revient en [152, 248) : mêmes idées, variées et plus hautes
-    scene_couplet(L, 152, variant=True)
-    scene_pont(L, 184, variant=True)
-    scene_roulement(L, 200, variant=True, launch=False)
-    scene_refrain_ciel(L, 216)                         # le refrain 2 rejoue le refrain 1 (avant : ancien refrain + retombée)
-    scene_fin(L)
-    # l'écran se détraque dès le couplet 2 (≈ 1 min), sur des passages déjà joués, toujours sur un début de phrase
-    # (8 temps) : la grille remplit tout l'écran, l'image se retourne (miroir entier, le pixel art reste net)
-    L.screen_split(152, 4)      # couplet 2 : quatre écrans (2×2)
-    L.screen_split(168, 1)      # un écran…
-    L.screen_flip(168, "mirror")    # … en miroir : on court vers la gauche (course sur le mur, notes de saut)
-    L.screen_flip(176, "none")
-    L.glitch(184, 0.35, 8)      # pont 2 : un grésillement léger…
-    L.screen_flip(192, "up")    # … puis la tête en bas
-    L.screen_flip(200, "none")
-    L.screen_split(216, 4)      # refrain 2, sur le drop : quatre écrans (2×2, ×2 en vue 480 : le héros reste lisible)
-    L.screen_split(232, 1)      # un écran…
-    L.screen_flip(232, "up")    # … tête en bas pour le grand plongeon (on a l'air de monter)
-    L.glitch(232, 0.4, 8)
-    L.screen_flip(240, "mirror")    # la fin du refrain en miroir
-    L.screen_flip(248, "none")
-    # la fin reste nette : c'est là qu'on savoure son score (audit du 25/11)
-    for name, beat in SECTIONS:
-        if beat > 0:
-            L.add(beat, "section_change", intensity=1.2 if "refrain" in name else 0.5)   # drops doux, sauf les refrains
-    L.ev.sort(key=lambda e: (e["beat"], e["type"]))
-    return L.ev
 
 
 # ---------------------------------------------------------------- simulateur (miroir de LevelBuilder + PlayerController)
@@ -854,14 +542,10 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
         t += dt
 
 
-CHECKPOINT_EVERY = 8                         # un point de reprise par phrase de 8 temps (die and retry)
-CHECKPOINT_LEAD = 1.25                       # au moins 1,25 temps (0,5 s) avant la prochaine action (+ 0,7 s de pose de mort)
-
-
 def checkpoints(events, track):
     """Points de reprise après une mort (miroir de RunManager.RespawnAfterDeath) : un par phrase de 8 temps, au plus tard
     sur la phrase, là où le héros court au sol sur le chemin principal (premier plan, gravité normale), au moins
-    CHECKPOINT_LEAD temps avant la prochaine action et sans action juste avant. Ce qui chevauche le point de départ
+    CHECKPOINT_LEAD_MS avant la prochaine action et sans action juste avant. Ce qui chevauche le point de départ
     est retiré à la reprise (RunManager.PrepareStartAt), comme dans le simulateur. Chaque point est rejoué."""
     w = World(events)
     beats = [tr[0] for tr in track]
@@ -891,10 +575,11 @@ def checkpoints(events, track):
     return out
 
 
-def action_windows(events, lo=0.0, hi=NB, limit=0.5, fps=60):
+def action_windows(events, lo=0.0, hi=None, limit=0.5, fps=60):
     """Marge de survie de chaque action (saut ou frappe) entre les beats lo et hi : de combien de beats on peut
     appuyer en avance (early) ou en retard (late) sans mourir, les autres appuis restant justes. Renvoie
     [(beat, genre, early, late)], marges en beats (0,25 beat = 100 ms à 150 BPM), plafonnées à `limit`."""
+    hi = NB if hi is None else hi
     w = World(events)
     acts = sorted({(b, "saut") for b in w.jumps} | {(b, "frappe") for b in w.hits})
     out = []
@@ -916,14 +601,10 @@ def action_windows(events, lo=0.0, hi=NB, limit=0.5, fps=60):
     return out
 
 
-MIN_MARGIN = 0.3                             # 120 ms : un humain peut appuyer un peu tôt ou un peu tard sans mourir
-# passages déjà passés à cette règle
-WIDE_MARGIN = [(0, 256)]                     # tout le niveau
-
-
-def check_margins(events, ranges, margin=MIN_MARGIN, fps=60):
-    """Vérifie que chaque action des passages `ranges` survit seule à un appui `margin` beats en avance et en retard
-    (2 simulations par action ; --marges donne le détail). Renvoie la liste des problèmes."""
+def check_margins(events, ranges, margin=None, fps=60):
+    """Vérifie que chaque action des passages `ranges` survit seule à un appui `margin` beats (par défaut, la marge de
+    la fiche) en avance et en retard (2 simulations par action ; --marges donne le détail). Renvoie les problèmes."""
+    margin = MIN_MARGIN if margin is None else margin
     w = World(events)
     acts = sorted({(b, "saut") for b in w.jumps} | {(b, "frappe") for b in w.hits})
     problems = []
@@ -938,14 +619,9 @@ def check_margins(events, ranges, margin=MIN_MARGIN, fps=60):
     return problems
 
 
-ANALYSIS = os.path.join(ROOT, "tools", "data", "level01_analysis.json")
-ZOOM = 480                                   # vue par défaut de 12 × 6,75 u : héros assez grand pour la borne
-ZOOM_WIDE = 640                              # plan large (16 × 9 u) : les refrains entiers, et un ennemi qu'on verrait trop tard
-VIEW_H = ZOOM * 9 / 16 / 40.0
 WIDE_DROP = 5.5                              # dénivelé (u) sur ±2 temps au-delà duquel on passe en plan large
 FRAME_Y = 0.32                               # sol sous le héros à 32 % du bas
 FRAME_Y_UP, FRAME_Y_DOWN = 0.24, 0.56        # bornes du cadrage selon la pente : montée, descente
-PENTA = (9, 0, 2, 4, 7)                      # la mineur pentatonique (la, do, ré, mi, sol)
 LUM_BASE_MIDI = 81                           # le son de pièce est un la (880 Hz)
 
 
@@ -1041,7 +717,6 @@ def auto_lums(events, world, song):
 
 SAFE_BOTTOM, SAFE_TOP = 0.12, 0.2               # marges de CameraRig.safeMargins (le haut : sous le HUD)
 FLYER_BELOW, FLYER_ABOVE = 0.6, 2.4               # chauve-souris par rapport au centre du héros, à l'appui
-ENEMY_LEAD = 1.5                                # un ennemi est dans l'image au moins 1,5 temps (600 ms) avant son coup
 
 
 def enemy_windows(world):
@@ -1059,7 +734,8 @@ def zoom_plan(track, world, step=0.25, extra=()):
     # peu de changements de zoom (retour de Jeremy le 25/11 : il y en avait trop) : un plan large sur chaque refrain
     # entier (chaînes de tambours, plongeons), et seulement là où un ennemi ne se verrait pas assez tôt en vue serrée
     bounds = [b for _, b in SECTIONS] + [NB]
-    wins = [(b0, b1) for (name, b0), b1 in zip(SECTIONS, bounds[1:]) if name.startswith("refrain")] + list(extra)
+    wins = [(b0, b1) for (name, b0), b1 in zip(SECTIONS, bounds[1:])
+            if FICHE.wide_on_refrains and name.startswith("refrain")] + list(extra)
     wins = sorted((math.floor(a), math.ceil(b)) for a, b in wins)
     merged = []
     for a, b in wins:
@@ -1196,7 +872,7 @@ def resolve(events, song):
         zooms, cams = zoom_plan(track, World(base), extra=extra)
         full = sorted(out + cams, key=lambda e: (e["beat"], e["type"]))
         rail = camera_rail(track, enemies=enemy_windows(World(full)), zooms=zooms)
-        late = [eb for eb, lead in enemy_leads(rail, World(full), zooms=zooms) if lead < 1.0 - 1e-6]
+        late = [eb for eb, lead in enemy_leads(rail, World(full), zooms=zooms) if lead < MIN_LEAD - 1e-6]
         if not late:
             break
         # calé sur les phrases de 8 temps de la musique : le plan large commence et finit avec une phrase
@@ -1239,7 +915,7 @@ def table(events):
 
 
 def write(events, rail, out, checkpoints_=()):
-    head = {"id": "level01_shovel_knight", "title": "Main Theme - Shovel Knight", "bpm": BPM,
+    head = {"id": FICHE.id, "title": FICHE.title, "bpm": BPM,
             "offsetMs": int(OFFSET * 1000), "beatsPerBar": 4, "runSpeed": RUN_SPEED, "zoom": ZOOM, "railStep": 0.25}
     sections = [dict({"name": n, "startBeat": b}, **({"biome": BIOMES[n]} if n in BIOMES else {})) for n, b in SECTIONS]
     s = json.dumps(head, ensure_ascii=False, indent=2)[:-2]
@@ -1266,13 +942,27 @@ def song_map(song):
     return "\n".join(rows)
 
 
-def generate():
-    """Construit, résout et vérifie le niveau. Renvoie (events, rail, stats, problèmes)."""
+def check_mechanics(events):
+    """La fiche du niveau dit ce qu'il a le droit de demander au joueur : une mécanique de plus est refusée."""
+    extra = mechanics_of(events) - set(FICHE.mechanics)
+    return [f"mécanique hors de la fiche du niveau : {m} ({MECHANICS[m]})" for m in sorted(extra)]
+
+
+def density(events):
+    """Actions (sauts et frappes) par mesure, en moyenne sur le niveau (grille de difficulté, ADR-035)."""
+    w = World(events)
+    return round((len(w.jumps) + len(w.hits)) / (NB / 4), 2)
+
+
+def generate(fiche):
+    """Construit, résout et vérifie le niveau de la fiche. Renvoie (events, rail, stats, problèmes)."""
+    use(fiche)
     song = load_analysis()
-    events, rail, err = resolve(build(), song)
+    built = fiche.build()
+    events, rail, err = resolve(built, song)
     if err:
         return events, rail, {}, [f"autoplay : {err}"]
-    problems = lint(events)
+    problems = lint(events) + check_mechanics(built)
     stats = {}
     for fps in (60, 30):
         err, st = simulate(events, fps)
@@ -1281,7 +971,7 @@ def generate():
         elif fps == 60:
             stats = st
     # tolérance humaine : appuis 40 ms en avance ou en retard partout
-    for late in (-0.1, 0.1):
+    for late in (-HUMAN_JITTER, HUMAN_JITTER):
         err, _ = simulate(events, 60, late=late)
         if err:
             problems.append(f"appuis décalés de {late * SPB * 1000:+.0f} ms : {err}")
@@ -1294,6 +984,7 @@ def generate():
     # die and retry : on peut repartir de chaque point de reprise (jusqu'au suivant, et un peu au-delà)
     cps = checkpoints(events, track)
     stats["checkpoints"] = cps
+    stats["density"] = density(events)
     for i, cp in enumerate(cps):
         nxt = cps[i + 1] if i + 1 < len(cps) else NB - 1
         err, _ = simulate(events, 60, start=cp, stop=nxt + 4)
@@ -1311,45 +1002,7 @@ def generate():
                                 f"(de −{FLYER_BELOW} à +{FLYER_ABOVE} u)")
     # lisibilité : chaque ennemi apparaît assez tôt pour qu'on ait le temps de le voir venir
     for eb, lead in enemy_leads(rail, World(events), zooms=zooms_from_events(events)):
-        if lead < 1.0 - 1e-6:
-            problems.append(f"ennemi du beat {eb} visible seulement {lead * SPB * 1000:.0f} ms avant le coup (min 400 ms)")
+        if lead < MIN_LEAD - 1e-6:
+            problems.append(f"ennemi du beat {eb} visible seulement {lead * SPB * 1000:.0f} ms avant le coup "
+                            f"(min {MIN_LEAD_MS:.0f} ms)")
     return events, rail, stats, problems
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("out", nargs="?", default=DEFAULT_OUT)
-    ap.add_argument("--table", action="store_true", help="afficher le niveau mesure par mesure")
-    ap.add_argument("--map", action="store_true", help="afficher la carte des attaques du morceau")
-    ap.add_argument("--marges", nargs=2, type=float, metavar=("DE", "A"),
-                    help="marge de survie de chaque action entre deux beats (en ms)")
-    args = ap.parse_args()
-    if args.map:
-        print(song_map(load_analysis()))
-        return
-    if args.marges:
-        with open(args.out, encoding="utf-8") as f:
-            evs = json.load(f)["events"]
-        for b, kind, early, late in action_windows(evs, *args.marges):
-            ms = lambda v: f"{v * SPB * 1000:4.0f}"
-            flag = "  <-- serré" if min(early, late) < 0.3 - 1e-6 else ""
-            print(f"beat {b:6.2f} {kind:6s} avance {ms(early)} ms, retard {ms(late)} ms{flag}")
-        return
-    events, rail, stats, problems = generate()
-    if args.table:
-        print(table(events))
-    if problems:
-        print("Chart non jouable :", *problems, sep="\n  - ")
-        sys.exit(1)
-    write(events, rail, args.out, stats.get("checkpoints", ()))
-    n = {t: sum(1 for e in events if e["type"] == t) for t in sorted({e["type"] for e in events})}
-    print(f"{len(events)} événements : {n}")
-    print(f"dénivelé : de {stats['min_y']:.1f} à {stats['max_y']:.1f} u")
-    print(f"pièces ramassées par l'autoplay : {stats['lums'] - len(stats['missed'])}/{stats['lums']}")
-    print(f"points de reprise (die and retry) : {len(stats['checkpoints'])} : {stats['checkpoints']}")
-    if stats["missed"]:
-        print("  ratées aux beats :", stats["missed"])
-
-
-if __name__ == "__main__":
-    main()

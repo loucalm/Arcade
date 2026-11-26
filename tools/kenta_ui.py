@@ -174,6 +174,61 @@ def draw_heart(full=True):
     return outlined(p)
 
 
+def _icon(pattern, colors):
+    """Icône du HUD : corps de 7×7 px (la hauteur des capitales de la police) + contour d'1 px = 9×9.
+    Dans le HUD, le contour se pose sur la marge intérieure de la plaque : le corps s'aligne sur les lettres."""
+    w, h = len(pattern[0]), len(pattern)
+    p = Pix(w + 2, h + 2)
+    solid = {(x, y) for y, row in enumerate(pattern) for x, ch in enumerate(row) if ch in colors}
+    for (x, y) in solid:
+        p.px(x + 1, y + 1, colors[pattern[y][x]])
+    for y in range(-1, h + 1):              # contour d'1 px (4-voisinage), comme pixlib.outlined
+        for x in range(-1, w + 1):
+            if (x, y) not in solid and any((x + dx, y + dy) in solid for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                p.px(x + 1, y + 1, INK)
+    return p
+
+
+def draw_hud_heart(full=True):
+    """Cœur des vies du HUD (9×9) : plein (rouge) ou perdu (violet sombre, lisible sur la plaque)."""
+    pat = [".hb.bb.",
+           "hhbbbbl",
+           "hbbbbbl",
+           "bbbbbll",
+           ".bbbll.",
+           "..bll..",
+           "...l..."]
+    if full:
+        colors = {"b": "#E03A58", "h": "#FF9AAA", "l": "#B0203E"}
+    else:
+        colors = {"b": "#3A3048", "h": "#4C4260", "l": "#2A2238"}
+    return _icon(pat, colors)
+
+
+def draw_hud_coin():
+    """Pièce du HUD (9×9) : la pièce du monde (19×19) réduite à la hauteur des lettres, reflet en haut à gauche."""
+    pat = ["..ccc..",
+           ".chccc.",
+           "chccccd",
+           "cccccdd",
+           "cccccdd",
+           ".cccdd.",
+           "..ddd.."]
+    return _icon(pat, {"c": "#FFD23A", "h": "#FFF8C8", "d": "#E8A020"})
+
+
+def draw_hud_best():
+    """Couronne du HUD (9×9) devant le meilleur score des essais (héros « reprise au début »)."""
+    pat = ["c..c..c",
+           "c..h..c",
+           "cc.c.cc",
+           "chccccc",
+           "crcccrc",
+           "ccccccc",
+           "ddddddd"]
+    return _icon(pat, {"c": "#FFD23A", "h": "#FFF8C8", "d": "#E8A020", "r": "#E03A58"})
+
+
 def draw_panel():
     """Cadre 16×16 (9-slice, bordure 4) : fond sombre, coins arrondis de 2 px, contour fin, liseré clair en haut."""
     p = Pix(16, 16)

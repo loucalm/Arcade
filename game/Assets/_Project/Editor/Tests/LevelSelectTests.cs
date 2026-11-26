@@ -27,6 +27,17 @@ namespace Kenta.EditorTests
         }
 
         [Test]
+        public void SongTitleStopsBeforeTheStars()
+        {
+            var font = Font;
+            int max = LevelCard.SongMaxWidth(LevelListLayout.Right - LevelListLayout.SelectedLeft);   // carte sélectionnée
+            string fit = LevelCard.FitText(font, "WE'RE THE RESISTORS", max);
+            Assert.LessOrEqual(PixelText.MeasureWidth(font, fit, 1), max);
+            StringAssert.EndsWith(".", fit);
+            Assert.AreEqual("MAIN THEME", LevelCard.FitText(font, "MAIN THEME", max));             // un titre court reste entier
+        }
+
+        [Test]
         public void NameScale_ShortNameIsBig() => Assert.AreEqual(2, LevelSelectScreen.NameScale(Font, "LA SYLVE", PanelWidth));
 
         [Test]

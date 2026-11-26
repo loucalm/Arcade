@@ -37,7 +37,7 @@ Règles :
 
 ## Jeu — P1 (gameplay « music level »)
 - [x] **Niveau vertical** (ADR-018) : hauteur libre, rampes et course sur le mur (`ramp`), tambours-tremplins (`bounce`), caméra par plans (zoom ×3 à ×6, cadrage), niveau 01 réécrit scène par scène avec simulateur de l'autoplay (2026-11-24)
-- [ ] (Lucas) **Tester le niveau vertical à la main** (clavier puis borne) : lisibilité des tambours, des chutes et des changements de zoom ; régler `gen-level-vertical.py`
+- [ ] (Lucas) **Tester le niveau vertical à la main** (clavier puis borne) : lisibilité des tambours, des chutes et des changements de zoom ; régler `tools/levels/shovel_knight.py`
 - [ ] Chutes de plus de ~6 u : en vue 640 px, le sol d'arrivée n'apparaît qu'en cours de chute (la vue fait 9 u de haut). Option : vue encore plus large pour les plongeons, ou chutes en deux paliers
 - [x] **Niveau musical, 2ᵉ passe** (docs/level-design-musical.md) : carte du morceau (`tools/analyse-song.py`), actions sur les attaques (grosse caisse → sauts, caisse claire → coups), pièces qui jouent la mélodie et dessinent le chemin, ennemis en vol, tambours en chaîne, caméra large sur rail précalculé sans coupes, brume de fond et piliers ombrés, HUD sans texte au milieu (2026-11-24)
 - [x] (2026-11-25) **Prototype du refrain** (beats 96-128, testé depuis 78,5, `scene_refrain_ciel`) : 33 u de dénivelé, tambours en chaîne sur le roulement, grand plongeon en deux dévalées raides (−26 u, sol toujours à l'image) ; marge de survie ≥ 120 ms par action (avant : 48 à 83 ms), mesurée par `gen-level-vertical.py --marges` ; menu éditeur **Kenta > Tester le refrain (prototype)**
@@ -58,7 +58,14 @@ Règles :
 - [x] (2026-11-25, ADR-030) **Glissade retirée** (une touche de plus pour rien) : commandes, physique, animation, barres, consignes (2 gestes), chart et simulateur ; les 4 glissades du niveau sont devenues des coups
 - [x] (2026-11-25, ADR-030) Effets d'écran : **miroir** et **tête en bas** (`screen_flip`), sur des débuts de phrase ; cordes de liane qui pendent droit au repos ; premier plan semi-transparent quand le héros court dans l'arrière-plan
 - [x] (2026-11-25, ADR-033) **Die and retry** : 10 vies, 23 points de reprise dans le niveau 01 (rejoués par le générateur), cœur et vies dans le HUD, bonus par vie restante ; décompte « 3 2 1 GO » retiré (il tombait pendant le niveau) ; halo clair qui pulse derrière les chauves-souris (invisibles sur les lianes) ; jeu en plein cadre hors 1920×1080 (`PixelScreen.FitScale`, interface calculée sur le cadre) ; optimisation (pièces animées seulement à l'écran ; le reste est venu avec l'ADR-031)
-- [ ] Choisir entre 10 et 15 vies après test (réglage `RunManager.startLives`)
+- [ ] Choisir entre 10 et 15 vies pour Kenta après test (réglage `HeroProfile.lives`, ADR-036)
+- [x] (2026-11-26, ADR-036) **La difficulté dépend du héros** : Kenta facile (10 vies, reprise au point), Aiko moyen (3 essais, reprise au début, le meilleur compte), Ryo dur (une seule vie) ; `Core/RetryRules` + tests ; écran du héros (FACILE / MOYEN / DUR, règle du héros) ; consignes « TON HÉROS FIXE LA DIFFICULTÉ »
+- [ ] **P1** Difficulté par héros : tester en jeu (reprise au début avec la musique, le décor, la caméra, la gravité inversée, les lianes ; HUD à chaque nouvel essai ; placement des textes de l'écran du héros)
+- [x] (2026-11-26, retour de Lucas) Gravité inversée : la traînée du bandeau restait au-dessus du héros retourné → elle part de sa tête, et se retourne avec lui au portail (sens gardé dans l'historique, `BandanaTrail.AnchorPoint`, test) ; poussière du saut au plafond qui apparaissait de l'autre côté de l'écran (`y` retourné au lieu de la position monde) et éclat du portail : corrigés (`PlayerController.BodySideY`)
+- [x] (2026-11-26, retour de Lucas) Chauves-souris : peu visibles et halo jaune qui se lisait comme un bouclier → battement d'ailes en 4 images tirées du PDF et liseré clair d'1 px (`tools/gen-bat.py`, test), halo retiré (`BeatGlow` supprimé) ; puis aussi au sol (ennemi des Échos) et au plafond, avec un vol stationnaire de ±4 px (`FX/Hover`, test)
+- [ ] **P2** Une ligne de pièces passe parfois sur une chauve-souris (pièces posées sur la trajectoire de l'autoplay) : les écarter de l'ennemi dans `auto_lums`
+- [ ] **P2** Reprise au point (Kenta) : les plateformes déjà franchies après le point de reprise ne rapportent plus de points (défaut existant)
+- [ ] **P2** Faut-il un bonus de score pour les héros plus durs (×1,5 Aiko, ×2 Ryo) ? Sans lui, le classement favorise Kenta
 - [ ] Dessins de glissade du héros (`slide_*`, `slidein_*`, `slideout_*`) et leur génération (`tools/gen-heroes.py`, `test_heroes.py`) : inutilisés depuis ADR-030, à retirer côté art
 - [ ] Portail de gravité : son dédié et sprite (aujourd'hui deux colonnes de pixels)
 - [ ] Décor qui joue avec la musique (éléments qui réagissent au temps, foule d'ennemis qui danse au fond)
@@ -71,10 +78,38 @@ Règles :
 - [x] (2026-11-25, ADR-032) **Sélection de niveau** : écran dédié après le héros, liste façon osu! avec vignettes, extrait du morceau, top 5 du niveau ; un `SongData` par niveau ; un thème par niveau (plus de changement de monde dans la chart) ; **classement par niveau** (top 10 dans l'Extradata de la borne, le score part aussi dans la liste officielle). Provisoire : les 8 niveaux gardent le même morceau et la même chart
 - [ ] Choisir le score envoyé à la liste officielle de la borne (aujourd'hui le score brut, tous niveaux mélangés : cumul des meilleurs scores par niveau ?)
 - [ ] Écran des niveaux : son au déplacement et à la validation ; tester à la main sur la borne (défilement maintenu, extrait, retour au héros)
-- [ ] **Contenu unique par niveau** : un morceau et une chart propres à chacun des 8 niveaux (aujourd'hui tous sur « Main Theme » et `level01_shovel_knight.json`). Un thème par niveau, sans changement de monde en cours de partie
+- [ ] **Contenu unique par niveau** : un morceau et une chart propres à chacun des 8 niveaux (aujourd'hui tous sur « Main Theme » et `level01_shovel_knight.json`). Un thème par niveau, sans changement de monde en cours de partie. Plan proposé le 2026-11-26 : 6 niveaux à difficulté croissante, voir la section « Niveaux par monde »
 - [ ] **États du thème** au fil d'un niveau : pluie, nuit, lever du jour… Visuels par biome (particules, palette, ciel) + un champ par section dans la chart, appliqué au décor par `RunManager`. À écrire avec la chart propre à chaque niveau (un orage se cale sur un drop du morceau)
 - [ ] **Mode 2 joueurs** hot-seat (P1 puis P2 sur le même morceau, comparaison à la fin)
 - [ ] Stems audio : couches (batterie, mélodie) qui montent selon le combo ou la section
+
+## Niveaux par monde (plan proposé le 2026-11-26, à valider)
+Détail : [superpowers/specs/2026-11-26-niveaux-par-monde-design.md](superpowers/specs/2026-11-26-niveaux-par-monde-design.md). 6 niveaux, un par monde, du plus facile au plus dur ; le niveau 01 actuel devient le brouillon du niveau 6.
+- [x] (2026-11-26, ADR-035, choix de Lucas) 6 niveaux : Sylve, Bayou, Échos, Forge, Givre, Grand Orage (Échine et Cité en réserve), grille de difficulté et musiques du plan ; tour REMIX en bonus P2
+- [ ] **P0** Présenter l'ADR-035 à Lou et Jeremy
+- [ ] **P1** Niveau 2 : choisir entre *Arpanauts* et *HHavok-main* (Skiff, 120 BPM)
+- [x] (2026-11-26) Musiques : short-list téléchargée dans `tools/music-candidates/` (gitignoré : Eric Skiff *Resistor Anthems* CC BY 4.0, Juhani Junkala *Adventure* et *Action* CC0) et mesurée (BPM, dérive, durée) ; échelle proposée 117 → 120 → 140 → 154 → 162 → 174 BPM (tableau dans le plan)
+- [ ] **P0** Musiques retenues (ADR-035) : les installer dans `Audio/Music/` (coupe sur une fin de phrase, Vorbis), licences dans `Audio/LICENSES.md`, crédit CC BY sur la carte du niveau et sur le site. Abstraction (*Three Red Hearts*, CC0) reste à télécharger à la main depuis itch.io
+- [x] (2026-11-26) Générateur découpé : moteur commun `tools/levelgen/` + un fichier par niveau `tools/levels/` avec sa fiche (mécaniques autorisées, marge en ms, vue, gamme des pièces) ; commande `python3 tools/gen-level.py <niveau>` ; le niveau 01 ressort **à l'identique** (`shovel_knight`, test `test_generated_chart_is_the_committed_one`) ; densité affichée (2,27 actions par mesure pour le niveau 01)
+- [x] (2026-11-26) Marges, tolérance (±40 ms), délai pour voir un ennemi (400 / 600 ms) et point de reprise (500 ms) en ms, convertis au tempo ; vitesse de 3,2 u par temps (à 117 BPM et 8 u/s, une frappe 150 ms en avance ratait l'ennemi)
+- [ ] **P1** Fenêtres du jeu encore en beats dans `PlayerController` (tampon de saut, lâcher de liane, appui des notes : 0,35 temps) : 140 ms à 150 BPM, 121 ms à 174 BPM. Le simulateur les vérifie à chaque niveau (marge de la fiche) ; à passer en ms si le niveau 6 coince
+- [ ] **P0** `analyse-song.py` : mesure du BPM et de l'offset, proposition de sections, une carte par morceau
+- [ ] **P1** Unity : catalogue de 6 niveaux, étoiles, crédit du morceau sur la carte du niveau
+- [x] (2026-11-26) Niveau 1 (Sylve) **écrit** : `tools/levels/n1_sylve.py`, *We're the Resistors* monté en 1 min 16 (`tools/cut-song.py`), do mineur pentatonique pour les pièces, sauter et frapper seulement (sauts sur le temps 1, frappes sur 2 et 4), vue fixe 480, marge ≥ 160 ms (180 impossible : un saut en retard plafonne vers 170 ms), 17 points de reprise ; chart `Charts/n1_sylve.json`. Après le premier test (« un poil trop facile ») : 8 actions de plus, **1,44 action par mesure** (avant 1,22), 122/122 pièces
+- [x] (2026-11-26) Niveau 1 dans Unity : `n1_sylve_resistors.ogg` (Vorbis, compressé en mémoire, préchargé) et `n1_sylve.json` importés, `Song_01_sylve` réglé (titre, clip, 117 BPM, offset 0,054, chart, extrait au beat 64) ; **partie complète en autoplay dans l'éditeur : finie à 75,9 s, 0 mort, 131/131 pièces** ; titre trop long sur la carte de l'écran des niveaux → coupé avant les étoiles (« WE'RE THE RESIS. », `LevelCard.FitText`, test EditMode) ; 141/141 tests EditMode
+- [ ] **P0** Crédit CC BY dans le jeu (Eric Skiff, niveaux 1, 2 et 5) : un champ « artiste » au `SongData`, affiché à l'écran des niveaux, et sur le site
+- [ ] **P1** Niveau 1 : écouter le montage (raccord à 1 min 06, mesure 31 → 64), tester à la main, faire tester par 2 ou 3 personnes extérieures, DA de la Sylve irréprochable
+- [x] (2026-11-26) Niveau 2 (Bayou) **écrit** : `tools/levels/n2_bayou.py`, *Arpanauts* (choisi plutôt que *HHavok-main* : temps fort net aux changements d'accord et à la basse), 1 min 44 avec fondu, ré mineur pour les pièces ; cuirassés appris au couplet, lianes au refrain (seul, répété, varié, combiné), puis tout mélangé ; noires sur tous les temps, vue fixe, **1,9 action par mesure**, marge ≥ 150 ms, 273/273 pièces, 25 points de reprise. Dans un enchaînement de cuirassés, le premier rebond dure 1 temps (un rebond de 2 temps monte à 6 u et cache le suivant). Test `test_difficulty_increases_from_one_level_to_the_next`
+- [x] (2026-11-26) Niveau 2 dans Unity : `Song_02_bayou` (ARPANAUTS, 120 BPM, offset 0,048, extrait au beat 64), `Level_02_bayou` 2 étoiles ; **testé à la main et validé par Lucas**
+- [ ] **P1** Niveau 2 : autoplay complet dans l'éditeur (pas encore fait)
+- [x] (2026-11-26) Niveau 3 (Échos) **écrit** : `tools/levels/n3_echos.py`, *Stage 1* (Junkala, CC0, 140 BPM), boucle jouée deux fois et demie en copies entières (1 min 50), fa majeur pour les pièces ; chauves-souris au couplet (sur les lianes, entre deux notes ; pas sur les rebonds de cuirassé : elles y passaient sous le héros ou hors de l'image), notes de saut au refrain, gravité inversée au pont (au plafond de la grotte), puis tout mélangé ; premières croches ; **2,05 actions par mesure**, marge ≥ 120 ms, 355/355 pièces, 24 points de reprise, vue fixe (plan large possible seulement si un ennemi se verrait trop tard : `Fiche.wide_on_refrains`). Branché dans Unity (`Song_03_echos` STAGE 1, `Level_03_echos` 3 étoiles)
+- [ ] **P1** Niveau 3 : autoplay complet dans l'éditeur, puis test à la main (lisibilité du plafond, des chauves-souris)
+- [ ] **P2** La détection du premier temps (peigne sur l'enveloppe d'attaque) est en retard de 12 ms (mesuré sur des clics) : les offsets des niveaux 1 à 3 sont donc 12 ms trop grands. Sans effet sur les jugements (PARFAIT ≤ 45 ms), à corriger d'un coup si on le sent
+- [x] (2026-11-26, choix de Lucas) **Niveau 4 provisoire = le niveau de base** (`shovel_knight`, *Main Theme*, 150 BPM, toutes les mécaniques dont les effets d'écran) : on « commence à mettre de la difficulté » ; `Level_04_forge` 4 étoiles. Musique protégée : pas de diffusion publique tant qu'elle reste
+- [ ] **P1** Niveau 4 : le réécrire sur *Stage 2* (Junkala, 154 BPM, CC0) avec les tambours, rampes et l'arrière-plan, pour retirer Shovel Knight ; les effets d'écran iront au niveau 5
+- [ ] **P1** Niveau 5 (Givre : écrans retournés) ; niveaux 6 à 8 : encore sur la chart de base, identiques au niveau 4
+- [ ] **P1** Niveau 6 (Grand Orage) : le niveau 01 actuel réécrit sur sa musique, avec contretemps et doubles croches
+- [ ] **P1** DA : règle de couleur (héros, ennemis, pièces jamais dans les couleurs du fond) vérifiée par script sur les palettes des mondes
 
 ## Jeu — P2 (juice / direction artistique)
 - [x] Effet CRT « bombé léger » (ADR-034, `FX/CrtScreen`).
@@ -149,7 +184,10 @@ Partie complète en autoplay dans l'éditeur : niveau fini, note S, 142 PARFAIT,
 - [x] (2026-11-25, ADR-033 : agrandissement de l'interface calculé sur le cadre ; vérifié dans un build en 1024×768 et 1600×900) **P2** Hors 1920×1080 (confirmé le 24/11 : en 1920×1080 dans l'éditeur, HUD et panneaux sont entiers) (fenêtre de l'éditeur), l'interface 320×180 est rognée au cadre du monde : le HUD disparaît et le panneau de fin est coupé. Sur 1920×1080 les deux cadres font la même taille (×3 et ×6) : à confirmer dans un build
 
 **Nouveaux points (après les P1)**
-- [ ] **P2** « SILENCE… » et « ENCORE ! » (reprise après une mort, ADR-033) s'affichent encore au milieu de l'écran à la mort (`RunHud.HandleDamaged`), contre la règle « rien au milieu »
+- [x] (2026-11-26) **P2** « SILENCE… » et « ENCORE ! » au milieu de l'écran → sous la frise, en fondu ; la mort se lit sur les vies
+- [x] (2026-11-26) **P1** HUD en jeu brouillon (retour de Lucas : espaces trop grands et incohérents) → 3 plaques alignées sur une grille unique (`HudLayout`), chiffres en colonnes fixes, animations douces (score qui défile, ×N qui rebondit, fondus), vies selon le héros, fondu quand le HUD couvre l'action, PARFAIT sous le héros en gravité inversée ; 19 tests EditMode
+- [ ] **P2** HUD : les « 1 » paraissent espacés dans les chiffres en colonnes fixes (« 000111 ») : un « 1 » plus large dans la police, ou des chiffres à chasse fixe dans `PixelText`
+- [ ] **P2** HUD : vérifier la lisibilité à 2 m sur la borne
 - [ ] **P2** Liquide des trous parfois hors de l'image quand la caméra anticipe une montée (le sol est alors en bas de l'écran)
 - [x] (2026-11-25, ignoré pendant l'autoplay et texte masqué par `EditorArcadeShim`) **P2** En éditeur, l'AFK du toolkit (60 s sans appui) affiche « Retour au menu… » pendant une partie en autoplay : sans effet sur la borne (on y joue), mais l'accueil en cycle (logo, démo, classement) renvoie au menu de la borne après 60 s d'inactivité, comme le veut le toolkit
 

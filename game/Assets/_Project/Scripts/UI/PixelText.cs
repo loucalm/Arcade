@@ -43,6 +43,8 @@ namespace Kenta.UI
 
         public int Scale { get => scale; set { scale = Mathf.Max(1, value); Rebuild(); } }
 
+        public PixelFontData Font => font;
+
         void OnEnable()
         {
             // Les glyphs sont recréés à chaque activation : on retire d'abord ceux qu'un prefab aurait pu garder.

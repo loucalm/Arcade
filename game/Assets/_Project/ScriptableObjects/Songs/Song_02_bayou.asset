@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36ff3b5dc283e46f3862081906125f9a, type: 3}
   m_Name: Song_02_bayou
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.Rhythm.SongData
-  title: MAIN THEME
-  clip: {fileID: 8300000, guid: d617f71fc8f9e4ae88592260461eaa21, type: 3}
+  title: ARPANAUTS
+  clip: {fileID: 8300000, guid: 8e527a76f8409448b8ef10857d780e09, type: 3}
   remixClip: {fileID: 0}
-  bpm: 150
-  offsetSeconds: 0.18
+  bpm: 120
+  offsetSeconds: 0.048
   beatsPerBar: 4
-  chart: {fileID: 4900000, guid: bce24872929b142649b63bf9e80c0d57, type: 3}
-  previewBeat: 96
+  chart: {fileID: 4900000, guid: 6b5f38c918dd042a39a74fff430ef306, type: 3}
+  previewBeat: 64

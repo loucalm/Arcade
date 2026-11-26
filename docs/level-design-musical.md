@@ -2,7 +2,7 @@
 
 Ce document dit **ce qui fait un niveau musical réussi** (le genre des niveaux musicaux des plateformeurs modernes)
 et **comment Kenta l'applique**. On reprend les mécaniques et les principes du genre, jamais les niveaux d'un autre
-jeu. À relire avant d'écrire ou de modifier un niveau (`tools/gen-level-vertical.py`). Format : [chart-format.md](chart-format.md).
+jeu. À relire avant d'écrire ou de modifier un niveau (`tools/levels/<niveau>.py`, commande `python3 tools/gen-level.py <niveau>`). Format : [chart-format.md](chart-format.md).
 
 ## 1. Le principe : le joueur joue la musique
 Un niveau musical n'est pas un niveau « avec de la musique » : c'est **une partition qu'on joue en courant**.
@@ -71,7 +71,7 @@ On ne change pas de hauteur « pour décorer » : chaque changement de hauteur r
 
 ## 5. Prototype : le refrain « dans le ciel » (beats 96-128, test à partir de 78,5)
 Test dans l'éditeur : menu **Kenta > Tester le refrain (prototype)** (la partie démarre au beat 78,5, sans les écrans ;
-après une mort, un appui relance au même endroit). Scène `scene_refrain_ciel` de `tools/gen-level-vertical.py` :
+après une mort, un appui relance au même endroit). Scène `scene_refrain_ciel` de `tools/levels/shovel_knight.py` :
 tambour géant sur le drop (+10 u), coup en plein vol, course sur le mur, tambour de relance, **quatre tambours en
 chaîne sur le roulement de grosse caisse** (on grimpe à chaque coup), sommet, **grand plongeon en deux dévalées raides** (−26 u, le sol reste à l'image),
 rebond, coups sur les derniers temps. 33 u de dénivelé (près de 4 écrans), chaque action ≥ 130 ms de

@@ -1,4 +1,5 @@
 using Kenta.Core;
+using Kenta.Player;
 using UnityEngine;
 
 namespace Kenta.FX
@@ -8,6 +9,9 @@ namespace Kenta.FX
     /// traînée. Chaîne de carrés de 2 px (un ruban plein) qui suivent l'historique des positions du héros, sur la grille
     /// de pixels. Elle n'apparaît qu'à partir de ×minMultiplier : en dessous, le bandeau du héros (qui flotte déjà,
     /// ADR-022) suffit, et la traînée en pointillés faisait du bruit (audit du 2026-11-25).
+    /// En gravité inversée, le héros est retourné (tête en bas) : la traînée part de sa tête, sous ses pieds. Le sens de
+    /// la gravité est gardé avec chaque position de l'historique, pour que la traînée se retourne avec le héros au
+    /// portail au lieu de sauter d'un coup.
     /// </summary>
     public class BandanaTrail : MonoBehaviour
     {
@@ -22,8 +26,10 @@ namespace Kenta.FX
         [SerializeField] int minMultiplier = 4;
 
         SpriteRenderer[] segs;
-        Vector2[] history;
+        Vector2[] history;            // point d'attache (tête) du héros, déjà retourné en gravité inversée
+        float[] signs;                // +1 gravité normale, −1 inversée : sens des ondulations de ce point
         float[] times;
+        PlayerController player;
         int head, count;
         const int Capacity = 128;
 
@@ -44,8 +50,14 @@ namespace Kenta.FX
                 segs[i] = sr;
             }
             history = new Vector2[Capacity];
+            signs = new float[Capacity];
             times = new float[Capacity];
+            if (target != null) player = target.GetComponent<PlayerController>();
         }
+
+        /// <summary>Point d'attache de la traînée (la tête) : au-dessus des pieds, ou en dessous tête en bas.</summary>
+        public static Vector2 AnchorPoint(Vector2 feet, Vector2 anchor, bool inverted) =>
+            new(feet.x + anchor.x, feet.y + (inverted ? -anchor.y : anchor.y));
 
         public void Clear()
         {
@@ -60,7 +72,9 @@ namespace Kenta.FX
                 Clear();
                 return;
             }
-            history[head] = target.position;
+            bool inverted = player != null && player.IsInverted;
+            history[head] = AnchorPoint(target.position, anchor, inverted);
+            signs[head] = inverted ? -1f : 1f;
             times[head] = Time.time;
             head = (head + 1) % Capacity;
             count = Mathf.Min(count + 1, Capacity);
@@ -75,11 +89,11 @@ namespace Kenta.FX
                     var sr = segs[pan * maxSegments + i];
                     if (i >= length || i >= count) { sr.gameObject.SetActive(false); continue; }
                     float wanted = Time.time - (i + 1) * segmentSpacing;
-                    Vector2 p = SampleAt(wanted);
+                    Vector2 p = SampleAt(wanted, out float sign);
                     float wave = Mathf.Sin(Time.time * 14f - i * 0.18f) * 0.035f * (i / (float)maxSegments);
                     float tilt = pan == 0 ? 0.045f : -0.02f;
                     // calque acteurs : recalé sur la grille de l'écran comme le héros (CameraRig.ActorShift)
-                    var pos = new Vector3(PixelScreen.Snap(p.x + anchor.x + shift.x), PixelScreen.Snap(p.y + anchor.y + tilt + wave), 0f);
+                    var pos = new Vector3(PixelScreen.Snap(p.x + shift.x), PixelScreen.Snap(p.y + sign * (tilt + wave)), 0f);
                     sr.transform.position = pos;
                     float fade = 1f - i / (float)maxSegments * 0.7f;
                     sr.color = new Color(color.r, color.g, color.b, fade);
@@ -89,8 +103,9 @@ namespace Kenta.FX
             }
         }
 
-        /// <summary>Position du héros à l'instant `time` (interpolée entre deux images), pour une traînée continue.</summary>
-        Vector2 SampleAt(float time)
+        /// <summary>Point d'attache à l'instant `time` (interpolé entre deux images), pour une traînée continue ; `sign` :
+        /// sens de la gravité à cet instant.</summary>
+        Vector2 SampleAt(float time, out float sign)
         {
             for (int k = 1; k < count; k++)
             {
@@ -99,10 +114,13 @@ namespace Kenta.FX
                 if (times[older] <= time)
                 {
                     float span = Mathf.Max(0.0001f, times[newer] - times[older]);
+                    sign = signs[newer];
                     return Vector2.Lerp(history[older], history[newer], Mathf.Clamp01((time - times[older]) / span));
                 }
             }
-            return history[(head - count + Capacity) % Capacity];
+            int oldest = (head - count + Capacity) % Capacity;
+            sign = signs[oldest];
+            return history[oldest];
         }
     }
 }

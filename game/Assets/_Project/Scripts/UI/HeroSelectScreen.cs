@@ -9,6 +9,9 @@ namespace Kenta.UI
     /// Choix du héros (docs/da-kenta.md § 8.2) : joystick gauche/droite, bouton 1 pour valider ; le niveau se choisit
     /// à l'écran suivant (LevelSelectScreen, ADR-032). 12 s pour choisir : à la fin, on part avec la sélection en cours.
     /// GameFlow donne le héros présélectionné (rejouer dans la minute, ou retour depuis le choix du niveau).
+    /// Chaque héros a sa difficulté (HeroProfile.retryMode) : FACILE / MOYEN / DUR en haut de son cadre, et la règle du
+    /// héros sélectionné au-dessus des cadres. Ces textes sont créés à l'exécution (copies du nom : même police, même
+    /// plaque), le prefab n'a pas à être reconstruit.
     /// </summary>
     public class HeroSelectScreen : MonoBehaviour
     {
@@ -19,9 +22,18 @@ namespace Kenta.UI
         [SerializeField] PixelText timerText;
         [SerializeField] float seconds = 12f;
 
+        static readonly Color EasyColor = new(0.5f, 0.9f, 0.45f);
+        static readonly Color MediumColor = new(1f, 0.82f, 0.23f);
+        static readonly Color HardColor = new(1f, 0.35f, 0.4f);
+        // en pixels d'interface : le mot sous le bord haut du cadre (au-dessus de la tête du héros), la règle entre le titre et les cadres
+        const float WordBelowFrameTop = 11f, RuleAboveFrameTop = 12f;
+
         int index, startIndex;
         float timer;
         Vector2 stickPrev;
+        PixelText[] difficultyTexts;
+        PixelText ruleText;
+        string[] ruleLines;
 
         public bool Done { get; private set; }
 
@@ -34,6 +46,7 @@ namespace Kenta.UI
             timer = seconds;
             Done = false;
             stickPrev = ArcadeInput.Stick(1);
+            EnsureDifficultyTexts();
             Refresh();
         }
 
@@ -80,6 +93,55 @@ namespace Kenta.UI
                 frames[i].color = sel ? hero.accent : new Color(0.35f, 0.3f, 0.5f);
                 names[i].Color = sel ? Color.white : new Color(0.6f, 0.58f, 0.75f);
             }
+            if (ruleText != null && ruleLines != null && index < ruleLines.Length) ruleText.Text = ruleLines[index];
         }
+
+        /// <summary>
+        /// Textes de difficulté (une fois), puis leur contenu à chaque affichage de l'écran (les réglages des héros ont pu
+        /// changer) : le mot de chaque héros dans sa couleur, et la règle de chacun, prête pour le héros sélectionné.
+        /// </summary>
+        void EnsureDifficultyTexts()
+        {
+            int n = Mathf.Min(theme.heroes.Length, Mathf.Min(frames.Length, names.Length));
+            if (n <= 0) return;
+            if (difficultyTexts == null)
+            {
+                difficultyTexts = new PixelText[n];
+                for (int i = 0; i < n; i++)
+                {
+                    var frame = frames[i].rectTransform;
+                    difficultyTexts[i] = CloneText(names[i], $"Difficulty{i}",
+                        new Vector2(frame.anchoredPosition.x, FrameTop(frame) - WordBelowFrameTop));
+                }
+                ruleText = CloneText(names[0], "DifficultyRule", new Vector2(0f, FrameTop(frames[0].rectTransform) + RuleAboveFrameTop));
+                ruleText.Color = Color.white;
+                ruleLines = new string[n];
+            }
+            for (int i = 0; i < n; i++)
+            {
+                var hero = theme.heroes[i];
+                difficultyTexts[i].Text = RetryRules.DifficultyLabel(hero.retryMode);
+                difficultyTexts[i].Color = DifficultyColor(hero.retryMode);
+                ruleLines[i] = RetryRules.RuleLine(hero.retryMode, hero.StartLives);
+            }
+        }
+
+        /// <summary>Copie d'un texte de l'écran (police, plaque, échelle), posée ailleurs : comme les vies du HUD (RunHud).</summary>
+        static PixelText CloneText(PixelText model, string name, Vector2 position)
+        {
+            var go = Instantiate(model.gameObject, model.transform.parent);
+            go.name = name;
+            ((RectTransform)go.transform).anchoredPosition = new Vector2(Mathf.Round(position.x), Mathf.Round(position.y));
+            return go.GetComponent<PixelText>();
+        }
+
+        static float FrameTop(RectTransform frame) => frame.anchoredPosition.y + frame.sizeDelta.y * (1f - frame.pivot.y);
+
+        static Color DifficultyColor(RetryMode mode) => mode switch
+        {
+            RetryMode.Checkpoint => EasyColor,
+            RetryMode.Restart => MediumColor,
+            _ => HardColor,
+        };
     }
 }

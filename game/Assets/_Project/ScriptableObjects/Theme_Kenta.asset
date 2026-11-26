@@ -31,7 +31,12 @@ MonoBehaviour:
   - {fileID: 21300000, guid: abf328de7a82b4b2fbbac634d54fbba8, type: 3}
   - {fileID: 21300000, guid: 9e7a4bd6f38a148af9c50f15f4e4a4fb, type: 3}
   totem: {fileID: 21300000, guid: 168c43d81541a4aeab4206e8a914aa13, type: 3}
-  flyer: {fileID: 21300000, guid: eb31e0c5a6b944ac48d031beeac3108c, type: 3}
+  flyer: {fileID: 21300000, guid: ca39574493cfc4ab4919e1f4fd3cfeae, type: 3}
+  flyerFrames:
+  - {fileID: 21300000, guid: ca39574493cfc4ab4919e1f4fd3cfeae, type: 3}
+  - {fileID: 21300000, guid: 1d01bf33d9c594ed09e8ac9118ae5775, type: 3}
+  - {fileID: 21300000, guid: fdcc2bbe09f33420a99c76501fb8af3c, type: 3}
+  - {fileID: 21300000, guid: d49b8babb3bb54db5bf95ec9241bc483, type: 3}
   stomper:
   - {fileID: 21300000, guid: 150c9781c32e748b188e04c5d3ac2b10, type: 3}
   - {fileID: 21300000, guid: 4c4a8652984d643ca9520325733804c6, type: 3}

@@ -1023,7 +1023,8 @@ namespace Kenta.Level
             var frames = biome.enemyFrames;
             var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
             sr.flipY = true;
-            if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);
+            if (IsBat(frames)) Flap(sr);
+            else if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);
             return t.gameObject;
         }
 
@@ -1052,7 +1053,8 @@ namespace Kenta.Level
             var t = Group("Enemy", pos);
             var frames = biome.enemyFrames;
             var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
-            if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);   // djembé : écrasé / étiré
+            if (IsBat(frames)) Flap(sr);                                                       // les Échos : chauve-souris au sol
+            else if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);   // djembé : écrasé / étiré
             return t.gameObject;
         }
 
@@ -1072,40 +1074,35 @@ namespace Kenta.Level
             return t.gameObject;
         }
 
-        /// <summary>Ennemi volant (chauve-souris du PDF, commune à tous les biomes ; l'ennemi du biome sinon).</summary>
+        /// <summary>
+        /// Ennemi volant (chauve-souris du PDF, commune à tous les biomes ; l'ennemi du biome sinon). Elle bat des ailes
+        /// (4 images, tools/gen-bat.py) et un liseré clair la détache des décors sombres. Plus de halo derrière elle : il
+        /// se lisait comme un bouclier alors qu'on doit la frapper (retour de Lucas, 2026-11-26).
+        /// </summary>
         GameObject MakeFlyer(Vector2 pos, BiomeTheme biome)
         {
             var t = Group("Flyer", pos);
-            Spr(t, "Sprite", theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
-            // halo clair derrière la chauve-souris : elle ressort sur tous les décors (retour de test : on ne la voyait
-            // presque pas sur les lianes) ; il s'illumine sur chaque temps
-            var halo = Spr(t, "Halo", HaloSprite(), new Vector2(0f, PixelScreen.Snap(0.6f)), 9);
-            halo.color = new Color(1f, 0.95f, 0.7f, 0.55f);
-            halo.gameObject.AddComponent<BeatGlow>();
+            bool animated = IsBat(theme.flyerFrames);
+            var sr = Spr(t, "Sprite", animated ? theme.flyerFrames[0] : theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
+            if (animated) Flap(sr);
             return t.gameObject;
         }
 
-        static Sprite haloSprite;
+        /// <summary>Images par seconde du battement d'ailes : 4 images, soit 3 battements par seconde.</summary>
+        const float FlapFps = 12f;
+        /// <summary>Vol stationnaire des chauves-souris : ±4 px du monde, un aller-retour en 0,9 s (visuel seulement).</summary>
+        const float HoverAmplitude = 4f / PixelScreen.Ppu, HoverPeriod = 0.9f;
 
-        /// <summary>Halo en pixels (64 px : anneau net de 3 px et fond léger), dessiné une fois par le code.</summary>
-        static Sprite HaloSprite()
+        /// <summary>Ces images sont-elles la chauve-souris animée (tools/gen-bat.py) ? Volante, au sol (les Échos) ou pendue.</summary>
+        bool IsBat(Sprite[] frames) =>
+            frames != null && frames.Length > 1 && frames[0] != null && theme.flyerFrames != null &&
+            theme.flyerFrames.Length > 0 && frames[0] == theme.flyerFrames[0];
+
+        /// <summary>La chauve-souris bat des ailes en continu (pas par crans sur le temps) et plane de haut en bas.</summary>
+        void Flap(SpriteRenderer sr)
         {
-            if (haloSprite != null) return haloSprite;
-            const int size = 64;
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
-            var px = new Color32[size * size];
-            float c = (size - 1) * 0.5f;
-            for (int y = 0; y < size; y++)
-                for (int x = 0; x < size; x++)
-                {
-                    float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
-                    byte a = d > 31f ? (byte)0 : d > 28f ? (byte)255 : (byte)90;
-                    px[y * size + x] = new Color32(255, 255, 255, a);
-                }
-            tex.SetPixels32(px);
-            tex.Apply(false, true);
-            haloSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), PixelScreen.Ppu);
-            return haloSprite;
+            sr.gameObject.AddComponent<SpriteCycle>().Setup(theme.flyerFrames, FlapFps);
+            sr.gameObject.AddComponent<Hover>().Setup(HoverAmplitude, HoverPeriod);
         }
 
         GameObject MakeLum(Vector2 center)

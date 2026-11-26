@@ -194,7 +194,7 @@ namespace Kenta.Player
         // Pas de physique d'au plus 1/60 s : sur la borne, une image longue (lag, ramasse-miettes du navigateur) faisait
         // avancer le héros de 0,5 à 1 u d'un coup. Il perdait alors le sol sur les rampes raides (mort « dans l'escalier »)
         // et passait d'« en dessous » à « dans » un cuirassé sans jamais être au-dessus (mort au lieu du rebond).
-        // Le simulateur du générateur (tools/gen-level-vertical.py) valide le niveau à 60 i/s : on rejoue ce pas-là.
+        // Le simulateur du générateur (tools/levelgen/engine.py) valide le niveau à 60 i/s : on rejoue ce pas-là.
         const float MaxStepSeconds = 1f / 60f;
         const int MaxSubSteps = 64;                       // jusqu'à ~1 s d'à-coup rattrapé en pas de 1/60 s
         double lastStepBeat = double.NaN;
@@ -329,6 +329,9 @@ namespace Kenta.Player
 
         float CenterWorldY() => WorldY + (inverted ? -1f : 1f) * standHeight * 0.5f;
 
+        /// <summary>Hauteur dans le monde à `d` u des pieds, du côté du corps (en dessous des pieds tête en bas) : pour les effets.</summary>
+        float BodySideY(float d) => WorldY + (inverted ? -d : d);
+
         /// <summary>Traverse un portail de gravité : on garde la position et la vitesse dans le monde, on tombe vers l'autre côté.</summary>
         void SetGravity(bool up, float x)
         {
@@ -345,7 +348,7 @@ namespace Kenta.Player
             ActionSfx.Instance?.Jump();
             CameraRig.Instance?.Flash(Color.white, 0.35f);
             CameraRig.Instance?.Punch(0.3f);
-            FxPool.Instance?.Burst(new Vector2(x, w + (inverted ? 0.5f : 0.5f)), new Color(0.75f, 0.9f, 1f), 16, 5f, 0.15f, 0.4f, 0f, 0f);
+            FxPool.Instance?.Burst(new Vector2(x, BodySideY(0.5f)), new Color(0.75f, 0.9f, 1f), 16, 5f, 0.15f, 0.4f, 0f, 0f);   // au centre du corps, déjà retourné
         }
 
         /// <summary>Attrape la liane suivante si on passe à son point de prise (en courant ou en l'air, à ±1,6 u).</summary>
@@ -542,7 +545,7 @@ namespace Kenta.Player
             spinning = spinOnJump;
             squash = Squash(0.82f, 1.2f);
             ActionSfx.Instance?.Jump();
-            FxPool.Instance?.Burst(new Vector2(x, y + 0.05f), Color.white, 6, 3f, 0.12f, 0.3f, 2f, 0f);
+            FxPool.Instance?.Burst(new Vector2(x, BodySideY(0.05f)), Color.white, 6, 3f, 0.12f, 0.3f, 2f, 0f);   // y est retourné au plafond : position monde
         }
 
         void Land(float x, float top)
@@ -565,7 +568,7 @@ namespace Kenta.Player
             squash = Squash(1.2f, 0.82f);
             landedAt = Time.time;
             ActionSfx.Instance?.Land();
-            FxPool.Instance?.Burst(new Vector2(x, WorldY + 0.05f), Color.white, 8, 3.5f, 0.12f, 0.35f, 3f, 0f);
+            FxPool.Instance?.Burst(new Vector2(x, BodySideY(0.05f)), Color.white, 8, 3.5f, 0.12f, 0.35f, 3f, 0f);
         }
 
         /// <summary>

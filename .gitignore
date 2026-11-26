@@ -18,3 +18,6 @@ tools/anatidae-arcade/
 __pycache__/
 *.pyc
 .superpowers/
+
+# Musiques candidates téléchargées pour le choix des niveaux (non versionnées)
+tools/music-candidates/
