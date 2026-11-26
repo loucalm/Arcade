@@ -40,11 +40,14 @@ namespace Kenta.UI
         /// <summary>Héros présélectionné, avant d'afficher l'écran.</summary>
         public void Setup(int heroIndex) => startIndex = heroIndex;
 
+        /// <summary>Aucune action pendant `seconds` : GameFlow revient à l'écran d'accueil.</summary>
+        public bool TimedOut { get; private set; }
+
         void OnEnable()
         {
             index = Mathf.Clamp(startIndex, 0, theme.heroes.Length - 1);
             timer = seconds;
-            Done = false;
+            Done = TimedOut = false;
             stickPrev = ArcadeInput.Stick(1);
             EnsureDifficultyTexts();
             Refresh();
@@ -52,8 +55,9 @@ namespace Kenta.UI
 
         void Update()
         {
-            if (Done) return;
+            if (Done || TimedOut) return;
             timer -= Time.unscaledDeltaTime;
+            if (ArcadeInput.AnyInput()) timer = Mathf.Max(timer, seconds - 0.3f);   // on touche : le délai repart (sans rejouer la garde)
             timerText.Text = Mathf.Max(0, Mathf.CeilToInt(timer)).ToString("D2");
 
             var stick = ArcadeInput.Stick(1);
@@ -62,7 +66,8 @@ namespace Kenta.UI
 
             // garde de 0,3 s : l'appui qui a passé les consignes ne doit pas valider le héros dans la même image
             bool guard = seconds - timer < 0.3f;
-            if ((!guard && ArcadeInput.ConfirmDown(1)) || timer <= 0f) Confirm();
+            if (!guard && ArcadeInput.ConfirmDown(1)) Confirm();
+            else if (timer <= 0f) TimedOut = true;           // personne : retour à l'accueil (GameFlow)
         }
 
         static bool Flick(float now, float before) => Mathf.Abs(now) > 0.5f && Mathf.Abs(before) <= 0.5f;
