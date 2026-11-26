@@ -108,6 +108,8 @@ Détail : [superpowers/specs/2026-11-26-niveaux-par-monde-design.md](superpowers
 - [ ] **P1** DA : règle de couleur (héros, ennemis, pièces jamais dans les couleurs du fond) vérifiée par script sur les palettes des mondes
 
 ## Jeu — P2 (juice / direction artistique)
+- [x] Effet CRT « bombé léger » (ADR-034, `FX/CrtScreen`).
+- [ ] **P1** Mesurer les i/s de l'effet CRT en build release sur la borne (F8 n'existe pas en release : comparer avec un build sans `CrtScreen` si besoin) ; s'il coûte trop, réduire la lueur.
 - [x] DA Kenta intégrée : rendu pixel 240×135 ×8, 8 biomes, 3 héros, 8 ennemis, Sourdine, bandeau de combo, interface pixel, écrans accueil / choix du héros / consignes / game over (2026-11-03). Voir [art-direction.md](art-direction.md)
 - [x] Animations du perso : course calée sur le beat, saut en 3 poses, atterrissage, glissade, coup de poing (2026-10-13)
 - [ ] Animation de mort et de victoire du héros ; foule d'ennemis qui dansent en arrière-plan

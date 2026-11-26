@@ -815,7 +815,9 @@ namespace Kenta.EditorTools
 
             var cam = Camera.main;
             if (cam.GetComponent<CameraRig>() == null) cam.gameObject.AddComponent<CameraRig>();
-            cam.cullingMask = ~((1 << actorsLayer) | (1 << uiLayer));
+            int displayLayer = LayerMask.NameToLayer("Display");
+            if (displayLayer < 0) throw new System.Exception("Couche « Display » absente (Project Settings > Tags and Layers).");
+            cam.cullingMask = ~((1 << actorsLayer) | (1 << uiLayer) | (1 << displayLayer));
             cam.depth = 0;
             for (int i = cam.transform.childCount - 1; i >= 0; i--)
                 if (cam.transform.GetChild(i).name == "ActorCamera") UnityEngine.Object.DestroyImmediate(cam.transform.GetChild(i).gameObject);
@@ -874,6 +876,17 @@ namespace Kenta.EditorTools
             scaler.scaleFactor = 1f;
             scaler.referencePixelsPerUnit = 100f;
             Set(ps, "uiCanvas", canvas);
+
+            // effet CRT (ADR-034) : l'image composée passe par une texture puis par Kenta/CrtDisplay
+            var crtMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/CrtDisplay.mat");
+            if (crtMat == null)
+            {
+                crtMat = new Material(Shader.Find("Kenta/CrtDisplay"));
+                AssetDatabase.CreateAsset(crtMat, "Assets/_Project/Materials/CrtDisplay.mat");
+            }
+            var crt = psGo.AddComponent<CrtScreen>();
+            Set(crt, "displayCanvas", dc);
+            Set(crt, "material", crtMat);
 
             var screens = prefabs.Select(p => (GameObject)PrefabUtility.InstantiatePrefab(p, uiGo.transform)).ToArray();
             foreach (var s in screens) { var r = (RectTransform)s.transform; r.anchoredPosition = Vector2.zero; s.SetActive(false); }
