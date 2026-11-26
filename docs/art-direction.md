@@ -13,6 +13,7 @@ Ce document explique **comment elle est construite dans le projet** et comment l
 - Le héros et son bandeau sont recalés sur la grille de la caméra (`CameraRig.ActorShift`) : ils restent parfaitement immobiles horizontalement.
 - La caméra suit le héros en hauteur : ancrage sur le dernier sol touché, zone morte, amorti (`SmoothDamp`).
 - L'affichage utilise le shader `Kenta/PixelDisplay` (textures déjà prémultipliées : pas de double prémultiplication des éléments semi-transparents).
+- **Effet CRT** (ADR-034) : l'image composée passe par une texture puis par `Kenta/CrtDisplay` (bombé léger, coins arrondis, lignes, lueur ; `FX/CrtScreen`). Le jeu reste en pixels entiers, seule l'image finale est déformée. F8 compare avec et sans.
 - Seule l'UI du toolkit Anatidae (saisie des 3 lettres, classement) reste en pleine définition par-dessus.
 - Tour REMIX : `PixelScreen.SetDivider(4)` (80 × 45), pas encore branché.
 
