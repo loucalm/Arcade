@@ -61,7 +61,7 @@ namespace Kenta.UI
                 scoreText.Text = $"SCORE  {run.Score:D6}";
                 coinsText.Text = $"PIÈCES  {run.Lums}/{run.TotalLums}";
                 var b = run.CurrentBiome;
-                biomeText.Text = b != null ? $"MONDE  {b.label}" : "";
+                biomeText.Text = b != null ? $"DÉCOR  {b.label}" : "";
                 var j = run.JudgeStats;
                 if (judgeText != null) judgeText.Text = $"PARFAIT {j.perfect}  BIEN {j.good}  BOF {j.meh}";
                 if (gradeText != null) gradeText.Text = run.Grade;

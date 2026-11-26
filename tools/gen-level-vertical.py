@@ -387,13 +387,13 @@ def build():
     L.glitch(184, 0.35, 8)      # pont 2 : un grésillement léger…
     L.screen_flip(192, "up")    # … puis la tête en bas
     L.screen_flip(200, "none")
-    L.screen_split(216, 9)      # refrain 2, sur le drop : neuf écrans (3×3), en petit
+    L.screen_split(216, 4)      # refrain 2, sur le drop : quatre écrans (2×2, ×2 en vue 480 : le héros reste lisible)
     L.screen_split(232, 1)      # un écran…
     L.screen_flip(232, "up")    # … tête en bas pour le grand plongeon (on a l'air de monter)
     L.glitch(232, 0.4, 8)
     L.screen_flip(240, "mirror")    # la fin du refrain en miroir
     L.screen_flip(248, "none")
-    L.glitch(248, 0.5, 6)       # la fin : un dernier grésillement
+    # la fin reste nette : c'est là qu'on savoure son score (audit du 25/11)
     for name, beat in SECTIONS:
         if beat > 0:
             L.add(beat, "section_change", intensity=1.2 if "refrain" in name else 0.5)   # drops doux, sauf les refrains
@@ -938,9 +938,12 @@ def check_margins(events, ranges, margin=MIN_MARGIN, fps=60):
 
 
 ANALYSIS = os.path.join(ROOT, "tools", "data", "level01_analysis.json")
-ZOOM = 640                                   # vue de 16 × 9 u : une mesure d'avance devant le héros
+ZOOM = 480                                   # vue par défaut de 12 × 6,75 u : héros assez grand pour la borne
+ZOOM_WIDE = 640                              # plan large (16 × 9 u) : tambours et grandes dénivellations
 VIEW_H = ZOOM * 9 / 16 / 40.0
+WIDE_DROP = 5.5                              # dénivelé (u) sur ±2 temps au-delà duquel on passe en plan large
 FRAME_Y = 0.32                               # sol sous le héros à 32 % du bas
+FRAME_Y_UP, FRAME_Y_DOWN = 0.24, 0.56        # bornes du cadrage selon la pente : montée, descente
 PENTA = (9, 0, 2, 4, 7)                      # la mineur pentatonique (la, do, ré, mi, sol)
 LUM_BASE_MIDI = 81                           # le son de pièce est un la (880 Hz)
 
@@ -1045,28 +1048,79 @@ def enemy_windows(world):
     return [(en[2], en[1], en[1] + 0.9) for en in world.enemies]
 
 
-def camera_rail(track, step=0.25, enemies=()):
+def zoom_plan(track, world, step=0.25, extra=()):
+    """Largeur de vue à chaque pas du rail : ZOOM par défaut, ZOOM_WIDE pendant les envolées des tambours et là où le
+    terrain monte ou descend de plus de WIDE_DROP en ±2 temps. Les plans larges sont calés sur les temps (coupe nette)
+    et durent au moins 2 temps. Renvoie (zooms par pas, événements `camera`)."""
+    beats = [tr[0] for tr in track]
+    n = NB * 4
+    feet = [feet_at(track, beats, i * step) for i in range(n)]
+    wins = [(pad[3] - 1.0, pad[3] + pad[2] + 1.0) for pad in world.bounces] + list(extra)
+    r = int(2 / step)
+    for i in range(n):
+        seg = feet[max(0, i - r):min(n, i + r + 1)]
+        if max(seg) - min(seg) > WIDE_DROP:
+            wins.append((i * step - 0.5, i * step + 0.5))
+    wins = sorted((math.floor(a), math.ceil(b)) for a, b in wins)
+    merged = []
+    for a, b in wins:
+        if merged and a <= merged[-1][1] + 1:
+            merged[-1][1] = max(merged[-1][1], b)
+        else:
+            merged.append([a, max(b, a + 2)])
+    zooms = [ZOOM] * n
+    events = []
+    for a, b in merged:
+        a, b = max(0, a), min(NB - 1, b)
+        for i in range(int(a / step), min(n, int(b / step))):
+            zooms[i] = ZOOM_WIDE
+        events.append({"beat": float(a), "type": "camera", "lane": 0, "params": {"zoom": ZOOM_WIDE}})
+        events.append({"beat": float(b), "type": "camera", "lane": 0, "params": {"zoom": ZOOM}})
+    return zooms, events
+
+
+def zooms_from_events(events, step=0.25):
+    """Largeur de vue à chaque pas du rail, d'après les événements `camera` de la chart."""
+    cams = sorted((e["beat"], e["params"]["zoom"]) for e in events if e["type"] == "camera")
+    zooms, z, k = [], ZOOM, 0
+    for i in range(NB * 4):
+        while k < len(cams) and cams[k][0] <= i * step + 1e-9:
+            z = cams[k][1]
+            k += 1
+        zooms.append(z)
+    return zooms
+
+
+def camera_rail(track, step=0.25, enemies=(), zooms=None):
     """Rail de la caméra : trajectoire des pieds lissée dans les deux sens (elle anticipe montées et chutes),
     contrainte à garder le héros dans l'image (marges de CameraRig) et à montrer chaque ennemi au moins ENEMY_LEAD
     temps avant son coup, avec le cadrage par défaut (sol à FRAME_Y). Le héros passe avant les ennemis."""
     beats = [tr[0] for tr in track]
     n = NB * 4
+    vh = [(zooms[i] if zooms else ZOOM) * 9 / 16 / 40.0 for i in range(n)]
     feet = [feet_at(track, beats, i * step) for i in range(n)]
     inv = [track_state(track, beats, i * step)[0] for i in range(n)]
     # corps : des pieds vers la tête (vers le bas en gravité inversée)
     top = [f if v else f + 1.0 for f, v in zip(feet, inv)]
     bottom = [f - 1.0 if v else f for f, v in zip(feet, inv)]
-    lo = [t_ + 0.4 - VIEW_H * (0.5 - SAFE_TOP) for t_ in top]       # le haut du corps sous la marge du haut (HUD)
-    hi = [b_ + VIEW_H * (0.5 - SAFE_BOTTOM) for b_ in bottom]        # le bas du corps au-dessus de la marge du bas
+    lo = [t_ + 0.4 - h * (0.5 - SAFE_TOP) for t_, h in zip(top, vh)]       # le haut du corps sous la marge du haut (HUD)
+    hi = [b_ + h * (0.5 - SAFE_BOTTOM) for b_, h in zip(bottom, vh)]        # le bas du corps au-dessus de la marge du bas
     # ennemis : visibles (sous le HUD, au-dessus du bas) pendant les ENEMY_LEAD temps avant leur coup
     elo = [-math.inf] * n
     ehi = [math.inf] * n
     for eb, y0, y1 in enemies:
         for i in range(max(0, int((eb - ENEMY_LEAD) / step)), min(n, int(eb / step) + 1)):
-            elo[i] = max(elo[i], y1 + 0.05 - VIEW_H * (0.5 - SAFE_TOP))     # 0,05 u de plus que la vérification
-            ehi[i] = min(ehi[i], y0 - 0.35 + VIEW_H * 0.5)
+            elo[i] = max(elo[i], y1 + 0.05 - vh[i] * (0.5 - SAFE_TOP))     # 0,05 u de plus que la vérification
+            ehi[i] = min(ehi[i], y0 - 0.35 + vh[i] * 0.5)
     # le sol sous le héros à FRAME_Y du bas ; au plafond, le plafond à FRAME_Y du haut
-    target = [f - VIEW_H * (0.5 - FRAME_Y) if v else f + VIEW_H * (0.5 - FRAME_Y) for f, v in zip(feet, inv)]
+    # cadrage selon la pente devant (2 temps) : en descente le héros monte dans l'image (on voit où l'on va), en montée
+    # il descend un peu (on voit le haut de la marche) ; au plafond, pas de changement
+    ahead = int(2 / step)
+    fy = []
+    for i in range(n):
+        d = feet[min(n - 1, i + ahead)] - feet[i]
+        fy.append(FRAME_Y if inv[i] else min(FRAME_Y_DOWN, max(FRAME_Y_UP, FRAME_Y - 0.04 * d)))
+    target = [f - h * (0.5 - y) if v else f + h * (0.5 - y) for f, v, h, y in zip(feet, inv, vh, fy)]
 
     def smooth(v, sigma):
         r = int(sigma * 3)
@@ -1092,9 +1146,8 @@ def camera_rail(track, step=0.25, enemies=()):
     return [round(x, 2) for x in c]
 
 
-def enemy_leads(rail, world, step=0.25):
+def enemy_leads(rail, world, step=0.25, zooms=None):
     """Pour chaque ennemi : depuis combien de temps (beats) il est entièrement dans l'image au moment du coup."""
-    view_w = ZOOM / 40.0
     out = []
     for cx, ey, eb, *_ in world.enemies:
         first, b = None, eb
@@ -1102,9 +1155,11 @@ def enemy_leads(rail, world, step=0.25):
             f = max(0.0, b / step)
             i = min(int(f), len(rail) - 2)
             c = rail[i] + (rail[i + 1] - rail[i]) * (f - i)
+            z = zooms[i] if zooms else ZOOM
+            view_w, view_h = z / 40.0, z * 9 / 16 / 40.0
             x0 = X(b) - view_w * 0.22
-            if not (cx - 0.4 >= x0 and cx + 0.4 <= x0 + view_w and ey >= c - VIEW_H / 2 + 0.3
-                    and ey + 0.9 <= c + VIEW_H * (0.5 - SAFE_TOP)):
+            if not (cx - 0.4 >= x0 and cx + 0.4 <= x0 + view_w and ey >= c - view_h / 2 + 0.3
+                    and ey + 0.9 <= c + view_h * (0.5 - SAFE_TOP)):
                 break
             first, b = b, b - 0.05
         out.append((eb, 0.0 if first is None else eb - first))
@@ -1134,8 +1189,17 @@ def resolve(events, song):
             out.append({"beat": e["beat"], "type": "enemy", "lane": 1, "params": {"height": round(y + 0.1, 3)}})
         else:
             out.append(e)
-    out.sort(key=lambda e: (e["beat"], e["type"]))
-    return out, camera_rail(track, enemies=enemy_windows(World(out))), None
+    # plans larges : tambours, grandes dénivellations, et ennemis qu'on ne verrait pas venir en vue serrée
+    extra = []
+    for _ in range(4):
+        zooms, cams = zoom_plan(track, World(base), extra=extra)
+        full = sorted(out + cams, key=lambda e: (e["beat"], e["type"]))
+        rail = camera_rail(track, enemies=enemy_windows(World(full)), zooms=zooms)
+        late = [eb for eb, lead in enemy_leads(rail, World(full), zooms=zooms) if lead < 1.0 - 1e-6]
+        if not late:
+            break
+        extra += [(eb - 2.5, eb + 0.5) for eb in late]
+    return full, rail, None
 
 
 def lint(events):
@@ -1244,7 +1308,7 @@ def generate():
                 problems.append(f"chauve-souris du beat {e['beat']} à {bat_c - hero_c:+.1f} u du héros au moment de la frapper "
                                 f"(de −{FLYER_BELOW} à +{FLYER_ABOVE} u)")
     # lisibilité : chaque ennemi apparaît assez tôt pour qu'on ait le temps de le voir venir
-    for eb, lead in enemy_leads(rail, World(events)):
+    for eb, lead in enemy_leads(rail, World(events), zooms=zooms_from_events(events)):
         if lead < 1.0 - 1e-6:
             problems.append(f"ennemi du beat {eb} visible seulement {lead * SPB * 1000:.0f} ms avant le coup (min 400 ms)")
     return events, rail, stats, problems

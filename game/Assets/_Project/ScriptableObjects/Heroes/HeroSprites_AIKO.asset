@@ -24,7 +24,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: dd71c52723a89420e87863ced316afec, type: 3}
   - {fileID: 21300000, guid: dce07bd1e20af477486fa1da5cccc3fd, type: 3}
   jump: {fileID: 21300000, guid: 044c59118401540278b690b61f15df07, type: 3}
-  slide: {fileID: 21300000, guid: 99360439180db44efb1c87bde967bc75, type: 3}
   hit: {fileID: 21300000, guid: 348643da991c3433f912be578c462d80, type: 3}
   vine: {fileID: 21300000, guid: 98594c70fff674677bd28ed92a2cb7c0, type: 3}
   wall: {fileID: 21300000, guid: 7bdd3edc6563b4c6582ce6ae857d757f, type: 3}
@@ -44,18 +43,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 1eed55447dea844028ce33e2cbeb3cc3, type: 3}
   - {fileID: 21300000, guid: cf224ab8ec01e458d81eb2d1e052d7c2, type: 3}
   - {fileID: 21300000, guid: 841fd2a733e2944d5ae109be30b00db7, type: 3}
-  slideLoop:
-  - {fileID: 21300000, guid: 99360439180db44efb1c87bde967bc75, type: 3}
-  - {fileID: 21300000, guid: bfceaf982254944baa5be899d65796be, type: 3}
-  - {fileID: 21300000, guid: 57c08d8da846c4cdf8cd1d85ecf83d68, type: 3}
-  slideIn:
-  - {fileID: 21300000, guid: 46ff63ad7b50243d19bbed94b20b73dd, type: 3}
-  - {fileID: 21300000, guid: 2723a5b4e5bea48f38752986fb0a10bd, type: 3}
-  - {fileID: 21300000, guid: fa47ddb48d83a4b688516258c1c342f4, type: 3}
-  slideOut:
-  - {fileID: 21300000, guid: 9fdc2b9fbfdb74739829218142c4d3df, type: 3}
-  - {fileID: 21300000, guid: d089dd15219c342c39f5c0005e32eca0, type: 3}
-  - {fileID: 21300000, guid: bd47fca5900fe44019cc1983e74d1ca5, type: 3}
   crouch: {fileID: 21300000, guid: 76d4580ef0a4c4cdcb34af3d69ba5fe1, type: 3}
   climbCycle:
   - {fileID: 21300000, guid: 03fc19ade0840488f984f6dbb10ba74d, type: 3}

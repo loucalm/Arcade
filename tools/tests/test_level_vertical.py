@@ -32,12 +32,14 @@ def test_rail_keeps_hero_in_view():
     track = []
     gen.simulate(EVENTS, 120, track)
     beats = [tr[0] for tr in track]
+    zooms = gen.zooms_from_events(EVENTS)                       # vue 480, plans larges 640 (événements `camera`)
     for i, c in enumerate(RAIL):
+        vh = zooms[i] * 9 / 16 / 40.0
         feet = gen.feet_at(track, beats, i * 0.25)
         inverted, _ = gen.track_state(track, beats, i * 0.25)
         top, bottom = (feet, feet - 1.0) if inverted else (feet + 1.0, feet)   # au plafond, la tête est en bas
-        assert top + 0.4 <= c + gen.VIEW_H * 0.5 + 1e-6       # le haut du corps dans l'image
-        assert bottom >= c - gen.VIEW_H * 0.5 - 1e-6          # le bas du corps dans l'image
+        assert top + 0.4 <= c + vh * 0.5 + 1e-6, (i * 0.25, "tête")       # le haut du corps dans l'image
+        assert bottom >= c - vh * 0.5 - 1e-6, (i * 0.25, "pieds")        # le bas du corps dans l'image
 
 
 def test_world_changes_mid_level():

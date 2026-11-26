@@ -151,6 +151,8 @@ namespace Kenta.EditorTools
                 p.role = roles[i];
                 p.sprites = set;
                 p.accent = Hex(accents[i]);
+                // son de frappe du héros (tools/gen-sfx.py) : caisse claire, flûte, basse
+                p.hitSound = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/_Project/Audio/Sfx/sfx_hit_{names[i].ToLowerInvariant()}.wav");
                 EditorUtility.SetDirty(p);
                 result[i] = p;
             }
@@ -339,7 +341,7 @@ namespace Kenta.EditorTools
             var tr = root.transform;
             AddText(tr, font, "Title", "CHOISIS TON HÉROS", new Vector2(0, 72), Gold, 2, PixelText.Align.Center, true);
             var timer = AddText(tr, font, "Timer", "12", new Vector2(146, 72), Color.white, 1, PixelText.Align.Center, true);
-            var world = AddText(tr, font, "World", "▲  MONDE 1/8 : LA SYLVE  ▼", new Vector2(0, 50), Color.white, 1, PixelText.Align.Center, true);
+            var world = AddText(tr, font, "World", "▲  DÉCOR 1/8 : LA SYLVE  ▼", new Vector2(0, 50), Color.white, 1, PixelText.Align.Center, true);
             var portraits = new Image[3];
             var frames = new Image[3];
             var names = new PixelText[3];
@@ -351,7 +353,7 @@ namespace Kenta.EditorTools
                 portraits[i] = AddImage(tr, $"Portrait{i}", theme.heroes[i].sprites.idle, new Vector2(x, -42), null, null, true, new Vector2(0.5f, 0f));
                 names[i] = AddText(tr, font, $"Name{i}", theme.heroes[i].displayName, new Vector2(x, -68), Color.white, 1, PixelText.Align.Center, true);
             }
-            AddText(tr, font, "Hint", "◄ ► HÉROS   ▲ ▼ MONDE   1 VALIDER", new Vector2(0, -84), Color.white, 1, PixelText.Align.Center, true);
+            AddText(tr, font, "Hint", "◄ ► HÉROS   ▲ ▼ DÉCOR   1 VALIDER", new Vector2(0, -84), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<HeroSelectScreen>();
             Set(comp, "theme", theme);
             Set(comp, "timerText", timer);
@@ -370,12 +372,13 @@ namespace Kenta.EditorTools
             var mult = AddText(tr, font, "Multiplier", "×1", new Vector2(-154, 62), Gold, 2, PixelText.Align.Left, true);
             AddImage(tr, "CoinIcon", theme.coinFrames[0], new Vector2(96, 80));     // « 252/252 » commence vers x = 117
             var coins = AddText(tr, font, "Coins", "0/0", new Vector2(154, 80), Color.white, 1, PixelText.Align.Right, true);
-            var friezeBack = new Image[8];
-            var friezeFill = new Image[8];
-            for (int i = 0; i < 8; i++)
+            // frise : 12 segments au plus ; RunHud les cale sur les sections du niveau (largeur proportionnelle)
+            var friezeBack = new Image[12];
+            var friezeFill = new Image[12];
+            for (int i = 0; i < friezeBack.Length; i++)
             {
-                float x = -72 + i * 18 + 8;
-                var back = AddImage(tr, $"Seg{i}", Spr("Gen/ui/pixel.png"), new Vector2(x, 82), new Color(0.18f, 0.15f, 0.28f), new Vector2(16, 3), false);
+                float x = -72 + i * 12 + 5;
+                var back = AddImage(tr, $"Seg{i}", Spr("Gen/ui/pixel.png"), new Vector2(x, 82), new Color(0.18f, 0.15f, 0.28f), new Vector2(10, 3), false);
                 var fill = AddImage(back.transform, "Fill", Spr("Gen/ui/pixel.png"), Vector2.zero, Gold, null, false);
                 var frt = (RectTransform)fill.transform;
                 frt.anchorMin = new Vector2(0, 0);
@@ -418,7 +421,7 @@ namespace Kenta.EditorTools
             var score = AddText(panel, font, "Score", "SCORE 000000", new Vector2(0, 24), Gold, 1);
             var judge = AddText(panel, font, "Judge", "PARFAIT 0  BIEN 0  BOF 0", new Vector2(0, 8), Color.white);
             var coins = AddText(panel, font, "Coins", "PIÈCES 0/0", new Vector2(0, -8), Color.white);
-            var biome = AddText(panel, font, "Biome", "MONDE LA SYLVE", new Vector2(0, -24), Dim);
+            var biome = AddText(panel, font, "Biome", "DÉCOR LA SYLVE", new Vector2(0, -24), Dim);
             var comp = root.AddComponent<GameOverScreen>();
             Set(comp, "title", (RectTransform)titleT.transform);
             Set(comp, "titleText", titleT);
@@ -666,6 +669,10 @@ namespace Kenta.EditorTools
             Set(animator, "target", sr);
             Set(animator, "sprites", theme.heroes[0].sprites);
 
+            // un seul bandeau : chaque reconstruction en ajoutait un de plus (30 dans la scène, tous actifs : jusqu'à
+            // 1 400 sprites de traînée en fin de partie, une grosse part du lag de la borne)
+            for (int i = world.transform.childCount - 1; i >= 0; i--)
+                if (world.transform.GetChild(i).name == "Bandana") UnityEngine.Object.DestroyImmediate(world.transform.GetChild(i).gameObject);
             var bandanaGo = new GameObject("Bandana");
             bandanaGo.transform.SetParent(world.transform, false);
             var bandana = bandanaGo.AddComponent<BandanaTrail>();
@@ -677,7 +684,7 @@ namespace Kenta.EditorTools
             bandanaGo.layer = actorsLayer;
             var rig = cam.GetComponent<CameraRig>();
             Set(rig, "actorVisual", visual);
-            Set(rig, "defaultZoom", 640);       // vue de 16 × 9 u (×3) : une mesure d'avance devant le héros
+            Set(rig, "defaultZoom", 480);       // vue de 12 × 6,75 u (×4) : héros lisible sur la borne (audit du 25/11)
             Set(rig, "defaultFrameX", 0.22f);   // héros au quart gauche de l'écran
             Set(rig, "defaultFrameY", 0.3f);    // sol sous le héros à 30 % du bas
             Set(player, "visual", visual);

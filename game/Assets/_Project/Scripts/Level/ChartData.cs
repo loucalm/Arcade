@@ -68,7 +68,7 @@ namespace Kenta.Level
         /// <summary>Largeur de vue (px de jeu) pour laquelle le rail a été calculé (0 = défaut de la caméra).</summary>
         public int zoom;
         /// <summary>
-        /// Points de reprise (beats) après une mort (die and retry, ADR-031) : choisis par le générateur là où le héros est
+        /// Points de reprise (beats) après une mort (die and retry, ADR-032) : choisis par le générateur là où le héros est
         /// au sol, sur le premier plan, gravité normale, au moins 2 temps avant la prochaine action. Triés.
         /// </summary>
         public float[] checkpoints;

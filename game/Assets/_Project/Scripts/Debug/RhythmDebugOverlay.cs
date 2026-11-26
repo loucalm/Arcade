@@ -78,6 +78,8 @@ namespace Kenta.DebugTools
             infoText += $" | manettes {ArcadePads.Count}";   // manettes vues par le navigateur (build Web), 0 en éditeur
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // IMGUI coûte à chaque image même quand rien n'est dessiné : absent des builds de la borne
         void OnGUI()
         {
             if (!Visible) return;
@@ -90,5 +92,6 @@ namespace Kenta.DebugTools
             GUI.color = Color.white;
             GUI.Label(new Rect(56, 16, 1450, 36), infoText, style);
         }
+#endif
     }
 }
