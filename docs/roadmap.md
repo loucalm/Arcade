@@ -258,6 +258,7 @@ Verticalité, visuels après les obstacles de Lou, contenu. Détail, captures et
 - [ ] Tous sur Unity **6000.3.23f1** + MCP Unity v10.2.0
 
 ## Bugs / dettes connus
+- [x] (2026-11-26, retour de Lucas, sur la borne et le build de Lou) En fin de niveau, pas de « BRAVO » : le héros courait dans le vide et mourait. En build Web, la source audio peut rester « en lecture » après la fin du clip : la fin, attendue sur `!isPlaying`, n'était jamais vue. La fin se décide maintenant sur le temps du morceau (`Conductor.SongEnded`, 7 tests). **À vérifier sur la borne** avec un nouveau build
 - [ ] L'atlas `LiberationSans SDF - Fallback.asset` change tout seul : ne pas le commiter (`git restore`). Idéalement, activer « Clear Dynamic Data On Build ».
 - [ ] Tant que le classement de la borne a moins de 10 scores, tout score > 0 déclenche la saisie du nom (comportement du toolkit)
 - [ ] À très bas FPS (onglet en arrière-plan), le perso tombe : le balayage de collision est limité à 3 unités. Sans impact attendu à 60 fps sur la borne.
