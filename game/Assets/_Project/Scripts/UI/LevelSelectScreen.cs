@@ -68,12 +68,15 @@ namespace Kenta.UI
         public static int NameScale(PixelFontData font, string label, int maxWidth) =>
             PixelText.MeasureWidth(font, label, 2) <= maxWidth ? 2 : 1;
 
+        /// <summary>Aucune action pendant `seconds` : GameFlow revient à l'écran d'accueil.</summary>
+        public bool TimedOut { get; private set; }
+
         void OnEnable()
         {
             EnsureCards();
             timer = seconds;
             elapsed = stableTime = 0f;
-            Done = Back = false;
+            Done = Back = TimedOut = false;
             previewed = false;
             shownIndex = shownVersion = shownSeconds = -1;
             repeat.Hold(ArcadeInput.Stick(1).y);
@@ -98,10 +101,11 @@ namespace Kenta.UI
 
         void Update()
         {
-            if (Done || Back || Count == 0) return;
+            if (Done || Back || TimedOut || Count == 0) return;
             float dt = Time.unscaledDeltaTime;
             elapsed += dt;
             timer -= dt;
+            if (ArcadeInput.AnyInput()) timer = seconds;    // on touche : le délai repart
             int left = Mathf.Max(0, Mathf.CeilToInt(timer));
             if (left != shownSeconds) { shownSeconds = left; timerText.Text = left.ToString("D2"); }
 
@@ -118,8 +122,9 @@ namespace Kenta.UI
             if (!previewed && stableTime >= previewDelay) PlayPreview();
 
             bool ready = elapsed >= guard;
-            if ((ready && ArcadeInput.ConfirmDown(1)) || timer <= 0f) Confirm();
+            if (ready && ArcadeInput.ConfirmDown(1)) Confirm();
             else if (ready && ArcadeInput.HitDown(1)) Back = true;
+            else if (timer <= 0f) TimedOut = true;           // personne : retour à l'accueil (GameFlow)
         }
 
         void Move(int d)

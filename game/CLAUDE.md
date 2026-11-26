@@ -113,7 +113,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 2. `tools/package-build.sh` : copie vers `dist/Kenta/`, ajoute `BuildExtras/{info.json,thumbnail.png,attract.mp4?}` et installe le tout dans la borne locale.
 3. `cd tools/anatidae-arcade && node server.js` → `http://localhost:3000`. Le jeu apparaît dans le menu (Entrée/B1 pour lancer). Accès direct : `http://localhost:3000/Kenta/`.
 4. Vérifier : **Échap maintenu 1,5 s → retour menu** (testé OK le 2026-09-25), AFK 60 s → menu, `GET /api/?game=Kenta` en 200, saisie du highscore, dead zone, 60 fps.
-`game/BuildExtras/thumbnail.png` est générée : `python3 tools/gen-kenta-assets.py --only thumbnail` (la Sylve, Kenta en marionnette, le logo et un bandeau rouge « DÉMO » : retirer l'appel à `demo_banner` dans `gen_thumbnail` pour la version finale). `info.json` le dit aussi (« Démo. » en tête de la description, « (démo) » dans la phrase d'accroche).
+`game/BuildExtras/thumbnail.png` est générée : `python3 tools/gen-kenta-assets.py --only thumbnail` (la Sylve, Kenta en marionnette, le logo et un bandeau rouge « EN DEV » : retirer l'appel à `demo_banner` dans `gen_thumbnail` pour la version finale). `info.json` le dit aussi (« En développement. » en tête de la description, « (en dev) » dans la phrase d'accroche).
 
 ## MCP Unity
 Package `com.coplaydev.unity-mcp` **figé en `#v10.2.0`** dans `Packages/manifest.json`. On ne pointe jamais sur `#main` : les 3 postes doivent avoir la même version. Pour monter de version, mettre à jour le manifest et la version du serveur MCP dans la même PR.

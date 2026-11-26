@@ -2678,7 +2678,7 @@ MonoBehaviour:
   attractLogoSeconds: 8
   attractDemoSeconds: 20
   attractBoardSeconds: 8
-  explainDuration: 6
+  explainDuration: 15
   gameOverDuration: 4.5
   gameOverHighscoreDuration: 3.5
   inputGuard: 0.5
@@ -2780,7 +2780,6 @@ MonoBehaviour:
   backdrop: {fileID: 545117548}
   world: {fileID: 1996129470}
   deathDelay: 0.8
-  startLives: 10
   respawnDelay: 0.7
   lifeBonus: 500
   comboPerMultiplier: 8

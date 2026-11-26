@@ -54,7 +54,8 @@ namespace Kenta.Core
         [SerializeField] float attractLogoSeconds = 8f;
         [SerializeField] float attractDemoSeconds = 20f;
         [SerializeField] float attractBoardSeconds = 8f;
-        [SerializeField] float explainDuration = 6f;
+        [Tooltip("Consignes : secondes sans action avant le retour à l'accueil.")]
+        [SerializeField] float explainDuration = 15f;
         [SerializeField] float gameOverDuration = 4.5f;
         [SerializeField] float gameOverHighscoreDuration = 3.5f;
         [Tooltip("Délai avant d'accepter une validation, pour éviter qu'un appui en rafale saute un écran.")]
@@ -128,16 +129,20 @@ namespace Kenta.Core
                     break;
 
                 case GameState.Explain:
-                    if (stateTimer >= explainDuration || (guardPassed && ArcadeInput.ConfirmDown()))
-                        Enter(GameState.Config);
+                    // personne ne touche à rien pendant explainDuration : retour à l'accueil (plus de passage automatique)
+                    if (ArcadeInput.AnyInput()) stateTimer = Mathf.Min(stateTimer, inputGuard);
+                    if (guardPassed && ArcadeInput.ConfirmDown()) Enter(GameState.Config);
+                    else if (stateTimer >= explainDuration) Enter(GameState.Attract);
                     break;
 
                 case GameState.Config:
-                    if (heroSelect == null || heroSelect.Done) Enter(levelSelect != null ? GameState.LevelSelect : GameState.Playing);
+                    if (heroSelect != null && heroSelect.TimedOut) Enter(GameState.Attract);
+                    else if (heroSelect == null || heroSelect.Done) Enter(levelSelect != null ? GameState.LevelSelect : GameState.Playing);
                     break;
 
                 case GameState.LevelSelect:
-                    if (levelSelect.Back)
+                    if (levelSelect.TimedOut) Enter(GameState.Attract);
+                    else if (levelSelect.Back)
                     {
                         pendingLevel = levelSelect.SelectedIndex;
                         backToHero = true;
