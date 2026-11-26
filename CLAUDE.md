@@ -25,7 +25,7 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 5. Tout ce qui réagit au tempo s'abonne à `Conductor.OnBeat(int beat)`. Pas de minuteries locales.
 6. Checkpoint = `{beat, x}`. Respawn = seek audio sur `BeatToSeconds(beat)`, puis reprise.
 7. Sur WebGL, l'AudioMixer ne gère que le volume : **aucun effet DSP**. Le remix 8-bit est un clip séparé.
-8. **Pixel art agrandi d'un facteur entier** : interface en 320×180 ×6 ; monde vu en 320, 384, 480 (défaut) ou 640 px de large selon le plan de caméra (×6, ×5, ×4, ×3 ; ADR-018), bandes noires sinon. Monde à 40 px/unité, tout sur la grille de pixels, pas de rotation ni d'échelle fractionnaire. Défilement au sous-pixel par le décalage de l'image agrandie (`PixelScreen`, `CameraRig`).
+8. **Pixel art agrandi d'un facteur entier** : interface en 320×180 ×6 ; monde vu en 320, 384, 480 (défaut) ou 640 px de large selon le plan de caméra (×6, ×5, ×4, ×3 ; ADR-018), bandes noires sinon. Monde à 40 px/unité, tout sur la grille de pixels, pas de rotation ni d'échelle fractionnaire. Défilement au sous-pixel par le décalage de l'image agrandie (`PixelScreen`, `CameraRig`). Hors borne (1024×768, 1600×900…), tout le cadre est agrandi pour remplir l'écran, interface comprise, calculée sur le cadre (`PixelScreen.FitScale`, ADR-031) ; sur la borne (1920×1080), facteurs entiers exacts.
 
 ## Carte du repo
 | Chemin | Contenu | Règles |

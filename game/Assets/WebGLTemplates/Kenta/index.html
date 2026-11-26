@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <style>
+      /* Kenta : le jeu remplit toute la fenêtre (borne 1920×1080, mais aussi tout autre écran). Le jeu garde des
+         agrandissements entiers (PixelScreen) et met des bandes noires si le format diffère. */
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+      #unity-canvas { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; display: block; background: #000;
+                      outline: none; image-rendering: pixelated; image-rendering: crisp-edges; }
+      #kenta-error { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+                     color: #fff; font: 20px sans-serif; text-align: center; padding: 2em; }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="kenta-error"></div>
+    <script src="Build/{{{ LOADER_FILENAME }}}"></script>
+    <script>
+      var canvas = document.querySelector("#unity-canvas");
+      createUnityInstance(canvas, {
+        arguments: [],
+        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+        workerUrl: "Build/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        // rendu en pixels CSS : sur un écran haute densité, 4× moins de pixels à calculer ; le navigateur agrandit en
+        // gardant les pixels nets (image-rendering: pixelated). Sur la borne (densité 1), rien ne change.
+        devicePixelRatio: 1,
+      }).then(function (unityInstance) {
+        window.unityInstance = unityInstance;
+      }).catch(function (message) {
+        // pas d'alert() : sur la borne, une boîte de dialogue bloquerait tout
+        var e = document.getElementById("kenta-error");
+        e.textContent = "Kenta n'a pas pu démarrer : " + message;
+        e.style.display = "flex";
+        console.error(message);
+      });
+      // plein écran au premier clic ou à la première touche (le navigateur l'exige) ; sur la borne, déjà plein écran
+      function kentaFullscreen() {
+        var d = document.documentElement;
+        if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen().catch(function () {});
+      }
+      window.addEventListener("pointerdown", kentaFullscreen, { once: true });
+      window.addEventListener("keydown", kentaFullscreen, { once: true });
+    </script>
+  </body>
+</html>

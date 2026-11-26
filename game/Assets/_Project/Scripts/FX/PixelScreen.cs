@@ -31,6 +31,8 @@ namespace Kenta.FX
         public Vector2 ViewUnits => new(ViewWidth / (float)Ppu, ViewHeight / (float)Ppu);
 
         public int Divider { get; private set; } = 1;
+        /// <summary>Agrandissement non entier du cadre entier quand l'agrandissement entier laisserait trop de noir (1 sur la borne).</summary>
+        public float FitScale { get; private set; } = 1f;
         public RectTransform Frame => frame;
         public PixelLayer WorldLayer => world;
         public PixelLayer ActorsLayer => actors;
@@ -72,10 +74,22 @@ namespace Kenta.FX
                 frame.sizeDelta = new Vector2(w * Scale, h * Scale);
                 // fenêtre de taille impaire : le cadre centré tomberait sur un demi-pixel d'écran (colonnes perdues)
                 frame.anchoredPosition = PixelMath.CenterCorrection(Screen.width, Screen.height, w * Scale, h * Scale);
+                // plein écran (ADR-031) : hors borne (fenêtre 1024×768, 1600×900…), tout le cadre est agrandi au plus
+                // grand qui rentre ; les pixels sont alors un peu inégaux, mais le jeu remplit l'écran, quel que soit le
+                // plan de caméra (sinon le cadre changerait de taille à chaque zoom). Sur la borne (1920×1080), le
+                // facteur vaut 1 pour toutes les largeurs de vue : rien ne change.
+                float fit = Mathf.Min(Screen.width / (float)(w * Scale), Screen.height / (float)(h * Scale));
+                FitScale = fit > 1.01f ? fit : 1f;
+                frame.localScale = new Vector3(FitScale, FitScale, 1f);
             }
             world.Bind(w, h, Scale);
             actors.Bind(w, h, Scale);
-            ui.Bind(Width, Height, PixelMath.IntegerScale(Screen.width, Screen.height, Width, Height));
+            // L'interface est dans le cadre : son agrandissement se calcule sur le cadre (pas sur l'écran), sinon elle
+            // déborde et se fait rogner (HUD absent, consignes coupées). S'il reste un écart, elle est étirée au cadre.
+            int uiScale = PixelMath.IntegerScale(w * Scale, h * Scale, Width, Height);
+            ui.Bind(Width, Height, uiScale);
+            float uiFit = Mathf.Max(1f, Mathf.Min(w * Scale / (float)(Width * uiScale), h * Scale / (float)(Height * uiScale)));
+            ui.Display.rectTransform.localScale = new Vector3(uiFit, uiFit, 1f);
             // piège : un canvas « Screen Space - Camera » ne recalcule pas sa taille quand la caméra change de texture
             if (uiCanvas != null)
             {

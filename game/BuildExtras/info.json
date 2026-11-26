@@ -1,6 +1,6 @@
 {
   "name": "Kenta",
-  "description": "Démo. Cours au rythme de la musique à travers huit mondes : saute, frappe et glisse sur le beat. Lianes, gravité inversée, saut dans l'arrière-plan : le niveau change à chaque section. Un faux pas et c'est fini !",
+  "description": "Démo. Cours au rythme de la musique à travers huit mondes : saute et frappe sur le beat. Lianes, gravité inversée, saut dans l'arrière-plan : le niveau change à chaque section. 10 vies : à chaque chute, on repart au dernier point.",
   "creator": "Lou Calmes, Lucas Corrieras, Jeremy Hordé",
   "year": 2026,
   "type": "Runner rythmique",

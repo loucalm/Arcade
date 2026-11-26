@@ -622,18 +622,19 @@ def plane_of(e):
     return 1 if v in ("back", "to_front") else 0
 
 
-def simulate(events, fps=60, track=None, late=0.0, stop=None):
+def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
     """Autoplay image par image. Renvoie (None, stats) si le niveau est fini, sinon (message, stats).
     track : liste où noter (beat, centre du corps, gravité inversée, plan) à chaque image. late : retard (beats,
     négatif = avance) de chaque appui, pour vérifier qu'un humain a une marge ; un nombre (tous les appuis) ou une
-    fonction beat de l'action → retard. stop : beat où l'on arrête (survie jusque-là = réussite).
+    fonction beat de l'action → retard. stop : beat où l'on arrête (survie jusque-là = réussite). start : beat de
+    départ, au sol (reprise après une mort : miroir de RunManager.RespawnAfterDeath).
     En gravité inversée, y et vy sont dans le repère retourné (y' = −y monde), comme dans PlayerController."""
     w = World(events)
     offset = late if callable(late) else (lambda _b, d=late: d)
     end = NB - 1 if stop is None else min(NB - 1, stop)
     dt = 1.0 / fps
     hw, stand = 0.25, 1.0
-    y, vy, grounded = w.height(0), 0.0, True
+    y, vy, grounded = w.height(X(start)), 0.0, True
     inv, plane = False, 0
     fi = 0
     vine = None
@@ -658,13 +659,24 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
         ta = max(0.3, touch - beat_) * SPB
         return (target - y_ + 0.5 * GRAVITY * ta * ta) / ta
     ji = hi = 0
+    while ji < len(w.jumps) and w.jumps[ji] < start - 1e-6:
+        ji += 1
+    while hi < len(w.hits) and w.hits[hi] < start - 1e-6:
+        hi += 1
+    while fi < len(w.flips) and w.flips[fi][0] <= start:
+        fi += 1
+    if start > 0:
+        # comme RunManager.PrepareStartAt : rien ne chevauche le point de départ
+        for en in w.enemies:
+            if abs(en[0] - X(start)) < 0.9:
+                en[3] = False
     jump_buf = -99
-    last_ground = 0.0
+    last_ground = start
     hit_until = -99
-    prev_x = 0.0
+    prev_x = X(start)
     prev_cy = y + 0.5
     top_y = bot_y = y
-    t = 0.0
+    t = start * SPB
 
     def ov(a, b):
         return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
@@ -825,7 +837,7 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
                 return f"touché par l'ennemi du beat {eb} au beat {beat:.2f} (y {wy:.2f}, ennemi {ey:.2f})", {}
         cy = wy - h * 0.5 if inv else wy + h * 0.5
         if track is not None:
-            track.append((beat, cy, inv, plane))
+            track.append((beat, cy, inv, plane, grounded))
         for lum in w.lums:
             if lum[3] and lum[4] == plane and abs(lum[0] - x) < 1.0:
                 # balayage depuis l'image précédente (comme CollectLums)
@@ -839,6 +851,43 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None):
         top_y, bot_y = max(top_y, wy), min(bot_y, wy)
         prev_x = x
         t += dt
+
+
+CHECKPOINT_EVERY = 8                         # un point de reprise par phrase de 8 temps (die and retry)
+CHECKPOINT_LEAD = 1.25                       # au moins 1,25 temps (0,5 s) avant la prochaine action (+ 0,7 s de pose de mort)
+
+
+def checkpoints(events, track):
+    """Points de reprise après une mort (miroir de RunManager.RespawnAfterDeath) : un par phrase de 8 temps, au plus tard
+    sur la phrase, là où le héros court au sol sur le chemin principal (premier plan, gravité normale), au moins
+    CHECKPOINT_LEAD temps avant la prochaine action et sans action juste avant. Ce qui chevauche le point de départ
+    est retiré à la reprise (RunManager.PrepareStartAt), comme dans le simulateur. Chaque point est rejoué."""
+    w = World(events)
+    beats = [tr[0] for tr in track]
+    actions = sorted(w.jumps + w.hits)
+
+    def at(b):
+        import bisect
+        i = min(max(0, bisect.bisect_left(beats, b)), len(track) - 1)
+        return track[i]
+
+    def busy(b):
+        return any(b - 0.25 <= a < b + CHECKPOINT_LEAD for a in actions)
+
+    out = [0.0]
+    for c in range(CHECKPOINT_EVERY, NB - CHECKPOINT_EVERY, CHECKPOINT_EVERY):
+        for k in range(0, 4 * CHECKPOINT_EVERY):
+            b = c - k * 0.25
+            if b <= out[-1] + 2:
+                break
+            _, cy, inv, plane, grounded = at(b)
+            if not grounded or not at(b + 0.25)[4] or inv or plane or busy(b):
+                continue
+            if abs((cy - 0.5) - w.height(X(b))) > 0.15:
+                continue                      # pas au sol du chemin principal (plateforme au-dessus du vide…)
+            out.append(b)
+            break
+    return out
 
 
 def action_windows(events, lo=0.0, hi=NB, limit=0.5, fps=60):
@@ -1123,12 +1172,13 @@ def table(events):
                      for b in range(NB // 4))
 
 
-def write(events, rail, out):
+def write(events, rail, out, checkpoints_=()):
     head = {"id": "level01_shovel_knight", "title": "Main Theme - Shovel Knight", "bpm": BPM,
             "offsetMs": int(OFFSET * 1000), "beatsPerBar": 4, "runSpeed": RUN_SPEED, "zoom": ZOOM, "railStep": 0.25}
     sections = [dict({"name": n, "startBeat": b}, **({"biome": BIOMES[n]} if n in BIOMES else {})) for n, b in SECTIONS]
     s = json.dumps(head, ensure_ascii=False, indent=2)[:-2]
     s += ',\n  "sections": [\n' + ",\n".join("    " + json.dumps(x, ensure_ascii=False) for x in sections) + "\n  ],\n"
+    s += '  "checkpoints": ' + json.dumps([round(c, 2) for c in checkpoints_]) + ",\n"
     s += '  "rail": ' + json.dumps(rail) + ",\n"
     s += '  "events": [\n' + ",\n".join("    " + json.dumps(x, ensure_ascii=False) for x in events) + "\n  ]\n}\n"
     with open(out, "w", encoding="utf-8") as f:
@@ -1175,6 +1225,16 @@ def generate():
     track = []
     simulate(events, 120, track)
     beats = [tr[0] for tr in track]
+    # die and retry : on peut repartir de chaque point de reprise (jusqu'au suivant, et un peu au-delà)
+    cps = checkpoints(events, track)
+    stats["checkpoints"] = cps
+    for i, cp in enumerate(cps):
+        nxt = cps[i + 1] if i + 1 < len(cps) else NB - 1
+        err, _ = simulate(events, 60, start=cp, stop=nxt + 4)
+        if err:
+            problems.append(f"reprise au beat {cp} : {err}")
+    if len(cps) < NB / CHECKPOINT_EVERY * 0.5:
+        problems.append(f"trop peu de points de reprise ({len(cps)})")
     for e in events:
         if e["type"] == "enemy" and e["lane"] == 1:
             inv, _ = track_state(track, beats, e["beat"])
@@ -1215,11 +1275,12 @@ def main():
     if problems:
         print("Chart non jouable :", *problems, sep="\n  - ")
         sys.exit(1)
-    write(events, rail, args.out)
+    write(events, rail, args.out, stats.get("checkpoints", ()))
     n = {t: sum(1 for e in events if e["type"] == t) for t in sorted({e["type"] for e in events})}
     print(f"{len(events)} événements : {n}")
     print(f"dénivelé : de {stats['min_y']:.1f} à {stats['max_y']:.1f} u")
     print(f"pièces ramassées par l'autoplay : {stats['lums'] - len(stats['missed'])}/{stats['lums']}")
+    print(f"points de reprise (die and retry) : {len(stats['checkpoints'])} : {stats['checkpoints']}")
     if stats["missed"]:
         print("  ratées aux beats :", stats["missed"])
 

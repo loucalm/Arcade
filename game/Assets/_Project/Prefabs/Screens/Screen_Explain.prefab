@@ -436,7 +436,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: UN SEUL COUP ET C'EST FINI !
+  text: '10 VIES : ON REPART AU DERNIER POINT'
   color: {r: 1, g: 0.82, b: 0.23, a: 1}
   align: 1
   scale: 1

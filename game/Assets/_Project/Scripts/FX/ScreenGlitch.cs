@@ -21,6 +21,7 @@ namespace Kenta.FX
         public static ScreenGlitch Instance { get; private set; }
 
         PixelScreen screen;
+        PixelLayer[] layers;                              // monde et acteurs (tableau gardé : rien d'alloué par image)
         readonly List<RectTransform> copies = new();
         readonly List<RawImage> copyImages = new();
         RawImage noise;
@@ -42,6 +43,7 @@ namespace Kenta.FX
         {
             Instance = this;
             screen = GetComponent<PixelScreen>();
+            layers = new[] { screen != null ? screen.WorldLayer : null, screen != null ? screen.ActorsLayer : null };
         }
 
         void OnDestroy()
@@ -120,7 +122,7 @@ namespace Kenta.FX
             flipY = upsideDown;
             var uv = new Rect(flipX ? 1f : 0f, flipY ? 1f : 0f, flipX ? -1f : 1f, flipY ? -1f : 1f);
             if (screen != null)
-                foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+                foreach (var layer in layers)
                     if (layer != null && layer.Display != null) layer.Display.uvRect = uv;
             foreach (var img in copyImages)
                 if (img != null) img.uvRect = uv;
@@ -146,7 +148,7 @@ namespace Kenta.FX
             frame++;
             // image retournée : le décalage sous-pixel des calques (posé par CameraRig) doit aller dans l'autre sens
             if ((flipX || flipY) && screen != null)
-                foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+                foreach (var layer in layers)
                 {
                     if (layer == null || layer.Display == null) continue;
                     var pos = layer.Display.rectTransform.anchoredPosition;
@@ -183,7 +185,7 @@ namespace Kenta.FX
         void ApplyMain(Vector2 offset, Color tint, bool visible)
         {
             if (screen == null) return;
-            foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+            foreach (var layer in layers)
             {
                 if (layer == null || layer.Display == null) continue;
                 var d = layer.Display;
@@ -196,7 +198,7 @@ namespace Kenta.FX
         void ApplyCopies(Vector2 offset, Color tint, bool visible)
         {
             if (screen != null)
-                foreach (var layer in new[] { screen.WorldLayer, screen.ActorsLayer })
+                foreach (var layer in layers)
                     if (layer != null && layer.Display != null) layer.Display.enabled = false;
             for (int i = 0; i < copies.Count; i++)
             {
