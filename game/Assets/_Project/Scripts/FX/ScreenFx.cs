@@ -22,10 +22,13 @@ namespace Kenta.FX
         }
 
         /// <summary>Intensité 0..1 ; la couleur est celle du flash.</summary>
+        const float MaxIntensity = 0.5f;
+
         public void Flash(Color color, float intensity)
         {
             tint = color;
-            alpha = Mathf.Max(alpha, Mathf.Clamp01(intensity));
+            // borne publique : jamais un flash plein écran opaque (photosensibilité) ; 50 % au plus
+            alpha = Mathf.Max(alpha, Mathf.Clamp(intensity, 0f, MaxIntensity));
         }
 
         void Update()

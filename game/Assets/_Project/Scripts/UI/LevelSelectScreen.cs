@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace Kenta.UI
 {
     /// <summary>
-    /// Choix du niveau (ADR-030), après le héros : liste façon osu! à droite (joystick haut/bas, la liste boucle et
+    /// Choix du niveau (ADR-032), après le héros : liste façon osu! à droite (joystick haut/bas, la liste boucle et
     /// glisse), infos et top 5 du niveau à gauche, décor du niveau derrière (GameFlow, via OnLevelChanged) et extrait
     /// de son morceau. Bouton 1 = jouer, bouton 2 = retour au héros ; 15 s pour choisir, puis on part sur le niveau
     /// en surbrillance.

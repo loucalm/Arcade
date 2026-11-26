@@ -7,7 +7,7 @@ namespace Kenta.UI
 {
     /// <summary>
     /// Choix du héros (docs/da-kenta.md § 8.2) : joystick gauche/droite, bouton 1 pour valider ; le niveau se choisit
-    /// à l'écran suivant (LevelSelectScreen, ADR-030). 12 s pour choisir : à la fin, on part avec la sélection en cours.
+    /// à l'écran suivant (LevelSelectScreen, ADR-032). 12 s pour choisir : à la fin, on part avec la sélection en cours.
     /// GameFlow donne le héros présélectionné (rejouer dans la minute, ou retour depuis le choix du niveau).
     /// </summary>
     public class HeroSelectScreen : MonoBehaviour

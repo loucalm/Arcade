@@ -12,7 +12,7 @@ namespace Kenta.Core
 
     /// <summary>
     /// Machine à états du flow d'écrans imposé (docs/game-design.md) :
-    /// Attract+HighScore → Explain → Config (héros) → LevelSelect (niveau, ADR-030) → Playing → GameOver (+ classement du
+    /// Attract+HighScore → Explain → Config (héros) → LevelSelect (niveau, ADR-032) → Playing → GameOver (+ classement du
     /// niveau) → NameEntry si top 10 (du niveau ou de la borne) → Attract.
     /// L'accueil tourne en trois temps : logo, démo jouée en autoplay (un niveau différent à chaque fois), classement de ce niveau.
     /// Rejouer dans la minute saute les consignes, et chaque écran de fin se passe avec le bouton 1.
@@ -360,7 +360,7 @@ namespace Kenta.Core
 
         /// <summary>
         /// Beat de départ de la musique des menus : on reprend là où en est le morceau en cours s'il s'agit du même clip
-        /// (chaque niveau a son SongData, mais ils partagent encore « Main Theme », ADR-030), sinon on repart du début.
+        /// (chaque niveau a son SongData, mais ils partagent encore « Main Theme », ADR-032), sinon on repart du début.
         /// </summary>
         public static double MenuResumeBeat(SongData playing, bool isPlaying, double beat, SongData menu)
         {

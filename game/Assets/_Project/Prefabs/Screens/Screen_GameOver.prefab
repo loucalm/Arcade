@@ -299,7 +299,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: MONDE LA SYLVE
+  text: "D\xC9COR LA SYLVE"
   color: {r: 0.6, g: 0.58, b: 0.75, a: 1}
   align: 1
   scale: 1

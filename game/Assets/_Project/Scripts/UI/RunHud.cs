@@ -8,7 +8,7 @@ namespace Kenta.UI
 {
     /// <summary>
     /// HUD de la partie (docs/da-kenta.md § 7) : tout en haut, rien au milieu.
-    /// Gauche : score et multiplicateur. Centre : frise des 8 biomes (barre de progression) et son intitulé.
+    /// Gauche : score et multiplicateur. Centre : frise des sections du niveau (barre de progression) et son intitulé, ou l'annonce d'une surprise.
     /// Droite : pièces ramassées. Mort subite : pas de cœurs. Dans le monde : « PRÊT ? 1 2 3 GO ! », PARFAIT !
     /// </summary>
     public class RunHud : MonoBehaviour
@@ -23,12 +23,13 @@ namespace Kenta.UI
         float sectionLabelTimer;
         [SerializeField] PixelText bannerText;
         [SerializeField] PixelText feedbackText;
-        [Tooltip("8 segments de la frise (un par biome) : fond ; le remplissage est un enfant nommé « Fill ».")]
+        [Tooltip("Segments de la frise (un par section du niveau, 12 au plus) : fond ; le remplissage est un enfant nommé « Fill ».")]
         [SerializeField] Image[] friezeBack;
         [SerializeField] Image[] friezeFill;
 
         RunManager run;
         float shownScore;
+        int lastShownScore = -1;
         int lastMultiplier = 1;
         float multiplierPulse, bannerTimer, feedbackTimer;
         const float FeedbackDuration = 1.2f;
@@ -42,6 +43,7 @@ namespace Kenta.UI
             run.OnStatsChanged += HandleStats;
             run.OnSectionChanged += HandleSection;
             run.OnDamaged += HandleDamaged;
+            run.OnWarning += HandleWarning;
             shownScore = run.Score;
             bannerTimer = feedbackTimer = 0f;
             HandleStats();
@@ -54,12 +56,57 @@ namespace Kenta.UI
             run.OnStatsChanged -= HandleStats;
             run.OnSectionChanged -= HandleSection;
             run.OnDamaged -= HandleDamaged;
+            run.OnWarning -= HandleWarning;
+        }
+
+        // annonce d'une surprise : à la place de l'intitulé, en or, qui clignote sur les temps pendant une mesure
+        string warning = "";
+        float warningTimer;
+        static readonly Color WarningColor = new(1f, 0.82f, 0.23f);
+
+        void HandleWarning(string text)
+        {
+            warning = text;
+            var c = Conductor.Instance;
+            warningTimer = (float)(c != null ? c.SecondsPerBeat * 4.0 : 1.6);
         }
 
         void HandleRunStarted()
         {
             shownScore = 0;
             sectionLabelTimer = sectionLabelSeconds;
+            warningTimer = 0f;
+            LayoutFrieze();
+        }
+
+        // frise calée sur les sections du niveau : un segment par section, de largeur proportionnelle à sa durée
+        const float FriezeLeft = -72f, FriezeWidth = 144f, FriezeGap = 2f;
+        readonly float[] segFrom = new float[16], segTo = new float[16];
+        int segCount;
+
+        void LayoutFrieze()
+        {
+            segCount = 0;
+            if (friezeBack == null || friezeBack.Length == 0 || run == null || run.Chart == null) return;
+            var sections = run.Chart.sections;
+            int n = Mathf.Clamp(sections != null ? sections.Length : 0, 1, Mathf.Min(friezeBack.Length, segFrom.Length));
+            for (int i = 0; i < n; i++)
+            {
+                segFrom[i] = sections != null && sections.Length > 0 ? run.ProgressAt(sections[i].startBeat) : 0f;
+                segTo[i] = i + 1 < n && sections != null ? run.ProgressAt(sections[i + 1].startBeat) : 1f;
+            }
+            segCount = n;
+            for (int i = 0; i < friezeBack.Length; i++)
+            {
+                bool on = i < n;
+                friezeBack[i].gameObject.SetActive(on);
+                if (!on) continue;
+                float x0 = Mathf.Round(FriezeLeft + segFrom[i] * FriezeWidth);
+                float x1 = Mathf.Round(FriezeLeft + segTo[i] * FriezeWidth) - FriezeGap;
+                var rt = (RectTransform)friezeBack[i].transform;
+                rt.sizeDelta = new Vector2(Mathf.Max(2f, x1 - x0), rt.sizeDelta.y);
+                rt.anchoredPosition = new Vector2(Mathf.Round((x0 + x1) * 0.5f), rt.anchoredPosition.y);
+            }
         }
 
         void HandleStats()
@@ -72,7 +119,9 @@ namespace Kenta.UI
             coinsText.Text = $"{run.Lums}/{run.TotalLums}";
             var biome = run.CurrentBiome;
             string section = run.SectionName.ToUpperInvariant();
-            if (biome != null) sectionLabel = string.IsNullOrEmpty(section) ? biome.label : $"{section} · {biome.label}";
+            // le décor ne change plus pendant le morceau : on ne le nomme qu'au départ, ensuite la section seule
+            if (biome != null) sectionLabel = string.IsNullOrEmpty(section) ? biome.label
+                                             : run.SectionIndex <= 0 ? $"{section} · {biome.label}" : section;
         }
 
         void HandleSection(ChartSection section, bool perfect, int bonus)
@@ -98,7 +147,12 @@ namespace Kenta.UI
             if (run == null) return;
             float dt = Time.unscaledDeltaTime;
             shownScore = Mathf.MoveTowards(shownScore, run.Score, Mathf.Max(60f, Mathf.Abs(run.Score - shownScore) * 8f) * dt);
-            scoreText.Text = Mathf.RoundToInt(shownScore).ToString("D6");
+            int shown = Mathf.RoundToInt(shownScore);
+            if (shown != lastShownScore)                         // une chaîne par changement, pas par image (GC WebGL)
+            {
+                lastShownScore = shown;
+                scoreText.Text = shown.ToString("D6");
+            }
 
             multiplierPulse = Mathf.MoveTowards(multiplierPulse, 0f, dt * 3f);
             multiplierText.Scale = multiplierPulse > 0.3f ? 3 : 2;
@@ -107,8 +161,21 @@ namespace Kenta.UI
             UpdateCountdown();
             // intitulé de section : visible quelques secondes à chaque nouvelle section, puis effacé (il chevauchait les pièces)
             sectionLabelTimer = Mathf.Max(0f, sectionLabelTimer - dt);
+            warningTimer = Mathf.Max(0f, warningTimer - dt);
             string label = sectionLabelTimer > 0f ? sectionLabel : "";
-            if (biomeText != null && biomeText.Text != label) biomeText.Text = label;
+            Color labelColor = Color.white;
+            if (warningTimer > 0f)
+            {
+                var cd = Conductor.Instance;
+                double b = cd != null ? cd.SongBeat : 0;
+                label = b - System.Math.Floor(b) < 0.7 ? warning : "";      // clignote sur les temps
+                labelColor = WarningColor;
+            }
+            if (biomeText != null)
+            {
+                if (biomeText.Text != label) biomeText.Text = label;
+                if (biomeText.Color != labelColor) biomeText.Color = labelColor;
+            }
 
             bannerTimer = Mathf.Max(0f, bannerTimer - dt);
             if (bannerTimer <= 0f && !countdownActive) bannerText.Text = "";
@@ -138,10 +205,11 @@ namespace Kenta.UI
         void UpdateFrieze()
         {
             if (friezeBack == null || friezeBack.Length == 0) return;
-            float progress = run.Progress * friezeBack.Length;
-            for (int i = 0; i < friezeBack.Length; i++)
+            if (segCount == 0) LayoutFrieze();
+            float progress = run.Progress;
+            for (int i = 0; i < segCount; i++)
             {
-                float f = Mathf.Clamp01(progress - i);
+                float f = Mathf.Clamp01((progress - segFrom[i]) / Mathf.Max(0.0001f, segTo[i] - segFrom[i]));
                 var fill = (RectTransform)friezeFill[i].transform;
                 fill.anchorMax = new Vector2(f, 1f);
                 bool current = f > 0f && f < 1f;

@@ -16,3 +16,4 @@ MonoBehaviour:
   role: LE BASSISTE
   sprites: {fileID: 11400000, guid: 4bf9bded8873a4571a5c54ee63d5cb5c, type: 2}
   accent: {r: 0.8784314, g: 0.22745098, b: 0.22745098, a: 1}
+  hitSound: {fileID: 8300000, guid: 7e754e47f7c8d4929aca5e4bf464f470, type: 3}

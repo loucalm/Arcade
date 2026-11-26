@@ -135,10 +135,6 @@ namespace Kenta.EditorTools
                 set.run = set.runCycle[0];
                 set.jumpFrames = Enumerable.Range(0, 8).Select(k => Spr(g + $"jump_{k}.png")).ToArray();
                 set.jump = set.jumpFrames[1];
-                set.slideLoop = Enumerable.Range(0, 3).Select(k => Spr(g + $"slide_{k}.png")).ToArray();
-                set.slide = set.slideLoop[0];
-                set.slideIn = Enumerable.Range(0, 3).Select(k => Spr(g + $"slidein_{k}.png")).ToArray();
-                set.slideOut = Enumerable.Range(0, 3).Select(k => Spr(g + $"slideout_{k}.png")).ToArray();
                 set.hitFrames = Enumerable.Range(0, 4).Select(k => Spr(g + $"hit_{k}.png")).ToArray();
                 set.hit = set.hitFrames[1];
                 set.crouch = Spr(g + "crouch.png");
@@ -155,6 +151,8 @@ namespace Kenta.EditorTools
                 p.role = roles[i];
                 p.sprites = set;
                 p.accent = Hex(accents[i]);
+                // son de frappe du héros (tools/gen-sfx.py) : caisse claire, flûte, basse
+                p.hitSound = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/_Project/Audio/Sfx/sfx_hit_{names[i].ToLowerInvariant()}.wav");
                 EditorUtility.SetDirty(p);
                 result[i] = p;
             }
@@ -306,29 +304,27 @@ namespace Kenta.EditorTools
 
         static GameObject BuildExplain(PixelFontData font, LevelTheme theme)
         {
-            // 3 gestes, les boutons dessinés comme ceux de la borne ; le héros mime le geste en cours, sur le temps
+            // 2 gestes (ADR-030 : plus de glissade), les boutons dessinés comme ceux de la borne ; le héros mime le geste en cours
             var root = ScreenRoot("Screen_Explain");
             var tr = root.transform;
             var panel = AddImage(tr, "Panel", Spr("Gen/ui/panel.png"), new Vector2(24, -6), null, new Vector2(224, 112), false);
             panel.type = Image.Type.Sliced;
             AddText(tr, font, "Title", "COMMENT JOUER", new Vector2(0, 70), Gold, 2, PixelText.Align.Center, true);
             var hero = AddImage(tr, "Hero", theme.heroes[0].sprites.run, new Vector2(-122, -50), null, null, true, new Vector2(0.5f, 0f));
-            string[] verbs = { "SAUTE", "FRAPPE", "GLISSE" };
-            string[] details = { "TROUS, MURS, MARCHES", "LES INSTRUMENTS", "SOUS LES BRANCHES" };
-            var texts = new PixelText[3];
-            var icons = new Image[3];
-            for (int i = 0; i < 3; i++)
+            string[] verbs = { "SAUTE", "FRAPPE" };
+            string[] details = { "TROUS, CUIRASSÉS, LIANES", "LES INSTRUMENTS" };
+            var texts = new PixelText[2];
+            var icons = new Image[2];
+            for (int i = 0; i < 2; i++)
             {
-                float y = 32 - i * 28;
+                float y = 26 - i * 34;
                 texts[i] = AddText(tr, font, $"Line{i}", verbs[i], new Vector2(-46, y + 4), Color.white, 2, PixelText.Align.Left);
                 AddText(tr, font, $"Detail{i}", details[i], new Vector2(-46, y - 10), Dim, 1, PixelText.Align.Left);
             }
-            icons[0] = AddImage(tr, "Btn1", Spr("Gen/ui/button_red.png"), new Vector2(-64, 32), null, null, true);
-            AddText(tr, font, "Btn1Label", "1", new Vector2(-64, 32), Color.white);
-            icons[1] = AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-64, 4), null, null, true);
-            AddText(tr, font, "Btn2Label", "2", new Vector2(-64, 4), Color.white);
-            icons[2] = AddImage(tr, "Stick", Spr("Gen/ui/stick.png"), new Vector2(-64, -24), null, null, true);
-            AddText(tr, font, "StickLabel", "▼", new Vector2(-64, -36), Gold);
+            icons[0] = AddImage(tr, "Btn1", Spr("Gen/ui/button_red.png"), new Vector2(-64, 26), null, null, true);
+            AddText(tr, font, "Btn1Label", "1", new Vector2(-64, 26), Color.white);
+            icons[1] = AddImage(tr, "Btn2", Spr("Gen/ui/button_blue.png"), new Vector2(-64, -8), null, null, true);
+            AddText(tr, font, "Btn2Label", "2", new Vector2(-64, -8), Color.white);
             AddText(tr, font, "Footer", "UN SEUL COUP ET C'EST FINI !", new Vector2(24, -50), Gold, 1, PixelText.Align.Center);
             AddText(tr, font, "Hint", "BOUTON 1 POUR CONTINUER", new Vector2(0, -80), Color.white, 1, PixelText.Align.Center, true);
             var comp = root.AddComponent<ExplainScreen>();
@@ -381,7 +377,7 @@ namespace Kenta.EditorTools
         }
 
         /// <summary>
-        /// Choix du niveau (ADR-030), maquette docs/img/selection-niveau-maquette.png : liste façon osu! à droite (cartes
+        /// Choix du niveau (ADR-032), maquette docs/img/selection-niveau-maquette.png : liste façon osu! à droite (cartes
         /// créées en jeu depuis la carte modèle), infos et top 5 du niveau à gauche, bandeaux en haut et en bas.
         /// Coordonnées : pixels d'interface, origine au centre de l'écran 320×180.
         /// </summary>
@@ -474,12 +470,13 @@ namespace Kenta.EditorTools
             var mult = AddText(tr, font, "Multiplier", "×1", new Vector2(-154, 62), Gold, 2, PixelText.Align.Left, true);
             AddImage(tr, "CoinIcon", theme.coinFrames[0], new Vector2(96, 80));     // « 252/252 » commence vers x = 117
             var coins = AddText(tr, font, "Coins", "0/0", new Vector2(154, 80), Color.white, 1, PixelText.Align.Right, true);
-            var friezeBack = new Image[8];
-            var friezeFill = new Image[8];
-            for (int i = 0; i < 8; i++)
+            // frise : 12 segments au plus ; RunHud les cale sur les sections du niveau (largeur proportionnelle)
+            var friezeBack = new Image[12];
+            var friezeFill = new Image[12];
+            for (int i = 0; i < friezeBack.Length; i++)
             {
-                float x = -72 + i * 18 + 8;
-                var back = AddImage(tr, $"Seg{i}", Spr("Gen/ui/pixel.png"), new Vector2(x, 82), new Color(0.18f, 0.15f, 0.28f), new Vector2(16, 3), false);
+                float x = -72 + i * 12 + 5;
+                var back = AddImage(tr, $"Seg{i}", Spr("Gen/ui/pixel.png"), new Vector2(x, 82), new Color(0.18f, 0.15f, 0.28f), new Vector2(10, 3), false);
                 var fill = AddImage(back.transform, "Fill", Spr("Gen/ui/pixel.png"), Vector2.zero, Gold, null, false);
                 var frt = (RectTransform)fill.transform;
                 frt.anchorMin = new Vector2(0, 0);
@@ -522,7 +519,7 @@ namespace Kenta.EditorTools
             var score = AddText(panel, font, "Score", "SCORE 000000", new Vector2(0, 24), Gold, 1);
             var judge = AddText(panel, font, "Judge", "PARFAIT 0  BIEN 0  BOF 0", new Vector2(0, 8), Color.white);
             var coins = AddText(panel, font, "Coins", "PIÈCES 0/0", new Vector2(0, -8), Color.white);
-            var biome = AddText(panel, font, "Biome", "MONDE LA SYLVE", new Vector2(0, -24), Dim);
+            var biome = AddText(panel, font, "Biome", "DÉCOR LA SYLVE", new Vector2(0, -24), Dim);
             var comp = root.AddComponent<GameOverScreen>();
             Set(comp, "title", (RectTransform)titleT.transform);
             Set(comp, "titleText", titleT);
@@ -636,7 +633,7 @@ namespace Kenta.EditorTools
 
         /// <summary>
         /// Un niveau par biome, chacun avec son SongData (Song_0N_&lt;biome&gt;), créé s'il manque en recopiant Song_Level01
-        /// (ADR-030). Ne remplace jamais le morceau, la chart ou la vignette qu'un niveau a déjà reçus.
+        /// (ADR-032). Ne remplace jamais le morceau, la chart ou la vignette qu'un niveau a déjà reçus.
         /// </summary>
         static LevelCatalog BuildLevels(BiomeTheme[] biomes)
         {
@@ -798,6 +795,10 @@ namespace Kenta.EditorTools
             Set(animator, "target", sr);
             Set(animator, "sprites", theme.heroes[0].sprites);
 
+            // un seul bandeau : chaque reconstruction en ajoutait un de plus (30 dans la scène, tous actifs : jusqu'à
+            // 1 400 sprites de traînée en fin de partie, une grosse part du lag de la borne)
+            for (int i = world.transform.childCount - 1; i >= 0; i--)
+                if (world.transform.GetChild(i).name == "Bandana") UnityEngine.Object.DestroyImmediate(world.transform.GetChild(i).gameObject);
             var bandanaGo = new GameObject("Bandana");
             bandanaGo.transform.SetParent(world.transform, false);
             var bandana = bandanaGo.AddComponent<BandanaTrail>();
@@ -809,7 +810,7 @@ namespace Kenta.EditorTools
             bandanaGo.layer = actorsLayer;
             var rig = cam.GetComponent<CameraRig>();
             Set(rig, "actorVisual", visual);
-            Set(rig, "defaultZoom", 640);       // vue de 16 × 9 u (×3) : une mesure d'avance devant le héros
+            Set(rig, "defaultZoom", 480);       // vue de 12 × 6,75 u (×4) : héros lisible sur la borne (audit du 25/11)
             Set(rig, "defaultFrameX", 0.22f);   // héros au quart gauche de l'écran
             Set(rig, "defaultFrameY", 0.3f);    // sol sous le héros à 30 % du bas
             Set(player, "visual", visual);
@@ -821,7 +822,6 @@ namespace Kenta.EditorTools
             Set(player, "spinOnJump", false);
             Set(player, "width", 0.5f);
             Set(player, "standHeight", 1.0f);
-            Set(player, "slideHeight", 0.5f);
             Set(player, "jumpHeight", 1.5f);
 
             var backdropGo = new GameObject("Backdrop");
@@ -889,7 +889,7 @@ namespace Kenta.EditorTools
         }
 
         /// <summary>
-        /// Construit seulement l'écran des niveaux (ADR-030) : morceaux et vignettes des niveaux, prefabs du héros, des
+        /// Construit seulement l'écran des niveaux (ADR-032) : morceaux et vignettes des niveaux, prefabs du héros, des
         /// niveaux et du classement, puis les branche dans la scène ouverte. Ne touche à rien d'autre (la reconstruction
         /// complète ajoute un objet « Bandana » à la scène).
         /// </summary>

@@ -11,5 +11,7 @@ namespace Kenta.Player
         public HeroSpriteSet sprites;
         [Tooltip("Couleur du bandeau (traînée de combo) et du cadre de sélection.")]
         public Color accent = Color.white;
+        [Tooltip("Son de frappe propre au héros (Kenta : caisse claire, Aiko : flûte, Ryo : basse). Vide : son commun.")]
+        public AudioClip hitSound;
     }
 }

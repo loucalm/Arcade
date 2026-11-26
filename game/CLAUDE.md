@@ -8,7 +8,7 @@ Piège : l'ancien 6000.0.40f1 bloque sur « Initialize Package Manager » sur le
 ## Configuration figée (ne pas changer sans ADR)
 - **Built-in Render Pipeline** (pas d'URP ni de HDRP). Espace couleur Gamma.
 - **Ancien Input Manager** (`activeInputHandler: 0`). Ne pas installer le package Input System.
-- Web : template **Minimal**, compression **Disabled** (le serveur Express de la borne n'envoie pas les en-têtes gzip/brotli), 1920×1080, data caching activé.
+- Web : gabarit **Kenta** (`Assets/WebGLTemplates/Kenta` : page sans défilement, rendu fixe 1920×1080 quelle que soit la mise à l'échelle de Windows ; ADR-031), build **release** (jamais Development), IL2CPP Release « vitesse », compression **Disabled** (le serveur Express de la borne n'envoie pas les en-têtes gzip/brotli), 1920×1080, data caching activé.
 - Mode éditeur par défaut en 3D : on fait de la 2D en sprites et caméra orthographique, sans changer le template.
 
 ## Arborescence
@@ -40,13 +40,13 @@ Les `.gitkeep` gardent les dossiers vides dans git (Unity ignore les fichiers qu
 Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à états : `Attract → Explain → Config (héros) → LevelSelect (niveau) → Playing → GameOver → NameEntry (si top 10) → Attract`. Un prefab par écran dans `Prefabs/Screens/`. Détails : [../docs/game-design.md](../docs/game-design.md).
 - Attract : cycle logo (8 s) → démo jouée en autoplay, un niveau différent à chaque fois (20 s) → classement de ce niveau (8 s). N'importe quel bouton lance la partie (et débloque l'audio).
 - Config : héros (gauche/droite). Rejouer dans la minute (`GameSession.IsQuickRetry`) saute les consignes et reprend héros et niveau.
-- LevelSelect (`UI/LevelSelectScreen`, ADR-030) : liste façon osu! (haut/bas, la liste boucle), décor et extrait du morceau du niveau (`SongData.previewBeat`), top 5 du niveau ; B1 jouer, B2 retour au héros, 15 s. Calculs purs testés : `UI/LevelListLayout`, `UI/StickRepeat`.
+- LevelSelect (`UI/LevelSelectScreen`, ADR-032) : liste façon osu! (haut/bas, la liste boucle), décor et extrait du morceau du niveau (`SongData.previewBeat`), top 5 du niveau ; B1 jouer, B2 retour au héros, 15 s. Calculs purs testés : `UI/LevelListLayout`, `UI/StickRepeat`.
 - GameOver : panneau puis classement **du niveau joué**, chacun passable au bouton 1 ; si top 10 (du niveau ou de la borne) → saisie du nom → retour à l'accueil sur ce classement (le nouveau score pulse en or).
 - **Classements par niveau** : `Core/LevelScores` (top 10, une entrée par nom), dans l'Extradata de la borne (clé `top_<id>`), lue seulement si `FetchHighscores` a vraiment répondu ; sans borne, en mémoire. La liste officielle (`HighscoreManager`) reçoit aussi chaque score.
 
 ## Entrées
 - Classe unique `Kenta.Core.ArcadeInput` : lit `P{n}_Horizontal`/`P{n}_Vertical` (dead zone **0,3** sur `GetAxisRaw`) et `P{n}_B1`, `P{n}_B2`, `P{n}_Start`.
-- Mapping de jeu : **B1 = saut** (maintenu = saut plus haut), **B2 = frappe**, **joystick bas = glissade**. Start = valider dans les menus.
+- Mapping de jeu : **B1 = saut**, **B2 = frappe**. Plus de glissade (ADR-030) : le joystick ne sert qu'aux menus. Start = valider dans les menus.
 - Clavier de dev (P1, AZERTY) : ZQSD, F = B1, G = B2, X = Start, **Échap = bouton blanc**. Voir [../docs/anatidae.md](../docs/anatidae.md).
 - Axe vertical manette déjà inversé dans l'InputManager : **haut = positif**.
 
@@ -69,10 +69,10 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 | `Core/GameFlow` | Flow d'écrans imposé : Attract (logo, démo, classement) → Explain → Config (héros) → LevelSelect (niveau) → Playing → GameOver → NameEntry. |
 | `Core/GameSession`, `Core/LevelScores` | Héros et niveau choisis (statique) ; classements par niveau (Extradata de la borne). |
 | `Core/TimingJudge`, `Core/GradeCalculator`, `UI/JudgePopup` | Jugement PARFAIT / BIEN / BOF de chaque action (score, combo) et note de fin S+ … D (règles : docs/game-design.md). |
-| `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par niveau (`LevelDef.biome`, gardé du début à la fin, ADR-030) : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |
+| `Level/BiomeTheme` ×8, `Level/LevelTheme` (`Theme_Kenta`) | Un biome par niveau (`LevelDef.biome`, gardé du début à la fin, ADR-032) : décor, sol, trou, obstacles, ennemi local. Remplacer un sprite = changer la référence, sans code. |
 | `Level/LevelDef` ×8, `Level/LevelCatalog` | Un niveau = un thème + un `SongData` (`Song_0N_<biome>` : clip, chart, `previewBeat`) + une vignette. Provisoirement tous sur « Main Theme ». Donner un contenu propre à un niveau = changer son `SongData`, sans code. |
-| `Level/LevelBuilder`, `Level/LevelTerrain` | Chart → obstacles + collisions, sol à hauteur libre (`step`, `ramp`, `platform`, trous, tambours `bounce`) en piliers, lu par le joueur et la caméra ; mort par chute locale (`KillY`). Géométrie : docs/chart-format.md. |
-| `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu en 3 calques (couche Unity `Actors` pour le héros), zoom par paliers entiers (`PixelScreen.SetZoom`), caméra par plans pilotée par la chart (`camera` : zoom, place du héros), qui regarde le terrain devant ; ciel + 3 calques en parallaxe, posés sur le sol le plus bas de la vue en partie (lu sur `CameraRig.HeightProbe`, sans toucher à la caméra), pied étiré jusqu'au bas. |
+| `Level/LevelBuilder`, `Level/LevelTerrain` | Chart → obstacles + collisions, sol à hauteur libre (`step`, `ramp`, `platform`, trous, tambours `bounce`) en piliers dont la profondeur s'efface par paliers transparents (îlots), lu par le joueur et la caméra ; mort par chute locale (`KillY`). Géométrie : docs/chart-format.md. |
+| `FX/PixelScreen`, `FX/PixelLayer`, `FX/PixelMath`, `FX/CameraRig`, `FX/BiomeBackdrop` | Rendu en 3 calques (couche Unity `Actors` pour le héros), zoom par paliers entiers (`PixelScreen.SetZoom`), caméra par plans pilotée par la chart (`camera` : zoom, place du héros), qui regarde le terrain devant ; ciel + 3 calques en parallaxe, posés sur le sol le plus bas de la vue en partie (lu sur `CameraRig.HeightProbe`, sans toucher à la caméra), pied étiré jusqu'au bas ; en altitude, les calques descendent, une mer de nuages monte du bas et le ciel fraîchit. Vue **480 par défaut** ; les plans larges 640 sont posés par `gen-level-vertical.py` (`zoom_plan`). `ScreenGlitch` : 2×2 au plus, neige ≤ 30 % dégagée autour du héros. |
 | `FX/BandanaTrail`, `FX/ScreenFx`, `FX/FxPool`, `FX/BeatFrames` | Traînée du bandeau, flash, particules en pixels, djembé qui change d'image sur le temps. |
 | `Player/PlayerController`, `HeroAnimator`, `HeroProfile`, `HeroSpriteSet` | Physique maison réglée en beats ; image du héros (marionnette `tools/hero_rig.py` : course, montée et descente de pente, chute depuis un bord, saut, frappe, glissade, accroupi, poses fixes ; pente lue sur la position, sans toucher à la physique) ; 3 héros. |
 | `UI/PixelText`, `PixelFontData`, `RunHud`, `AttractScreen`, `HeroSelectScreen`, `LevelSelectScreen`, `LevelCard`, `ExplainScreen`, `GameOverScreen`, `HighscoreBoard`, `NameEntryScreen` | Interface en pixels (canvas 320×180) : police proportionnelle à ombre, plaques sous les textes posés sur le décor. |
@@ -88,7 +88,12 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 - Cible **60 fps** en build Web sur la borne. Pas de post-process plein écran coûteux, pas d'ombres, peu de lumières.
 - Juice = secousses en pixels entiers, flash des drops, particules en pixels (< ~300 actives). **Pas d'animation par crans sur le beat** (lu comme un tremblement) : mouvements continus ou cycles d'images.
 - Sprites pixel art : filtre Point, aucune compression (réglé par `KentaSpritePostprocessor`).
-- Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades.
+- ⚠️ Piège : un sprite créé en code (`Sprite.Create`, ex. dégradé de 1 × 8 px) a la taille de sa texture divisée par son PPU ; pour couvrir la vue, diviser l'échelle par `sprite.bounds.size` (la brume du décor ne couvrait qu'une colonne au centre).
+- Pas d'allocation dans `Update` (pas de LINQ ni de `new` par frame) : le GC WebGL provoque des saccades. Un texte qui change (score) : ne refaire la chaîne que si la valeur change.
+- **Niveau par tranches** (`LevelBuilder.BuildChunks`) : les objets sont rangés par tranches de 8 u, seules celles autour de la caméra sont actives (≈ 560 sprites actifs au lieu de 6 000). Un objet ramassé ou tué (`activeSelf` faux) le reste. Un nouvel objet de niveau doit être un enfant d'un groupe du niveau (il sera rangé tout seul) ; plus large que 12 u, il reste toujours actif.
+- **Physique du héros en pas de 1/60 s** (`PlayerController.Update` → `Step`) : une image longue (lag, GC) est rejouée en petits pas, comme le simulateur du générateur. Sans ça, sur la borne : morts sur les rampes raides et dans les cuirassés. La manette est lue une fois par image (appui au dernier pas), l'autoplay à chaque pas.
+- ⚠️ Piège : chaque « Reconstruire » ajoutait un `World/Bandana` de plus (30 dans la scène, ~1 400 sprites en fin de partie). Corrigé dans `KentaBuilder` ; vérifier `grep -c "m_Name: Bandana$" Main.unity` = 1.
+- Outils de mesure locaux (non commités, dans `Scripts/Editor/`) : partie en lag simulé (15 i/s + à-coups), sonde d'objets actifs et d'allocations. En éditeur, ~12 Ko/image sont alloués par l'éditeur lui-même (même à l'accueil) : ne pas les attribuer au jeu.
 
 ## Debug
 - `Debug/` (namespace **`Kenta.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
@@ -101,7 +106,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 - ⚠️ Piège MCP : chaque `execute_code` compile du C# dans l'éditeur et fige le jeu ~300 ms (`dt` = 0,333). Pendant une partie en autoplay, ça fait rater un saut. Pour valider une chart : lancer l'autoplay, **ne rien appeler** pendant la durée du morceau, puis lire le résultat une seule fois. Même chose pour les captures (`manage_camera screenshot`) et les gros calculs CPU (génération de sprites).
 
 ## Build → borne
-1. File > Build Profiles > **Web** → Build dans **`game/Build`** (gitignoré).
+1. Menu **Kenta > Build Web (borne)** (`Editor/KentaWebBuild`) : applique les réglages de la borne (gabarit Kenta, release, IL2CPP vitesse) et construit dans **`game/Build`** (gitignoré). Équivaut à File > Build Profiles > Web > Build, **Development Build décoché**, après le menu Kenta > Régler le projet pour la borne (Web). Le module Web doit être installé pour Unity **6000.3.23f1**.
 2. `tools/package-build.sh` : copie vers `dist/Kenta/`, ajoute `BuildExtras/{info.json,thumbnail.png,attract.mp4?}` et installe le tout dans la borne locale.
 3. `cd tools/anatidae-arcade && node server.js` → `http://localhost:3000`. Le jeu apparaît dans le menu (Entrée/B1 pour lancer). Accès direct : `http://localhost:3000/Kenta/`.
 4. Vérifier : **Échap maintenu 1,5 s → retour menu** (testé OK le 2026-09-25), AFK 60 s → menu, `GET /api/?game=Kenta` en 200, saisie du highscore, dead zone, 60 fps.

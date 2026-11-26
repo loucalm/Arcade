@@ -10,7 +10,7 @@ namespace Kenta.UI
     /// Classement en pixel art (docs/da-kenta.md § 8.7) : top 10, pièces or, argent et bronze devant les trois premiers,
     /// et le score qu'on vient d'entrer qui pulse en or. Deux sources : la liste officielle de la borne
     /// (« MEILLEURS SCORES », Anatidae.HighscoreManager) ou le classement d'un niveau (« CLASSEMENT : … »,
-    /// LevelScores, ADR-030). Remplace l'affichage du toolkit (police Arial) ; les données et l'envoi restent ceux du toolkit.
+    /// LevelScores, ADR-032). Remplace l'affichage du toolkit (police Arial) ; les données et l'envoi restent ceux du toolkit.
     /// </summary>
     public class HighscoreBoard : MonoBehaviour
     {

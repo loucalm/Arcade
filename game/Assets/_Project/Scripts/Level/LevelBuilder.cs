@@ -19,9 +19,6 @@ namespace Kenta.Level
         const float EnemyCenterBeats = 0.6f;        // ennemi 0,6 beat après son temps : ~165 ms de marge des deux côtés
         /// <summary>Ennemi cuirassé : on le touche 0,15 beat avant son temps (fin d'un saut d'un beat), l'appui du rebond tombe sur le temps.</summary>
         public const float StompTouchBeats = 0.15f;
-        const float SlideStartBeats = 0.1f;
-        const float SlideDefaultLength = 1f;
-        const float SlideBarBottom = 0.62f;
         const float StepStartBeats = 0.3f;          // plateforme : comme un mur
         const float StepFaceBeats = 0.5f;           // marche : face à beat+0,5 (+ coup de pouce : ~130 ms de marge sur +1 u)
         const float MaxHeight = 60f;                // hauteur libre : le niveau grimpe et plonge (garde-fou seulement)
@@ -55,7 +52,6 @@ namespace Kenta.Level
         // Données d'autoplay (debug + démo de l'écran Attract).
         public readonly List<float> AutoJumpBeats = new();
         public readonly List<float> AutoHitBeats = new();
-        public readonly List<Vector2> AutoSlideSpans = new();
 
         readonly List<Vector2> gaps = new();
         /// <summary>
@@ -188,18 +184,6 @@ namespace Kenta.Level
                         if (stomp) AutoJumpBeats.Add(e.beat);          // l'appui du grand rebond
                         else AutoHitBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
-                        break;
-                    }
-                    case "slide_bar":
-                    {
-                        float len = p.length > 0 ? p.length : SlideDefaultLength;
-                        float x0 = BeatToX(e.beat + SlideStartBeats), x1 = BeatToX(e.beat + SlideStartBeats + len);
-                        float sh = HeightAt(x0);
-                        var o = new LevelObject { kind = LevelObjectKind.SlideBar, beat = e.beat, bounds = Rect.MinMaxRect(x0, sh + SlideBarBottom, x1, sh + 8f) };
-                        o.view = MakeSlideBar(o.bounds, BiomeAt(e.beat));
-                        Obstacles.Add(o);
-                        AutoSlideSpans.Add(new Vector2(e.beat - 0.05f, e.beat + SlideStartBeats + len + 0.35f));
-                        lastX = Mathf.Max(lastX, x1);
                         break;
                     }
                     case "lum_line":
@@ -343,6 +327,7 @@ namespace Kenta.Level
                     case "camera":
                     case "section_change":
                     case "screen_split":
+                    case "screen_flip":
                     case "glitch":
                         FxEvents.Add(e);
                         break;
@@ -369,7 +354,85 @@ namespace Kenta.Level
             BuildBack();
             BuildBeatGrid(Mathf.CeilToInt(lastBeat) + 16);
             BuildCheckpoints();
+            PrepareFrontFade();
+            BuildChunks();
         }
+
+        // ---------- Tranches : seul le morceau de niveau autour de la caméra est actif ----------
+        // Le niveau entier (≈ 6 000 sprites, 400 pièces animées) restait actif toute la partie : sur la borne
+        // (i5-7200U, Firefox), le tri et les scripts de tout le niveau coûtaient chaque image. On range les objets
+        // par tranches de ChunkSize u et on n'active que celles proches de la caméra. Un objet tué ou ramassé
+        // (activeSelf faux) le reste quand sa tranche revient.
+        const float ChunkSize = 8f;
+        readonly List<GameObject> chunks = new();
+        int chunkLo = -1, chunkHi = -2;
+        float chunkOrigin;
+
+        void BuildChunks()
+        {
+            chunks.Clear();
+            chunkLo = -1; chunkHi = -2;
+            if (root == null) return;
+            var candidates = new List<Transform>();
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var c = root.GetChild(i);
+                if (beatGrid != null && c.gameObject == beatGrid) continue;
+                // conteneur (sol, trous, plafond, arrière-plan…) : ses enfants ; sinon l'objet lui-même
+                bool container = c.GetComponent<Renderer>() == null && c.localPosition == Vector3.zero && c.childCount > 0
+                                 && c.GetComponent<MonoBehaviour>() == null;
+                if (container) for (int j = 0; j < c.childCount; j++) candidates.Add(c.GetChild(j));
+                else candidates.Add(c);
+            }
+            float min = float.MaxValue;
+            var placed = new List<(Transform t, int index)>();
+            foreach (var t in candidates)
+            {
+                var rs = t.GetComponentsInChildren<Renderer>(true);
+                if (rs.Length == 0) continue;
+                var b = rs[0].bounds;
+                for (int k = 1; k < rs.Length; k++) b.Encapsulate(rs[k].bounds);
+                if (b.size.x > ChunkSize * 1.5f) continue;                 // très large : reste toujours actif
+                min = Mathf.Min(min, b.center.x);
+                placed.Add((t, Mathf.FloorToInt(b.center.x / ChunkSize)));
+            }
+            if (placed.Count == 0) return;
+            int first = Mathf.FloorToInt(min / ChunkSize);
+            chunkOrigin = first * ChunkSize;
+            foreach (var (t, index) in placed)
+            {
+                int i = index - first;
+                while (chunks.Count <= i)
+                {
+                    var go = new GameObject($"Chunk{chunks.Count}");
+                    go.transform.SetParent(root, false);
+                    go.SetActive(false);
+                    chunks.Add(go);
+                }
+                t.SetParent(chunks[i].transform, true);
+            }
+            UpdateChunks();
+        }
+
+        void UpdateChunks()
+        {
+            if (chunks.Count == 0) return;
+            var rig = CameraRig.Instance;
+            float cx = rig != null ? rig.ExactPosition.x : 0f;
+            float half = PixelScreen.Instance != null ? PixelScreen.Instance.ViewUnits.x * 0.5f : 8f;
+            // une tranche de marge de chaque côté : un objet déborde d'au plus ¾ de tranche de la sienne
+            int lo = Mathf.Max(0, Mathf.FloorToInt((cx - half - chunkOrigin) / ChunkSize) - 1);
+            int hi = Mathf.Min(chunks.Count - 1, Mathf.FloorToInt((cx + half - chunkOrigin) / ChunkSize) + 1);
+            if (lo == chunkLo && hi == chunkHi) return;
+            for (int i = Mathf.Max(0, Mathf.Min(lo, chunkLo)); i <= Mathf.Min(chunks.Count - 1, Mathf.Max(hi, chunkHi)); i++)
+            {
+                bool on = i >= lo && i <= hi;
+                if (chunks[i].activeSelf != on) chunks[i].SetActive(on);
+            }
+            chunkLo = lo; chunkHi = hi;
+        }
+
+        void LateUpdate() => UpdateChunks();
 
         public void Clear()
         {
@@ -386,13 +449,16 @@ namespace Kenta.Level
             FxEvents.Clear();
             AutoJumpBeats.Clear();
             AutoHitBeats.Clear();
-            AutoSlideSpans.Clear();
             gaps.Clear();
             steps.Clear();
             platforms.Clear();
             Ground.Clear();
             CeilingMirror.Clear();
             Back.Clear();
+            frontFaded.Clear();
+            frontGround = null;
+            chunks.Clear();
+            chunkLo = -1; chunkHi = -2;
             ceilingSpans.Clear();
             backProfile.Clear();
         }
@@ -478,11 +544,13 @@ namespace Kenta.Level
         // ---------- Visuels (pixel art : sprites des biomes, 40 px par unité) ----------
 
         const float TileHeight = 0.5f;          // tuile de sol de 32×20 px
-        const float CeilingBottom = SlideBarBottom;
 
         /// <summary>Biome de la section qui contient ce beat (un biome par section de la chart).</summary>
         public BiomeTheme BiomeAt(double beat)
         {
+            // le décor choisi par le joueur vaut pour tout le morceau (décision du 25/11 : les 8 « mondes » sont le
+            // même niveau, le choix est celui du décor). Les biomes nommés par les sections ne servent que sans choix.
+            if (LevelBiome != null) return LevelBiome;
             int i = Chart != null ? Chart.SectionIndexAt(beat) : 0;
             // une section peut changer de monde (ex. le refrain monte dans l'orage) : elle nomme l'asset du biome
             string named = Chart != null && Chart.sections.Length > 0 ? Chart.sections[Mathf.Clamp(i, 0, Chart.sections.Length - 1)].biome : null;
@@ -586,6 +654,7 @@ namespace Kenta.Level
         void BuildGround(float endX)
         {
             var g = Group("Ground", Vector2.zero);
+            frontGround = g;
             float floor = Ground.LowestTop - PillarDepth;
             foreach (var s in MainSpans(endX))
             {
@@ -636,9 +705,26 @@ namespace Kenta.Level
             if (lipBottom - floor <= 0.01f) return;
             float midBottom = biome.fillDeep != null ? Mathf.Max(floor, PixelScreen.Snap(fillTop - MidDepth)) : floor;
             Tiled(g, "Fill", biome.fill, new Vector2(cx, (lipBottom + midBottom) * 0.5f), new Vector2(w, lipBottom - midBottom), 1).color = DeepFill;
-            if (midBottom - floor > 0.01f)
-                Tiled(g, "Deep", biome.fillDeep, new Vector2(cx, (midBottom + floor) * 0.5f), new Vector2(w, midBottom - floor), 1).color = DeeperFill;
+            if (midBottom - floor <= 0.01f) return;
+            // la profondeur s'efface par paliers (pas de dégradé continu) : les grands piliers deviennent des îlots qui
+            // se fondent dans le décor, et l'on voit le paysage sous soi quand on monte (audit du 25/11, verticalité)
+            float y = midBottom;
+            for (int i = 0; i <= DeepFade.Length && y - floor > 0.01f; i++)
+            {
+                float bottom = i < DeepFade.Length ? Mathf.Max(floor, PixelScreen.Snap(y - DeepBand)) : floor;
+                float alpha = i == 0 ? 1f : DeepFade[i - 1];
+                if (i == DeepFade.Length) alpha = DeepFade[DeepFade.Length - 1];
+                var c = DeeperFill;
+                c.a = alpha;
+                if (i == 0) bottom = Mathf.Max(floor, PixelScreen.Snap(y - DeepSolid));
+                Tiled(g, "Deep", biome.fillDeep, new Vector2(cx, (y + bottom) * 0.5f), new Vector2(w, y - bottom), 1).color = c;
+                y = bottom;
+            }
         }
+
+        const float DeepSolid = 0.8f;                                  // sous la terre : 32 px encore pleins
+        const float DeepBand = 1.2f;                                   // puis des paliers de 48 px…
+        static readonly float[] DeepFade = { 0.78f, 0.56f, 0.36f, 0.2f };   // … de plus en plus transparents
 
         /// <summary>
         /// Détails semés sur le flanc (pierres, racines, fossiles) : environ un toutes les 1,6 u, placés au hasard mais
@@ -718,7 +804,20 @@ namespace Kenta.Level
         {
             if (biome.platform == null) return;
             var g = Group("Platform", Vector2.zero);
-            Tiled(g, "Slab", biome.platform, new Vector2((x0 + x1) * 0.5f, top - 0.125f), new Vector2(x1 - x0, 0.25f), 3);
+            float cx = (x0 + x1) * 0.5f, w = x1 - x0;
+            Tiled(g, "Slab", biome.platform, new Vector2(cx, top - 0.125f), new Vector2(w, 0.25f), 3);
+            // dessous en îlot (deux paliers de terre en retrait) : la plateforme a du volume et ne se lit plus comme
+            // une ligne de 2 à 3 px (audit du 25/11)
+            if (biome.fill == null) return;
+            float y = top - 0.25f;
+            float[] inset = { 0.1f, 0.3f }, depth = { 0.2f, 0.15f };   // 14 px en tout : on passe encore dessous
+            for (int i = 0; i < inset.Length; i++)
+            {
+                float ww = PixelScreen.Snap(w - inset[i] * 2f);
+                if (ww <= 0.2f) break;
+                Tiled(g, "Under", biome.fill, new Vector2(PixelScreen.Snap(cx), y - depth[i] * 0.5f), new Vector2(ww, depth[i]), 2).color = i == 0 ? DeepFill : DeeperFill;
+                y -= depth[i];
+            }
         }
 
         void BuildBeatGrid(int lastBeat)
@@ -780,6 +879,33 @@ namespace Kenta.Level
             }
         }
 
+        Transform frontGround;
+        readonly List<SpriteRenderer> frontFaded = new();
+
+        /// <summary>
+        /// Pendant que le héros court dans l'arrière-plan, le premier plan (sol, piliers, objets du plan 0) devient
+        /// semi-transparent : on le voit passer derrière. Avant, il n'était qu'un peu assombri et se perdait.
+        /// </summary>
+        /// <summary>Liste du premier plan à pâlir, faite à la construction (ensuite, le sol est rangé par tranches).</summary>
+        void PrepareFrontFade()
+        {
+            frontFaded.Clear();
+            if (frontGround != null) frontFaded.AddRange(frontGround.GetComponentsInChildren<SpriteRenderer>(true));
+            foreach (var o in Obstacles)
+                if (o.plane == 0 && o.view != null) frontFaded.AddRange(o.view.GetComponentsInChildren<SpriteRenderer>(true));
+        }
+
+        public void SetFrontFaded(bool faded)
+        {
+            foreach (var sr in frontFaded)
+            {
+                if (sr == null) continue;
+                var c = sr.color;
+                c.a = faded ? 0.45f : 1f;
+                sr.color = c;
+            }
+        }
+
         /// <summary>Objet de l'arrière-plan : assombri et dessiné derrière le niveau.</summary>
         static void SendToBack(GameObject view, float tint = 1f)
         {
@@ -791,23 +917,48 @@ namespace Kenta.Level
             }
         }
 
-        /// <summary>Portail de gravité : deux colonnes de lumière qui barrent l'écran ; on les traverse et le haut devient le bas.</summary>
+        /// <summary>
+        /// Portail de gravité : une grande porte (deux montants à contour sombre, linteau en haut et en bas, voile coloré
+        /// rayé entre les deux) et de grosses flèches qui montrent le sens de la chute. On la traverse et le haut devient
+        /// le bas. Lisible à 2 m : l'ancien portail (deux traits cyan) se lisait comme un bug d'affichage.
+        /// </summary>
         void MakeGravityPortal(float x, bool up, BiomeTheme biome)
         {
             var g = Group(up ? "GravityUp" : "GravityDown", Vector2.zero);
-            float y0 = HeightAt(x) - 1f, y1 = y0 + 9f;
+            float y0 = PixelScreen.Snap(HeightAt(x) - 1f), y1 = y0 + 9f, ym = (y0 + y1) * 0.5f, h = y1 - y0;
             var c = biome.spark;
-            for (int i = 0; i < 2; i++)
+            var ink = new Color(0.08f, 0.06f, 0.14f);
+            const float half = 0.8f, post = 0.3f, rim = 0.05f;
+            // voile : bandes horizontales alternées (pixel art, pas de dégradé)
+            for (float y = y0; y < y1 - 0.01f; y += 0.4f)
             {
-                float px = PixelScreen.Snap(x - 0.15f + i * 0.3f);
-                Box(g, "Beam", new Color(c.r, c.g, c.b, i == 0 ? 0.35f : 0.7f), new Vector2(px, (y0 + y1) * 0.5f), new Vector2(i == 0 ? 0.3f : 0.1f, y1 - y0), 12);
+                bool odd = Mathf.RoundToInt((y - y0) / 0.4f) % 2 == 1;
+                Box(g, "Veil", new Color(c.r, c.g, c.b, odd ? 0.22f : 0.36f), new Vector2(PixelScreen.Snap(x), y + 0.2f), new Vector2(half * 2f, 0.4f), 11);
             }
-            // flèches (pixels) qui indiquent le sens de la chute
+            // montants et linteaux : contour sombre, puis la couleur vive du biome
+            foreach (float side in new[] { -1f, 1f })
+            {
+                float px = PixelScreen.Snap(x + side * (half + post * 0.5f));
+                Box(g, "PostRim", ink, new Vector2(px, ym), new Vector2(post + rim * 2f, h + rim * 2f), 12);
+                Box(g, "Post", c, new Vector2(px, ym), new Vector2(post, h), 13);
+                Box(g, "PostLight", Color.Lerp(c, Color.white, 0.5f), new Vector2(PixelScreen.Snap(px - post * 0.25f), ym), new Vector2(0.05f, h), 14);
+            }
+            foreach (float yy in new[] { y0, y1 })
+            {
+                Box(g, "LintelRim", ink, new Vector2(PixelScreen.Snap(x), yy), new Vector2(half * 2f + post * 2f + rim * 2f, 0.3f + rim * 2f), 12);
+                Box(g, "Lintel", c, new Vector2(PixelScreen.Snap(x), yy), new Vector2(half * 2f + post * 2f, 0.3f), 13);
+            }
+            // grosses flèches (chevrons de 3 carrés de 4 px, contour sombre) dans le sens de la chute
+            const float sq = 0.1f;
             for (int k = 0; k < 4; k++)
             {
-                float ay = y0 + 1.5f + k * 2f;
-                for (int j = 0; j < 3; j++)
-                    Box(g, "Arrow", new Color(1f, 1f, 1f, 0.8f), new Vector2(PixelScreen.Snap(x + (j - 1) * 0.1f), PixelScreen.Snap(ay + (up ? -1 : 1) * Mathf.Abs(j - 1) * 0.1f)), new Vector2(0.1f, 0.1f), 13);
+                float ay = PixelScreen.Snap(y0 + 1.5f + k * 2f);
+                for (int j = -2; j <= 2; j++)
+                {
+                    var p = new Vector2(PixelScreen.Snap(x + j * sq * 1.5f), PixelScreen.Snap(ay + (up ? 1 : -1) * (2 - Mathf.Abs(j)) * sq * 1.5f));
+                    Box(g, "ArrowRim", ink, p, new Vector2(sq * 2.5f, sq * 2.5f), 14);
+                    Box(g, "Arrow", Color.white, p, new Vector2(sq * 1.5f, sq * 1.5f), 15);
+                }
             }
         }
 
@@ -868,7 +1019,8 @@ namespace Kenta.Level
             var t = Group("Vine", anchor);
             if (biome.post != null) Spr(t, "Knot", biome.post, Vector2.zero, 9);
             var view = t.gameObject.AddComponent<VineView>();
-            view.Setup(theme.pixel, new Color(0.3f, 0.45f, 0.18f), new Vector2(xg, o.grabY + VineView.HandHeight));
+            // au repos, la corde pend droit sous son nœud (jusqu'à la hauteur de la main) ; on l'attrape en passant
+            view.Setup(theme.pixel, new Color(0.3f, 0.45f, 0.18f), new Vector2(anchor.x, o.grabY + VineView.HandHeight));
             return t.gameObject;
         }
 
@@ -909,18 +1061,6 @@ namespace Kenta.Level
         {
             var t = Group("Flyer", pos);
             Spr(t, "Sprite", theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
-            return t.gameObject;
-        }
-
-        GameObject MakeSlideBar(Rect r, BiomeTheme biome)
-        {
-            var t = Group("Ceiling", new Vector2(r.center.x, r.yMin - SlideBarBottom));
-            const float beam = 0.4f;                                  // tuile de 16 px
-            float postTop = 3.0f;
-            float postBottom = CeilingBottom + beam;
-            foreach (float sign in new[] { -1f, 1f })
-                Tiled(t, "Post", biome.post, new Vector2(sign * (r.width * 0.5f - 0.1f), (postTop + postBottom) * 0.5f), new Vector2(0.2f, postTop - postBottom), 9);
-            Tiled(t, "Beam", biome.ceiling, new Vector2(0f, CeilingBottom + beam * 0.5f), new Vector2(r.width, beam), 11);
             return t.gameObject;
         }
 

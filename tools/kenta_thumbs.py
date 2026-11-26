@@ -1,4 +1,4 @@
-"""Vignettes des niveaux pour l'écran de sélection (ADR-030).
+"""Vignettes des niveaux pour l'écran de sélection (ADR-032).
 
 Le décor 640×360 d'un biome (ciel + calques) est recadré (600×360, rapport 5:3), réduit en moyenne par blocs de
 15×15 px, puis chaque pixel est ramené à la couleur la plus proche parmi celles du décor : la vignette 40×24 reste du

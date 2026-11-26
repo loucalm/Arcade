@@ -112,7 +112,7 @@ Maquette de référence : [../../img/selection-niveau-maquette.png](../../img/se
 - **Capture en jeu** de l'écran (1920×1080, via `ScreenCapture.CaptureScreenshot`) montrée à Lou.
 
 ## Documentation (même commit que le code)
-`docs/game-design.md` (tableau des écrans : 3 Héros, 3 bis Niveau, 5 classement du niveau, accueil), `docs/roadmap.md` (cocher la sélection de niveau), `game/CLAUDE.md` (écrans, `LevelScores`, menu de construction, vignettes), `docs/decisions.md` (**ADR-030** : sélection de niveau, un thème par niveau, classements par niveau dans l'Extradata), `docs/chart-format.md` si la mention du biome par section change, commande des vignettes dans le `CLAUDE.md` racine.
+`docs/game-design.md` (tableau des écrans : 3 Héros, 3 bis Niveau, 5 classement du niveau, accueil), `docs/roadmap.md` (cocher la sélection de niveau), `game/CLAUDE.md` (écrans, `LevelScores`, menu de construction, vignettes), `docs/decisions.md` (**ADR-032** : sélection de niveau, un thème par niveau, classements par niveau dans l'Extradata), `docs/chart-format.md` si la mention du biome par section change, commande des vignettes dans le `CLAUDE.md` racine.
 
 ## Laissé au constructeur
 - Valeurs exactes de l'animation de la liste et de la répétition au joystick, dans l'esprit ci-dessus.

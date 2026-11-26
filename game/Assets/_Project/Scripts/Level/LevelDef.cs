@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Kenta.Level
 {
     /// <summary>
-    /// Un niveau = un thème (biome) + un morceau + une chart, choisi à l'écran de sélection (ADR-030). Chaque niveau a
+    /// Un niveau = un thème (biome) + un morceau + une chart, choisi à l'écran de sélection (ADR-032). Chaque niveau a
     /// son SongData ; provisoirement, tous pointent vers le même clip et la même chart. Donner à un niveau sa musique et
     /// sa chart = changer les références de son SongData, sans code (la reconstruction ne les écrase pas).
     /// </summary>

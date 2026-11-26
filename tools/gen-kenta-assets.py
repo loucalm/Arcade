@@ -147,7 +147,7 @@ def gen_heroes(out, sheet):
 
 
 def gen_thumbs(out, sheet):
-    """Vignettes 40×24 des niveaux (ui/thumb_<id>.png) tirées des décors installés, et l'étoile de difficulté (ADR-030).
+    """Vignettes 40×24 des niveaux (ui/thumb_<id>.png) tirées des décors installés, et l'étoile de difficulté (ADR-032).
     À relancer après un changement de décor : python3 tools/gen-kenta-assets.py --only thumbs"""
     for b in BIOMES:
         i = b["id"]

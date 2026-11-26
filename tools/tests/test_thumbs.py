@@ -1,4 +1,4 @@
-"""Vignettes des niveaux (écran de sélection, ADR-030) : 40×24, opaques, sans couleur étrangère au décor du biome."""
+"""Vignettes des niveaux (écran de sélection, ADR-032) : 40×24, opaques, sans couleur étrangère au décor du biome."""
 import os
 import sys
 

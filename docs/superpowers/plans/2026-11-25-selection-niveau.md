@@ -51,7 +51,7 @@ def test_level_keeps_one_world():
 (ajouter `import json` en tête si absent.)
 
 - [ ] **Step 2 :** `pytest tools/tests/test_level_vertical.py::test_level_keeps_one_world -v` → FAIL.
-- [ ] **Step 3 :** `BIOMES = {}` (garder le commentaire, le compléter : « vide : un thème par niveau, ADR-030 ») ; retirer `, "biome": "…"` des sections `refrain`, `final`, `refrain 2` du JSON (lignes 15, 16, 20). **Ne pas régénérer la chart.**
+- [ ] **Step 3 :** `BIOMES = {}` (garder le commentaire, le compléter : « vide : un thème par niveau, ADR-032 ») ; retirer `, "biome": "…"` des sections `refrain`, `final`, `refrain 2` du JSON (lignes 15, 16, 20). **Ne pas régénérer la chart.**
 - [ ] **Step 4 :** `pytest tools/tests -v` → tout passe sauf `test_generated_chart_is_feasible_and_vertical` (déjà en échec sur `main`).
 - [ ] **Step 5 : commit** `Garde un seul thème par niveau : retire les changements de monde de la chart`.
 
@@ -141,7 +141,7 @@ Les tests composent des calques synthétiques (2 ou 3 images RGBA 640×360 à ap
 
 **Files :**
 - Modify : `Scripts/Rhythm/SongData.cs` (`[Min(0f)] public float previewBeat;` + tooltip « Début de l'extrait joué à l'écran de sélection (beat) »)
-- Modify : `Scripts/Level/LevelDef.cs` (`public Sprite thumbnail;` ; retirer la phrase « pour l'instant… » du résumé au profit de « provisoirement le même morceau, ADR-030 »)
+- Modify : `Scripts/Level/LevelDef.cs` (`public Sprite thumbnail;` ; retirer la phrase « pour l'instant… » du résumé au profit de « provisoirement le même morceau, ADR-032 »)
 - Create : `Scripts/UI/LevelCard.cs`, `Scripts/UI/LevelSelectScreen.cs`
 - Modify : `Scripts/UI/HighscoreBoard.cs`
 - Test : `Editor/Tests/LevelSelectTests.cs`
@@ -214,10 +214,10 @@ Les tests composent des calques synthétiques (2 ou 3 images RGBA 640×360 à ap
 ### Task 8 : vérification en jeu, docs, PR
 
 **Files :**
-- Modify : `docs/game-design.md` (tableau des écrans : 3 Héros, 3 bis Niveau, 1 et 5 classement du niveau ; « Rejouer vite »), `docs/decisions.md` (**ADR-030 — Sélection de niveau, un thème par niveau, classements par niveau dans l'Extradata (2026-11-25)**), `docs/roadmap.md` (cocher « Sélection de niveau » avec la date ; ajouter le bug « `Main.unity` contient 26 objets `Bandana` (reconstructions successives) : à nettoyer » en P2), `game/CLAUDE.md` (flow, `LevelScores`, menu « Construire l'écran de niveaux », vignettes, règle de non-écrasement), `CLAUDE.md` racine (commande `python3 tools/gen-kenta-assets.py --only thumbs` après un changement de décor), `docs/chart-format.md` (le biome par section reste possible mais aucune chart ne l'utilise : un thème par niveau)
+- Modify : `docs/game-design.md` (tableau des écrans : 3 Héros, 3 bis Niveau, 1 et 5 classement du niveau ; « Rejouer vite »), `docs/decisions.md` (**ADR-032 — Sélection de niveau, un thème par niveau, classements par niveau dans l'Extradata (2026-11-25)**), `docs/roadmap.md` (cocher « Sélection de niveau » avec la date ; ajouter le bug « `Main.unity` contient 26 objets `Bandana` (reconstructions successives) : à nettoyer » en P2), `game/CLAUDE.md` (flow, `LevelScores`, menu « Construire l'écran de niveaux », vignettes, règle de non-écrasement), `CLAUDE.md` racine (commande `python3 tools/gen-kenta-assets.py --only thumbs` après un changement de décor), `docs/chart-format.md` (le biome par section reste possible mais aucune chart ne l'utilise : un thème par niveau)
 
 - [ ] **Step 1 : vérifier en Play** (MCP, `EditorArcadeShim` désactivé, `Application.runInBackground = true`, `Temp/caps` créé) : `GameFlow.Instance.Enter(GameState.Config)` puis valider → écran des niveaux ; parcourir haut/bas (via `execute_code` en appelant l'état ou en simulant par `GameSession`) ; vérifier : décor qui change, extrait qui démarre au refrain, top 5 « --- » sans borne, B2 → héros présélectionné, validation → partie dans le biome choisi du début à la fin, fin → classement du niveau. `read_console` : aucune erreur nouvelle (sans borne locale).
 - [ ] **Step 2 : capture** 1920×1080 via `ScreenCapture.CaptureScreenshot` depuis un `EditorApplication.update`, sur l'écran des niveaux (niveau 3 sélectionné) → `Temp/caps/selection-niveau.png`, montrée à Lou (`SendUserFile`).
 - [ ] **Step 3 :** `run_tests` EditMode → vert ; `pytest tools/tests` → vert sauf `test_generated_chart_is_feasible_and_vertical`.
-- [ ] **Step 4 : docs** (liste ci-dessus), dans le même commit que les derniers ajustements : `Documente l'écran de sélection de niveau (ADR-030)`.
+- [ ] **Step 4 : docs** (liste ci-dessus), dans le même commit que les derniers ajustements : `Documente l'écran de sélection de niveau (ADR-032)`.
 - [ ] **Step 5 :** `git push -u origin feat/selection-niveau`, PR vers `main` (titre « Écran de sélection de niveau », corps : résumé, captures, tests, ce qui reste à la roadmap ; fin : `🤖 Generated with [Claude Code](https://claude.com/claude-code)`), puis `get_status` / `bind_pr`.

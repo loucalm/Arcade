@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Kenta.UI
 {
     /// <summary>
-    /// Calcul de la liste des niveaux façon osu! (écran de sélection, ADR-030), en pixels d'interface (320×180, repère
+    /// Calcul de la liste des niveaux façon osu! (écran de sélection, ADR-032), en pixels d'interface (320×180, repère
     /// centré). La carte sélectionnée est au milieu, sortie vers la gauche ; les autres s'écartent vers la droite.
     /// La liste boucle. Tout est arrondi au pixel entier.
     /// </summary>

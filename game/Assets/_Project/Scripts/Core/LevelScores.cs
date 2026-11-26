@@ -15,7 +15,7 @@ namespace Kenta.Core
 
     /// <summary>
     /// Classement de chaque niveau (top 10, une entrée par nom), stocké dans l'Extradata de la borne : une clé
-    /// « top_&lt;id du niveau&gt; » par niveau, valeur JSON (ADR-030). La liste officielle de la borne
+    /// « top_&lt;id du niveau&gt; » par niveau, valeur JSON (ADR-032). La liste officielle de la borne
     /// (HighscoreManager) reste remplie à part. Sans la borne (éditeur, serveur absent), tout reste en mémoire et
     /// aucun appel réseau n'est fait : pas d'erreur en console.
     /// </summary>
