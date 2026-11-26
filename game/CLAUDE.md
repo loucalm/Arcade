@@ -52,6 +52,7 @@ Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à éta
 
 ## Rythme (cœur technique)
 - `Conductor` (singleton, `Rhythm/Conductor.cs`) : `SongTime` vient de `timeSamples / frequency`, interpolé avec `unscaledDeltaTime` et recalé à chaque nouveau paquet audio (correction douce, saut au-delà de 20 ms). API : `Play(SongData, startBeat, loop, useRemix)`, `Seek(beat)`, `Stop()`, `SongTime`, `SongBeat`, `BeatToSeconds()` (relatif au beat 0, offset déjà retiré), `OnBeat(int)`, `OnSongEnd`. Il gère les clips en boucle (menu).
+- ⚠️ Fin de morceau : une source arrêtée repart à `timeSamples` 0 ; ne jamais recaler le temps sur une source arrêtée (sinon, fin ratée et le niveau recommence : `Conductor.ReachedEnd`).
 - Démarrage via `Play()` + `timeSamples`, **pas** `PlayScheduled`/`dspTime` (non garantis sur WebGL).
 - Un morceau = un asset `SongData` (`ScriptableObjects/Songs/`) : clip, remixClip, bpm, offsetSeconds, beatsPerBar, chart.
 - S'abonner aux événements du Conductor dans `Start()` (pas `OnEnable`), ou en différé comme `FX/BeatPulse` : l'ordre des `Awake` n'est pas garanti.

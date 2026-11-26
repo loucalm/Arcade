@@ -119,6 +119,14 @@ namespace Kenta.Rhythm
 
         public void SetVolume(float volume) => source.volume = volume;
 
+        /// <summary>
+        /// Source arrêtée (hors boucle) : le morceau est fini si le temps lissé a atteint la fin du clip, ou si la
+        /// dernière position audio lue en était à moins de 0,5 s (le temps lissé peut avoir un peu de retard quand la
+        /// source s'arrête : sans ce second test, la fin était ratée).
+        /// </summary>
+        public static bool ReachedEnd(double smoothedTime, double lastRawTime, double clipLength)
+            => clipLength > 0 && (smoothedTime >= clipLength - 0.05 || lastRawTime >= clipLength - 0.5);
+
         void Update()
         {
             if (!IsPlaying) return;
@@ -127,7 +135,8 @@ namespace Kenta.Rhythm
 
             // Fin de morceau. On vérifie la position : sur WebGL, isPlaying peut être faux tant que
             // le navigateur n'a pas autorisé l'audio (aucune interaction encore).
-            if (!source.isPlaying && !source.loop && smoothedAudioTime >= clipLength - 0.05)
+            bool stopped = !source.isPlaying && !source.loop;
+            if (stopped && ReachedEnd(smoothedAudioTime, lastRawAudioTime, clipLength))
             {
                 IsPlaying = false;
                 OnSongEnd?.Invoke();
@@ -146,7 +155,9 @@ namespace Kenta.Rhythm
             smoothedAudioTime += Time.unscaledDeltaTime * source.pitch;
 
             // Nouveau paquet audio → on mesure la dérive et on corrige.
-            if (rawAudioTime != lastRawAudioTime)
+            // piège : une source arrêtée en fin de clip repart à 0 ; sans ce garde, la correction recalait le temps
+            // du morceau sur 0 et le niveau recommençait (fin ratée d'une image lente)
+            if (rawAudioTime != lastRawAudioTime && !stopped)
             {
                 double drift = rawAudioTime - smoothedAudioTime;
                 LastDrift = drift;
