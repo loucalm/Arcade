@@ -890,7 +890,7 @@ def check_margins(events, ranges, margin=MIN_MARGIN, fps=60):
 
 ANALYSIS = os.path.join(ROOT, "tools", "data", "level01_analysis.json")
 ZOOM = 480                                   # vue par défaut de 12 × 6,75 u : héros assez grand pour la borne
-ZOOM_WIDE = 640                              # plan large (16 × 9 u) : tambours et grandes dénivellations
+ZOOM_WIDE = 640                              # plan large (16 × 9 u) : les refrains entiers, et un ennemi qu'on verrait trop tard
 VIEW_H = ZOOM * 9 / 16 / 40.0
 WIDE_DROP = 5.5                              # dénivelé (u) sur ±2 temps au-delà duquel on passe en plan large
 FRAME_Y = 0.32                               # sol sous le héros à 32 % du bas
@@ -1000,27 +1000,27 @@ def enemy_windows(world):
 
 
 def zoom_plan(track, world, step=0.25, extra=()):
-    """Largeur de vue à chaque pas du rail : ZOOM par défaut, ZOOM_WIDE pendant les envolées des tambours et là où le
-    terrain monte ou descend de plus de WIDE_DROP en ±2 temps. Les plans larges sont calés sur les temps (coupe nette)
-    et durent au moins 2 temps. Renvoie (zooms par pas, événements `camera`)."""
+    """Largeur de vue à chaque pas du rail : ZOOM par défaut, ZOOM_WIDE sur chaque refrain entier et sur les mesures où
+    un ennemi ne se verrait pas assez tôt (`extra`). Peu de coupes : les plans larges proches sont fusionnés.
+    Renvoie (zooms par pas, événements `camera`)."""
     beats = [tr[0] for tr in track]
     n = NB * 4
     feet = [feet_at(track, beats, i * step) for i in range(n)]
-    wins = [(pad[3] - 1.0, pad[3] + pad[2] + 1.0) for pad in world.bounces] + list(extra)
-    r = int(2 / step)
-    for i in range(n):
-        seg = feet[max(0, i - r):min(n, i + r + 1)]
-        if max(seg) - min(seg) > WIDE_DROP:
-            wins.append((i * step - 0.5, i * step + 0.5))
+    # peu de changements de zoom (retour de Jeremy le 25/11 : il y en avait trop) : un plan large sur chaque refrain
+    # entier (chaînes de tambours, plongeons), et seulement là où un ennemi ne se verrait pas assez tôt en vue serrée
+    bounds = [b for _, b in SECTIONS] + [NB]
+    wins = [(b0, b1) for (name, b0), b1 in zip(SECTIONS, bounds[1:]) if name.startswith("refrain")] + list(extra)
     wins = sorted((math.floor(a), math.ceil(b)) for a, b in wins)
     merged = []
     for a, b in wins:
-        if merged and a <= merged[-1][1] + 1:
+        if merged and a <= merged[-1][1] + 8:          # deux plans larges à moins de 2 mesures : on n'en fait qu'un
             merged[-1][1] = max(merged[-1][1], b)
         else:
             merged.append([a, max(b, a + 2)])
     zooms = [ZOOM] * n
     events = []
+    if ZOOM_WIDE == ZOOM:                    # vue fixe : aucun changement de plan
+        return zooms, events
     for a, b in merged:
         a, b = max(0, a), min(NB - 1, b)
         for i in range(int(a / step), min(n, int(b / step))):
@@ -1149,7 +1149,8 @@ def resolve(events, song):
         late = [eb for eb, lead in enemy_leads(rail, World(full), zooms=zooms) if lead < 1.0 - 1e-6]
         if not late:
             break
-        extra += [(eb - 2.5, eb + 0.5) for eb in late]
+        # calé sur les phrases de 8 temps de la musique : le plan large commence et finit avec une phrase
+        extra += [(math.floor((eb - 2.5) / 8) * 8, math.ceil((eb + 0.5) / 8) * 8) for eb in late]   # phrase de 8 temps
     return full, rail, None
 
 
