@@ -29,6 +29,7 @@ Règles :
 - [x] (2026-11-25) Page qui défile, pas en plein écran → gabarit Web « Kenta » (rendu fixe 1920×1080, sans défilement)
 - [x] (2026-11-25) Peu de fps → niveau par tranches (≈ 560 sprites actifs au lieu de 6 000), un seul bandeau dans la scène (au lieu de 30), build release, moins d'allocations par image
 - [x] (2026-11-25) Morts « dans l'escalier » et dans les cuirassés au lieu du rebond → physique du héros en pas de 1/60 s (vérifié à 15 i/s avec des à-coups)
+- [x] (2026-11-26) Build Web de release refait après les niveaux 1 à 3, la difficulté par héros, le nouveau HUD et le CRT (`dist/Kenta`, 66 Mo dont `Build.wasm` 31 Mo, 1 min 30 de build) ; vérifié dans un navigateur : l'accueil et la démo tournent
 - [ ] **P0** Refaire un build Web (menu Kenta > Build Web (borne), module Web de 6000.3.23f1) et vérifier sur la borne : fps (overlay F9 absent en release : compter à l'œil ou via le panneau des performances de Firefox), plein écran, plus de morts sur les rampes
 - [ ] **P1** L'autoplay de Unity ramasse 373 pièces sur 395, le simulateur du générateur 395/395 : écart à trouver (déjà avant le 25/11)
 - [x] (2026-11-26) Trop de changements de zoom (10 plans larges, laids) → 4 : chaque refrain entier et deux phrases de 8 temps (beats 40 et 160) pour voir venir des chauves-souris

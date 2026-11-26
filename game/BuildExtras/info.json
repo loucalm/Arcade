@@ -1,6 +1,6 @@
 {
   "name": "Kenta",
-  "description": "Démo. Cours au rythme de la musique à travers huit mondes : saute et frappe sur le beat. Lianes, gravité inversée, saut dans l'arrière-plan : le niveau change à chaque section. 10 vies : à chaque chute, on repart au dernier point.",
+  "description": "Démo. Cours au rythme de la musique : saute et frappe sur le beat. Chaque niveau ajoute une mécanique (cuirassés, lianes, chauves-souris, gravité inversée…). Ton héros fixe la difficulté : Kenta repart au dernier point, Aiko repart du début, Ryo n'a qu'une vie.",
   "creator": "Lou Calmes, Lucas Corrieras, Jeremy Hordé",
   "year": 2026,
   "type": "Runner rythmique",
