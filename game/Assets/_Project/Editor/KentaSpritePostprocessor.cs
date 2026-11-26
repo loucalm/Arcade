@@ -31,6 +31,7 @@ namespace Kenta.EditorTools
             else if (name.StartsWith("block_")) pivot = new Vector2(0.5f, 1f / 40f);             // 38×38 + contour
             else if (name == "totem") pivot = new Vector2(0.5f, 1f / 48f);                       // 20×46 + contour
             else if (name.StartsWith("stomper_")) pivot = new Vector2(0.5f, 1f / 33f);           // cuirassé 42×33, contour sous les pieds
+            else if (name.StartsWith("bat_")) pivot = new Vector2(0.5f, 1f / 49f);               // chauve-souris du PDF + liseré d'1 px (tools/gen-bat.py)
             else if (name == "panel") border = new Vector4(4, 4, 4, 4);
             else if (name == "plate") border = new Vector4(3, 3, 3, 3);
 

@@ -221,7 +221,8 @@ namespace Kenta.EditorTools
             t.heroes = heroes;
             t.coinFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/coin_{i}.png")).ToArray();
             t.totem = Spr("Gen/world/totem.png");
-            t.flyer = Spr("Pdf/enemy_chauve.png");        // ennemi volant commun (niveaux verticaux)
+            t.flyerFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/bat_{i}.png")).ToArray();   // tools/gen-bat.py
+            t.flyer = t.flyerFrames[0] != null ? t.flyerFrames[0] : Spr("Pdf/enemy_chauve.png");   // ennemi volant commun
             t.stomper = new[] { Spr("Gen/world/stomper_0.png"), Spr("Gen/world/stomper_1.png") };   // cuirassé commun
             t.pixel = Spr("Gen/world/px.png");
             EditorUtility.SetDirty(t);
