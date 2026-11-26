@@ -482,7 +482,7 @@ namespace Kenta.Player
         /// <summary>Écrase un cuirassé : petit rebond tout de suite ; l'appui (déjà fait ou juste après) donne le grand rebond.</summary>
         void Stomp(LevelObject o, double beat, float x)
         {
-            o.alive = false;
+            o.bumped = true;                                       // il reste là : c'est un tremplin
             run.OnEnemyStomped(o);
             y = Mathf.Max(y, o.bounds.yMax);
             float t = 0.5f * curSpb;                               // petit rebond : un demi-temps, retombe à la même hauteur
@@ -633,11 +633,19 @@ namespace Kenta.Player
                     }
                     continue;
                 }
-                if (o.stomp && !inverted && vy <= 0f && frameStartY >= o.bounds.yMax - 0.45f && y <= o.bounds.yMax + 0.8f
-                    && Mathf.Abs(x - o.bounds.center.x) <= 1.15f)
+                if (o.stomp)
                 {
-                    Stomp(o, beat, x);
-                    continue;
+                    // cuirassé = tremplin : il ne meurt pas et ne blesse plus une fois rebondi
+                    if (o.bumped) continue;
+                    // rebond si on arrive dessus en descendant, ou si on le touche les pieds à moins de 0,6 u sous son
+                    // dessus (saut un peu court ou encore en montée) : avant, ces cas tuaient le héros au lieu du rebond
+                    bool fromAbove = vy <= 0f && frameStartY >= o.bounds.yMax - 0.45f && y <= o.bounds.yMax + 0.8f;
+                    bool nearTop = y >= o.bounds.yMax - 0.6f && bodyRect.Overlaps(o.bounds);
+                    if (!inverted && (fromAbove || nearTop) && Mathf.Abs(x - o.bounds.center.x) <= 1.15f)
+                    {
+                        Stomp(o, beat, x);
+                        continue;
+                    }
                 }
                 if (o.IsHittable && !o.stomp && hitting && hitRect.Overlaps(o.bounds))
                 {

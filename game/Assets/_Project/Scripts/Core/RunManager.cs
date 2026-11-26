@@ -392,11 +392,13 @@ namespace Kenta.Core
         /// <summary>Ennemi cuirassé écrasé : effets seulement (le jugement vient de l'appui du grand rebond).</summary>
         public void OnEnemyStomped(LevelObject enemy)
         {
-            ActionSfx.Instance?.Kill();
+            ActionSfx.Instance?.Land();                 // un tremplin, pas une mort
             var biome = level.BiomeAt(enemy.beat);
             FxPool.Instance?.Burst(new Vector2(enemy.bounds.center.x, enemy.bounds.yMax), biome != null ? biome.spark : Color.white, 18, 7f, 0.2f, 0.5f, 10f, 0.3f);
             CameraRig.Instance?.Punch(0.25f);
-            if (enemy.view != null) enemy.view.SetActive(false);
+            // le cuirassé reste en place (tremplin) : son ressort s'écrase
+            if (enemy.view != null)
+                foreach (var bump in enemy.view.GetComponentsInChildren<PressBump>()) bump.Press();
         }
 
         public void OnObstacleCleared(LevelObject obstacle, double actionBeat)
