@@ -9,7 +9,7 @@ namespace Kenta.UI
     /// <summary>
     /// HUD de la partie (docs/da-kenta.md § 7) : tout en haut, rien au milieu.
     /// Gauche : score et multiplicateur. Centre : frise des sections du niveau (barre de progression) et son intitulé, ou l'annonce d'une surprise.
-    /// Droite : pièces ramassées et vies (die and retry, ADR-032 : un cœur et le nombre de vies). Pas de décompte au
+    /// Droite : pièces ramassées et vies (die and retry, ADR-033 : un cœur et le nombre de vies). Pas de décompte au
     /// départ (il tombait sur la première action) ; dans le monde : PARFAIT !
     /// </summary>
     public class RunHud : MonoBehaviour

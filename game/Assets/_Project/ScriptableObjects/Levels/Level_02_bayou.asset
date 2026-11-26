@@ -15,6 +15,7 @@ MonoBehaviour:
   id: bayou
   number: 2
   biome: {fileID: 11400000, guid: aeb1270e64e3140b593291c124f62c39, type: 2}
-  song: {fileID: 11400000, guid: 4c7d4371930ee40dca097ad5471f74db, type: 2}
+  song: {fileID: 11400000, guid: 80140e5a13c6042cd919296f3ced3d92, type: 2}
   chart: {fileID: 0}
   stars: 1
+  thumbnail: {fileID: 21300000, guid: f28d9a48237f44e689316343fd7cce6f, type: 3}

@@ -46,7 +46,8 @@ LUM_LANE_Y = (0.45, 1.9, 2.4)
 PICKUP = 0.7
 
 # Changements de monde en cours de niveau (nom de l'asset du biome) ; les autres sections gardent le biome du niveau.
-BIOMES = {"refrain": "Biome_08_orage", "final": "Biome_03_echos", "refrain 2": "Biome_08_orage"}
+# Vide : un thème par niveau (ADR-032). Le mécanisme reste pour une future chart propre à un niveau.
+BIOMES = {}
 
 SECTIONS = [
     ("intro", 0), ("couplet", 32), ("pont", 64), ("roulement", 80), ("refrain", 96), ("final", 128),

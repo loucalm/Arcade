@@ -10,8 +10,8 @@ using UnityEngine;
 namespace Kenta.Core
 {
     /// <summary>
-    /// Une partie : construit le niveau, lance la musique, gère score et combo. Mort subite : un coup
-    /// (obstacle, chute) termine la partie.
+    /// Une partie : construit le niveau, lance la musique, gère score et combo. Die and retry (ADR-033) : un coup
+    /// (obstacle, chute) coûte une vie et on reprend au dernier point de reprise ; à 0 vie, la partie se termine.
     /// Mode démo = autoplay sans perte de cœur (écran Attract).
     /// </summary>
     public class RunManager : MonoBehaviour
@@ -26,10 +26,10 @@ namespace Kenta.Core
         [Tooltip("Racine du monde de jeu (niveau + joueur), masquée hors partie.")]
         [SerializeField] GameObject world;
 
-        [Header("Règles (mort subite : un coup suffit)")]
+        [Header("Règles")]
         [Tooltip("Temps (s) pendant lequel on voit la pose de mort avant l'écran de fin.")]
         [SerializeField] float deathDelay = 0.8f;
-        [Header("Die and retry (ADR-032)")]
+        [Header("Die and retry (ADR-033)")]
         [Tooltip("Vies au départ : à chaque mort, on reprend au dernier point de reprise de la chart ; à zéro, fin de partie.")]
         [SerializeField] int startLives = 10;
         [Tooltip("Pause (s) entre la mort et la reprise : on voit la pose de mort, puis on repart.")]
@@ -434,7 +434,7 @@ namespace Kenta.Core
             return true;
         }
 
-        /// <summary>Mort : pose de mort, une vie de moins, puis reprise au dernier point (ADR-032) ou écran de fin.</summary>
+        /// <summary>Mort : pose de mort, une vie de moins, puis reprise au dernier point (ADR-033) ou écran de fin.</summary>
         public void Damage()
         {
             if (!IsRunning) return;

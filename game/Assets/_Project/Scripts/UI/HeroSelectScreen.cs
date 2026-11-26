@@ -1,4 +1,3 @@
-using System;
 using Kenta.Core;
 using Kenta.Level;
 using UnityEngine;
@@ -7,9 +6,9 @@ using UnityEngine.UI;
 namespace Kenta.UI
 {
     /// <summary>
-    /// Choix du héros et du monde (docs/da-kenta.md § 8.2) : joystick gauche/droite pour le héros, haut/bas pour le monde,
-    /// bouton 1 pour valider. Le décor derrière montre le monde choisi. 12 s pour choisir : à la fin, on part avec la
-    /// sélection en cours. Si le joueur rejoue dans la minute, ses derniers choix sont repris.
+    /// Choix du héros (docs/da-kenta.md § 8.2) : joystick gauche/droite, bouton 1 pour valider ; le niveau se choisit
+    /// à l'écran suivant (LevelSelectScreen, ADR-032). 12 s pour choisir : à la fin, on part avec la sélection en cours.
+    /// GameFlow donne le héros présélectionné (rejouer dans la minute, ou retour depuis le choix du niveau).
     /// </summary>
     public class HeroSelectScreen : MonoBehaviour
     {
@@ -18,35 +17,24 @@ namespace Kenta.UI
         [SerializeField] Image[] frames;
         [SerializeField] PixelText[] names;
         [SerializeField] PixelText timerText;
-        [Tooltip("« ▲ DÉCOR 1/8 : LA SYLVE ▼ »")]
-        [SerializeField] PixelText worldText;
         [SerializeField] float seconds = 12f;
 
-        int index, level;
+        int index, startIndex;
         float timer;
         Vector2 stickPrev;
-        LevelCatalog catalog;
 
         public bool Done { get; private set; }
-        /// <summary>Le monde affiché change (GameFlow met le décor à jour).</summary>
-        public event Action<LevelDef> OnLevelChanged;
 
-        /// <summary>Mondes proposés (le catalogue des niveaux), avant d'afficher l'écran.</summary>
-        public void Setup(LevelCatalog levels) => catalog = levels;
-
-        int LevelCount => catalog != null && catalog.levels != null ? catalog.levels.Length : 0;
-        LevelDef CurrentLevel => LevelCount > 0 ? catalog.levels[Mathf.Clamp(level, 0, LevelCount - 1)] : null;
+        /// <summary>Héros présélectionné, avant d'afficher l'écran.</summary>
+        public void Setup(int heroIndex) => startIndex = heroIndex;
 
         void OnEnable()
         {
-            bool retry = GameSession.IsQuickRetry;
-            index = retry ? Mathf.Clamp(GameSession.HeroIndex, 0, theme.heroes.Length - 1) : 0;
-            level = retry ? Mathf.Clamp(GameSession.LevelIndex, 0, Mathf.Max(0, LevelCount - 1)) : 0;
+            index = Mathf.Clamp(startIndex, 0, theme.heroes.Length - 1);
             timer = seconds;
             Done = false;
             stickPrev = ArcadeInput.Stick(1);
             Refresh();
-            OnLevelChanged?.Invoke(CurrentLevel);
         }
 
         void Update()
@@ -57,7 +45,6 @@ namespace Kenta.UI
 
             var stick = ArcadeInput.Stick(1);
             if (Flick(stick.x, stickPrev.x)) MoveHero(stick.x > 0 ? 1 : -1);
-            if (Flick(stick.y, stickPrev.y)) MoveLevel(stick.y > 0 ? -1 : 1);     // haut = monde précédent
             stickPrev = stick;
 
             // garde de 0,3 s : l'appui qui a passé les consignes ne doit pas valider le héros dans la même image
@@ -73,20 +60,10 @@ namespace Kenta.UI
             Refresh();
         }
 
-        void MoveLevel(int d)
-        {
-            if (LevelCount <= 1) return;
-            level = (level + d + LevelCount) % LevelCount;
-            Refresh();
-            OnLevelChanged?.Invoke(CurrentLevel);
-        }
-
         void Confirm()
         {
             GameSession.HeroIndex = index;
             GameSession.Hero = theme.heroes[index];
-            GameSession.LevelIndex = level;
-            GameSession.Level = CurrentLevel;
             Done = true;
         }
 
@@ -102,11 +79,6 @@ namespace Kenta.UI
                 rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, sel ? -38f : -42f);
                 frames[i].color = sel ? hero.accent : new Color(0.35f, 0.3f, 0.5f);
                 names[i].Color = sel ? Color.white : new Color(0.6f, 0.58f, 0.75f);
-            }
-            if (worldText != null)
-            {
-                var l = CurrentLevel;
-                worldText.Text = l != null ? $"▲  DÉCOR {level + 1}/{LevelCount} : {l.Label}  ▼" : "";
             }
         }
     }

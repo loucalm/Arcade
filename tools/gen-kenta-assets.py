@@ -5,7 +5,7 @@ Les sprites des ennemis ne sont PAS générés : ils viennent du PDF de la DA (t
 non plus : ils viennent de Gemini (tools/gemini-obstacles/, ADR-026). Ici : 8 biomes (ciel, 3 calques en parallaxe,
 sol, trou), pièces, totem, logo, cœurs, cadres et police pixel.
 
-Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,font] [--sheet planche.png]
+Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,font,thumbs] [--sheet planche.png]
 Dossier par défaut : game/Assets/_Project/Art/Kenta/Gen   (dépendances : tools/requirements.txt)
 """
 import argparse
@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kenta_art as art  # noqa: E402
+import kenta_thumbs as thumbs  # noqa: E402
 import kenta_ui as ui  # noqa: E402
 from kenta_biomes import BIOMES  # noqa: E402
 from pixlib import Pix, col  # noqa: E402
@@ -145,7 +146,19 @@ def gen_heroes(out, sheet):
     mod.main()
 
 
-GENERATORS = {"biomes": gen_biomes, "ui": gen_ui, "font": gen_font, "heroes": gen_heroes, "thumbnail": gen_thumbnail}
+def gen_thumbs(out, sheet):
+    """Vignettes 40×24 des niveaux (ui/thumb_<id>.png) tirées des décors installés, et l'étoile de difficulté (ADR-032).
+    À relancer après un changement de décor : python3 tools/gen-kenta-assets.py --only thumbs"""
+    for b in BIOMES:
+        i = b["id"]
+        layers = [Image.open(os.path.join(out, "biomes", f"bg_{i}_{k}.png")).convert("RGBA").crop((0, 0, 640, 360))
+                  for k in ("sky", "far", "mid", "near")]
+        put(out, "ui", f"thumb_{i}", thumbs.make_thumbnail(layers), sheet)
+    put(out, "ui", "star", ui.draw_star(), sheet)
+
+
+GENERATORS = {"biomes": gen_biomes, "ui": gen_ui, "font": gen_font, "heroes": gen_heroes, "thumbnail": gen_thumbnail,
+              "thumbs": gen_thumbs}
 
 
 def contact_sheet(imgs, path, width=1500, scale=2, bg=(60, 60, 80)):

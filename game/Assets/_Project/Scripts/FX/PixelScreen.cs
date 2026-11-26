@@ -74,7 +74,7 @@ namespace Kenta.FX
                 frame.sizeDelta = new Vector2(w * Scale, h * Scale);
                 // fenêtre de taille impaire : le cadre centré tomberait sur un demi-pixel d'écran (colonnes perdues)
                 frame.anchoredPosition = PixelMath.CenterCorrection(Screen.width, Screen.height, w * Scale, h * Scale);
-                // plein cadre (ADR-032) : hors 1920×1080 (Game view de l'éditeur…), tout le cadre est agrandi au plus
+                // plein cadre (ADR-033) : hors 1920×1080 (Game view de l'éditeur…), tout le cadre est agrandi au plus
                 // grand qui rentre ; les pixels sont alors un peu inégaux, mais le jeu remplit l'écran, quel que soit le
                 // plan de caméra (sinon le cadre changerait de taille à chaque zoom). Sur la borne (1920×1080), le
                 // facteur vaut 1 pour toutes les largeurs de vue : rien ne change.

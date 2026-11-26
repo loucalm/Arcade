@@ -8,12 +8,13 @@ using UnityEngine;
 
 namespace Kenta.Core
 {
-    public enum GameState { Attract, Explain, Config, Playing, GameOver, NameEntry }
+    public enum GameState { Attract, Explain, Config, LevelSelect, Playing, GameOver, NameEntry }
 
     /// <summary>
     /// Machine à états du flow d'écrans imposé (docs/game-design.md) :
-    /// Attract+HighScore → Explain → Config (héros et monde) → Playing → GameOver (+ classement) → NameEntry si top 10 → Attract.
-    /// L'accueil tourne en trois temps : logo, démo jouée en autoplay (un monde différent à chaque fois), classement.
+    /// Attract+HighScore → Explain → Config (héros) → LevelSelect (niveau, ADR-032) → Playing → GameOver (+ classement du
+    /// niveau) → NameEntry si top 10 (du niveau ou de la borne) → Attract.
+    /// L'accueil tourne en trois temps : logo, démo jouée en autoplay (un niveau différent à chaque fois), classement de ce niveau.
     /// Rejouer dans la minute saute les consignes, et chaque écran de fin se passe avec le bouton 1.
     /// Un GameObject « écran » par état, dans le canvas pixel 320×180. Scène unique Main (ADR-007).
     /// </summary>
@@ -30,6 +31,8 @@ namespace Kenta.Core
         [SerializeField] GameObject playingScreen;
         [SerializeField] GameObject gameOverScreen;
         [SerializeField] HeroSelectScreen heroSelect;
+        [SerializeField] GameObject levelSelectScreen;
+        [SerializeField] LevelSelectScreen levelSelect;
         [Tooltip("Classement en pixel art (remplace l'affichage du toolkit).")]
         [SerializeField] HighscoreBoard highscoreBoard;
         [Tooltip("Saisie des 3 lettres en pixel art (l'envoi passe par HighscoreManager.SetHighscore).")]
@@ -41,7 +44,7 @@ namespace Kenta.Core
 
         [Header("Musique")]
         [SerializeField] SongData levelSong;
-        [Tooltip("Mondes proposés : choisis à l'écran du héros, et tour à tour dans la démo de l'accueil.")]
+        [Tooltip("Niveaux proposés : choisis à l'écran des niveaux, et tour à tour dans la démo de l'accueil.")]
         [SerializeField] LevelCatalog catalog;
         [Tooltip("Boucle de menu ; si vide, le morceau du niveau tourne en boucle, plus bas.")]
         [SerializeField] SongData attractSong;
@@ -68,6 +71,9 @@ namespace Kenta.Core
         AttractPhase phase;
         bool showingBoard;
         int demoIndex;
+        int pendingLevel;            // niveau présélectionné à l'écran des niveaux
+        bool backToHero;             // retour depuis l'écran des niveaux : on garde le héros choisi
+        LevelDef boardLevel;         // classement montré à l'accueil (niveau de la dernière démo ou de la dernière partie)
         AttractScreen attract;
         bool menuLooping;            // la musique de menu tourne en boucle (faux pendant une partie ou la démo)
 
@@ -81,8 +87,8 @@ namespace Kenta.Core
         // Start (et pas Awake) : tous les Awake, dont ceux du Conductor et du RunManager, sont passés.
         void Start()
         {
-            StartCoroutine(HighscoreManager.FetchHighscores());
-            if (heroSelect != null) heroSelect.OnLevelChanged += ShowWorld;
+            StartCoroutine(FetchScores());
+            if (levelSelect != null) levelSelect.OnLevelChanged += ShowWorld;
             if (DevStart.Active) StartCoroutine(DevPlay());   // test d'un passage : droit au jeu
             else Enter(GameState.Attract);
         }
@@ -102,7 +108,7 @@ namespace Kenta.Core
 
         void OnDestroy()
         {
-            if (heroSelect != null) heroSelect.OnLevelChanged -= ShowWorld;
+            if (levelSelect != null) levelSelect.OnLevelChanged -= ShowWorld;
             if (Instance == this) Instance = null;
         }
 
@@ -127,7 +133,17 @@ namespace Kenta.Core
                     break;
 
                 case GameState.Config:
-                    if (heroSelect == null || heroSelect.Done) Enter(GameState.Playing);
+                    if (heroSelect == null || heroSelect.Done) Enter(levelSelect != null ? GameState.LevelSelect : GameState.Playing);
+                    break;
+
+                case GameState.LevelSelect:
+                    if (levelSelect.Back)
+                    {
+                        pendingLevel = levelSelect.SelectedIndex;
+                        backToHero = true;
+                        Enter(GameState.Config);
+                    }
+                    else if (levelSelect.Done) Enter(GameState.Playing);
                     break;
 
                 case GameState.Playing:
@@ -142,10 +158,11 @@ namespace Kenta.Core
                         showingBoard = true;
                         phaseTimer = 0f;
                         SetActive(gameOverScreen, false);
+                        if (highscoreBoard != null) highscoreBoard.ShowLevel(PlayedLevel);
                         ShowBoard(true);
                     }
                     else if (showingBoard && (phaseTimer >= gameOverHighscoreDuration || (phaseTimer >= inputGuard * 2f && ArcadeInput.ConfirmDown())))
-                        Enter(IsTopTen(Score) ? GameState.NameEntry : GameState.Attract);
+                        Enter(IsTopTen(Score, PlayedLevel) ? GameState.NameEntry : GameState.Attract);
                     break;
 
                 case GameState.NameEntry:
@@ -163,11 +180,19 @@ namespace Kenta.Core
             State = next;
             stateTimer = phaseTimer = 0f;
             showingBoard = false;
-            if (next == GameState.Config && heroSelect != null) heroSelect.Setup(catalog);   // avant son OnEnable
+            if (next == GameState.Config && heroSelect != null)
+            {
+                // en venant des consignes ou de l'accueil : niveau de la dernière partie si on rejoue vite, sinon le premier
+                if (!backToHero) pendingLevel = GameSession.IsQuickRetry ? GameSession.LevelIndex : 0;
+                heroSelect.Setup(backToHero || GameSession.IsQuickRetry ? GameSession.HeroIndex : 0);   // avant son OnEnable
+                backToHero = false;
+            }
+            if (next == GameState.LevelSelect && levelSelect != null) levelSelect.Setup(catalog, pendingLevel);
 
             SetActive(attractScreen, next == GameState.Attract);
             SetActive(explainScreen, next == GameState.Explain);
             SetActive(configScreen, next == GameState.Config);
+            SetActive(levelSelectScreen, next == GameState.LevelSelect);
             SetActive(playingScreen, next == GameState.Playing);
             SetActive(gameOverScreen, next == GameState.GameOver);
             SetActive(nameEntry != null ? nameEntry.gameObject : null, next == GameState.NameEntry);
@@ -188,6 +213,15 @@ namespace Kenta.Core
                     run?.StopRun(hideWorld: true, stopMusic: false);
                     ShowMenuWorld(scroll: true);
                     PlayMenuMusic();
+                    break;
+
+                case GameState.LevelSelect:
+                    // le décor suit le niveau en surbrillance (OnLevelChanged) ; l'écran joue l'extrait de son morceau
+                    run?.StopRun(hideWorld: true, stopMusic: false);
+                    ShowMenuWorld(scroll: true);
+                    ShowWorld(levelSelect != null ? levelSelect.Selected : null);   // son OnEnable est passé avant
+                    menuLooping = false;
+                    conductor?.SetVolume(attractVolume);
                     break;
 
                 case GameState.Playing:
@@ -221,6 +255,7 @@ namespace Kenta.Core
             var run = RunManager.Instance;
             var rig = CameraRig.Instance;
             SetActive(attractScreen, p != AttractPhase.Board);
+            if (p == AttractPhase.Board && highscoreBoard != null) highscoreBoard.ShowLevel(boardLevel != null ? boardLevel : FirstLevel());
             ShowBoard(p == AttractPhase.Board);
             if (attract != null) attract.SetDemo(p == AttractPhase.Demo);
 
@@ -229,6 +264,7 @@ namespace Kenta.Core
                 // une vraie partie en autoplay, sur un monde différent à chaque passage
                 var level = catalog.levels[demoIndex % catalog.levels.Length];
                 demoIndex++;
+                boardLevel = level;
                 if (rig != null) rig.AutoScroll = 0f;
                 if (backdrop != null) backdrop.SetGroundVisible(false);
                 menuLooping = false;
@@ -269,6 +305,21 @@ namespace Kenta.Core
 
         LevelDef FirstLevel() => catalog != null && catalog.levels != null && catalog.levels.Length > 0 ? catalog.levels[0] : null;
 
+        /// <summary>Niveau de la partie en cours ou qui vient de finir.</summary>
+        LevelDef PlayedLevel => GameSession.Level != null ? GameSession.Level : FirstLevel();
+
+        /// <summary>
+        /// Classement officiel de la borne, puis classements par niveau (Extradata) seulement si la borne a vraiment
+        /// répondu : sans elle, aucune requête de plus (pas d'erreur en console), les classements restent en mémoire.
+        /// </summary>
+        System.Collections.IEnumerator FetchScores()
+        {
+            var before = HighscoreManager.Highscores;
+            yield return HighscoreManager.FetchHighscores();
+            if (HighscoreManager.HasFetchedHighscores && !ReferenceEquals(HighscoreManager.Highscores, before))
+                yield return LevelScores.FetchFromBorne();
+        }
+
         void ShowBoard(bool on)
         {
             showingBoard = on;
@@ -281,6 +332,13 @@ namespace Kenta.Core
             {
                 HighscoreManager.PlayerName = nameEntry.PlayerName;
                 StartCoroutine(HighscoreManager.SetHighscore(nameEntry.PlayerName, nameEntry.Score));
+                var level = PlayedLevel;
+                if (level != null && LevelScores.IsTopTen(level.id, nameEntry.Score))
+                {
+                    LevelScores.Record(level.id, nameEntry.PlayerName, nameEntry.Score);
+                    if (LevelScores.Online) StartCoroutine(LevelScores.Upload(level.id));
+                }
+                boardLevel = level;
                 if (highscoreBoard != null) highscoreBoard.Highlight(nameEntry.PlayerName, nameEntry.Score);
             }
             Enter(GameState.Attract);
@@ -295,9 +353,20 @@ namespace Kenta.Core
             conductor.SetVolume(attractVolume);
             if (conductor.IsPlaying && conductor.Song == song && menuLooping) return;
             // sortie de démo ou de partie : le morceau continue là où il en est, mais en boucle
-            double from = conductor.IsPlaying && conductor.Song == song ? Math.Max(0.0, conductor.SongBeat) : 0.0;
+            double from = MenuResumeBeat(conductor.Song, conductor.IsPlaying, conductor.SongBeat, song);
             conductor.Play(song, from, loop: true);
             menuLooping = true;
+        }
+
+        /// <summary>
+        /// Beat de départ de la musique des menus : on reprend là où en est le morceau en cours s'il s'agit du même clip
+        /// (chaque niveau a son SongData, mais ils partagent encore « Main Theme », ADR-032), sinon on repart du début.
+        /// </summary>
+        public static double MenuResumeBeat(SongData playing, bool isPlaying, double beat, SongData menu)
+        {
+            bool same = isPlaying && playing != null && menu != null && playing.clip != null && playing.clip == menu.clip
+                        && Mathf.Approximately(playing.bpm, menu.bpm) && Mathf.Approximately(playing.offsetSeconds, menu.offsetSeconds);
+            return same ? Math.Max(0.0, beat) : 0.0;
         }
 
         /// <summary>Fin de partie (mort, ou niveau terminé).</summary>
@@ -306,8 +375,9 @@ namespace Kenta.Core
             if (State == GameState.Playing) Enter(GameState.GameOver);
         }
 
-        static bool IsTopTen(int score) =>
-            score > 0 && HighscoreManager.HasFetchedHighscores && HighscoreManager.IsHighscore(score);
+        static bool IsTopTen(int score, LevelDef level) =>
+            score > 0 && ((HighscoreManager.HasFetchedHighscores && HighscoreManager.IsHighscore(score))
+                          || (level != null && LevelScores.IsTopTen(level.id, score)));
 
         static void SetActive(GameObject go, bool active)
         {
