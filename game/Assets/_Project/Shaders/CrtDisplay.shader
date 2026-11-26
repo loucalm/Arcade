@@ -6,6 +6,8 @@ Shader "Kenta/CrtDisplay"
     Properties
     {
         [PerRendererData] _MainTex ("Image du jeu", 2D) = "black" {}
+        _Zoom ("Dézoom (rien n'est coupé)", Range(1, 1.2)) = 1.04
+        _Border ("Marge du cadre arrondi", Range(0, 0.1)) = 0.02
         _Fish ("Fisheye", Range(0, 0.3)) = 0.06
         _Curve ("Bombé", Range(0, 0.3)) = 0.12
         _Corner ("Coins arrondis", Range(0.001, 0.2)) = 0.05
@@ -37,7 +39,7 @@ Shader "Kenta/CrtDisplay"
 
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;
-            half _Fish, _Curve, _Corner, _Lines, _LinePeriod, _Soft, _Glow, _Vignette, _Gain;
+            half _Zoom, _Border, _Fish, _Curve, _Corner, _Lines, _LinePeriod, _Soft, _Glow, _Vignette, _Gain;
 
             v2f vert (appdata v)
             {
@@ -49,17 +51,19 @@ Shader "Kenta/CrtDisplay"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // géométrie : fisheye (centre grossi, coins fixes) puis bombé (bords repoussés)
-                float2 c = i.uv * 2 - 1;
+                // géométrie : léger dézoom, fisheye (centre grossi, coins fixes) puis bombé (bords repoussés)
+                float2 c = (i.uv * 2 - 1) * _Zoom;
                 c *= 1 - _Fish + _Fish * dot(c, c) * 0.5;
                 c *= 1 + (c.yx * _Curve) * (c.yx * _Curve);
                 float2 s = c * 0.5 + 0.5;
 
                 // coins arrondis (et noir hors de l'image)
                 half2 a = abs(c);
-                half rx = _Corner * _MainTex_TexelSize.z * _MainTex_TexelSize.y;   // rayon en x = corner / aspect
+                half inside = a.x <= 1 && a.y <= 1;
+                a /= 1 + _Border;                                                  // le cadre dépasse un peu l'image
+                half rx = _Corner * _MainTex_TexelSize.x * _MainTex_TexelSize.w;   // rayon en x = corner / aspect
                 half2 d = max(a - (1 - half2(rx, _Corner)), 0) / half2(rx, _Corner);
-                half mask = saturate((1 - length(d)) * 25) * (a.x <= 1 && a.y <= 1);
+                half mask = saturate((1 - length(d)) * 25) * inside;
 
                 // adoucissement horizontal : 2 lectures bilinéaires à ±2·_Soft px, leur moyenne pèse
                 // (1 − 2·_Soft) le pixel et _Soft chaque voisin : 3 prises pour le prix de 2

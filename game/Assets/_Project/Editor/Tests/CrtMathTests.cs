@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CrtMathTests
 {
-    const float Fish = 0.06f, Curve = 0.12f, Corner = 0.05f, Aspect = 16f / 9f;
+    const float Fish = 0.06f, Curve = 0.12f, Corner = 0.05f, Aspect = 16f / 9f, Zoom = 1.04f, Border = 0.02f;
 
     static void Near(Vector2 expected, Vector2 actual, float eps = 1e-5f)
     {
@@ -27,19 +27,23 @@ public class CrtMathTests
 
     [Test] public void ScreenCenter_IsVisible() => Assert.AreEqual(1f, CrtMath.CornerMask(new Vector2(0.5f, 0.5f), Fish, Curve, Corner, Aspect));
 
-    /// <summary>Les coins du HUD (score, compteur : ~18 × 12 px du bord en 1920×1080) restent visibles.</summary>
+    /// <summary>Avec le dézoom, toute l'image reste visible : bords et coins (HUD compris), à 2 px près.</summary>
     [Test]
-    public void Hud_CornersStayVisible()
+    public void WholeImage_StaysVisible()
     {
-        float mx = 18f / 1920f, my = 12f / 1080f;
-        foreach (var src in new[] { new Vector2(mx, my), new Vector2(1 - mx, my), new Vector2(mx, 1 - my), new Vector2(1 - mx, 1 - my) })
+        const float m = 0.0015f;
+        for (int i = 0; i <= 40; i++)
         {
-            Vector2 p = src;
-            for (int i = 0; i < 50; i++) p += src - CrtMath.SourceUv(p, Fish, Curve);
-            Near(src, CrtMath.SourceUv(p, Fish, Curve), 1e-4f);
-            Assert.That(p.x, Is.InRange(0f, 1f));
-            Assert.That(p.y, Is.InRange(0f, 1f));
-            Assert.Greater(CrtMath.CornerMask(p, Fish, Curve, Corner, Aspect), 0.5f, $"coin du HUD {src} mangé");
+            float t = m + i / 40f * (1 - 2 * m);
+            foreach (var src in new[] { new Vector2(t, m), new Vector2(t, 1 - m), new Vector2(m, t), new Vector2(1 - m, t) })
+            {
+                Vector2 p = src;
+                for (int k = 0; k < 300; k++) p += (src - CrtMath.SourceUv(p, Fish, Curve, Zoom)) / Zoom;
+                Near(src, CrtMath.SourceUv(p, Fish, Curve, Zoom), 1e-4f);
+                Assert.That(p.x, Is.InRange(0f, 1f), $"{src} hors écran");
+                Assert.That(p.y, Is.InRange(0f, 1f), $"{src} hors écran");
+                Assert.Greater(CrtMath.CornerMask(p, Fish, Curve, Corner, Aspect, Zoom, Border), 0.5f, $"{src} mangé par un coin");
+            }
         }
     }
 }
