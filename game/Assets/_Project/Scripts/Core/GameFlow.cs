@@ -340,7 +340,9 @@ namespace Kenta.Core
                 var level = PlayedLevel;
                 if (level != null && LevelScores.IsTopTen(level.id, nameEntry.Score))
                 {
-                    LevelScores.Record(level.id, nameEntry.PlayerName, nameEntry.Score);
+                    var hero = GameSession.Hero;
+                    LevelScores.Record(level.id, nameEntry.PlayerName, nameEntry.Score,
+                        RunManager.Instance != null ? (int)RunManager.Instance.Difficulty : 0, hero != null ? hero.displayName : null);
                     if (LevelScores.Online) StartCoroutine(LevelScores.Upload(level.id));
                 }
                 boardLevel = level;

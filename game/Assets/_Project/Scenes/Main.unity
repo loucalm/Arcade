@@ -2673,7 +2673,7 @@ MonoBehaviour:
   backdrop: {fileID: 545117548}
   levelSong: {fileID: 11400000, guid: 4c7d4371930ee40dca097ad5471f74db, type: 2}
   catalog: {fileID: 11400000, guid: 35a150f89fe6a4cd099ede6b12da622f, type: 2}
-  attractSong: {fileID: 0}
+  attractSong: {fileID: 11400000, guid: 870683515ea8e4b1690cdd629e255a78, type: 2}
   attractVolume: 0.5
   attractLogoSeconds: 8
   attractDemoSeconds: 20

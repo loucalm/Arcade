@@ -11,6 +11,10 @@ namespace Kenta.Core
     {
         public string name;
         public int score;
+        /// <summary>Difficulté du héros de ce score (RetryMode : 0 facile, 1 moyen, 2 dur ; 0 pour les anciens scores).</summary>
+        public int difficulty;
+        /// <summary>Nom du héros (« RYO »), vide pour les anciens scores.</summary>
+        public string hero;
     }
 
     /// <summary>
@@ -50,11 +54,11 @@ namespace Kenta.Core
         }
 
         /// <summary>Ajoute un score en mémoire (l'envoi à la borne se fait par <see cref="Upload"/>).</summary>
-        public static void Record(string levelId, string name, int score)
+        public static void Record(string levelId, string name, int score, int difficulty = 0, string hero = null)
         {
             if (string.IsNullOrEmpty(levelId)) return;
             cache.TryGetValue(levelId, out var l);
-            cache[levelId] = Insert(l, name, score);
+            cache[levelId] = Insert(l, name, score, difficulty, hero);
             Version++;
         }
 
@@ -80,8 +84,13 @@ namespace Kenta.Core
             Version++;
         }
 
-        /// <summary>Nouvelle liste : tri décroissant, une entrée par nom (la meilleure), <see cref="Max"/> au plus.</summary>
-        public static List<LevelScoreEntry> Insert(List<LevelScoreEntry> list, string name, int score)
+        /// <summary>
+        /// Nouvelle liste : tri décroissant, une entrée par nom (la meilleure, avec le héros et la difficulté de ce
+        /// score : un même trigramme n'apparaît qu'une fois), <see cref="Max"/> au plus. À score égal, le plus dur
+        /// passe devant.
+        /// </summary>
+        public static List<LevelScoreEntry> Insert(List<LevelScoreEntry> list, string name, int score, int difficulty = 0,
+                                                   string hero = null)
         {
             if (string.IsNullOrEmpty(name)) name = "---";
             var result = list != null ? new List<LevelScoreEntry>(list) : new List<LevelScoreEntry>();
@@ -91,8 +100,8 @@ namespace Kenta.Core
                 if (result[i].score >= score) return result;
                 result.RemoveAt(i);
             }
-            result.Add(new LevelScoreEntry { name = name, score = score });
-            result.Sort((a, b) => b.score.CompareTo(a.score));
+            result.Add(new LevelScoreEntry { name = name, score = score, difficulty = difficulty, hero = hero ?? "" });
+            result.Sort((a, b) => b.score != a.score ? b.score.CompareTo(a.score) : b.difficulty.CompareTo(a.difficulty));
             if (result.Count > Max) result.RemoveRange(Max, result.Count - Max);
             return result;
         }
@@ -110,7 +119,7 @@ namespace Kenta.Core
                 var result = new List<LevelScoreEntry>();
                 if (w?.entries == null) return result;
                 foreach (var e in w.entries)
-                    if (e.score > 0) result = Insert(result, e.name, e.score);
+                    if (e.score > 0) result = Insert(result, e.name, e.score, e.difficulty, e.hero);
                 return result;
             }
             catch (Exception)
