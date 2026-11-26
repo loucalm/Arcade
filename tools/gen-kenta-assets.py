@@ -93,7 +93,7 @@ def text_image(text, scale=1):
     return im.resize((im.width * scale, im.height * scale), Image.NEAREST)
 
 
-def demo_banner(img, y0, h, text="DÉMO"):
+def demo_banner(img, y0, h, text="EN DEV"):
     """Bandeau rouge sur toute la largeur (bord sombre, reflet clair), texte blanc à ombre centré, agrandi ×2."""
     w = img.width
     band = Image.new("RGBA", (w, h), col("#D7263D"))
@@ -109,7 +109,7 @@ def demo_banner(img, y0, h, text="DÉMO"):
 
 def gen_thumbnail(out, sheet):
     """Jaquette carrée de la borne (game/BuildExtras/thumbnail.png) : la Sylve, Kenta (marionnette, ADR-022) en pleine
-    course, le logo, et un bandeau rouge « DÉMO » en bas."""
+    course, le logo, et un bandeau rouge « EN DEV » en bas."""
     b = BIOMES[0]
     scene = art.draw_sky(b, scale=1)
     for layer, off in ((art.draw_far(b, scale=1, foot=False), 120), (art.draw_mid(b, scale=1, foot=False), 150), (art.draw_near(b, scale=1, foot=False), 230)):

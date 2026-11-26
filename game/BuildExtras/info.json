@@ -1,11 +1,11 @@
 {
   "name": "Kenta",
-  "description": "Démo. Cours au rythme de la musique : saute et frappe sur le beat. Chaque niveau ajoute une mécanique (cuirassés, lianes, chauves-souris, gravité inversée…). Ton héros fixe la difficulté : Kenta repart au dernier point, Aiko repart du début, Ryo n'a qu'une vie.",
+  "description": "En développement. Cours au rythme de la musique : saute et frappe sur le beat. Chaque niveau ajoute une mécanique (cuirassés, lianes, chauves-souris, gravité inversée…). Ton héros fixe la difficulté : Kenta repart au dernier point, Aiko repart du début, Ryo n'a qu'une vie.",
   "creator": "Lou Calmes, Lucas Corrieras, Jeremy Hordé",
   "year": 2026,
   "type": "Runner rythmique",
   "players": "1",
-  "catchphrase": "La course en rythme (démo)",
+  "catchphrase": "La course en rythme (en dev)",
   "config": {
     "scoreType": "score",
     "scoreSort": "desc"
