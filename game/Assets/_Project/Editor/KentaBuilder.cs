@@ -201,6 +201,12 @@ namespace Kenta.EditorTools
                     b.enemyFrames = new[] { Spr("Pdf/enemy_djembe_squash.png"), Spr("Pdf/enemy_djembe_stretch.png") };
                     b.enemyBroken = Spr("Pdf/enemy_djembe_broken.png");
                 }
+                else if (Enemies[i] == "chauve")
+                {
+                    // les Échos : la chauve-souris au sol bat des ailes comme celle qui vole (tools/gen-bat.py)
+                    b.enemyFrames = Enumerable.Range(0, 4).Select(k => Spr($"Gen/world/bat_{k}.png")).ToArray();
+                    b.enemyBroken = null;
+                }
                 else
                 {
                     b.enemyFrames = new[] { Spr($"Pdf/enemy_{Enemies[i]}.png") };

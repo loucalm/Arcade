@@ -1023,7 +1023,8 @@ namespace Kenta.Level
             var frames = biome.enemyFrames;
             var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
             sr.flipY = true;
-            if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);
+            if (IsBat(frames)) Flap(sr);
+            else if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);
             return t.gameObject;
         }
 
@@ -1052,7 +1053,8 @@ namespace Kenta.Level
             var t = Group("Enemy", pos);
             var frames = biome.enemyFrames;
             var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
-            if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);   // djembé : écrasé / étiré
+            if (IsBat(frames)) Flap(sr);                                                       // les Échos : chauve-souris au sol
+            else if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);   // djembé : écrasé / étiré
             return t.gameObject;
         }
 
@@ -1080,15 +1082,28 @@ namespace Kenta.Level
         GameObject MakeFlyer(Vector2 pos, BiomeTheme biome)
         {
             var t = Group("Flyer", pos);
-            var frames = theme.flyerFrames;
-            bool animated = frames != null && frames.Length > 1 && frames[0] != null;
-            var sr = Spr(t, "Sprite", animated ? frames[0] : theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
-            if (animated) sr.gameObject.AddComponent<SpriteCycle>().Setup(frames, FlapFps);
+            bool animated = IsBat(theme.flyerFrames);
+            var sr = Spr(t, "Sprite", animated ? theme.flyerFrames[0] : theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
+            if (animated) Flap(sr);
             return t.gameObject;
         }
 
         /// <summary>Images par seconde du battement d'ailes : 4 images, soit 3 battements par seconde.</summary>
         const float FlapFps = 12f;
+        /// <summary>Vol stationnaire des chauves-souris : ±4 px du monde, un aller-retour en 0,9 s (visuel seulement).</summary>
+        const float HoverAmplitude = 4f / PixelScreen.Ppu, HoverPeriod = 0.9f;
+
+        /// <summary>Ces images sont-elles la chauve-souris animée (tools/gen-bat.py) ? Volante, au sol (les Échos) ou pendue.</summary>
+        bool IsBat(Sprite[] frames) =>
+            frames != null && frames.Length > 1 && frames[0] != null && theme.flyerFrames != null &&
+            theme.flyerFrames.Length > 0 && frames[0] == theme.flyerFrames[0];
+
+        /// <summary>La chauve-souris bat des ailes en continu (pas par crans sur le temps) et plane de haut en bas.</summary>
+        void Flap(SpriteRenderer sr)
+        {
+            sr.gameObject.AddComponent<SpriteCycle>().Setup(theme.flyerFrames, FlapFps);
+            sr.gameObject.AddComponent<Hover>().Setup(HoverAmplitude, HoverPeriod);
+        }
 
         GameObject MakeLum(Vector2 center)
         {
