@@ -1,0 +1,26 @@
+{
+ "sourd": {
+  "label": "LE MONDE SOURD",
+  "note": "noir et blanc, deux gris pour les lointains, rouge seulement pour la Sourdine",
+  "colors": {
+   "noir": "#000000",
+   "blanc": "#FFFFFF",
+   "gris_fonce": "#3A3842",
+   "gris": "#7C7A86",
+   "rouge": "#FF2A4A",
+   "rouge_sombre": "#8A0F24"
+  }
+ },
+ "or": {
+  "label": "NOTE RENVOYÉE",
+  "note": "couleurs des pièces du jeu (coin_0.png)",
+  "colors": {
+   "c0": "#14101C",
+   "c1": "#7A4A10",
+   "c2": "#E8A020",
+   "c3": "#FFD23A",
+   "c4": "#FFE87A",
+   "c5": "#FFF8C8"
+  }
+ }
+}

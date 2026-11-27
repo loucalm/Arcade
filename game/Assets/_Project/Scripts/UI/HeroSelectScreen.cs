@@ -21,6 +21,10 @@ namespace Kenta.UI
         [SerializeField] PixelText[] names;
         [SerializeField] PixelText timerText;
         [SerializeField] float seconds = 12f;
+        [Tooltip("Portraits animés : attente (s par image, = IDLE_STEP de tools/gen-heroes.py) et course du héros choisi.")]
+        [SerializeField] float idleStep = 0.4f;
+        [SerializeField] float runStep = 0.06f;
+        float animTime;
 
         // en pixels d'interface : le mot sous le bord haut du cadre (au-dessus de la tête du héros), la règle entre le titre et les cadres
         const float WordBelowFrameTop = 11f, RuleAboveFrameTop = 12f;
@@ -52,6 +56,7 @@ namespace Kenta.UI
 
         void Update()
         {
+            Animate();
             if (Done || TimedOut) return;
             timer -= Time.unscaledDeltaTime;
             if (ArcadeInput.AnyInput()) timer = Mathf.Max(timer, seconds - 0.3f);   // on touche : le délai repart (sans rejouer la garde)
@@ -65,6 +70,24 @@ namespace Kenta.UI
             bool guard = seconds - timer < 0.3f;
             if (!guard && ArcadeInput.ConfirmDown(1)) Confirm();
             else if (timer <= 0f) TimedOut = true;           // personne : retour à l'accueil (GameFlow)
+        }
+
+        /// <summary>Le héros choisi court sur place, les autres respirent (décalés pour ne pas respirer ensemble).</summary>
+        void Animate()
+        {
+            animTime += Time.unscaledDeltaTime;
+            for (int i = 0; i < portraits.Length; i++)
+            {
+                var s = theme.heroes[i].sprites;
+                bool sel = i == index;
+                var cycle = sel ? s.runCycle : s.idleCycle;
+                if (cycle == null || cycle.Length == 0) continue;
+                int k = (int)(animTime / (sel ? runStep : idleStep)) + (sel ? 0 : i * 3);
+                var spr = cycle[k % cycle.Length];
+                if (spr == null || portraits[i].sprite == spr) continue;
+                portraits[i].sprite = spr;
+                ((RectTransform)portraits[i].transform).sizeDelta = spr.rect.size;
+            }
         }
 
         static bool Flick(float now, float before) => Mathf.Abs(now) > 0.5f && Mathf.Abs(before) <= 0.5f;

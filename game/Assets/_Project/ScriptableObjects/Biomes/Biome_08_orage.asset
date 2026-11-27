@@ -37,7 +37,8 @@ MonoBehaviour:
   cliff: {fileID: 21300000, guid: 8d32662291d354b1f87ba4d31de62a8b, type: 3}
   platform: {fileID: 21300000, guid: 8fc0fd92c68ce48c996aee7e4c6ac8b8, type: 3}
   enemyFrames:
-  - {fileID: 21300000, guid: cf4a92c3020a54321b3cc2af3ca2ea81, type: 3}
+  - {fileID: 21300000, guid: bd8010ec129c741ceb14ec5512b4cff0, type: 3}
+  - {fileID: 21300000, guid: 7b2ed89ae40724f948e5c7248d31e552, type: 3}
   enemyBroken: {fileID: 0}
   spark: {r: 0.8784314, g: 0.6901961, b: 0.2509804, a: 1}
   flash: {r: 1, g: 1, b: 1, a: 1}

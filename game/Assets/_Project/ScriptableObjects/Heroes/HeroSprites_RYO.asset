@@ -13,6 +13,11 @@ MonoBehaviour:
   m_Name: HeroSprites_RYO
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.Player.HeroSpriteSet
   idle: {fileID: 21300000, guid: cf9de35c2b804414b9b072b594dd5e36, type: 3}
+  idleCycle:
+  - {fileID: 21300000, guid: 9b15929a8ab34486397bb99a449e94fa, type: 3}
+  - {fileID: 21300000, guid: 8b4eaf4cbd2af48e9b604f005f2a14b1, type: 3}
+  - {fileID: 21300000, guid: fc0cebf7fcb6e4aa895d2f504dbb84c1, type: 3}
+  - {fileID: 21300000, guid: 151941fbd9f0e4a20aaa207eb4280058, type: 3}
   run: {fileID: 21300000, guid: 0a7ce2d3bd3424aff8136c1d84a09fd6, type: 3}
   runCycle:
   - {fileID: 21300000, guid: 0a7ce2d3bd3424aff8136c1d84a09fd6, type: 3}
@@ -24,7 +29,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: c2db1ed717a5146ae97acd18f74d72fe, type: 3}
   - {fileID: 21300000, guid: 0b15ef16d5a9f4707ae257209182f18a, type: 3}
   jump: {fileID: 21300000, guid: c50bcbe29056f48fd902a3149f718383, type: 3}
-  hit: {fileID: 21300000, guid: 6ac44ccc2bba8425bb5160dda711f044, type: 3}
+  hit: {fileID: 21300000, guid: eaec19ee5c705452987088658291c6e8, type: 3}
   vine: {fileID: 21300000, guid: 6b8ce1f5388ed43a5ac65da53e8addc8, type: 3}
   wall: {fileID: 21300000, guid: 08f6a92ccc888483f8134e78fa7fb8cf, type: 3}
   hurt: {fileID: 21300000, guid: c090614d43fe840579c346a0c4a2df94, type: 3}
@@ -34,6 +39,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 6ac44ccc2bba8425bb5160dda711f044, type: 3}
   - {fileID: 21300000, guid: eaec19ee5c705452987088658291c6e8, type: 3}
   - {fileID: 21300000, guid: 3f5915ebcb15a454c9f9b793f747473c, type: 3}
+  - {fileID: 21300000, guid: 8b6496559b0f24e868931e775d6be860, type: 3}
+  - {fileID: 21300000, guid: f696a7ba3a97b40208e6089a48e1a7fb, type: 3}
   jumpFrames:
   - {fileID: 21300000, guid: 8e7fbbc292f8b4aa4be11b60773983f8, type: 3}
   - {fileID: 21300000, guid: c50bcbe29056f48fd902a3149f718383, type: 3}
