@@ -191,6 +191,7 @@ namespace Kenta.FX
         void LateUpdate()
         {
             if (cam == null || current == null) return;
+            if (layers[0] == null) return;   // scripts rechargés en pleine partie (Play mode) : calques perdus, pas d'erreur à chaque image
             var c = cam.transform.position;
             // décor dessiné pour la vue large (640×360) : agrandi seulement si un jour la vue dépasse sa hauteur
             float skyPx = current.sky != null ? current.sky.rect.height : 360f;

@@ -106,6 +106,7 @@ namespace Kenta.Player
         int plane, visualPlane;
         // Liane en cours (null : aucune)
         LevelObject vine;
+        double vineGrabBeat;                  // temps où l'on a attrapé la liane en cours
         int vineCursor;
         double lastJumpDownBeat = -99;
         // Ennemi cuirassé écrasé : on attend l'appui du grand rebond (sinon petit rebond)
@@ -271,7 +272,9 @@ namespace Kenta.Player
             if (cmd.jumpDown)
             {
                 lastJumpDownBeat = beat;
-                jumpBufferBeat = vine != null ? -99 : beat;     // pendu à une liane, l'appui sert seulement au jugement du lâcher
+                jumpBufferBeat = vine != null ? -99 : beat;     // pendu à une liane, l'appui sert seulement au lâcher
+                // appui en avance sur une liane : il est gardé (lâcher à l'ouverture de la fenêtre) ; la main se resserre
+                if (vine != null && beat < vine.beat - VineEarlyBeats) squash = Squash(0.85f, 1.15f);
                 // appui juste après le décollage d'un tambour : il compte pour le rebond
                 if (pendingBounce != null && beat - pendingBounce.beat <= 0.5) run.OnObstacleCleared(pendingBounce, beat);
                 pendingBounce = null;
@@ -377,6 +380,7 @@ namespace Kenta.Player
             if (o.plane != plane || x < o.bounds.xMin - 0.05f || x > o.bounds.xMin + 0.8f || Mathf.Abs(y - o.grabY) > 1.6f) return;
             o.passed = true;
             vine = o;
+            vineGrabBeat = nowBeat;
             grounded = false;
             IsBouncing = false;
             jumpBufferBeat = -99;
@@ -384,7 +388,11 @@ namespace Kenta.Player
             FxPool.Instance?.Burst(new Vector2(x, y + VineView.HandHeight), new Color(0.6f, 0.8f, 0.4f), 6, 2.5f, 0.12f, 0.3f, 0f, 0f);
         }
 
-        /// <summary>Fenêtre du lâcher d'une liane autour de son temps (beats) : avant, l'appui ne compte pas ; après, on tombe.</summary>
+        /// <summary>
+        /// Fenêtre du lâcher d'une liane autour de son temps (beats). Un appui plus tôt (après la prise) est gardé : on lâche
+        /// à l'ouverture de la fenêtre (2026-11-27 : avant, il était ignoré, la main glissait et le héros tombait au lieu de
+        /// sauter, « ça m'obéit pas »). Après la fenêtre, sans appui, on tombe.
+        /// </summary>
         const float VineEarlyBeats = 0.35f, VineLateBeats = 0.35f;
 
         /// <summary>
@@ -398,10 +406,10 @@ namespace Kenta.Player
             double len = vine.beat - vine.grabBeat;
             float u = (float)((beat - vine.grabBeat) / len);
             var view = vine.view != null ? vine.view.GetComponent<VineView>() : null;
-            bool pressed = lastJumpDownBeat >= vine.beat - VineEarlyBeats && lastJumpDownBeat >= vine.grabBeat;
+            bool pressed = lastJumpDownBeat > vineGrabBeat;     // appui après la prise (en avance : gardé jusqu'à la fenêtre)
             float arcY = Mathf.Lerp(vine.grabY, vine.releaseY, u) - vine.sag * Mathf.Sin(Mathf.PI * u);
             float arcVy = (float)(((vine.releaseY - vine.grabY) - vine.sag * Mathf.PI * Mathf.Cos(Mathf.PI * u)) / (len * spb));
-            if (!pressed && beat <= vine.beat + VineLateBeats)
+            if ((!pressed || beat < vine.beat - VineEarlyBeats) && beat <= vine.beat + VineLateBeats)
             {
                 y = arcY;
                 vy = arcVy;

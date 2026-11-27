@@ -59,6 +59,7 @@ namespace Kenta.FX
         public void Burst(Vector2 position, Color color, int count, float speed = 6f, float size = 0.18f,
                           float life = 0.5f, float gravity = 12f, float upBias = 0.3f)
         {
+            if (particles == null) return;
             for (int i = 0; i < count; i++)
             {
                 ref var p = ref particles[next];
@@ -80,6 +81,7 @@ namespace Kenta.FX
 
         void Update()
         {
+            if (particles == null) return;   // scripts rechargés en pleine partie (Play mode) : pas d'erreur à chaque image
             float dt = Time.deltaTime;
             for (int i = 0; i < particles.Length; i++)
             {

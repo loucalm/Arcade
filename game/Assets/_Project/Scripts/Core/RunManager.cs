@@ -437,7 +437,8 @@ namespace Kenta.Core
 
         void Update()
         {
-            if (!IsRunning || Chart == null) return;
+            // Conductor.Instance est perdu si les scripts sont rechargés en pleine partie (Play mode) : pas d'erreur à chaque image
+            if (!IsRunning || Chart == null || Conductor.Instance == null) return;
             double beat = Conductor.Instance.SongBeat;
 
             int index = Chart.SectionIndexAt(beat);
