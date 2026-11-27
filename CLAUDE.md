@@ -21,7 +21,7 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 1. **L'horloge maître est l'audio** (`Conductor.SongTime`). Aucune logique de rythme ne doit se baser uniquement sur `Time.deltaTime`.
 2. **Vitesse de course constante** : `x = BeatToSeconds(beat) * runSpeed`. Le joueur ne ralentit jamais.
 3. Le niveau est **généré à partir d'une chart JSON**. On ne place rien à la main en dur dans les scènes de niveau.
-4. Les sons d'action sont **quantifiés à la double-croche** la plus proche. La tolérance est celle d'un plateformeur, pas d'un jeu de rythme.
+4. Les sons d'action sont **quantifiés à la double-croche** la plus proche. La tolérance est celle d'un plateformeur, pas d'un jeu de rythme (la note d'une pièce : sur le temps de la pièce, ADR-038).
 5. Tout ce qui réagit au tempo s'abonne à `Conductor.OnBeat(int beat)`. Pas de minuteries locales.
 6. Checkpoint = `{beat, x}`. Respawn = seek audio sur `BeatToSeconds(beat)`, puis reprise.
 7. Sur WebGL, l'AudioMixer ne gère que le volume : **aucun effet DSP**. Le remix 8-bit est un clip séparé.
