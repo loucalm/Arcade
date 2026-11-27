@@ -196,6 +196,7 @@ namespace Kenta.UI
 
         void Update()
         {
+            if (pressGroup == null || pressStart == null) return;   // scripts rechargés en pleine partie (Play mode) : objets créés à l'exécution perdus, pas d'erreur à chaque image
             float dt = Time.unscaledDeltaTime;
             bool logoPhase = logo != null && logo.gameObject.activeInHierarchy;
             if (intro >= 0f) RunIntro(dt);
@@ -241,6 +242,7 @@ namespace Kenta.UI
 
         void RunIntro(float dt)
         {
+            if (letterImages == null || letterGlows == null || cover == null) { intro = -1f; return; }   // scripts rechargés en pleine partie (Play mode) : objets créés à l'exécution perdus, pas d'erreur à chaque image
             // au lancement, les premières images sont très longues (chargement, audio) : sans ce garde, une image
             // d'une seconde sautait toute la chute des lettres. On attend que le jeu tourne régulièrement, et le
             // temps de l'entrée avance d'au plus 1/30 s par image.
