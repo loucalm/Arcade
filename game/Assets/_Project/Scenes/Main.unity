@@ -3425,7 +3425,7 @@ MonoBehaviour:
   catalog: {fileID: 11400000, guid: 35a150f89fe6a4cd099ede6b12da622f, type: 2}
   attractSong: {fileID: 0}
   attractVolume: 0.5
-  attractLogoSeconds: 8
+  attractLogoSeconds: 15
   attractDemoSeconds: 20
   attractBoardSeconds: 8
   explainDuration: 15

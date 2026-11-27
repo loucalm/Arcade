@@ -51,7 +51,7 @@ namespace Kenta.Core
         [SerializeField, Range(0f, 1f)] float attractVolume = 0.5f;
 
         [Header("Durées (s)")]
-        [SerializeField] float attractLogoSeconds = 8f;
+        [SerializeField] float attractLogoSeconds = 15f;
         [SerializeField] float attractDemoSeconds = 20f;
         [SerializeField] float attractBoardSeconds = 8f;
         [Tooltip("Consignes : secondes sans action avant le retour à l'accueil.")]

@@ -1079,7 +1079,7 @@ namespace Kenta.EditorTools
             Set(flow, "nameEntry", nameEntry.GetComponent<NameEntryScreen>());
             Set(flow, "gameOverDuration", 4.5f);    // titre, note puis panneau : le temps de lire (bouton 1 pour passer)
             Set(flow, "gameOverHighscoreDuration", 3.5f);
-            Set(flow, "attractLogoSeconds", 8f);
+            Set(flow, "attractLogoSeconds", 15f);
             Set(flow, "attractDemoSeconds", 20f);
             Set(flow, "attractBoardSeconds", 8f);
             Set(flow, "catalog", catalog);
