@@ -34,5 +34,33 @@ namespace Kenta.EditorTests
             Assert.IsTrue(CoinPickup.VisibleAt(0.01f));
             Assert.IsFalse(CoinPickup.VisibleAt(0.12f) && CoinPickup.VisibleAt(0.085f) && CoinPickup.VisibleAt(0.125f) && CoinPickup.VisibleAt(0.15f));
         }
+
+        [Test]
+        public void Play_PopsThenHidesTheCoin_WhichComesBackWhole()
+        {
+            var coin = new GameObject("Coin");
+            try
+            {
+                var sprite = new GameObject("Sprite").AddComponent<SpriteRenderer>();
+                sprite.transform.SetParent(coin.transform, false);
+                coin.transform.localPosition = new Vector3(2f, 3f, 0f);
+                var pop = coin.AddComponent<CoinPickup>();
+
+                pop.Play();
+                Assert.IsTrue(pop.Playing && pop.enabled, "Play ne doit pas être annulé");
+                pop.Tick(0.05f);
+                Assert.Greater(coin.transform.localPosition.y, 3f, "la pièce saute");
+                for (int i = 0; i < 4; i++) pop.Tick(0.05f);
+
+                Assert.IsFalse(coin.activeSelf, "ramassée, la pièce disparaît");
+                Assert.AreEqual(new Vector3(2f, 3f, 0f), coin.transform.localPosition);
+                Assert.IsTrue(sprite.enabled);
+                Assert.IsFalse(pop.Playing || pop.enabled, "au repos : pas d'Update");
+            }
+            finally
+            {
+                Object.DestroyImmediate(coin);
+            }
+        }
     }
 }
