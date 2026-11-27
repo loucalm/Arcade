@@ -37,8 +37,15 @@ namespace Kenta.FX
         double glitchUntilBeat = -1;
         int frame;
         bool inverted;
-        Material baseWorldMat, invertMat;
+        Material baseWorldMat, worldMat, invertMat;
         static readonly int InvertId = Shader.PropertyToID("_Invert");
+        // corruption du monde et noir et blanc (niveau 9, ADR-042) : courbes de la chart, variables globales du shader
+        CorruptionCurve corruptTrack, grayTrack;
+        static readonly int GlitchableId = Shader.PropertyToID("_Glitchable");
+        static readonly int CorruptId = Shader.PropertyToID("_KentaCorrupt");
+        static readonly int GrayId = Shader.PropertyToID("_KentaGray");
+        static readonly int SeedId = Shader.PropertyToID("_KentaSeed");
+        static readonly int HeroId = Shader.PropertyToID("_KentaHero");
 
         public int Copies => copyCount;
         /// <summary>Le calque du monde est en négatif (niveau 9) ; le héros et l'interface gardent leurs couleurs.</summary>
@@ -48,6 +55,10 @@ namespace Kenta.FX
         public bool FlipY => flipY;
         /// <summary>Intensité du grésillement en ce moment (0 = image nette).</summary>
         public float Level { get; private set; }
+        /// <summary>Corruption du monde en ce moment (0..1, pulsée sur le temps).</summary>
+        public float Corruption { get; private set; }
+        /// <summary>Part de noir et blanc du monde en ce moment (0..1).</summary>
+        public float Gray { get; private set; }
 
         void Awake()
         {
@@ -60,6 +71,37 @@ namespace Kenta.FX
             if (Instance == this) Instance = null;
             if (noiseTex != null) Destroy(noiseTex);
             if (invertMat != null) Destroy(invertMat);
+            if (worldMat != null) Destroy(worldMat);
+            Shader.SetGlobalFloat(CorruptId, 0f);
+            Shader.SetGlobalFloat(GrayId, 0f);
+        }
+
+        /// <summary>
+        /// Courbes de corruption et de noir et blanc du niveau (`LevelBuilder.Corruption`, `Grayscale`), lues à chaque
+        /// image sur le temps du morceau ; null = image propre (hors partie).
+        /// </summary>
+        public void SetCorruptionTracks(CorruptionCurve corruption, CorruptionCurve gray)
+        {
+            corruptTrack = corruption;
+            grayTrack = gray;
+        }
+
+        /// <summary>
+        /// Matériaux propres au calque du monde (le seul qui se corrompt : `_Glitchable` = 1) : normal et négatif. Les
+        /// calques des acteurs et de l'interface gardent le matériau partagé (le héros reste net et en couleur).
+        /// </summary>
+        bool EnsureWorldMaterials(RawImage display)
+        {
+            if (display == null) return false;
+            if (worldMat == null)
+            {
+                baseWorldMat = display.material;
+                worldMat = new Material(baseWorldMat) { name = "PixelDisplay (monde)" };
+                worldMat.SetFloat(GlitchableId, 1f);
+                invertMat = new Material(worldMat) { name = "PixelDisplay (négatif)" };
+                invertMat.SetFloat(InvertId, 1f);
+            }
+            return true;
         }
 
         /// <summary>Retour à l'image normale (début et fin de partie).</summary>
@@ -125,7 +167,7 @@ namespace Kenta.FX
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.sizeDelta = new Vector2(Mathf.Round(layer.Texture.width * k), Mathf.Round(layer.Texture.height * k));
             img.uvRect = new Rect(flipX ? 1f : 0f, flipY ? 1f : 0f, flipX ? -1f : 1f, flipY ? -1f : 1f);
-            if (inverted && layer == screen.WorldLayer) img.material = invertMat;
+            if (layer == screen.WorldLayer) img.material = inverted ? invertMat : worldMat;
             copyImages.Add(img);
         }
 
@@ -138,16 +180,10 @@ namespace Kenta.FX
         {
             inverted = on;
             var display = screen != null && screen.WorldLayer != null ? screen.WorldLayer.Display : null;
-            if (display == null) return;
-            if (invertMat == null)
-            {
-                baseWorldMat = display.material;
-                invertMat = new Material(baseWorldMat) { name = "PixelDisplay (négatif)" };
-                invertMat.SetFloat(InvertId, 1f);
-            }
-            display.material = on ? invertMat : baseWorldMat;
+            if (!EnsureWorldMaterials(display)) return;
+            display.material = on ? invertMat : worldMat;
             for (int i = 0; i < copyImages.Count; i++)
-                if (copyImages[i] != null && copyLayers[i] == screen.WorldLayer) copyImages[i].material = on ? invertMat : null;
+                if (copyImages[i] != null && copyLayers[i] == screen.WorldLayer) copyImages[i].material = on ? invertMat : worldMat;
         }
 
         /// <summary>
@@ -198,6 +234,7 @@ namespace Kenta.FX
             if (copyCount > 1) RefreshCopyTextures();
             var c = Conductor.Instance;
             double beat = c != null ? c.SongBeat : 0;
+            UpdateCorruption(beat);
             float target = beat < glitchUntilBeat ? glitchLevel : 0f;
             // pulsé sur le temps : fort sur le temps, la moitié entre deux
             float phase = (float)(beat - System.Math.Floor(beat));
@@ -227,6 +264,40 @@ namespace Kenta.FX
             if (copyCount == 1) ApplyMain(offset, tint, visible);
             else ApplyCopies(offset, tint, visible);
             UpdateNoise();
+        }
+
+        /// <summary>
+        /// Corruption et noir et blanc lus sur les courbes de la chart au temps du morceau, passés au shader du monde.
+        /// La corruption bat sur le temps (forte sur le temps, ~70 % entre deux).
+        /// </summary>
+        void UpdateCorruption(double beat)
+        {
+            float phase = (float)(beat - System.Math.Floor(beat));
+            float k = corruptTrack != null ? corruptTrack.Evaluate(beat) : 0f;
+            Corruption = k * (0.7f + 0.3f * Mathf.Exp(-5f * phase));
+            Gray = grayTrack != null ? grayTrack.Evaluate(beat) : 0f;
+            Shader.SetGlobalFloat(CorruptId, Corruption);
+            Shader.SetGlobalFloat(GrayId, Gray);
+            if (Corruption <= 0.001f && Gray <= 0.001f) return;
+
+            var display = screen != null && screen.WorldLayer != null ? screen.WorldLayer.Display : null;
+            if (EnsureWorldMaterials(display) && display.material != worldMat && display.material != invertMat)
+                display.material = inverted ? invertMat : worldMat;
+            // graines : rapide (3 par temps : bandes et blocs qui sautent), lente (tous les 2 temps : aplats et barres
+            // de couleur, jamais plus de 3 bascules par seconde) ; modulo, pour la précision du hachage du shader
+            Shader.SetGlobalVector(SeedId, new Vector4((float)(System.Math.Floor(beat * 3) % 997), (float)(System.Math.Floor(beat / 2) % 997),
+                                                       (float)(beat % 64), 0f));
+            // le héros dans la texture du calque : l'image reste propre autour de lui
+            Vector4 hero = new(-9999f, -9999f, 0f, 0f);
+            var target = CameraRig.Instance != null ? CameraRig.Instance.Target : null;
+            var cam = CameraRig.Instance != null ? CameraRig.Instance.Cam : null;
+            var tex = screen != null && screen.WorldLayer != null ? screen.WorldLayer.Texture : null;
+            if (target != null && cam != null && tex != null)
+            {
+                Vector3 vp = cam.WorldToViewportPoint(target.position + Vector3.up * 0.5f);
+                hero = new Vector4(vp.x * tex.width, vp.y * tex.height, 0f, 0f);
+            }
+            Shader.SetGlobalVector(HeroId, hero);
         }
 
         static Color PickTint()
