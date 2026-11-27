@@ -196,8 +196,7 @@ def effects(L):
         shake(eighths(base + 12, base + 18), 0.7, 0.25)      # la rafale tremble à chaque croche
     shake([164, 164.5, 165, 166, 167.5, 168, 168.5, 169, 170, 172, 172.5, 173, 174], 0.6, 0.25)   # la tempête
     shake([52, 52.5, 54, 54.5, 228, 228.5, 230, 230.5], 0.5, 0.25)                                # avant les blancs
-    for x in (57, 59, 61, 63, 233, 235, 237, 239):                                                # les blancs : éclairs
-        L.add(x, "fx_flash", intensity=0.5)
+    lightning(L)
     # phrases
     L.glitch(48, 0.3, 8)
     L.screen_split(64, 4)
@@ -234,6 +233,26 @@ def effects(L):
     L.screen_flip(288, "both")
     L.screen_flip(296, "mirror")
     L.screen_flip(304, "none")                  # la fin reste nette
+
+
+def lightning(L):
+    """Éclairs sur les temps (ADR-041) : rares à l'intro, un par mesure aux couplets, un tous les 2 temps aux drops et
+    dans la tempête (plus fort sur le 1er temps), seuls dans les blancs. Jamais deux à moins de 2 temps (180 BPM :
+    1,5 éclair par seconde au plus, sous la limite de 3 flashs par seconde)."""
+    plan = []
+    plan += [(b, 0.6) for b in range(8, 56, 8)]                                   # intro : toutes les 2 mesures
+    plan += [(b, 1.0) for b in (57, 59, 61, 233, 235, 237)]                       # les blancs (le suivant tombe à la reprise)
+    for a, z in ((64, 96), (128, 160), (240, 272)):                               # couplets : sur le 1er temps
+        plan += [(b, 0.7) for b in range(a, z, 4)]
+    for a, z in ((96, 128), (160, 176), (272, 304)):                              # drops et tempête : tous les 2 temps
+        plan += [(b, 1.0 if (b - a) % 4 == 0 else 0.6) for b in range(a, z, 2)]
+    plan += [(b, 0.7) for b in range(176, 232, 8)]                                # reprise : toutes les 2 mesures
+    plan += [(b, 0.8 - 0.1 * i) for i, b in enumerate(range(304, 336, 8))]        # la fin : l'orage s'éloigne
+    last = -99
+    for b, k in sorted(plan):
+        assert b - last >= 2, f"éclairs trop rapprochés au temps {b}"
+        L.lightning(b, round(k, 2))
+        last = b
 
 
 def build():

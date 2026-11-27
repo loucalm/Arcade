@@ -142,6 +142,21 @@ class Level:
     def glitch(self, beat, intensity, length):
         self.add(beat, "glitch", intensity=intensity, length=length)
 
+    def lightning(self, beat, intensity=1.0):
+        """Éclair dans le ciel (l'Orage) : un éclair zèbre le décor, le ciel s'illumine, l'écran blanchit un instant.
+        Sur un temps ; au plus un tous les 2 temps (borne publique : épilepsie photosensible, ADR-041)."""
+        self.add(beat, "lightning", intensity=intensity)
+
+    def corrupt(self, beat, level, length=0.0):
+        """Le monde se corrompt (niveau 9, ADR-042) : bandes décalées, couleurs séparées, blocs de sprite déplacés ou
+        réduits à des aplats saturés, pixels morts ; au-delà de 0,55, barres R/V/B et trame. Va vers `level` (0..1) en
+        `length` temps, depuis la valeur du moment ; le héros, les pièces et l'interface restent nets."""
+        self.add(beat, "fx_corrupt", intensity=float(level), length=float(length))
+
+    def gray(self, beat, level, length=0.0):
+        """Le monde perd sa couleur (0 = couleur, 1 = noir et blanc), en `length` temps ; le héros garde la sienne."""
+        self.add(beat, "fx_gray", intensity=float(level), length=float(length))
+
     def invert(self, beat, on=True):
         """Le monde passe en négatif (noir ↔ blanc) ou revient ; le héros et l'interface gardent leurs couleurs.
         Un état sur un temps fort, pas un clignotement : 3 bascules par seconde au plus (borne publique)."""
