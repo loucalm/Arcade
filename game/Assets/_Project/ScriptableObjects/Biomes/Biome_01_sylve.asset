@@ -46,6 +46,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 7551c519847f0422cbee10bc1818748b, type: 3}
   - {fileID: 21300000, guid: 2d4cf04cb53d64b578a5c19fe4d91af0, type: 3}
   enemyBroken: {fileID: 21300000, guid: 01b1283b90b5443399a050d4f5cff346, type: 3}
+  enemyHurt: {fileID: 21300000, guid: 27db6010251a740fe8057a2d0a5c3431, type: 3}
+  enemyBrokenFrames:
+  - {fileID: 21300000, guid: f4d24245184f441ff87879c934f50081, type: 3}
+  - {fileID: 21300000, guid: 0ccd3907efbc04fc0aeac9b064c59ef8, type: 3}
+  - {fileID: 21300000, guid: 76faf630053d54c1a87e517431f07207, type: 3}
   spark: {r: 1, g: 0.41568628, b: 0.50980395, a: 1}
   flash: {r: 1, g: 1, b: 1, a: 1}
   monochrome: 0

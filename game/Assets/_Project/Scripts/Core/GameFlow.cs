@@ -107,6 +107,7 @@ namespace Kenta.Core
             var clip = lvl != null && lvl.song != null ? lvl.song.clip : (levelSong != null ? levelSong.clip : null);
             if (clip != null) clip.LoadAudioData();
             while (Time.unscaledTime < 0.5f || (clip != null && clip.loadState == AudioDataLoadState.Loading)) yield return null;
+            if (DevStart.Autoplay) RunManager.Instance?.SetAutoplay(true);
             Enter(GameState.Playing);
         }
 

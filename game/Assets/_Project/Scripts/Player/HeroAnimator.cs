@@ -35,10 +35,20 @@ namespace Kenta.Player
         [Tooltip("Durée (s) d'une image de la boucle de chute.")]
         [SerializeField] float fallLoopSeconds = 0.12f;
 
+        [Header("Animations Gemini (si le jeu d'images les a)")]
+        [Tooltip("Durée (s) d'une image de la victoire, de la liane, du touché et de la mort.")]
+        [SerializeField] float victoryFrameSeconds = 0.12f, vineFrameSeconds = 0.14f, hurtFrameSeconds = 0.05f, deathFrameSeconds = 0.09f;
+        [Tooltip("Durée (s) de l'atterrissage (toutes ses images).")]
+        [SerializeField] float landSeconds = 0.12f;
+        [Tooltip("Part du vol d'un tambour jouée par l'envol (le reste : le saut normal, vrille comprise).")]
+        [SerializeField] float drumLaunchPart = 0.45f;
+        [Tooltip("Distance (u) d'un cycle de course sur le mur.")]
+        [SerializeField] float wallStrideUnits = 2f;
+
         // lus sur la position du héros (rien n'est changé à sa physique)
         Vector3 lastPos;
         bool hasLastPos, wasGrounded;
-        float slope, pathDistance, airborneAt = -99f;
+        float slope, pathDistance, airborneAt = -99f, deadAt = -1f, doneAt = -1f;
 
         /// <summary>
         /// Image d'une chute depuis un bord, `elapsed` s après avoir quitté le sol : image 0 (le pas dans le vide) pendant
@@ -50,6 +60,14 @@ namespace Kenta.Player
             if (frames == 1 || elapsed < step) return 0;
             int k = loop > 0f ? (int)((elapsed - step) / loop) : 0;
             return 1 + k % (frames - 1);
+        }
+
+        /// <summary>Image d'une séquence jouée une fois, `elapsed` s après son début : la dernière image est tenue.</summary>
+        public static int OnceFrameIndex(float elapsed, float frameSeconds, int frames)
+        {
+            if (frames <= 0) return -1;
+            if (elapsed <= 0f || frameSeconds <= 0f) return 0;
+            return Mathf.Min(frames - 1, (int)(elapsed / frameSeconds));
         }
 
         /// <summary>Image du cycle de course pour une distance donnée (boucle, jamais négative).</summary>
@@ -144,18 +162,45 @@ namespace Kenta.Player
 
         Sprite Pick()
         {
-            if (player.IsDead) return sprites.death;
+            if (player.IsDead)
+            {
+                // touché (recul, grimace), puis la mort (projeté, tombe, rebondit, couché : la dernière image est tenue)
+                if (deadAt < 0f) deadAt = Time.time;
+                float t = Time.time - deadAt;
+                int nh = Count(sprites.hurtFrames), nd = Count(sprites.deathFrames);
+                if (nh > 0 && t < nh * hurtFrameSeconds) return sprites.hurtFrames[OnceFrameIndex(t, hurtFrameSeconds, nh)];
+                if (nd > 0) return sprites.deathFrames[OnceFrameIndex(t - nh * hurtFrameSeconds, deathFrameSeconds, nd)];
+                return sprites.death;
+            }
+            deadAt = -1f;
             var run = Kenta.Core.RunManager.Instance;
-            if (run != null && run.Completed && !run.IsRunning)          // niveau fini : il s'arrête et savoure
+            if (run != null && run.Completed && !run.IsRunning)          // niveau fini : il s'arrête et savoure sa victoire
+            {
+                if (doneAt < 0f) doneAt = Time.time;
+                int nv = Count(sprites.victoryFrames);
+                if (nv > 0) return sprites.victoryFrames[OnceFrameIndex(Time.time - doneAt, victoryFrameSeconds, nv)];
                 return sprites.idle != null ? sprites.idle : sprites.run;
+            }
+            doneAt = -1f;
 
-            int hit = HitFrameIndex(player.HitAgeBeats, hitAnimBeats, Count(sprites.hitFrames));
-            if (hit >= 0) return sprites.hitFrames[hit];
+            // coup de katana : en l'air, le coup en l'air s'il existe
+            var hitSet = !player.IsGrounded && Count(sprites.airHitFrames) > 0 ? sprites.airHitFrames : sprites.hitFrames;
+            int hit = HitFrameIndex(player.HitAgeBeats, hitAnimBeats, Count(hitSet));
+            if (hit >= 0) return hitSet[hit];
             if (player.IsPunching) return sprites.hit;
-            if (player.IsSwinging && sprites.vine != null) return sprites.vine;
+            if (player.IsSwinging)
+            {
+                int nv = Count(sprites.vineFrames);
+                if (nv > 0) return sprites.vineFrames[(int)(Time.time / vineFrameSeconds) % nv];
+                if (sprites.vine != null) return sprites.vine;
+            }
 
             if (!player.IsGrounded)
             {
+                // envol d'un tambour : accroupi, détente, étoile, puis la vrille du saut
+                int nb = Count(sprites.drumFrames);
+                if (player.IsBouncing && nb > 0 && player.JumpProgress >= 0f && player.JumpProgress < drumLaunchPart)
+                    return sprites.drumFrames[Mathf.Min(nb - 1, (int)(player.JumpProgress / drumLaunchPart * nb))];
                 int n = Count(sprites.jumpFrames);
                 int k = JumpFrameIndex(player.JumpProgress, n);
                 if (k >= 0) return sprites.jumpFrames[k];
@@ -165,6 +210,9 @@ namespace Kenta.Player
                 return n > 0 ? sprites.jumpFrames[n - 2] : sprites.jump;
             }
 
+            // course sur le mur (rampe raide) : sa propre boucle, si elle existe
+            if (player.IsClimbing && Count(sprites.wallCycle) > 0)
+                return sprites.wallCycle[RunFrameIndex(pathDistance, wallStrideUnits, sprites.wallCycle.Length)];
             // pentes : on grimpe penché en avant, on descend penché en arrière ; le cycle suit la distance le long du sol
             if (slope > slopeThreshold && Count(sprites.climbCycle) > 0)
                 return sprites.climbCycle[RunFrameIndex(pathDistance, climbStrideUnits, sprites.climbCycle.Length)];
@@ -172,6 +220,9 @@ namespace Kenta.Player
             if (slope < -slopeThreshold && Count(sprites.descendCycle) > 0)
                 return sprites.descendCycle[RunFrameIndex(pathDistance, descendStrideUnits, sprites.descendCycle.Length)];
 
+            int nl = Count(sprites.landFrames);
+            if (nl > 0 && player.SinceLanded < landSeconds)
+                return sprites.landFrames[TransitionFrameIndex(player.SinceLanded, landSeconds, nl) is int li && li >= 0 ? li : nl - 1];
             if (player.SinceLanded < crouchSeconds)
                 return sprites.crouch != null ? sprites.crouch : sprites.idle;
             var cycle = sprites.runCycle;

@@ -31,6 +31,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: b179717355ca54a6596fadaef4031ca7, type: 3}
   - {fileID: 21300000, guid: abf328de7a82b4b2fbbac634d54fbba8, type: 3}
   - {fileID: 21300000, guid: 9e7a4bd6f38a148af9c50f15f4e4a4fb, type: 3}
+  - {fileID: 21300000, guid: a8825de243ada4b6d9f7abadac6d95cf, type: 3}
   totem: {fileID: 21300000, guid: 168c43d81541a4aeab4206e8a914aa13, type: 3}
   flyer: {fileID: 21300000, guid: ca39574493cfc4ab4919e1f4fd3cfeae, type: 3}
   flyerFrames:
@@ -42,6 +43,26 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 150c9781c32e748b188e04c5d3ac2b10, type: 3}
   - {fileID: 21300000, guid: 4c4a8652984d643ca9520325733804c6, type: 3}
   pixel: {fileID: 21300000, guid: 629e8e2125bc942ba8bb6e02d25d6ce3, type: 3}
+  flyerHang:
+  - {fileID: 21300000, guid: 26dfa4dd3f0b8420a832bba14c63aa4c, type: 3}
+  - {fileID: 21300000, guid: b1bce181c48004d3bab7cc97cddcd876, type: 3}
+  flyerBroken:
+  - {fileID: 21300000, guid: 831a10d80591c442599bac950814de65, type: 3}
+  - {fileID: 21300000, guid: bdba078284a5d485281d6d824c3eb384, type: 3}
+  stomperStomped:
+  - {fileID: 21300000, guid: 1a52274894c9644739fc47a484c2953a, type: 3}
+  - {fileID: 21300000, guid: f15b78656078a4c009bc0105e54c740c, type: 3}
+  - {fileID: 21300000, guid: fac3f7166b0d84719a649d36f622ff70, type: 3}
+  drumFrames:
+  - {fileID: 21300000, guid: 185fe0109f22d413f9c5bb0513afc5c3, type: 3}
+  - {fileID: 21300000, guid: 76ecaf50a5b844201a5647d9ac2e1612, type: 3}
+  - {fileID: 21300000, guid: b0da7cbade7824fb9b2ddf5bcc8cc617, type: 3}
+  orbFrames:
+  - {fileID: 21300000, guid: ce23b931f9af6444695e38a92db94606, type: 3}
+  - {fileID: 21300000, guid: db9eda7ebbc924032bdcfe74dcd10b4d, type: 3}
+  - {fileID: 21300000, guid: 61d7d798a8c864863ad2dc66ba77cd1d, type: 3}
+  - {fileID: 21300000, guid: e68f07eb2078c450cbd1f02c14b61f0a, type: 3}
+  vineKnot: {fileID: 21300000, guid: e7aff4bb6e74b45b9a35bc87c0f1cd01, type: 3}
   sourdine:
     body: {fileID: 21300000, guid: 09e7c61d0e2ae41ed87b1c1e68855611, type: 3}
     floatBody: {fileID: 21300000, guid: cd08fc119df2542528129479633d9bc4, type: 3}

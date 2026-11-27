@@ -83,8 +83,9 @@ def gen_ui(out, sheet):
     put(out, "ui", "pixel", Pix(1, 1, "#FFFFFF"))
     put(out, "world", "px", Pix(1, 1, "#FFFFFF"))
     put(out, "world", "totem", ui.draw_totem(), sheet)
-    for f in range(4):
-        put(out, "world", f"coin_{f}", ui.draw_coin(f), sheet)
+    if not os.path.exists(os.path.join(out, "..", "Pdf", ".gemini")):   # pièces dessinées par Gemini : on les garde
+        for f in range(4):
+            put(out, "world", f"coin_{f}", ui.draw_coin(f), sheet)
 
 
 def gen_font(out, sheet):
@@ -155,7 +156,11 @@ def gen_thumbnail(out, sheet):
 
 
 def gen_heroes(out, sheet):
-    """Toutes les images des héros, dessinées par la marionnette de tools/hero_rig.py (tools/gen-heroes.py)."""
+    """Toutes les images des héros, dessinées par la marionnette de tools/hero_rig.py (tools/gen-heroes.py). Plus lancé
+    quand les héros viennent de Gemini (tools/gemini-heros/clean.py, marqueur Gen/heroes/.gemini_<héros>)."""
+    if os.path.exists(os.path.join(out, "heroes", ".gemini_kenta")):
+        print("héros : marionnette + tête Gemini (tools/gemini-heros/hybrid.py --install), pas écrasés ici")
+        return
     import importlib.util
     spec = importlib.util.spec_from_file_location("gen_heroes", os.path.join(ROOT, "tools", "gen-heroes.py"))
     mod = importlib.util.module_from_spec(spec)

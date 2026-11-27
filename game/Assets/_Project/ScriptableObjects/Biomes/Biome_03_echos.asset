@@ -43,11 +43,14 @@ MonoBehaviour:
   cliff: {fileID: 21300000, guid: 4ec677242433843bc89077464726fac7, type: 3}
   platform: {fileID: 21300000, guid: 96709e9aef9c34c038ce427be83a942d, type: 3}
   enemyFrames:
-  - {fileID: 21300000, guid: ca39574493cfc4ab4919e1f4fd3cfeae, type: 3}
-  - {fileID: 21300000, guid: 1d01bf33d9c594ed09e8ac9118ae5775, type: 3}
-  - {fileID: 21300000, guid: fdcc2bbe09f33420a99c76501fb8af3c, type: 3}
-  - {fileID: 21300000, guid: d49b8babb3bb54db5bf95ec9241bc483, type: 3}
-  enemyBroken: {fileID: 0}
+  - {fileID: 21300000, guid: 2b24966bc67624d4aa25050b84a02735, type: 3}
+  - {fileID: 21300000, guid: e23bd0486f6ac442a920538169773f78, type: 3}
+  enemyBroken: {fileID: 21300000, guid: 72d98964510b348d39e3800664abbdd5, type: 3}
+  enemyHurt: {fileID: 21300000, guid: 66c9951a556c84ee698c6b579241444a, type: 3}
+  enemyBrokenFrames:
+  - {fileID: 21300000, guid: 90bb44d7856114679b53883a966c7a87, type: 3}
+  - {fileID: 21300000, guid: 333dda5f39959476cb39f95507a3a165, type: 3}
+  - {fileID: 21300000, guid: b37fb5e6f8ad4489f9deb1b6e698b561, type: 3}
   spark: {r: 0.30980393, g: 0.78431374, b: 0.7529412, a: 1}
   flash: {r: 0.8117647, g: 0.9098039, b: 1, a: 1}
   monochrome: 0

@@ -28,6 +28,20 @@ namespace Kenta.Level
         [Tooltip("Carré blanc de 1 px (40 px/unité) : traînée du bandeau, particules.")]
         public Sprite pixel;
 
+        [Header("Dessinés par Gemini (tools/gemini-ennemis/clean.py)")]
+        [Tooltip("Chauve-souris pendue au plafond (endormie, yeux ouverts), accrochée par le haut.")]
+        public Sprite[] flyerHang;
+        [Tooltip("Chauve-souris cassée (jouée là où on l'a frappée).")]
+        public Sprite[] flyerBroken;
+        [Tooltip("Cuirassé écrasé quand on lui saute dessus, puis qui se relève.")]
+        public Sprite[] stomperStomped;
+        [Tooltip("Tambour-tremplin : repos, peau enfoncée, peau qui projette.")]
+        public Sprite[] drumFrames;
+        [Tooltip("Note de saut qui pulse.")]
+        public Sprite[] orbFrames;
+        [Tooltip("Nœud de la liane.")]
+        public Sprite vineKnot;
+
         [Header("La Sourdine (boss du niveau 9, Gen/boss : tools/gemini-niveau9/gen_sheets.py --install)")]
         public SourdineSprites sourdine;
     }
