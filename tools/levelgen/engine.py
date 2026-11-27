@@ -330,6 +330,7 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
     inv, plane = False, 0
     fi = 0
     vine = None
+    vine_grab = -99.0                        # temps où l'on a attrapé la liane en cours
     last_press = -99
     pending = None               # cuirassé écrasé : en attente de l'appui du grand rebond
 
@@ -434,17 +435,18 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
         if vine is None and not inv:
             for v in w.vines:
                 if not v[8] and v[0] - 0.05 <= x <= v[0] + 0.8 and abs(y - v[4]) <= 1.6:
-                    v[8], vine, grounded, jump_buf = True, v, False, -99
+                    v[8], vine, grounded, jump_buf, vine_grab = True, v, False, -99, beat
                     break
         swinging = False
         if vine is not None:
-            # miroir de PlayerController.Swing : on lâche en sautant (de −VINE_EARLY à +VINE_LATE autour du temps)
+            # miroir de PlayerController.Swing : on lâche en sautant, de −VINE_EARLY à +VINE_LATE autour du temps ; un
+            # appui plus tôt (après la prise) est gardé en mémoire et on lâche à l'ouverture de la fenêtre
             xg, xr, bg, br, yg, yr, sag, air, _ = vine
             u = (beat - bg) / (br - bg)
             arc_y = yg + (yr - yg) * u - sag * math.sin(math.pi * u)
             arc_vy = ((yr - yg) - sag * math.pi * math.cos(math.pi * u)) / ((br - bg) * SPB)
-            pressed = last_press >= br - VINE_EARLY and last_press >= bg
-            if not pressed and beat <= br + VINE_LATE:
+            pressed = last_press > vine_grab
+            if (not pressed or beat < br - VINE_EARLY) and beat <= br + VINE_LATE:
                 y, vy, grounded, swinging = arc_y, arc_vy, False, True
             elif not pressed:
                 y, vy, jump_buf, vine = arc_y, min(arc_vy, 0.0), -99, None      # la main glisse : on tombe
