@@ -16,7 +16,7 @@ MonoBehaviour:
   clip: {fileID: 8300000, guid: 414f2ddf292a94b57a684c3dec8717f9, type: 3}
   remixClip: {fileID: 0}
   bpm: 280
-  offsetSeconds: 0.034
+  offsetSeconds: 0.054
   beatsPerBar: 4
   chart: {fileID: 4900000, guid: 9a01658516ddc47fdb7f34d7830cc353, type: 3}
   previewBeat: 72

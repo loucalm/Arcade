@@ -51,6 +51,12 @@ namespace Kenta.Level
         /// <summary>Événements visuels de la chart (fx_flash, camera_shake, camera_zoom, camera, section_change, screen_split,
         /// glitch), triés par beat.</summary>
         public readonly List<ChartEvent> FxEvents = new();
+        /// <summary>Lasers de la Sourdine (lane 0 = bas, à sauter ; 1 = haut, rester au sol), triés par beat.</summary>
+        public readonly List<ChartEvent> Lasers = new();
+        /// <summary>Entrées (lane 1) et sorties (lane 0) de la Sourdine, le boss du niveau 9.</summary>
+        public readonly List<ChartEvent> BossEvents = new();
+        /// <summary>Notes noires crachées par la Sourdine (ennemis en vol à frapper) : leur image vole depuis sa bouche.</summary>
+        public readonly List<LevelObject> Notes = new();
         // Données d'autoplay (debug + démo de l'écran Attract).
         public readonly List<float> AutoJumpBeats = new();
         public readonly List<float> AutoHitBeats = new();
@@ -177,12 +183,16 @@ namespace Kenta.Level
                             airBeats = stomp ? (p.length > 0 ? p.length : 2f) : 0f,
                             bounds = enemy ? new Rect(cx - 0.4f, ey, 0.8f, 0.9f) : new Rect(cx - 0.45f, ey, 0.9f, 0.95f),
                         };
-                        o.view = flying ? MakeFlyer(new Vector2(cx, ey), BiomeAt(e.beat))
+                        bool note = flying && p.variant == "note" && theme.sourdine != null && theme.sourdine.noteBlack != null
+                                    && theme.sourdine.noteBlack.Length > 0;
+                        o.view = note ? MakeNote(new Vector2(cx, ey))
+                            : flying ? MakeFlyer(new Vector2(cx, ey), BiomeAt(e.beat))
                             : hanging ? MakeHanging(new Vector2(cx, p.height), BiomeAt(e.beat))
                             : stomp ? MakeStomper(new Vector2(cx, ey), BiomeAt(e.beat))
                             : enemy ? MakeEnemy(new Vector2(cx, ey), BiomeAt(e.beat)) : MakeBlock(new Vector2(cx, ey), BiomeAt(e.beat));
                         if (plane == 1) SendToBack(o.view);
                         Obstacles.Add(o);
+                        if (note) Notes.Add(o);
                         if (stomp) AutoJumpBeats.Add(e.beat);          // l'appui du grand rebond
                         else AutoHitBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
@@ -323,6 +333,14 @@ namespace Kenta.Level
                         lastX = Mathf.Max(lastX, o.bounds.xMax);
                         break;
                     }
+                    case "laser":
+                        Lasers.Add(e);
+                        if (e.lane == 0) AutoJumpBeats.Add(e.beat);   // laser bas : l'autoplay saute sur le temps
+                        lastX = Mathf.Max(lastX, BeatToX(e.beat + 1f));
+                        break;
+                    case "boss":
+                        BossEvents.Add(e);
+                        break;
                     case "fx_flash":
                     case "camera_shake":
                     case "camera_zoom":
@@ -450,6 +468,9 @@ namespace Kenta.Level
             Orbs.Clear();
             GravityFlips.Clear();
             FxEvents.Clear();
+            Lasers.Clear();
+            BossEvents.Clear();
+            Notes.Clear();
             AutoJumpBeats.Clear();
             AutoHitBeats.Clear();
             gaps.Clear();
@@ -1108,6 +1129,16 @@ namespace Kenta.Level
             bool animated = IsBat(theme.flyerFrames);
             var sr = Spr(t, "Sprite", animated ? theme.flyerFrames[0] : theme.flyer != null ? theme.flyer : biome.enemyFrames[0], Vector2.zero, 10);
             if (animated) Flap(sr);
+            return t.gameObject;
+        }
+
+        /// <summary>Note noire de la Sourdine : deux images (œil ouvert, fermé) ; FX/SourdineBoss la fait voler depuis la bouche.</summary>
+        GameObject MakeNote(Vector2 pos)
+        {
+            var t = Group("Note", pos);
+            var sr = Spr(t, "Sprite", theme.sourdine.noteBlack[0], new Vector2(0f, 0.45f), 12);
+            if (theme.sourdine.noteBlack.Length > 1)
+                sr.gameObject.AddComponent<SpriteCycle>().Setup(theme.sourdine.noteBlack, 4f);
             return t.gameObject;
         }
 

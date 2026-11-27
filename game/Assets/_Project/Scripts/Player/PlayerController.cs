@@ -166,6 +166,8 @@ namespace Kenta.Player
             while (flipCursor < level.GravityFlips.Count && level.GravityFlips[flipCursor].x <= beat) flipCursor++;
             lastJumpDownBeat = -99;
             obstacleCursor = LevelBuilder.FirstIndexAfter(level.Obstacles, x - 4f);
+            laserCursor = 0;
+            while (laserCursor < level.Lasers.Count && level.Lasers[laserCursor].beat < beat - 1.0) laserCursor++;
             lumCursor = LevelBuilder.FirstIndexAfter(level.Lums, x - 4f);
             bounceCursor = LevelBuilder.FirstIndexAfter(level.Bounces, x - 4f);
             IsClimbing = IsBouncing = false;
@@ -327,6 +329,7 @@ namespace Kenta.Player
             // Balayage depuis la frame précédente : un à-coup ne doit pas faire traverser un lum ou un obstacle.
             float sweepFrom = Mathf.Max(prevX, x - maxSweep);
             if (CheckCollisions(x, sweepFrom, beat)) return false;
+            if (CheckLasers(x, beat)) return false;
             CollectLums(x, sweepFrom);
             prevX = x;
             prevCenterY = CenterWorldY();
@@ -630,6 +633,47 @@ namespace Kenta.Player
                 if (press != null) press.Press();
                 return;
             }
+        }
+
+        // Laser de la Sourdine (même règle que tools/levelgen/engine.py) : il brûle de beat + 0,3 à beat + 0,3 + durée,
+        // au sommet d'un saut lancé sur le temps. Bas : les pieds doivent être à 0,35 u au moins au-dessus du sol ;
+        // haut : à 0,6 u au plus (on reste au sol).
+        public const float LaserStart = 0.3f, LaserLength = 0.4f, LaserLowClear = 0.35f, LaserHighClear = 0.6f;
+        int laserCursor;
+        readonly LevelObject laserJudge = new() { kind = LevelObjectKind.Gap };
+
+        /// <summary>Retourne vrai si le joueur a été touché par un laser.</summary>
+        bool CheckLasers(float x, double beat)
+        {
+            var lasers = level.Lasers;
+            if (lasers.Count == 0 || inverted) return false;
+            while (laserCursor < lasers.Count && beat > lasers[laserCursor].beat + LaserStart
+                   + (lasers[laserCursor].@params != null && lasers[laserCursor].@params.length > 0 ? lasers[laserCursor].@params.length : LaserLength))
+            {
+                var done = lasers[laserCursor++];
+                if (done.lane == 0)
+                {
+                    // laser bas franchi : le saut est jugé (PARFAIT / BIEN / BOF), comme un trou
+                    laserJudge.beat = done.beat;
+                    laserJudge.judged = false;
+                    run.OnObstacleCleared(laserJudge, LastJumpPressBeat);
+                }
+            }
+            for (int i = laserCursor; i < lasers.Count; i++)
+            {
+                var l = lasers[i];
+                double from = l.beat + LaserStart;
+                if (beat < from) break;
+                float len = l.@params != null && l.@params.length > 0 ? l.@params.length : LaserLength;
+                if (beat > from + len) continue;
+                float above = y - level.HeightOnPlane(x, plane);
+                if ((l.lane == 0 && above < LaserLowClear) || (l.lane == 1 && above > LaserHighClear))
+                {
+                    run.Damage();
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Retourne vrai si le joueur a été touché (la frame s'arrête là).</summary>

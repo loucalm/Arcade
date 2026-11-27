@@ -22,6 +22,8 @@ namespace Kenta.Core
 
         [SerializeField] LevelBuilder level;
         [SerializeField] PlayerController player;
+        /// <summary>Le héros (le boss du niveau 9 le regarde).</summary>
+        public Transform PlayerTransform => player != null ? player.transform : null;
         [SerializeField] HeroAnimator heroAnimator;
         [SerializeField] BandanaTrail bandana;
         [SerializeField] BiomeBackdrop backdrop;
@@ -214,6 +216,7 @@ namespace Kenta.Core
             IsDemo = demo;
             Chart = ChartData.Parse(chart);
             level.Build(Chart, song.bpm, biome);
+            Kenta.FX.SourdineBoss.Setup(level, level.transform.parent);   // le boss du niveau 9 (rien ailleurs)
 
             TotalLums = level.Lums.Count;
             ResetAttemptStats();
