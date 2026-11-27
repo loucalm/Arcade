@@ -23,12 +23,14 @@ def rng_for(biome, salt):
 # ============================================================================
 # CIEL (320×180, fixe) : bandes, soleil / étoiles, nuages
 # ============================================================================
-def draw_sky(b, scale=BG_SCALE):
-    """Ciel fixe : bandes, astre, étoiles. Le gardien est un sprite à part (tools/gemini-gardiens/, ADR-028)."""
+def draw_sky(b, scale=BG_SCALE, sun=True):
+    """Ciel fixe : bandes, astre, étoiles. Le gardien est un sprite à part (tools/gemini-gardiens/, ADR-028).
+    `sun=False` : ciel du jeu, sans le soleil, qui est un sprite à part (draw_sun) que BiomeBackdrop couche au fil du
+    morceau (ADR-041) ; la jaquette garde le soleil peint."""
     rng = rng_for(b, "sky")
     p = banded_gradient(W_SCREEN, H_SCREEN, b["sky"], 0, GROUND_Y, jitter=0.35, rng=rng, scale=scale)
     p.rect(0, GROUND_Y, W_SCREEN, H_SCREEN, b["sky"][-1])
-    if b["sun"]:
+    if sun and b["sun"]:
         c, x, y, r = b["sun"]
         x, y = round(x * SX), round(y * SY)
         p.circle(x, y, r + 5, mix(c, b["sky"][2], 0.7))
@@ -41,6 +43,94 @@ def draw_sky(b, scale=BG_SCALE):
             if rng.random() < 0.18:
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     p.px(x + dx, y + dy, mix(b["stars"], b["sky"][1], 0.5))
+    return p
+
+
+# ============================================================================
+# ASTRES ET ÉCLAIRS (sprites à part, animés par BiomeBackdrop, ADR-041)
+# ============================================================================
+def sun_place(b):
+    """Centre du soleil (coordonnées logiques 320×180) et rayon, ou None."""
+    if not b["sun"]:
+        return None
+    _, x, y, r = b["sun"]
+    return round(x * SX), round(y * SY), r
+
+
+def draw_sun(b, scale=BG_SCALE):
+    """Soleil seul (disque + deux halos translucides) : il glisse sur les bandes du ciel en se couchant, des halos
+    opaques couleur de ciel s'y verraient. Toile carrée, centre du disque au centre."""
+    c, _, _, r = b["sun"]
+    h = r + 6
+    p = Pix(2 * h, 2 * h, scale=scale)
+    p.circle(h, h, r + 5, col(c, 70))
+    p.circle(h, h, r + 2, col(c, 140))
+    p.circle(h, h, r, c)
+    return p
+
+
+def sun_json(b, scale=BG_SCALE):
+    """Place du soleil pour BiomeBackdrop : centre par rapport au centre du ciel (px du ciel 640×360, y vers le haut)
+    et hauteur du centre à laquelle il est entièrement passé sous la ligne de sol."""
+    x, y, r = sun_place(b)
+    return dict(id=b["id"], x=(x - W_SCREEN / 2) * scale, y=(H_SCREEN / 2 - y) * scale,
+                set=(H_SCREEN / 2 - GROUND_Y - r - 6) * scale)
+
+
+def draw_moon(scale=BG_SCALE):
+    """Croissant de lune (14×14 logiques) et son halo : se lève à la nuit dans les biomes qui ont un soleil."""
+    p = Pix(16, 16, scale=scale)
+    p.circle(8, 8, 7, col("#F4F0DC", 60))
+    p.circle(8, 8, 5, "#F4F0DC")
+    p.circle(7, 7, 2, "#DCD6BC")
+    p.circle(10, 10, 1, "#DCD6BC")
+    s = p.s
+    p.d.ellipse([(10 - 5) * s, (6 - 5) * s, (10 + 5) * s, (6 + 5) * s], fill=(0, 0, 0, 0))   # la part dans l'ombre
+    return p
+
+
+def draw_night_stars(scale=BG_SCALE):
+    """Étoiles de la nuit (ciel 320×180, transparent) : posées sur le ciel du jour, elles s'allument à la section fin."""
+    rng = random.Random("night-stars")
+    p = Pix(W_SCREEN, H_SCREEN, scale=scale)
+    for _ in range(60):
+        x, y = rng.randrange(W_SCREEN), rng.randrange(0, GROUND_Y - 24)
+        p.px(x, y, "#FFF6DC")
+        if rng.random() < 0.2:
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                p.px(x + dx, y + dy, col("#FFF6DC", 120))
+    return p
+
+
+def draw_bolt(k, scale=BG_SCALE):
+    """Éclair k (40×120 logiques) : zigzag blanc dans un liseré bleuté, une ou deux fourches. Montré une fraction de
+    seconde dans le ciel de l'Orage, sur les temps (événement `lightning` de la chart)."""
+    rng = random.Random(f"bolt-{k}")
+    w, h = 40, 120
+    p = Pix(w, h, scale=scale)
+    pts, x, y = [], w // 2 + rng.randint(-6, 6), 0
+    while y < h - 4:
+        pts.append((x, y))
+        y += rng.randint(8, 15)
+        x = max(6, min(w - 6, x + rng.choice((-1, 1)) * rng.randint(3, 8)))
+    pts.append((x, min(y, h - 2)))
+    forks = []
+    for i in rng.sample(range(1, len(pts) - 2), 2 if k != 1 else 1):
+        fx, fy = pts[i]
+        d = rng.choice((-1, 1))
+        a = (fx + d * rng.randint(5, 9), fy + rng.randint(6, 10))
+        forks.append([(fx, fy), a, (a[0] + d * rng.randint(2, 5), a[1] + rng.randint(5, 9))])
+    glow, core = col("#A8B4F0", 200), "#FFFFFF"
+    for f in forks:
+        for a, b in zip(f, f[1:]):
+            p.line(a, b, glow, width=1.5)
+    for a, b in zip(pts, pts[1:]):
+        p.line(a, b, glow, width=2.5)
+    for f in forks:
+        for a, b in zip(f, f[1:]):
+            p.line(a, b, core, width=0.5)
+    for a, b in zip(pts, pts[1:]):
+        p.line(a, b, core, width=1.5)
     return p
 
 

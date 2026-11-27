@@ -167,12 +167,16 @@ namespace Kenta.EditorTools
 
         [Serializable] class GuardianPos { public string id; public float x, y; }
         [Serializable] class GuardianList { public GuardianPos[] items; }
+        [Serializable] class SunPos { public string id; public float x, y, set; }
+        [Serializable] class SunList { public SunPos[] items; }
 
         static BiomeTheme[] BuildBiomes()
         {
             var result = new BiomeTheme[BiomeIds.Length];
             var guardianFile = Art + "Gen/biomes/guardians.json";
             var positions = File.Exists(guardianFile) ? JsonUtility.FromJson<GuardianList>(File.ReadAllText(guardianFile)).items : new GuardianPos[0];
+            var sunFile = Art + "Gen/biomes/suns.json";
+            var suns = File.Exists(sunFile) ? JsonUtility.FromJson<SunList>(File.ReadAllText(sunFile)).items : new SunPos[0];
             for (int i = 0; i < BiomeIds.Length; i++)
             {
                 string id = BiomeIds[i];
@@ -198,6 +202,14 @@ namespace Kenta.EditorTools
                 b.guardian = Spr($"Gen/biomes/guardian_{id}.png");
                 var pos = positions.FirstOrDefault(g => g.id == id);
                 b.guardianOffset = pos != null ? new Vector2(pos.x, pos.y) : Vector2.zero;
+                // astres (ADR-041) : le soleil est un sprite à part qui se couche ; lune et étoiles à la nuit
+                var sun = suns.FirstOrDefault(g => g.id == id);
+                b.sun = sun != null ? Spr($"Gen/biomes/sun_{id}.png") : null;
+                b.sunOffset = sun != null ? new Vector2(sun.x, sun.y) : Vector2.zero;
+                b.sunSetY = sun != null ? sun.set : -110f;
+                b.moon = sun != null ? Spr("Gen/biomes/moon.png") : null;
+                b.nightStars = sun != null ? Spr("Gen/biomes/night_stars.png") : null;
+                b.bolts = id == "orage" ? Enumerable.Range(0, 3).Select(k => Spr($"Gen/biomes/bolt_{k}.png")).ToArray() : new Sprite[0];
                 if (Enemies[i].StartsWith("djembe"))         // le djembé du PDF, ou son négatif (monde sourd)
                 {
                     b.enemyFrames = new[] { Spr($"Pdf/enemy_{Enemies[i]}_squash.png"), Spr($"Pdf/enemy_{Enemies[i]}_stretch.png") };

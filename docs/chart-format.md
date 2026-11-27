@@ -65,6 +65,8 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `screen_flip` | l'image se retourne jusqu'au prochain `screen_flip` : `variant` = `"mirror"` (gauche-droite : on court vers la gauche), `"up"` (tête en bas), `"both"` (demi-tour), autre = à l'endroit. Miroir entier (pixel art net) ; l'interface reste à l'endroit | — |
 | `glitch` | grésillement (neige, image qui saute, couleurs) d'intensité `intensity` (0…1) pendant `length` beats, plus fort sur chaque temps | — |
 | `fx_invert` | le monde passe en négatif (`variant` = `"on"`) ou revient (`"off"`), jusqu'au prochain `fx_invert` ; seul le calque du monde s'inverse (le héros et l'interface gardent leurs couleurs). Un état sur un temps fort : au plus une bascule par temps (borne publique). Niveau 9 | — |
+| `fx_corrupt` | le monde se corrompt (bandes décalées, couleurs séparées, blocs de sprite déplacés ou en aplats de couleur pure, pixels morts ; au-delà de 0,55 : barres R/V/B et trame) : va vers `intensity` (0…1) en `length` temps, depuis la valeur du moment ; lu sur le temps du morceau (juste après une reprise). Calque du monde seul, propre autour du héros. Niveau 9 (ADR-042) | — |
+| `fx_gray` | le monde perd sa couleur : va vers `intensity` (0 = couleur, 1 = noir et blanc) en `length` temps ; le héros, les pièces et l'interface gardent la leur. Niveau 9 (ADR-042) | — |
 
 Tous les obstacles (mur, ennemi, bloc, plafond, pièces) se posent **sur le sol principal à leur x** : un mur après une marche est posé en haut de la marche.
 
@@ -92,7 +94,7 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus 
 | `orb` | sauter en passant dessus | `height`, `step` |
 | `ceiling`, `back`, `gravity` | rien (décor et portails) ; on saute les trous (`jump`) | `length`, `height` |
 | `jump` | sauter (trou du plafond ou du chemin du fond) | `variant` |
-| `screen_split`, `screen_flip`, `glitch`, `fx_invert` | — (effets d'écran) | `copies` ; `variant` ; `intensity`, `length` ; `variant` |
+| `screen_split`, `screen_flip`, `glitch`, `fx_invert`, `fx_corrupt`, `fx_gray` | — (effets d'écran) | `copies` ; `variant` ; `intensity`, `length` ; `variant` ; `intensity`, `length` ; `intensity`, `length` |
 | `lum_line` | collecter | `count`, `step` (beats entre lums) |
 | `fx_flash` | — (visuel) | `intensity` |
 | `camera_shake` | — | `intensity`, `length` |

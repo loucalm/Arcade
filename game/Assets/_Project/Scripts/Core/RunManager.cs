@@ -237,10 +237,12 @@ namespace Kenta.Core
             if (backdrop != null)
             {
                 backdrop.ResetMood();
+                backdrop.SetNightAt(NightProgress());
                 backdrop.SetSection(Chart.sections.Length > 0 ? Chart.sections[0].name : "", 0f, 0.01f);
             }
             // test d'un passage dans l'éditeur (menu Kenta > Tester le refrain) : on démarre au beat demandé
             ScreenGlitch.Instance?.ResetAll();
+            ScreenGlitch.Instance?.SetCorruptionTracks(level.Corruption, level.Grayscale);
             double start = demo ? 0 : DevStart.Beat;
             runStartBeat = start;
             if (start > 0) PrepareStartAt(start);
@@ -348,6 +350,7 @@ namespace Kenta.Core
             if (backdrop != null)
             {
                 backdrop.ResetMood();
+                backdrop.SetNightAt(NightProgress());
                 backdrop.SetSection(Chart.sections.Length > 0 ? Chart.sections[0].name : "", 0f, 0.01f);
             }
             ScreenGlitch.Instance?.ResetAll();
@@ -422,6 +425,7 @@ namespace Kenta.Core
             StopAllCoroutines();
             IsRunning = false;
             ScreenGlitch.Instance?.ResetAll();
+            ScreenGlitch.Instance?.SetCorruptionTracks(null, null);
             if (stopMusic) Conductor.Instance?.Stop();
             if (hideWorld)
             {
@@ -702,11 +706,32 @@ namespace Kenta.Core
                     ScreenGlitch.Instance?.SetInvert(e.@params.variant != "off");
                     rig.Punch(0.25f);
                     break;
+                case "lightning":
+                    // éclair de l'Orage sur le temps : il zèbre le ciel, qui s'illumine, et l'écran blanchit un instant
+                    // (le générateur en met au plus un tous les 2 temps : épilepsie photosensible)
+                    if (backdrop != null) backdrop.Strike(intensity, e.beat);
+                    rig.Flash(new Color(0.85f, 0.9f, 1f), 0.32f * intensity);
+                    break;
                 case "glitch":
                     // grésillement calé sur les temps, pendant `length` beats
                     ScreenGlitch.Instance?.Glitch(e.@params.intensity > 0 ? e.@params.intensity : 0.5f, e.@params.length > 0 ? e.@params.length : 4f);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Part du morceau où tombe la nuit : le début de la dernière section « fin » (le soleil s'est couché, la lune se
+        /// lève), sinon la fin du morceau (ADR-041).
+        /// </summary>
+        float NightProgress()
+        {
+            if (Chart?.sections == null) return 1f;
+            for (int i = Chart.sections.Length - 1; i >= 0; i--)
+            {
+                string n = (Chart.sections[i].name ?? "").ToLowerInvariant();
+                if (n == "fin" || n.StartsWith("fin ")) return ProgressAt(Chart.sections[i].startBeat);
+            }
+            return 1f;
         }
 
         /// <summary>Points gagnés, après le bonus de difficulté du héros (RetryRules.ScoreFactor).</summary>

@@ -19,6 +19,12 @@ MonoBehaviour:
   far: {fileID: 21300000, guid: 02470d8b61fa442658c30c190a8d4e9a, type: 3}
   mid: {fileID: 21300000, guid: 9632ba542c65d4be1857ae6950ce1c90, type: 3}
   near: {fileID: 21300000, guid: 92bb459fcd3394cb7820cc46089cb1a3, type: 3}
+  sun: {fileID: 0}
+  sunOffset: {x: 0, y: 0}
+  sunSetY: -110
+  moon: {fileID: 0}
+  nightStars: {fileID: 0}
+  bolts: []
   guardian: {fileID: 21300000, guid: 6f94531e76f194c56aebc26be101c183, type: 3}
   guardianOffset: {x: 139, y: 20}
   ground: {fileID: 21300000, guid: 6f9b8247f6768476e80cf60d4cf09115, type: 3}

@@ -9,6 +9,7 @@ Usage : python3 tools/gen-kenta-assets.py [dossier_sortie] [--only biomes,ui,hud
 Dossier par défaut : game/Assets/_Project/Art/Kenta/Gen   (dépendances : tools/requirements.txt)
 """
 import argparse
+import json
 import os
 import sys
 
@@ -39,7 +40,9 @@ def gen_biomes(out, sheet):
     # (ADR-028). Ils ne sont plus générés ici : ne pas les réécraser.
     for b in BIOMES:
         i = b["id"]
-        put(out, "biomes", f"bg_{i}_sky", art.draw_sky(b), sheet)
+        put(out, "biomes", f"bg_{i}_sky", art.draw_sky(b, sun=False), sheet)
+        if b["sun"]:
+            put(out, "biomes", f"sun_{i}", art.draw_sun(b), sheet)
         put(out, "biomes", f"fill_{i}_deep", art.draw_fill_deep(b))
         for k in range(4):
             put(out, "biomes", f"deco_{i}_{k}", art.draw_deco(b, k), sheet)
@@ -52,6 +55,13 @@ def gen_biomes(out, sheet):
         put(out, "biomes", f"cliff_{i}", art.draw_cliff_top(b))
         # obstacles (wall, block, ceil, post, platform) : dessinés par Gemini, nettoyés par tools/gemini-obstacles/clean.py
         # (ADR-026). Ils ne sont plus générés ici : ne pas les réécraser.
+    # astres et éclairs (BiomeBackdrop, ADR-041) : place des soleils, lune et étoiles de la nuit, éclairs de l'Orage
+    with open(os.path.join(out, "biomes", "suns.json"), "w") as f:
+        json.dump(dict(items=[art.sun_json(b) for b in BIOMES if b["sun"]]), f, indent=1)
+    put(out, "biomes", "moon", art.draw_moon(), sheet)
+    put(out, "biomes", "night_stars", art.draw_night_stars())
+    for k in range(3):
+        put(out, "biomes", f"bolt_{k}", art.draw_bolt(k), sheet)
 
 
 def gen_ui(out, sheet):
