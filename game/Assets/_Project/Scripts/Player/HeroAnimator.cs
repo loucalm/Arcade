@@ -61,14 +61,24 @@ namespace Kenta.Player
             return Mathf.Min(frames - 1, (int)(t * frames));
         }
 
+        // coup de katana en 6 images (tools/gen-heroes.py, HIT_EDGES) : la coupe pleine dure le plus longtemps
+        static readonly float[] KatanaEdges = { 0.08f, 0.30f, 0.55f, 0.72f, 0.86f };
+
         /// <summary>
-        /// Image de la frappe, `age` beats après l'appui ; -1 hors de l'animation. Avec 4 images : début de l'arc,
-        /// arc complet (l'image gelée, la plus longue), fin de l'arc, bras tendu.
+        /// Image de la frappe, `age` beats après l'appui ; -1 hors de l'animation. Avec 6 images (katana) : dégainé,
+        /// la coupe part, coupe pleine (la plus longue), la traînée s'efface, suivi, retour en garde. Avec 4 images
+        /// (ancienne frappe) : début de l'arc, arc complet, fin de l'arc, bras tendu.
         /// </summary>
         public static int HitFrameIndex(double age, float duration, int frames)
         {
             if (frames <= 0 || duration <= 0f || age < 0 || age >= duration) return -1;
             float t = (float)(age / duration);
+            if (frames >= 6)
+            {
+                for (int i = 0; i < KatanaEdges.Length; i++)
+                    if (t < KatanaEdges[i]) return i;
+                return KatanaEdges.Length;
+            }
             if (frames < 4) return Mathf.Min(frames - 1, (int)(t * frames));
             if (t < 0.12f) return 0;
             if (t < 0.55f) return 1;

@@ -31,6 +31,10 @@ DESCEND_STRIDE = 2.2 * 40   # cycle de descente, le long de la pente : HeroAnima
 FALL_STEP, FALL_LOOP = 0.1, 0.12   # HeroAnimator.fallStepSeconds, fallLoopSeconds
 JUMP_H = 1.5 * 40           # px
 HIT_BEATS = 0.45            # doit valoir HeroAnimator.hitAnimBeats
+HIT_FRAMES = 6              # coup de katana : dégainé, coupe, coupe pleine, traînée qui s'efface, suivi, retour
+HIT_EDGES = (0.0, 0.08, 0.30, 0.55, 0.72, 0.86, 1.0)   # mêmes seuils que HeroAnimator.HitFrameIndex (6 images)
+HIT_W = 160                 # toile des images de frappe : héros centré, la traînée va jusqu'à R.HIT_REACH devant
+IDLE_FRAMES, IDLE_STEP = 4, 0.4   # attente : respiration en 4 images (1,6 s), clignement d'yeux sur la dernière
 RUN_FRAMES, JUMP_FRAMES, SLIDE_FRAMES = 8, 8, 3
 SLIDE_IN_STEP, SLIDE_OUT_STEP, SLIDE_TURN_FRAMES = 0.04, 0.05, 3   # HeroAnimator.slideInSeconds = 0,12 s, slideOutSeconds = 0,15 s
 DT = 1 / 480
@@ -107,8 +111,9 @@ class Take:
     """Un plan continu : le héros suit `timeline(t) → (pose, position du pivot dans le monde)`, on simule les
     éléments souples et on photographie aux instants demandés."""
 
-    def __init__(self, hero):
+    def __init__(self, hero, w=96):
         self.hero = hero
+        self.w = w
         self.strands = strands_for(hero)
 
     def shoot(self, timeline, until, shots, extras_fn=None):
@@ -147,7 +152,7 @@ class Take:
             ex.mane = manes
         if extras_fn:
             extras_fn(ex, t)
-        return R.draw(self.hero, pose, ex)
+        return R.draw(self.hero, pose, ex, w=self.w)
 
 
 # --- poses -----------------------------------------------------------------------------------------
@@ -161,8 +166,10 @@ def run_pose(phase, lean=14.0):
     tb, kb = leg(phase + math.pi)
     tf, kf = leg(phase)
     arm = 48 * math.sin(phase)
-    return R.Pose(lean=lean, head=-6, thigh=(tb, tf), knee=(kb, kf), ankle=(10 * math.cos(phase + math.pi), 10 * math.cos(phase)),
-                  upper=(arm, -arm), elbow=(85, 85))
+    bob = math.cos(2 * phase)                       # une fois par pas : penché à l'appui, redressé en suspension
+    return R.Pose(lean=lean + 3.0 * bob, head=-6 - 2.5 * bob, thigh=(tb, tf), knee=(kb, kf),
+                  ankle=(10 * math.cos(phase + math.pi), 10 * math.cos(phase)),
+                  upper=(arm, -arm), elbow=(85 + 10 * bob, 85 + 10 * bob))
 
 
 def climb_pose(phase):
@@ -248,19 +255,23 @@ def jump_pose(k):
     return R.Pose(center=(0.0, AIR_CENTER), **kw)
 
 
-HIT_KEYS = [  # frappe : l'arc part du haut, arc complet (gelé), fin de l'arc, retour
-    (dict(lean=-4, head=-4, upper=(-30, 160), elbow=(20, 10)), (5, 55)),
-    (dict(lean=16, head=-8, upper=(-55, 92), elbow=(25, 0)), (5, 160)),
-    (dict(lean=22, head=-10, upper=(-60, 45), elbow=(25, 10)), (105, 165)),
-    (dict(lean=12, head=-6, upper=(-35, 70), elbow=(25, 60)), None),
+HIT_KEYS = [  # coup de katana, de haut en bas : (pose, angle de la lame, traînée (a0, a1, épaisseur, estompée), étincelles)
+    (dict(lean=-5, head=-4, upper=(-30, 165), elbow=(30, 15)), 200, None, None),                     # dégainé, lame levée (pas encore de traînée)
+    (dict(lean=12, head=-8, upper=(-50, 115), elbow=(30, -5)), 100, (4, 100, 0.52, False), None),     # la coupe part
+    (dict(lean=22, head=-10, upper=(-60, 75), elbow=(30, -10)), 55, (4, 166, 0.58, False), None),     # coupe pleine
+    (dict(lean=24, head=-10, upper=(-60, 50), elbow=(30, 0)), 28, (70, 166, 0.34, True), None),       # la traînée s'efface
+    (dict(lean=18, head=-8, upper=(-45, 18), elbow=(25, 15)), -25, None,
+     [(58.0, 8.0), (66.0, 15.0), (49.0, 4.0)]),                                                       # suivi, lame en bas
+    (dict(lean=10, head=-6, upper=(-30, 55), elbow=(25, 75)), 150, None, None),                       # retour en garde
 ]
 
 
 def hit_pose(k, phase):
-    kw, _ = HIT_KEYS[k]
+    kw, blade, _, _ = HIT_KEYS[k]
     base = run_pose(phase)
     p = R.Pose(**{**dict(thigh=base.thigh, knee=base.knee, ankle=base.ankle), **kw})
-    p.weapon = True
+    p.katana = "drawn"
+    p.blade = blade
     return p
 
 
@@ -294,15 +305,16 @@ def anim_jump(hero):
 
 
 def anim_hit(hero):
+    """Coup de katana en HIT_FRAMES images, sur une toile de HIT_W px (le héros reste centré : même pivot)."""
     warm = 0.45
     dur = HIT_BEATS * BEAT
-    edges = (0.0, 0.12, 0.55, 0.78, 1.0)          # mêmes seuils que HeroAnimator.HitFrameIndex
+    edges = HIT_EDGES
     run = running()
     phase_at = lambda t: 2 * math.pi * SPEED * t / STRIDE
 
     def frame_at(t):
         p = (t - warm) / dur
-        return max(k for k in range(4) if p >= edges[k])
+        return max(k for k in range(HIT_FRAMES) if p >= edges[k])
 
     def timeline(t):
         if t < warm:
@@ -311,9 +323,9 @@ def anim_hit(hero):
 
     def extras(ex, t):
         if t >= warm:
-            ex.arc = HIT_KEYS[frame_at(t)][1]
-    shots = [warm + dur * (edges[k] + edges[k + 1]) / 2 for k in range(4)]
-    return Take(hero).shoot(timeline, shots[-1], shots, extras)
+            _, _, ex.slash, ex.sparks = HIT_KEYS[frame_at(t)]
+    shots = [warm + dur * (edges[k] + edges[k + 1]) / 2 for k in range(HIT_FRAMES)]
+    return Take(hero, w=HIT_W).shoot(timeline, shots[-1], shots, extras)
 
 
 def anim_slide(hero):
@@ -409,11 +421,22 @@ def anim_single(hero, pose, moving=True, settle=0.6, stop_at=None):
     return Take(hero).shoot(timeline, warm + settle, [warm + settle])[0]
 
 
+def idle_pose(t, blink=False):
+    """Attente : le buste respire, la tête suit un peu, les bras se balancent à peine ; main avant près de la garde."""
+    b = math.sin(2 * math.pi * t / (IDLE_FRAMES * IDLE_STEP))
+    return R.Pose(lean=1.5 + 1.5 * b, head=-1.5 * b, upper=(-14.0 + 3 * b, 22.0 - 2 * b), elbow=(28.0, 40.0 + 4 * b),
+                  eyes="closed" if blink else "open")
+
+
 def anim_idle(hero):
+    """IDLE_FRAMES images en boucle ; la dernière cligne des yeux."""
+    start = 2.0
+
     def timeline(t):
-        breath = 0.6 * math.sin(t * 2.5)
-        return R.Pose(lean=1 + breath), (0.0, 0.0)
-    return Take(hero).shoot(timeline, 2.0, [2.0])[0]
+        k = int((t - start) / IDLE_STEP) if t >= start else -1
+        return idle_pose(t, blink=(k == IDLE_FRAMES - 1)), (0.0, 0.0)
+    return Take(hero).shoot(timeline, start + IDLE_FRAMES * IDLE_STEP,
+                            [start + IDLE_STEP * (k + 0.5) for k in range(IDLE_FRAMES)])
 
 
 def all_frames(hero_id):
@@ -422,13 +445,15 @@ def all_frames(hero_id):
     f.update({f"run_{k}": a for k, a in enumerate(anim_run(hero))})
     f.update({f"jump_{k}": a for k, a in enumerate(anim_jump(hero))})
     f.update({f"hit_{k}": a for k, a in enumerate(anim_hit(hero))})
+    idle = anim_idle(hero)
+    f.update({f"idle_{k}": a for k, a in enumerate(idle)})
     f.update({f"slide_{k}": a for k, a in enumerate(anim_slide(hero))})
     f.update({f"slidein_{k}": a for k, a in enumerate(anim_slide_in(hero))})
     f.update({f"slideout_{k}": a for k, a in enumerate(anim_slide_out(hero))})
     f.update({f"climb_{k}": a for k, a in enumerate(anim_slope(hero, climb_pose, CLIMB_STRIDE, True))})
     f.update({f"descend_{k}": a for k, a in enumerate(anim_slope(hero, descend_pose, DESCEND_STRIDE, False))})
     f.update({f"fall_{k}": a for k, a in enumerate(anim_fall(hero))})
-    f["idle"] = anim_idle(hero)
+    f["idle"] = idle[0]                              # image fixe (portraits, repli)
     f["crouch"] = anim_single(hero, crouch_pose(), settle=0.04)
     f["wall"] = anim_single(hero, run_pose(math.pi / 2, lean=34), settle=0.05)
     f["vine"] = anim_single(hero, R.Pose(lean=-5, head=-5, upper=(160, 172), elbow=(5, 8), thigh=(-12, 25), knee=(30, 40),

@@ -21,6 +21,9 @@ INK = (0x1D, 0x1F, 0x20)
 ARC_CREAM = (0xFF, 0xF6, 0xC8)
 ARC_WHITE = (0xFF, 0xFF, 0xFF)
 SPEED_LINE = (0x74, 0x9D, 0xC4)
+STEEL = ((0x7C, 0x86, 0x98), (0xC9, 0xD1, 0xDE), (0xFF, 0xFF, 0xFF))     # lame du katana (ombre, base, fil)
+BLADE_LEN = 30.0          # lame (px) ; c'est la traînée de la coupe qui montre la portée de frappe (HIT_REACH)
+HIT_REACH = 76.0          # PlayerController.hitReach = 1,9 u × 40 px : la traînée s'arrête pile là
 DUST = ((0xC8, 0xCC, 0xD4), (0xF2, 0xF2, 0xF3))
 
 # --- proportions (px) : ~3,5 têtes de haut (le PDF : ~2) -----------------------------------------
@@ -73,7 +76,9 @@ HEROES = {
         eye=(hexc("#C8862A"), hexc("#FFFFFF")), mouth=hexc("#7A3A2A"), blush=hexc("#F0998A"),
         hair_style="spikes",
         extra={"scarf": tone("#A8321C", "#D8502A", "#FF6B3D"), "belt": hexc("#6A3A22"), "buckle": hexc("#E8B84A"),
-               "weapon": ("stick", hexc("#E8D2A0"), hexc("#C8862A")), "back": "sticks", "band_plate": hexc("#9AA4B4")}),
+               "weapon": ("stick", hexc("#E8D2A0"), hexc("#C8862A")), "back": "sticks", "band_plate": hexc("#9AA4B4"),
+               "katana": dict(tsuka=tone("#7A1E12", "#C0381E", "#E8542C"), saya=tone("#10162C", "#1C2440", "#3A4458"),
+                              tsuba=hexc("#E8B84A"))}),
     "aiko": Hero(
         "aiko",
         skin=tone("#E2B39A", "#F8D8C0"), hair=tone("#1E6E70", "#2FA3A0", "#5FD0C8"),
@@ -81,7 +86,9 @@ HEROES = {
         pants=tone("#2A2448", "#3A3260"), shoes=tone("#3A2418", "#5A3A2A"),
         eye=(hexc("#5A3AA8"), hexc("#FFFFFF")), mouth=hexc("#7A3A2A"), blush=hexc("#EAA8A2"),
         hair_style="ponytail",
-        extra={"sash": tone("#5A3AA8", "#8A5CFF"), "weapon": ("flute", hexc("#C8A060"), hexc("#6A4A20"))}),
+        extra={"sash": tone("#5A3AA8", "#8A5CFF"), "weapon": ("flute", hexc("#C8A060"), hexc("#6A4A20")),
+               "katana": dict(tsuka=tone("#3A2478", "#5A3AA8", "#8A5CFF"), saya=tone("#B8B0CC", "#F2EEF6", "#FFFFFF"),
+                              tsuba=hexc("#C8CCD4"))}),
     "ryo": Hero(
         "ryo",
         skin=tone("#C48E6C", "#E8B890"), hair=tone("#A8B0BC", "#E8ECF0", "#FFFFFF"),
@@ -90,7 +97,9 @@ HEROES = {
         eye=(hexc("#3AA86A"), hexc("#FFFFFF")), mouth=hexc("#7A3A2A"), blush=hexc("#D98A70"),
         hair_style="mane",
         extra={"shirt": tone("#C8CCD4", "#F2F2F3"), "belt": hexc("#5A3A2A"), "back": "bass",
-               "bass": tone("#7A1A28", "#B02A3A", "#D04A5A"), "bass_neck": tone("#2A1A1A", "#5A3A2A")}),
+               "bass": tone("#7A1A28", "#B02A3A", "#D04A5A"), "bass_neck": tone("#2A1A1A", "#5A3A2A"),
+               "katana": dict(tsuka=tone("#123A26", "#1E4A34", "#2E6A4A"), saya=tone("#5A1220", "#7A1A28", "#B02A3A"),
+                              tsuba=hexc("#B8864A"))}),
 }
 
 
@@ -107,7 +116,9 @@ class Pose:
     elbow: tuple = (28.0, 24.0)             # flexion du coude (positif : l'avant-bras part vers l'avant)
     rot: float = 0.0                        # rotation de tout le corps autour du milieu du buste (positif = sens horaire)
     center: tuple = None                    # si donné : position du milieu du buste (en vol) ; sinon posé au sol
-    weapon: bool = False                    # arme dans la main avant (frappe)
+    weapon: bool = False                    # instrument dans la main avant (ancienne frappe)
+    katana: str = "sheathed"                # "sheathed" (au fourreau, à la hanche) | "drawn" (dans la main avant)
+    blade: float = 90.0                     # lame dégainée : angle absolu (0 = vers le bas, 90 = devant, 180 = en haut)
     eyes: str = "open"                      # "open" | "closed" | "hurt"
     ground: float = 1.0                     # hauteur du sol (pour les poses posées)
 
@@ -425,6 +436,8 @@ class Extras:
     ponytail: list = None       # queue de cheval (Aiko)
     mane: list = None           # mèches arrière (Ryo) : liste de chaînes
     arc: tuple = None           # (a0, a1) arc de frappe, degrés depuis le haut, sens horaire
+    slash: tuple = None         # traînée du katana : (a0, a1, épaisseur max 0..1, estompée) ; voir slash_mask
+    sparks: list = None         # étincelles en fin de coupe : [(x, y)]
     dust: list = None           # [(x, y, r)]
     speed: list = None          # [(x, y, longueur)]
 
@@ -465,12 +478,21 @@ def draw(hero, pose, extras=None, w=96, h=72):
         cv.piece(cv.cone(add(base, vup(tilt), -1.0), add(base, vup(tilt), 12.0), 0.9, 0.7), (w_[2], w_[1], w_[1]),
                  light=False)
 
+    # 2 bis. fourreau du katana, à la hanche du fond (derrière le corps)
+    kat = hero.extra.get("katana")
+    if kat:
+        scabbard(cv, kat, sk, body_up, body_right)
+
     # 3. bras et jambe du fond
     arm(cv, sk, 0, darker(hero.top), darker(hero.skin))
     leg(cv, sk, 0, darker(hero.pants), darker(hero.shoes))
 
     # 4. buste
     torso(cv, hero, sk, pose, body_up, body_right)
+
+    # 4 bis. poignée du katana rangé, en travers devant le ventre
+    if kat and pose.katana == "sheathed":
+        sheathed_hilt(cv, kat, sk, body_up, body_right)
 
     # 5. jambe avant
     leg(cv, sk, 1, hero.pants, hero.shoes)
@@ -484,6 +506,8 @@ def draw(hero, pose, extras=None, w=96, h=72):
     # 7. bras avant (+ arme)
     if pose.weapon:
         weapon(cv, hero, sk, pose)
+    if kat and pose.katana == "drawn":
+        drawn_katana(cv, kat, sk, pose)
     arm(cv, sk, 1, hero.top, hero.skin)
 
     cv.finish()
@@ -498,6 +522,18 @@ def draw(hero, pose, extras=None, w=96, h=72):
         outer = cv.arc(c, 12.5, a0, a1, 4.2)
         cv.stamp(outer, (ARC_CREAM, ARC_CREAM, ARC_WHITE), light=False)
         cv.flat(cv.arc(c, 13.7, a0 + 6, a1 - 6, 1.0) & outer, ARC_WHITE)
+    if ex.slash:
+        a0, a1, tmax, faded = ex.slash
+        outer, core, inner = slash_mask(cv, sk, a0, a1, tmax)
+        cv.stamp(outer, (ARC_CREAM, ARC_CREAM, ARC_WHITE), light=False)
+        if not faded:
+            cv.flat(core, ARC_WHITE)
+            # liseré côté héros, à la couleur de son bandeau (Kenta : son bandeau est blanc, on prend l'écharpe)
+            accent = hero.extra.get("scarf", hero.band) if sum(hero.band[1]) > 600 else hero.band
+            cv.flat(inner, accent[1])
+    if ex.sparks:
+        for x, y in ex.sparks:
+            cv.stamp(cv.ellipse((x, y), 1.1, 1.1), (ARC_CREAM, ARC_WHITE, ARC_WHITE), light=False)
     if ex.dust:
         for x, y, r in ex.dust:
             cv.stamp(cv.ellipse((x, y), r, r * 0.8), (DUST[0], DUST[1], DUST[1]))
@@ -659,3 +695,65 @@ def weapon(cv, hero, sk, pose):
              light=False)
     if kind == "flute":
         cv.finish_marks = [add(hand, d, k) for k in (3.0, 5.0, 7.0)]
+
+
+# --- katana --------------------------------------------------------------------------------------
+
+def scabbard(cv, kat, sk, up, right):
+    """Fourreau à la hanche du fond : part de la ceinture, vers l'arrière et un peu vers le bas."""
+    mouth = add(add(sk.hip, right, 1.0), up, 2.6)
+    back = (-right[0] - 0.6 * up[0], -right[1] - 0.6 * up[1])        # vers l'arrière et vers le bas
+    n = math.hypot(*back) or 1.0
+    back = (back[0] / n, back[1] / n)
+    end = add(mouth, back, 24.0)
+    cv.piece(cv.cone(mouth, end, 1.35, 1.05), kat["saya"], group="saya")
+    cv.piece(cv.ellipse(end, 1.3, 1.3), (kat["saya"][0], kat["saya"][0], kat["saya"][1]), light=False, group="saya")
+
+
+def sheathed_hilt(cv, kat, sk, up, right):
+    """Poignée du katana rangé : sort du fourreau vers l'avant et vers le haut, garde dorée."""
+    mouth = add(add(sk.hip, right, 1.0), up, 2.6)
+    fwd = add(right, up, 0.55)
+    n = math.hypot(*fwd) or 1.0
+    fwd = (fwd[0] / n, fwd[1] / n)
+    guard = add(mouth, fwd, 1.2)
+    tip = add(guard, fwd, 7.0)
+    cv.piece(cv.cone(guard, tip, 1.05, 0.95), kat["tsuka"], group="tsuka")
+    perp = (-fwd[1], fwd[0])
+    cv.flat(cv.capsule(add(guard, perp, -1.6), add(guard, perp, 1.6), 0.6), kat["tsuba"])
+
+
+def drawn_katana(cv, kat, sk, pose):
+    """Katana dans la main avant : poignée dans le poing, garde, lame de BLADE_LEN px vers `pose.blade`."""
+    d = vdown(pose.blade + pose.rot)
+    hand = sk.hands[1]
+    perp = (-d[1], d[0])
+    pommel = add(hand, d, -3.0)
+    guard = add(hand, d, 2.4)
+    base = add(guard, d, 0.8)
+    tip = add(base, d, BLADE_LEN)
+    shoulder_of_tip = add(base, d, BLADE_LEN - 3.0)
+    blade = cv.cone(base, shoulder_of_tip, 1.25, 0.95) | cv.cone(shoulder_of_tip, tip, 0.95, 0.15)
+    cv.piece(blade, STEEL, group="blade")
+    cv.piece(cv.cone(pommel, guard, 1.05, 1.05), kat["tsuka"], group="tsuka")
+    cv.flat(cv.capsule(add(guard, perp, -1.8), add(guard, perp, 1.8), 0.65), kat["tsuba"])
+
+
+def slash_mask(cv, sk, a0, a1, tmax):
+    """Traînée de la coupe : un croissant elliptique devant le héros, centré près de l'épaule, dont le bord extérieur
+    passe à HIT_REACH px devant le pivot (la portée de frappe du jeu) et qui couvre la hauteur de la zone de frappe.
+    Angles en degrés depuis le haut, sens horaire (90 = droit devant). Mince à la queue (a0), épais à la tête (a1).
+    Renvoie (croissant, cœur blanc)."""
+    cx, cy = sk.shoulder[0] + 2.0, 31.0
+    rx, ry = HIT_REACH - cx, 29.0
+    u, v = (cv.X - cx) / rx, (cv.Y - cy) / ry
+    rho = np.sqrt(u * u + v * v)
+    ang = np.degrees(np.arctan2(u, v)) % 360
+    span = max(1e-6, (a1 - a0) % 360)
+    t = ((ang - a0) % 360) / span
+    inside = t <= 1.0
+    thick = tmax * np.clip(t, 0.0, 1.0) ** 0.9
+    outer = inside & (rho <= 1.0) & (rho >= 1.0 - thick) & (thick > 0.035)
+    core = outer & (rho >= 1.0 - thick * 0.45)
+    inner = outer & (rho <= 1.0 - thick + 1.2 / rx) & (thick > 0.08)
+    return outer, core, inner

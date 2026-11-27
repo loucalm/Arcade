@@ -134,12 +134,13 @@ namespace Kenta.EditorTools
                 // marionnette de tools/hero_rig.py (tools/gen-heroes.py) ; les sprites du PDF restent dans Pdf/
                 string g = $"Gen/heroes/hero_{n}_";
                 set.idle = Spr(g + "idle.png");
+                set.idleCycle = Enumerable.Range(0, 4).Select(k => Spr(g + $"idle_{k}.png")).ToArray();
                 set.runCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"run_{k}.png")).ToArray();
                 set.run = set.runCycle[0];
                 set.jumpFrames = Enumerable.Range(0, 8).Select(k => Spr(g + $"jump_{k}.png")).ToArray();
                 set.jump = set.jumpFrames[1];
-                set.hitFrames = Enumerable.Range(0, 4).Select(k => Spr(g + $"hit_{k}.png")).ToArray();
-                set.hit = set.hitFrames[1];
+                set.hitFrames = Enumerable.Range(0, 6).Select(k => Spr(g + $"hit_{k}.png")).ToArray();   // katana
+                set.hit = set.hitFrames[2];
                 set.crouch = Spr(g + "crouch.png");
                 set.climbCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"climb_{k}.png")).ToArray();
                 set.descendCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"descend_{k}.png")).ToArray();
@@ -209,7 +210,11 @@ namespace Kenta.EditorTools
                 }
                 else
                 {
-                    b.enemyFrames = new[] { Spr($"Pdf/enemy_{Enemies[i]}.png") };
+                    // danse sur 2 temps, comme le djembé : écrasé puis étiré (tools/gen-enemies.py)
+                    string e = $"Pdf/enemy_{Enemies[i]}";
+                    b.enemyFrames = AssetDatabase.LoadAssetAtPath<Sprite>(Art + e + "_squash.png") != null
+                        ? new[] { Spr(e + "_squash.png"), Spr(e + "_stretch.png") }
+                        : new[] { Spr(e + ".png") };
                     b.enemyBroken = null;
                 }
                 b.spark = Hex(Sparks[i]);
