@@ -58,6 +58,7 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `gravity` | **portail de gravité** à `beat` : `lane 1` = on tombe vers le plafond et on y court la tête en bas, `lane 0` = retour au sol | — |
 | `back` | **chemin de l'arrière-plan** : sol plat à `height`, de `beat` à `beat+length`, dessiné derrière le niveau | — |
 | `bounce` + `variant` | `"to_back"` : tambour devant qui envoie sur le chemin du fond ; `"to_front"` : tambour au fond qui ramène devant ; `"back"` : tambour au fond | comme `bounce` |
+| `enemy` + `variant: "boss"` | **le dernier coup du niveau 9** : un ennemi au sol sans dessin ; la Sourdine fond dessus juste avant, et le coup de katana qui le frappe la fend en deux (`FX/SourdineBoss`). Raté : on meurt, comme contre un ennemi | comme `enemy` |
 | `enemy` + `lane 2` | **pendu au plafond** (dessous à `height`) ; avec `variant: "back"` : ennemi sur le chemin du fond | comme `enemy` |
 | `jump` | saut sans trou dans le sol du niveau (trou du plafond, ou du chemin du fond avec `variant: "back"`) : jugé quand on passe le trou | comme `gap` |
 | `screen_split` | l'image se dédouble en une grille qui remplit tout l'écran : `copies` = 1 (normal), 4 (2×2, agrandies ×1,5) ou 9 (3×3, ×1), jusqu'au prochain `screen_split` (2 et 5 sont lus comme 4 et 9) | — |

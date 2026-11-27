@@ -25,7 +25,9 @@ STEP_FACE_START = 0.5
 STEP_START, GAP_START, WALL_START, ENEMY_CENTER = 0.3, 0.2, 0.4, 0.6
 AIR_HIT_BELOW, AIR_HIT_ABOVE = 3.5, 3.5             # zone de frappe en l'air (au sol : de −0,5 à +1,6)
 STOMP_TOUCH = 0.15                           # on touche un cuirassé 0,15 beat avant son temps (fin d'un saut)
-ORB_HOVER = 3.0                              # chute ralentie (u/s) près d'une note, le temps d'appuyer
+ORB_MEMORY = 0.3                             # note de saut : un appui jusqu'à 0,3 temps avant sa fenêtre est gardé et part à
+                                             # l'ouverture (PlayerController.CheckOrbs)
+ORB_HOLD = 3.0                               # chute ralentie (u/s) près d'une note pendant sa fenêtre, le temps d'appuyer
 ORB_REACH = 3.0                              # note de saut : portée verticale (on la prend même en tombant vite)
 PRESS_EARLY = PRESS_LATE = 0.35              # appui d'une note de saut ou d'un grand rebond : fenêtre autour du temps
 VINE_EARLY = VINE_LATE = 0.35                # lâcher d'une liane : fenêtre autour de son temps (PlayerController)
@@ -340,6 +342,7 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
     vine = None
     vine_grab = -99.0                        # temps où l'on a attrapé la liane en cours
     last_press = -99
+    last_orb = -99.0                         # temps de la dernière note prise : un appui ne sert qu'à une note
     pending = None               # cuirassé écrasé : en attente de l'appui du grand rebond
 
     def arrival(arrive, x_land):
@@ -433,10 +436,12 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
                     continue
                 if beat < o[2] - PRESS_EARLY or beat > o[2] + PRESS_LATE:
                     continue
-                if last_press < o[2] - PRESS_EARLY:
-                    vy = max(vy, -ORB_HOVER)                 # la note retient le héros pendant sa fenêtre
+                if last_press < o[2] - PRESS_EARLY - ORB_MEMORY or last_press <= last_orb:
+                    vy = max(vy, -ORB_HOLD)                  # la note retient le héros pendant sa fenêtre, le temps d'appuyer
                     continue
                 o[4] = True
+                last_orb = beat
+                # relance vers la note suivante (ou le sol) sur son temps : un appui en avance ou en retard arrive à l'heure
                 vy, grounded, jump_buf = launch(o[2] + o[3], beat, x, y), False, -99
                 break
         # lianes : prise en passant, balancier sur un arc, lâcher vers la liane suivante ou le sol

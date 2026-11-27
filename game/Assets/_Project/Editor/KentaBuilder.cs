@@ -238,6 +238,9 @@ namespace Kenta.EditorTools
             t.sourdine = new SourdineSprites
             {
                 body = Spr("Gen/boss/sourdine_body.png"),
+                floatBody = Spr("Gen/boss/sourdine_float.png"),
+                halfTop = Spr("Gen/boss/sourdine_half_top.png"),
+                halfBottom = Spr("Gen/boss/sourdine_half_bottom.png"),
                 eyes = new[] { "open", "half", "closed", "wide", "cracked" }.Select(m => Spr($"Gen/boss/sourdine_eye_{m}.png")).ToArray(),
                 pupils = new[] { "big", "mid", "pin" }.Select(m => Spr($"Gen/boss/sourdine_pupil_{m}.png")).ToArray(),
                 mouths = new[] { "smile", "half", "scream" }.Select(m => Spr($"Gen/boss/sourdine_mouth_{m}.png")).ToArray(),

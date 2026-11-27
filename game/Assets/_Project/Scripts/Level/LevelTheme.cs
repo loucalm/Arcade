@@ -37,6 +37,10 @@ namespace Kenta.Level
     public class SourdineSprites
     {
         public Sprite body;
+        [Tooltip("Corps flottant (176×168 : cornes, coulures) : la Sourdine monte et descend devant le héros (27/11).")]
+        public Sprite floatBody;
+        [Tooltip("Les deux moitiés tranchées par le dernier coup de katana (yeux fêlés, bouche qui hurle).")]
+        public Sprite halfTop, halfBottom;
         [Tooltip("Œil : ouvert, mi-clos, fermé, grand ouvert (colère), fêlé.")]
         public Sprite[] eyes;
         [Tooltip("Pupille : dilatée, normale, tête d'épingle.")]
