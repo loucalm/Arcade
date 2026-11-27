@@ -42,8 +42,8 @@ namespace Kenta.UI
         const int LetterStep = 23;                   // kenta_ui.LOGO_LETTER_STEP
 
         // chronologie (secondes depuis PlayIntro)
-        const float LetterStart = 0.03f, LetterGap = 0.08f, LetterFall = 0.12f, WhiteFade = 0.18f;
-        const float BigImpact = LetterStart + 4 * LetterGap + LetterFall + 0.05f;      // ≈ 0,5 s d'écran noir
+        const float LetterStart = 0.03f, LetterGap = 0.1f, LetterFall = 0.15f, WhiteFade = 0.18f;
+        const float BigImpact = LetterStart + 4 * LetterGap + LetterFall + 0.05f;      // ≈ 0,6 s d'écran noir
         const float LogoGlow = 0.5f, JitterEnd = BigImpact + 0.35f;
         const float TypeStart = BigImpact + 0.2f, TypeStep = 0.035f;
         const float HiStart = BigImpact + 0.35f, HiEnd = BigImpact + 0.75f;
