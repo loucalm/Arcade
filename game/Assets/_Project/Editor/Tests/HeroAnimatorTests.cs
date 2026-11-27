@@ -35,6 +35,18 @@ namespace Kenta.EditorTests
             Assert.AreEqual(expected, HeroAnimator.HitFrameIndex(age, 0.45f, 4));
         }
 
+        [TestCase(0.0, 0)]         // dégainé
+        [TestCase(0.05, 1)]        // la coupe part
+        [TestCase(0.2, 2)]         // coupe pleine : la plus longue
+        [TestCase(0.3, 3)]         // la traînée s'efface
+        [TestCase(0.35, 4)]        // suivi
+        [TestCase(0.42, 5)]        // retour en garde
+        [TestCase(0.45, -1)]       // fini
+        public void HitFrameIndex_KatanaInSixFrames(double age, int expected)
+        {
+            Assert.AreEqual(expected, HeroAnimator.HitFrameIndex(age, 0.45f, 6));
+        }
+
         [Test]
         public void HitFrameIndex_NoFramesGivesMinusOne()
         {

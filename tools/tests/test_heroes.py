@@ -33,13 +33,16 @@ def test_every_animation_has_its_frames():
     g = gen()
     for h in R.HEROES:
         f = frames(h)
-        for name, n in (("run", g.RUN_FRAMES), ("jump", g.JUMP_FRAMES), ("hit", 4), ("slide", g.SLIDE_FRAMES),
+        for name, n in (("run", g.RUN_FRAMES), ("jump", g.JUMP_FRAMES), ("hit", g.HIT_FRAMES), ("idle", g.IDLE_FRAMES),
+                        ("slide", g.SLIDE_FRAMES),
                         ("slidein", g.SLIDE_TURN_FRAMES), ("slideout", g.SLIDE_TURN_FRAMES),
                         ("climb", g.RUN_FRAMES), ("descend", g.RUN_FRAMES), ("fall", 3)):
             assert all(f"{name}_{k}" in f for k in range(n)), (h, name)
         for name in ("idle", "crouch", "wall", "vine", "hurt", "death"):
             assert name in f, (h, name)
-        assert len({a.shape for a in f.values()}) == 1, h            # même toile partout : même ancrage
+        # même hauteur partout ; largeur 96, sauf la frappe (toile plus large, héros toujours centré : même ancrage)
+        assert {a.shape for n, a in f.items() if not n.startswith("hit_")} == {(72, 96, 4)}, h
+        assert {a.shape for n, a in f.items() if n.startswith("hit_")} == {(72, g.HIT_W, 4)}, h
 
 
 def test_frames_are_not_cut_by_the_canvas():
@@ -103,6 +106,10 @@ def materials(hero):
     if "weapon" in hero.extra:                       # arme : (ombre, clair, clair)
         w = hero.extra["weapon"]
         out.append((w[2], w[1], w[1]))
+    if "katana" in hero.extra:                       # katana : poignée, fourreau (et son bout), garde, lame
+        k = hero.extra["katana"]
+        out += [k["tsuka"], k["saya"], (k["saya"][0], k["saya"][0], k["saya"][1]), R.STEEL]
+        singles.add(k["tsuba"])
     return out, singles
 
 
@@ -130,3 +137,34 @@ def test_climb_leans_forward_and_descend_leans_back():
     g = gen()
     up = lambda pose: R.place(pose).head[0] - R.place(pose).hip[0]   # tête devant le bassin = penché en avant
     assert up(g.climb_pose(0.0)) > up(g.run_pose(0.0)) > up(g.descend_pose(0.0))
+
+
+def test_katana_slash_reaches_exactly_the_hit_reach():
+    """La traînée de la coupe pleine s'arrête à la portée de frappe du jeu (PlayerController.hitReach, 1,9 u = 76 px)."""
+    g = gen()
+    for h in R.HEROES:
+        a = frames(h)["hit_2"]
+        cols = np.nonzero(a[:, :, 3].max(axis=0) >= 128)[0]
+        front = cols.max() + 1 - a.shape[1] / 2      # bord droit du dernier pixel, depuis le pivot (centre de la toile)
+        assert R.HIT_REACH <= front <= R.HIT_REACH + 2, (h, front)     # + 1 px de contour
+        assert a.shape[1] == g.HIT_W
+
+
+def test_every_hero_carries_a_katana():
+    for h, hero in R.HEROES.items():
+        k = hero.extra["katana"]
+        idle = frames(h)["idle"]
+        used = {tuple(p[:3]) for p in idle.reshape(-1, 4) if p[3] >= 128}
+        assert set(k["saya"]) & used, (h, "fourreau visible à l'arrêt")
+        hit = frames(h)["hit_2"]
+        used = {tuple(p[:3]) for p in hit.reshape(-1, 4) if p[3] >= 128}
+        assert set(R.STEEL) & used, (h, "lame visible pendant la coupe")
+
+
+def test_idle_breathes_and_blinks():
+    g = gen()
+    for h in R.HEROES:
+        f = frames(h)
+        idle = [f[f"idle_{k}"].tobytes() for k in range(g.IDLE_FRAMES)]
+        assert len(set(idle)) == len(idle), h
+        assert f["idle"].tobytes() == idle[0], h

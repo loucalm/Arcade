@@ -8,6 +8,8 @@ namespace Kenta.Player
     public class HeroSpriteSet : ScriptableObject
     {
         public Sprite idle;
+        [Tooltip("Attente en 4 images (respiration, clignement d'yeux sur la dernière) : portraits de l'écran des héros.")]
+        public Sprite[] idleCycle;
         public Sprite run;
         [Tooltip("Cycle de course (8 images, deux pas).")]
         public Sprite[] runCycle;
@@ -19,7 +21,8 @@ namespace Kenta.Player
         public Sprite death;
 
         [Header("Images d'action")]
-        [Tooltip("Frappe en 4 images : début de l'arc, arc complet (gelé), fin de l'arc, retour.")]
+        [Tooltip("Coup de katana en 6 images (160×72, héros centré) : dégainé, la coupe part, coupe pleine (la traînée " +
+                 "s'arrête à la portée de frappe), la traînée s'efface, suivi, retour en garde.")]
         public Sprite[] hitFrames;
         [Tooltip("Saut en 8 images réparties sur sa durée : impulsion, genoux remontés, vrille d'un tour, ouverture, réception.")]
         public Sprite[] jumpFrames;
