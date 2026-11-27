@@ -29,6 +29,9 @@ DARK_RED = hex_rgba(PAL_DATA["sourd"]["colors"]["rouge_sombre"])
 
 GOLD = {k: hex_rgba(v) for k, v in PAL_DATA["or"]["colors"].items()}
 
+# chaque planche y range ses objets à leur taille finale (pour --install)
+EXPORT = {}
+
 
 def load_mask(name):
     im = Image.open(os.path.join(REFS, name)).convert("RGBA")
@@ -221,6 +224,8 @@ def make_a1_obstacles():
 
     # Assemble a1_obstacles sheet (one row, wide magenta gaps, nothing touching edges)
     items = [wall, block, ceil, post, plat]
+    EXPORT.update(wall=wall, block=block, ceil=ceil.crop((0, 0, 16, 16)), post=post.crop((0, 0, 8, 16)),
+                  platform=plat.crop((0, 0, 32, 10)))
     pad = 16
     gap = 20
     W = pad * 2 + sum(i.width for i in items) + gap * (len(items) - 1)
@@ -362,6 +367,8 @@ def make_a2_terrain():
     decos.append(d3)
 
     items = [ground, fill, fill_deep, hazard, cliff] + decos
+    EXPORT.update(ground=ground.crop((0, 0, 32, 20)), fill=fill, fill_deep=fill_deep, hazard=hazard.crop((0, 0, 32, 20)),
+                  cliff=cliff.crop((0, 0, 32, 8)), decos=decos)
     pad = 14
     gap = 16
     W = pad * 2 + sum(i.width for i in items) + gap * (len(items) - 1)
@@ -418,6 +425,7 @@ def apply_horizon_black(canvas, w, h, hy, outline_col):
 
 
 def save_bg(im, name):
+    EXPORT[name.split(".")[0]] = im.copy()
     # Save at 2x (1280x720, clean 2x2 square pixel grid, 16:9)
     out_im = im.resize((im.width * 2, im.height * 2), Image.NEAREST)
     out_im.save(os.path.join(OUT, name))
@@ -1007,6 +1015,7 @@ def make_d1_sourdine_corps():
     canvas.alpha_composite(body, (20, 20))
     out_x2 = canvas.resize((CW * 2, CH * 2), Image.NEAREST)
     out_x2.save(os.path.join(OUT, "d1_sourdine_corps.png"))
+    EXPORT["body"] = body
     print("Saved d1_sourdine_corps.png", out_x2.size, "logical:", (CW, CH))
 
 
@@ -1246,6 +1255,7 @@ def make_d2_sourdine_visage():
 
     sheet_x4 = sheet.resize((W * 4, H * 4), Image.NEAREST)
     sheet_x4.save(os.path.join(OUT, "d2_sourdine_visage.png"))
+    EXPORT.update(face_eyes=face_eyes, pupils=pupils, mouths=mouths)
     print("Saved d2_sourdine_visage.png", sheet_x4.size, "logical:", (W, H))
 
 
@@ -1406,9 +1416,127 @@ def make_e_attaques():
     print("Saved e_attaques.png", sheet_x4.size, "logical:", (W, H))
 
 
+
+# ---------------------------------------------------------------- installation dans le jeu (--install)
+
+GAME = os.path.join(ROOT, "game", "Assets", "_Project", "Art", "Kenta")
+
+
+def transparent(im):
+    """Le magenta des planches devient transparent."""
+    im = im.copy()
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            if px[x, y][:3] == MAGENTA[:3]:
+                px[x, y] = (0, 0, 0, 0)
+    return im
+
+
+def sky():
+    """Ciel du monde sourd : noir, le soleil de la Sylve devenu une éclipse (anneau blanc, halo gris foncé)."""
+    im = Image.new("RGBA", (640, 360), BLACK)
+    d = ImageDraw.Draw(im)
+    cx, cy = 500, 58
+    d.ellipse([cx - 27, cy - 27, cx + 27, cy + 27], outline=DARK_GREY, width=1)
+    d.ellipse([cx - 22, cy - 22, cx + 22, cy + 22], fill=BLACK, outline=WHITE, width=1)
+    return im
+
+
+def guardian():
+    """La Sourdine en gardien du monde sourd : une masse noire bordée de blanc, deux yeux à pupille rouge qui
+    regardent vers le héros (à gauche), un sourire. Le bas est caché derrière les montagnes."""
+    W, H = 180, 240
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    mask = Image.new("L", (W, H), 0)
+    md = ImageDraw.Draw(mask)
+    md.ellipse([8, 6, W - 9, 2 * H], fill=255)
+    m = mask.load()
+    px = im.load()
+    for y in range(H):
+        for x in range(W):
+            if m[x, y]:
+                edge = any(not (0 <= x + dx < W and 0 <= y + dy < H) or not m[x + dx, y + dy]
+                           for dx, dy in ((-1, 0), (1, 0), (0, -1)))
+                px[x, y] = WHITE if edge else BLACK
+    eye, pupil, mouth = EXPORT["face_eyes"][0], EXPORT["pupils"][1], EXPORT["mouths"][0]
+    for ex, flip in ((30, False), (W - 30 - eye.width, True)):
+        e = eye.transpose(Image.FLIP_LEFT_RIGHT) if flip else eye
+        im.alpha_composite(e, (ex, 70))
+        im.alpha_composite(pupil, (ex + (eye.width - pupil.width) // 2 - 7, 70 + (eye.height - pupil.height) // 2))
+    im.alpha_composite(mouth, ((W - mouth.width) // 2, 128))
+    return im
+
+
+def thumbnail(layers):
+    """Vignette 40×24 de l'écran des niveaux : le décor sourd réduit, en noir, gris et blanc."""
+    im = Image.new("RGBA", (640, 360), BLACK)
+    for layer in layers:
+        im.alpha_composite(layer)
+    small = im.crop((120, 90, 520, 330)).convert("L").resize((40, 24), Image.BOX)
+    out = Image.new("RGBA", (40, 24), BLACK)
+    for y in range(24):
+        for x in range(40):
+            v = small.getpixel((x, y))
+            out.putpixel((x, y), WHITE if v > 70 else GREY if v > 30 else DARK_GREY if v > 12 else BLACK)
+    return out
+
+
+def negative_enemy(src):
+    """Un ennemi de la DA en négatif : contour et blancs (yeux, points) en blanc, le reste en noir."""
+    im = Image.open(src).convert("RGBA")
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a < 128:
+                continue
+            lum = 0.3 * r + 0.59 * g + 0.11 * b
+            px[x, y] = WHITE if lum < 45 or lum > 200 else BLACK
+    return im
+
+
+def install():
+    B = os.path.join(GAME, "Gen", "biomes")
+    single = {"wall": "wall_sourd", "block": "block_sourd", "ceil": "ceil_sourd", "post": "post_sourd",
+              "platform": "platform_sourd", "ground": "ground_sourd", "fill": "fill_sourd", "fill_deep": "fill_sourd_deep",
+              "hazard": "hazard_sourd", "cliff": "cliff_sourd"}
+    written = []
+    for key, name in single.items():
+        EXPORT[key].save(os.path.join(B, name + ".png"))
+        written.append(name)
+    for k, d in enumerate(EXPORT["decos"]):
+        d.save(os.path.join(B, f"deco_sourd_{k}.png"))
+        written.append(f"deco_sourd_{k}")
+    layers = []
+    for key, name in (("b1_far", "far"), ("b2_mid", "mid"), ("b3_near", "near")):
+        layer = transparent(EXPORT[key])                     # 640×360, raccord gauche-droite
+        layers.append(layer)
+        wide = Image.new("RGBA", (1280, 360), (0, 0, 0, 0))
+        wide.alpha_composite(layer, (0, 0))
+        wide.alpha_composite(layer, (640, 0))
+        wide.save(os.path.join(B, f"bg_sourd_{name}.png"))
+        written.append(f"bg_sourd_{name}")
+    sky().save(os.path.join(B, "bg_sourd_sky.png"))
+    guardian().save(os.path.join(B, "guardian_sourd.png"))
+    written += ["bg_sourd_sky", "guardian_sourd"]
+    gj = os.path.join(B, "guardians.json")
+    data = json.load(open(gj, encoding="utf-8"))
+    data["items"] = [g for g in data["items"] if g["id"] != "sourd"] + [{"id": "sourd", "x": 139.0, "y": 20.0}]
+    json.dump(data, open(gj, "w", encoding="utf-8"), indent=1)
+    thumbnail(layers).save(os.path.join(GAME, "Gen", "ui", "thumb_sourd.png"))
+    written.append("ui/thumb_sourd")
+    for kind in ("squash", "stretch", "broken"):
+        negative_enemy(os.path.join(GAME, "Pdf", f"enemy_djembe_{kind}.png")).save(
+            os.path.join(GAME, "Pdf", f"enemy_djembe_sourd_{kind}.png"))
+        written.append(f"Pdf/enemy_djembe_sourd_{kind}")
+    print("installé :", ", ".join(written))
+
 if __name__ == "__main__":
     import sys
-    only = set(sys.argv[1:])  # ex. : python3 gen_sheets.py a1 b1 (rien = toutes les planches)
+    only = set(a for a in sys.argv[1:] if not a.startswith("--"))  # ex. : python3 gen_sheets.py a1 b1 (rien = toutes)
+    if "--install" in sys.argv:
+        only = set()                                      # l'installation a besoin de toutes les planches
 
     if not only or 'a1' in only:
         make_a1_obstacles()
@@ -1432,3 +1560,5 @@ if __name__ == "__main__":
         make_d2_sourdine_visage()
     if not only or 'e' in only:
         make_e_attaques()
+    if "--install" in sys.argv:
+        install()

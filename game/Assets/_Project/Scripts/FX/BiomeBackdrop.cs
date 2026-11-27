@@ -162,7 +162,8 @@ namespace Kenta.FX
         public void SetSection(string sectionName, float progress, float blendSeconds = 1.2f)
         {
             moodFrom = mood;
-            moodTo = MoodFor(sectionName, progress);
+            // le monde sourd reste en noir et blanc pur : pas de refrain doré ni de couchant (ADR-040)
+            moodTo = current != null && current.monochrome ? Color.white : MoodFor(sectionName, progress);
             moodT = 0f;
             moodBlend = Mathf.Max(0.01f, blendSeconds);
         }
@@ -191,6 +192,7 @@ namespace Kenta.FX
         void LateUpdate()
         {
             if (cam == null || current == null) return;
+            if (layers[0] == null) return;   // scripts rechargés en pleine partie (Play mode) : calques perdus, pas d'erreur à chaque image
             var c = cam.transform.position;
             // décor dessiné pour la vue large (640×360) : agrandi seulement si un jour la vue dépasse sa hauteur
             float skyPx = current.sky != null ? current.sky.rect.height : 360f;

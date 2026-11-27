@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Kenta.DebugTools;
 using Kenta.FX;
 using UnityEngine;
 
@@ -21,7 +20,10 @@ namespace Kenta.Level
         public const float StompTouchBeats = 0.15f;
         const float StepStartBeats = 0.3f;          // plateforme : comme un mur
         const float StepFaceBeats = 0.5f;           // marche : face à beat+0,5 (+ coup de pouce : ~130 ms de marge sur +1 u)
-        const float MaxHeight = 60f;                // hauteur libre : le niveau grimpe et plonge (garde-fou seulement)
+        // hauteur libre : le niveau grimpe et plonge (garde-fou seulement). Piège : à 60 u, le refrain 2 de Main Theme
+        // (sol à 69 u) était aplati, ses tambours ne montaient plus et 12 pièces étaient hors d'atteinte (2026-11-27).
+        // Même borne dans le générateur (levelgen/engine.py, MAX_HEIGHT) : un niveau qui la dépasse est refusé.
+        const float MaxHeight = 200f;
         const float StepFaceMin = 0.25f;            // une montée plus haute que ça se saute (face mortelle)
         const float BounceDefaultBeats = 2f;
         const float PillarDepth = 14f;              // les piliers descendent jusque sous le sol le plus bas
@@ -327,6 +329,7 @@ namespace Kenta.Level
                     case "camera":
                     case "section_change":
                     case "screen_split":
+                    case "fx_invert":
                     case "screen_flip":
                     case "glitch":
                         FxEvents.Add(e);
@@ -551,12 +554,6 @@ namespace Kenta.Level
             return list.Count;
         }
 
-        void Update()
-        {
-            if (beatGrid != null && beatGrid.activeSelf != RhythmDebugOverlay.Visible)
-                beatGrid.SetActive(RhythmDebugOverlay.Visible);
-        }
-
         // ---------- Visuels (pixel art : sprites des biomes, 40 px par unité) ----------
 
         const float TileHeight = 0.5f;          // tuile de sol de 32×20 px
@@ -564,11 +561,9 @@ namespace Kenta.Level
         /// <summary>Biome de la section qui contient ce beat (un biome par section de la chart).</summary>
         public BiomeTheme BiomeAt(double beat)
         {
-            // le décor choisi par le joueur vaut pour tout le morceau (décision du 25/11 : les 8 « mondes » sont le
-            // même niveau, le choix est celui du décor). Les biomes nommés par les sections ne servent que sans choix.
-            if (LevelBiome != null) return LevelBiome;
+            // un niveau = un monde (son biome, LevelDef.biome), sauf les sections qui en changent : elles nomment
+            // l'asset du biome (le niveau 9 commence dans la Sylve, puis la Sourdine décolore le monde)
             int i = Chart != null ? Chart.SectionIndexAt(beat) : 0;
-            // une section peut changer de monde (ex. le refrain monte dans l'orage) : elle nomme l'asset du biome
             string named = Chart != null && Chart.sections.Length > 0 ? Chart.sections[Mathf.Clamp(i, 0, Chart.sections.Length - 1)].biome : null;
             if (!string.IsNullOrEmpty(named))
                 foreach (var b in theme.biomes)
@@ -836,17 +831,21 @@ namespace Kenta.Level
             }
         }
 
+        /// <summary>
+        /// Repères de rythme (FX/BeatGuides, 2026-11-27) : un trait par temps, qui suit la caméra en hauteur. Avant :
+        /// une grille de debug (F9) posée à hauteur fixe, invisible dès qu'on montait et absente du build.
+        /// </summary>
         void BuildBeatGrid(int lastBeat)
         {
-            // Grille de beats : uniquement pour le debug (F9), comme les repères de la maquette n'existent pas dans la DA.
-            beatGrid = Group("BeatGrid (debug)", Vector2.zero).gameObject;
-            int perBar = Chart.beatsPerBar > 0 ? Chart.beatsPerBar : 4;
-            for (int b = 0; b <= lastBeat; b++)
+            beatGrid = Group("BeatGuides", Vector2.zero).gameObject;
+            var pool = new SpriteRenderer[12];                     // une vue de 640 px montre au plus 6 temps
+            for (int i = 0; i < pool.Length; i++)
             {
-                bool bar = b % perBar == 0;
-                Box(beatGrid.transform, "Line", new Color(1f, 1f, 1f, bar ? 0.35f : 0.15f), new Vector2(BeatToX(b), 1.2f), new Vector2(0.025f, 3.4f), 50);
+                pool[i] = Box(beatGrid.transform, "Line", Color.white, Vector2.zero, new Vector2(0.025f, 1f), 50);
+                pool[i].enabled = false;
             }
-            beatGrid.SetActive(RhythmDebugOverlay.Visible);
+            int perBar = Chart.beatsPerBar > 0 ? Chart.beatsPerBar : 4;
+            beatGrid.AddComponent<BeatGuides>().Setup(this, pool, perBar, lastBeat);
         }
 
         void BuildCheckpoints()
@@ -1134,6 +1133,7 @@ namespace Kenta.Level
             var t = Group("Coin", center);
             var sr = Spr(t, "Sprite", theme.coinFrames[0], Vector2.zero, 14);
             sr.gameObject.AddComponent<SpriteCycle>().Setup(theme.coinFrames);
+            t.gameObject.AddComponent<CoinPickup>();
             return t.gameObject;
         }
     }

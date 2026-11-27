@@ -36,8 +36,13 @@ namespace Kenta.FX
         float glitchLevel;
         double glitchUntilBeat = -1;
         int frame;
+        bool inverted;
+        Material baseWorldMat, invertMat;
+        static readonly int InvertId = Shader.PropertyToID("_Invert");
 
         public int Copies => copyCount;
+        /// <summary>Le calque du monde est en négatif (niveau 9) ; le héros et l'interface gardent leurs couleurs.</summary>
+        public bool Inverted => inverted;
         /// <summary>Image en miroir gauche-droite (X) et/ou retournée haut-bas (Y).</summary>
         public bool FlipX => flipX;
         public bool FlipY => flipY;
@@ -54,6 +59,7 @@ namespace Kenta.FX
         {
             if (Instance == this) Instance = null;
             if (noiseTex != null) Destroy(noiseTex);
+            if (invertMat != null) Destroy(invertMat);
         }
 
         /// <summary>Retour à l'image normale (début et fin de partie).</summary>
@@ -63,6 +69,7 @@ namespace Kenta.FX
             glitchUntilBeat = -1;
             SetCopies(1);
             SetFlip(false, false);
+            SetInvert(false);
             Level = 0f;
             if (noise != null) noise.enabled = false;
             ApplyMain(Vector2.zero, Color.white, true);
@@ -118,7 +125,29 @@ namespace Kenta.FX
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.sizeDelta = new Vector2(Mathf.Round(layer.Texture.width * k), Mathf.Round(layer.Texture.height * k));
             img.uvRect = new Rect(flipX ? 1f : 0f, flipY ? 1f : 0f, flipX ? -1f : 1f, flipY ? -1f : 1f);
+            if (inverted && layer == screen.WorldLayer) img.material = invertMat;
             copyImages.Add(img);
+        }
+
+        /// <summary>
+        /// Le monde passe en négatif (noir ↔ blanc, rouge ↔ cyan) ou revient : un changement d'état net sur un temps
+        /// fort, jamais un clignotement (borne publique : 3 bascules par seconde au plus, à la charge de la chart).
+        /// Seul le calque du monde s'inverse : le héros, son bandeau et l'interface gardent leurs couleurs.
+        /// </summary>
+        public void SetInvert(bool on)
+        {
+            inverted = on;
+            var display = screen != null && screen.WorldLayer != null ? screen.WorldLayer.Display : null;
+            if (display == null) return;
+            if (invertMat == null)
+            {
+                baseWorldMat = display.material;
+                invertMat = new Material(baseWorldMat) { name = "PixelDisplay (négatif)" };
+                invertMat.SetFloat(InvertId, 1f);
+            }
+            display.material = on ? invertMat : baseWorldMat;
+            for (int i = 0; i < copyImages.Count; i++)
+                if (copyImages[i] != null && copyLayers[i] == screen.WorldLayer) copyImages[i].material = on ? invertMat : null;
         }
 
         /// <summary>

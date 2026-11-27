@@ -297,6 +297,7 @@ namespace Kenta.Core
             {
                 var e = level.FxEvents[fxCursor++];
                 if (e.type == "screen_split") glitch?.SetCopies(e.@params.copies);
+                if (e.type == "fx_invert") glitch?.SetInvert(e.@params.variant != "off");
                 if (e.type == "screen_flip")
                     glitch?.SetFlip(e.@params.variant == "mirror" || e.@params.variant == "both", e.@params.variant == "up" || e.@params.variant == "both");
             }
@@ -437,7 +438,8 @@ namespace Kenta.Core
 
         void Update()
         {
-            if (!IsRunning || Chart == null) return;
+            // Conductor.Instance est perdu si les scripts sont rechargés en pleine partie (Play mode) : pas d'erreur à chaque image
+            if (!IsRunning || Chart == null || Conductor.Instance == null) return;
             double beat = Conductor.Instance.SongBeat;
 
             int index = Chart.SectionIndexAt(beat);
@@ -460,10 +462,15 @@ namespace Kenta.Core
         {
             Lums++;                            // les pièces rapportent des points, mais seul le timing des actions fait le combo
             AddPoints(lumPoints * Multiplier);
-            if (lum.hasNote) ActionSfx.Instance?.LumNote(lum.note);
+            if (lum.hasNote) ActionSfx.Instance?.LumNote(lum.note, lum.beat);      // sur le temps de la pièce
             else ActionSfx.Instance?.Lum(lum.sequenceIndex);
             FxPool.Instance?.Burst(lum.bounds.center, new Color(1f, 0.82f, 0.23f), 8, 4f, 0.14f, 0.35f, 0f, 0f);
-            if (lum.view != null) lum.view.SetActive(false);
+            if (lum.view != null)
+            {
+                var pop = lum.view.GetComponent<CoinPickup>();
+                if (pop != null) pop.Play();                   // elle saute et clignote, puis disparaît
+                else lum.view.SetActive(false);
+            }
             OnLumPicked?.Invoke(lum);
             OnStatsChanged?.Invoke();
         }
@@ -680,6 +687,11 @@ namespace Kenta.Core
                                                    e.@params.variant == "up" || e.@params.variant == "both");
                     rig.Flash(Color.white, 0.35f);
                     rig.Shake(0.15f, 0.2f);
+                    break;
+                case "fx_invert":
+                    // le monde passe en négatif (« on ») ou revient (« off ») : un état, pas un flash
+                    ScreenGlitch.Instance?.SetInvert(e.@params.variant != "off");
+                    rig.Punch(0.25f);
                     break;
                 case "glitch":
                     // grésillement calé sur les temps, pendant `length` beats

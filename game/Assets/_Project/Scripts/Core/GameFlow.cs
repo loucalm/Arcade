@@ -100,6 +100,9 @@ namespace Kenta.Core
         /// </summary>
         System.Collections.IEnumerator DevPlay()
         {
+            if (!string.IsNullOrEmpty(DevStart.LevelId) && catalog != null && catalog.levels != null)
+                foreach (var l in catalog.levels)
+                    if (l != null && l.id == DevStart.LevelId) GameSession.Level = l;     // test d'un autre niveau que le 1
             var lvl = GameSession.Level != null ? GameSession.Level : FirstLevel();
             var clip = lvl != null && lvl.song != null ? lvl.song.clip : (levelSong != null ? levelSong.clip : null);
             if (clip != null) clip.LoadAudioData();

@@ -58,6 +58,38 @@ namespace Kenta.Rhythm
         /// <summary>Pièce qui joue une note de la mélodie : `semitones` par rapport au la du son de pièce.</summary>
         public void LumNote(int semitones) => Play(lum, Mathf.Pow(2f, Mathf.Clamp(semitones, -24, 24) / 12f), 0.55f);
 
+        /// <summary>
+        /// Note de la pièce posée au temps `beat` de la chart, jouée sur ce temps-là (2026-11-27). On ramasse une pièce
+        /// dès qu'on passe à moins du rayon de ramassage, soit environ 0,3 temps avant elle : la quantification à la
+        /// double-croche la plus proche la faisait sonner une double-croche trop tôt, à chaque pièce.
+        /// </summary>
+        public void LumNote(int semitones, double beat) =>
+            PlayAtBeat(lum, Mathf.Pow(2f, Mathf.Clamp(semitones, -24, 24) / 12f), 0.55f, beat);
+
+        /// <summary>Délai (s) jusqu'au temps `beat` (0 s'il est passé ou trop loin : plus d'une demi-mesure).</summary>
+        public static double DelayUntil(double nowBeat, double beat, double secondsPerBeat, double maxBeats = 2.0)
+        {
+            double ahead = beat - nowBeat;
+            return ahead > 0 && ahead <= maxBeats ? ahead * secondsPerBeat : 0;
+        }
+
+        /// <summary>Joue un son sur un temps précis de la chart ; s'il est déjà passé, tout de suite (quantifié).</summary>
+        public void PlayAtBeat(AudioClip clip, float pitch, float gain, double beat)
+        {
+            var conductor = Conductor.Instance;
+            if (conductor == null || !conductor.IsPlaying) { Play(clip, pitch, gain); return; }
+            double delay = DelayUntil(conductor.SongBeat, beat, conductor.SecondsPerBeat);
+            if (delay <= 0) { Play(clip, pitch, gain); return; }
+            if (clip == null || pool == null) return;
+            var source = pool[next];
+            next = (next + 1) % pool.Length;
+            source.Stop();
+            source.clip = clip;
+            source.pitch = pitch;
+            source.volume = gain * volume;
+            source.PlayDelayed((float)delay);
+        }
+
         public void Play(AudioClip clip, float pitch = 1f, float gain = 1f, bool quantized = true)
         {
             if (clip == null || pool == null) return;

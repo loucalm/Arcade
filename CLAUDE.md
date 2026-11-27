@@ -21,7 +21,7 @@ Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](do
 1. **L'horloge maître est l'audio** (`Conductor.SongTime`). Aucune logique de rythme ne doit se baser uniquement sur `Time.deltaTime`.
 2. **Vitesse de course constante** : `x = BeatToSeconds(beat) * runSpeed`. Le joueur ne ralentit jamais.
 3. Le niveau est **généré à partir d'une chart JSON**. On ne place rien à la main en dur dans les scènes de niveau.
-4. Les sons d'action sont **quantifiés à la double-croche** la plus proche. La tolérance est celle d'un plateformeur, pas d'un jeu de rythme.
+4. Les sons d'action sont **quantifiés à la double-croche** la plus proche. La tolérance est celle d'un plateformeur, pas d'un jeu de rythme (la note d'une pièce : sur le temps de la pièce, ADR-038).
 5. Tout ce qui réagit au tempo s'abonne à `Conductor.OnBeat(int beat)`. Pas de minuteries locales.
 6. Checkpoint = `{beat, x}`. Respawn = seek audio sur `BeatToSeconds(beat)`, puis reprise.
 7. Sur WebGL, l'AudioMixer ne gère que le volume : **aucun effet DSP**. Le remix 8-bit est un clip séparé.
@@ -51,8 +51,9 @@ python3 tools/gen-kenta-assets.py --only thumbs
 (cd tools/gemini-obstacles && python3 cut_sheets.py && python3 clean.py --install)
 # Gardiens (images Gemini dans tools/gemini-gardiens/raw/sheets/) : nettoyage et installation dans le jeu
 python3 tools/gemini-gardiens/clean.py --install
-# Niveau 9 (La Sourdine) : planches du monde décoloré, dessinées par code (11 planches, ou seulement celles nommées : a1 b1 d2…)
-python3 tools/gemini-niveau9/gen_sheets.py
+# Niveau 9 (La Sourdine) : planches du monde décoloré, dessinées par code (11 planches, ou seulement celles nommées : a1 b1 d2…) ;
+# --install les pose dans le jeu (biome « sourd », gardien Sourdine, vignette, djembé en négatif), puis menu Kenta > Reconstruire
+python3 tools/gemini-niveau9/gen_sheets.py --install
 # Chart d'un niveau (fiche + scènes dans tools/levels/, moteur dans tools/levelgen/, ADR-035) ; --liste pour les niveaux
 python3 tools/gen-level.py n1_sylve
 # Morceau d'un niveau : mesures gardées et recollées, en .ogg (la commande exacte est en tête de tools/levels/<niveau>.py)

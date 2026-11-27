@@ -29,7 +29,8 @@ namespace Kenta.Player
         [Header("Corps")]
         [SerializeField] float width = 0.5f;
         [SerializeField] float standHeight = 1.0f;
-        [SerializeField] float pickupRadius = 0.7f;
+        [Tooltip("Rayon de ramassage des pièces (u). Le même dans le simulateur (tools/levelgen/engine.py, PICKUP).")]
+        [SerializeField] float pickupRadius = 1f;
         [Tooltip("Collisions balayées entre deux frames (à-coup du navigateur) jusqu'à cette distance max.")]
         [SerializeField] float maxSweep = 3f;
 
@@ -100,10 +101,12 @@ namespace Kenta.Player
         // Gravité inversée : y, vy, groundTop sont dans le repère retourné (y' = −y monde) et le sol est le plafond en miroir.
         bool inverted;
         int flipCursor;
+        const float FlipLandSeconds = 1f / 30f;     // portail de gravité : atterrissage avancé de 2 images au plus
         // Plans : le héros ne touche que ce qui est sur son plan ; l'image change de calque au sommet du saut.
         int plane, visualPlane;
         // Liane en cours (null : aucune)
         LevelObject vine;
+        double vineGrabBeat;                  // temps où l'on a attrapé la liane en cours
         int vineCursor;
         double lastJumpDownBeat = -99;
         // Ennemi cuirassé écrasé : on attend l'appui du grand rebond (sinon petit rebond)
@@ -243,6 +246,7 @@ namespace Kenta.Player
             var flips = level.GravityFlips;
             while (flipCursor < flips.Count && flips[flipCursor].x <= beat)
             {
+                LandBeforeFlip(x, half);
                 SetGravity(flips[flipCursor].y > 0.5f, x);
                 flipCursor++;
             }
@@ -268,7 +272,9 @@ namespace Kenta.Player
             if (cmd.jumpDown)
             {
                 lastJumpDownBeat = beat;
-                jumpBufferBeat = vine != null ? -99 : beat;     // pendu à une liane, l'appui sert seulement au jugement du lâcher
+                jumpBufferBeat = vine != null ? -99 : beat;     // pendu à une liane, l'appui sert seulement au lâcher
+                // appui en avance sur une liane : il est gardé (lâcher à l'ouverture de la fenêtre) ; la main se resserre
+                if (vine != null && beat < vine.beat - VineEarlyBeats) squash = Squash(0.85f, 1.15f);
                 // appui juste après le décollage d'un tambour : il compte pour le rebond
                 if (pendingBounce != null && beat - pendingBounce.beat <= 0.5) run.OnObstacleCleared(pendingBounce, beat);
                 pendingBounce = null;
@@ -332,6 +338,19 @@ namespace Kenta.Player
         /// <summary>Hauteur dans le monde à `d` u des pieds, du côté du corps (en dessous des pieds tête en bas) : pour les effets.</summary>
         float BodySideY(float d) => WorldY + (inverted ? -d : d);
 
+        /// <summary>
+        /// Portail de gravité pile à l'atterrissage (niveau 8, beat 192) : si le héros allait se poser dans les 2 images
+        /// qui viennent, il se pose d'abord, puis part vers le plafond depuis le sol. Sinon, à une image près, il gardait sa
+        /// vitesse de chute, traversait le sol sur 1,5 u avant de remonter, et ratait les pièces posées sur l'arc du
+        /// simulateur (qui, lui, s'était posé). Même règle dans levelgen/engine.py (FLIP_LAND_SECONDS).
+        /// </summary>
+        void LandBeforeFlip(float x, float half)
+        {
+            if (grounded || vy >= 0f || vine != null) return;
+            float reach = -vy * FlipLandSeconds;
+            if (Terrain.TryLand(x, half, y, y - reach, out float top)) Land(x, top);
+        }
+
         /// <summary>Traverse un portail de gravité : on garde la position et la vitesse dans le monde, on tombe vers l'autre côté.</summary>
         void SetGravity(bool up, float x)
         {
@@ -361,6 +380,7 @@ namespace Kenta.Player
             if (o.plane != plane || x < o.bounds.xMin - 0.05f || x > o.bounds.xMin + 0.8f || Mathf.Abs(y - o.grabY) > 1.6f) return;
             o.passed = true;
             vine = o;
+            vineGrabBeat = nowBeat;
             grounded = false;
             IsBouncing = false;
             jumpBufferBeat = -99;
@@ -368,7 +388,11 @@ namespace Kenta.Player
             FxPool.Instance?.Burst(new Vector2(x, y + VineView.HandHeight), new Color(0.6f, 0.8f, 0.4f), 6, 2.5f, 0.12f, 0.3f, 0f, 0f);
         }
 
-        /// <summary>Fenêtre du lâcher d'une liane autour de son temps (beats) : avant, l'appui ne compte pas ; après, on tombe.</summary>
+        /// <summary>
+        /// Fenêtre du lâcher d'une liane autour de son temps (beats). Un appui plus tôt (après la prise) est gardé : on lâche
+        /// à l'ouverture de la fenêtre (2026-11-27 : avant, il était ignoré, la main glissait et le héros tombait au lieu de
+        /// sauter, « ça m'obéit pas »). Après la fenêtre, sans appui, on tombe.
+        /// </summary>
         const float VineEarlyBeats = 0.35f, VineLateBeats = 0.35f;
 
         /// <summary>
@@ -382,10 +406,10 @@ namespace Kenta.Player
             double len = vine.beat - vine.grabBeat;
             float u = (float)((beat - vine.grabBeat) / len);
             var view = vine.view != null ? vine.view.GetComponent<VineView>() : null;
-            bool pressed = lastJumpDownBeat >= vine.beat - VineEarlyBeats && lastJumpDownBeat >= vine.grabBeat;
+            bool pressed = lastJumpDownBeat > vineGrabBeat;     // appui après la prise (en avance : gardé jusqu'à la fenêtre)
             float arcY = Mathf.Lerp(vine.grabY, vine.releaseY, u) - vine.sag * Mathf.Sin(Mathf.PI * u);
             float arcVy = (float)(((vine.releaseY - vine.grabY) - vine.sag * Mathf.PI * Mathf.Cos(Mathf.PI * u)) / (len * spb));
-            if (!pressed && beat <= vine.beat + VineLateBeats)
+            if ((!pressed || beat < vine.beat - VineEarlyBeats) && beat <= vine.beat + VineLateBeats)
             {
                 y = arcY;
                 vy = arcVy;

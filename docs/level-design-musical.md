@@ -9,11 +9,15 @@ Un niveau musical n'est pas un niveau « avec de la musique » : c'est **une par
 - **Chaque appui tombe sur un son du morceau.** Grosse caisse → sauts (trous, marches, tambours). Caisse claire →
   coups de poing (ennemis). Notes tenues et silences → envolées, lianes, courses sur le mur.
 - **Les pièces sont la mélodie.** Chaque pièce ramassée joue une note (`lum_at` + `note`) prise dans le contour
-  mélodique du morceau, ramenée dans la gamme pentatonique de la tonique (la mineur pour le niveau 01) : même
-  approximative, elle sonne juste. Une ligne de pièces = une phrase jouée.
-- **Les pièces dessinent le chemin.** Au-dessus de chaque saut, un arc de pièces ; sur chaque envolée, l'arc complet ;
-  entre deux actions, une ligne. Le joueur n'a jamais à deviner où aller : il suit les pièces, et s'il les prend
-  toutes, il est dans le rythme.
+  mélodique du morceau, ramenée dans la gamme du niveau (`Fiche.scale`) : même approximative, elle sonne juste. Une
+  ligne de pièces = une phrase jouée. Depuis le 2026-11-27, les pièces sont **toutes sur la grille des croches**
+  (jamais deux à moins d'une croche) et la note sonne **sur le temps de la pièce** (`ActionSfx.LumNote(note, beat)`),
+  même si on la ramasse un peu avant : avant, elle sonnait toujours une double-croche trop tôt.
+- **Les pièces dessinent le chemin.** Une pièce au sommet de chaque saut ; sur chaque envolée et chaque liane, une pièce
+  par croche ; entre deux actions, une ligne sur les croches où la mélodie attaque. Aucune pièce à moins de 1,1 u d'un
+  ennemi (elle le cacherait). Le joueur n'a jamais à deviner où aller : il suit les pièces, et s'il les prend
+  toutes, il est dans le rythme. On les ramasse dans un rayon de 1 u (le même dans le jeu et le simulateur), et une
+  pièce ramassée saute de 6 px en clignotant (`FX/CoinPickup`).
 - Source : `tools/analyse-song.py` écrit la carte du morceau (`tools/data/level01_analysis.json` : attaques
   grave / médium / aigu et note dominante à chaque double-croche). Le générateur cale les actions sur ces attaques.
 
