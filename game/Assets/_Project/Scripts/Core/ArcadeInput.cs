@@ -67,6 +67,35 @@ namespace Kenta.Core
         /// <summary>Bouton blanc tenu (retour au menu de la borne au bout de 1,5 s).</summary>
         public static bool CoinHeld() => Input.GetButton("Coin") || ArcadePads.CoinHeld();
 
+        static int activityFrame = -1;
+        static bool activity;
+        static readonly Vector2Int[] lastDir = new Vector2Int[2];
+
+        /// <summary>
+        /// Un vrai geste du joueur dans cette image (J1 ou J2) : un bouton vient d'être pressé, ou le joystick vient de
+        /// changer de direction. Sert aux délais d'inactivité (60 s → menu de la borne, retour à l'accueil des menus).
+        /// Contrairement à AnyInput (état tenu), un bouton ou un axe bloqué (manette fantôme, axe décalé au repos) ne
+        /// compte pas : sur la borne, le jeu ne quittait jamais après 60 s d'inactivité.
+        /// </summary>
+        public static bool AnyActivity()
+        {
+            if (Time.frameCount == activityFrame) return activity;
+            activityFrame = Time.frameCount;
+            activity = AnyButtonDown();
+            for (int p = 1; p <= 2; p++)
+            {
+                var v = Stick(p);
+                var d = new Vector2Int(Mathf.Abs(v.x) > DirectionThreshold ? (int)Mathf.Sign(v.x) : 0,
+                                       Mathf.Abs(v.y) > DirectionThreshold ? (int)Mathf.Sign(v.y) : 0);
+                if (d != lastDir[p - 1])
+                {
+                    if (d != Vector2Int.zero) activity = true;
+                    lastDir[p - 1] = d;
+                }
+            }
+            return activity;
+        }
+
         /// <summary>
         /// Le joueur touche à quelque chose (bouton tenu ou joystick poussé, J1 ou J2) : remet à zéro les 60 s
         /// d'inactivité. Mêmes règles que le MenuManager du toolkit.

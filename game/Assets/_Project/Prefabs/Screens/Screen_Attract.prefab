@@ -348,8 +348,36 @@ MonoBehaviour:
   hiScore: {fileID: 6427741480294958385}
   logo: {fileID: 7343906709658606941}
   logoY: 26
+  demoLogoY: 64
   logoOnly:
   - {fileID: 3421853738661778672}
   - {fileID: 6888741779799826281}
   - {fileID: 961406525586097938}
   demoLabel: {fileID: 4592292651097197079}
+  subtitle: {fileID: 6471911203611042743}
+  letters:
+  - {fileID: 21300000, guid: 12e5bd959dc134d6983de97f033b3ffe, type: 3}
+  - {fileID: 21300000, guid: 3b913c17df09841a28fac8e3505ce803, type: 3}
+  - {fileID: 21300000, guid: 13456e2f4ef444d7294cb06ffe38d25c, type: 3}
+  - {fileID: 21300000, guid: 24ab55ce7237f4e4087006e535b1b58a, type: 3}
+  - {fileID: 21300000, guid: 96a8f6a3d73a34603b5603e8a285ee52, type: 3}
+  letterWhites:
+  - {fileID: 21300000, guid: 684bfd1f758944ebd9be0e8799211caf, type: 3}
+  - {fileID: 21300000, guid: 4ed8c6405165f4b98a835db63e60e934, type: 3}
+  - {fileID: 21300000, guid: a2b07db709c2041c6b0203bf8bd13217, type: 3}
+  - {fileID: 21300000, guid: 6f9e5bde158e44f998896e2c2dda63e5, type: 3}
+  - {fileID: 21300000, guid: 8a1576bc760b24f04a8792d1922e9b64, type: 3}
+  logoWhite: {fileID: 21300000, guid: 343d3575f5bfe4cb5ac942fa0780e7a7, type: 3}
+  shine:
+  - {fileID: 21300000, guid: 42723293185f54a27bc5a5c2b5b9007c, type: 3}
+  - {fileID: 21300000, guid: 526649a4f1e9d4c39ab5ddda651ab422, type: 3}
+  - {fileID: 21300000, guid: 1fd97b9527b9947e797934c22e72cc3e, type: 3}
+  - {fileID: 21300000, guid: aff30ef3c395c4516a839a63202ed58e, type: 3}
+  - {fileID: 21300000, guid: dfb913e2c3a2a42c9b6d97cb24aca9a5, type: 3}
+  - {fileID: 21300000, guid: 447ddba856bb74df1bd286fb02713eca, type: 3}
+  - {fileID: 21300000, guid: 836f7efe2f09c46328222178b51a37de, type: 3}
+  - {fileID: 21300000, guid: e148e25d3f616405680723b6896ab9e2, type: 3}
+  - {fileID: 21300000, guid: bbfabffe646e2496e87bc42bd9299a9e, type: 3}
+  - {fileID: 21300000, guid: a583ce026ab5446a180b48789ea9ff8d, type: 3}
+  letterSfx: {fileID: 8300000, guid: e0d0ac16cc0b04d72a80ce430013132b, type: 3}
+  impactSfx: {fileID: 8300000, guid: 6a85429fe3291493a920a249da74f4f7, type: 3}

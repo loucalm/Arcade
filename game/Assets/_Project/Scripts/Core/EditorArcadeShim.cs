@@ -22,7 +22,6 @@ namespace Kenta.Core
     {
         const float AfkTime = 60f;
         const float HeldQuitTime = 1.5f;
-        static readonly string[] Axes = { "P1_Horizontal", "P1_Vertical", "P2_Horizontal", "P2_Vertical" };
 
         float afk, held;
 
@@ -62,7 +61,7 @@ namespace Kenta.Core
             held = Input.GetButton("Coin") ? held + Time.unscaledDeltaTime : 0f;
             // l'autoplay de debug (F10) n'appuie sur rien : ce n'est pas un joueur parti, on ne le renvoie pas à l'accueil
             bool autoplay = RunManager.Instance != null && RunManager.Instance.IsRunning && RunManager.Instance.Autoplay;
-            afk = AnyInput() || autoplay ? 0f : afk + Time.unscaledDeltaTime;
+            afk = ArcadeInput.AnyActivity() || Input.anyKeyDown || autoplay ? 0f : afk + Time.unscaledDeltaTime;
             if (held < HeldQuitTime && afk < AfkTime) return;
 
             bool afkTimeout = afk >= AfkTime;
@@ -92,13 +91,6 @@ namespace Kenta.Core
             public void LogException(Exception exception, UnityEngine.Object context) => inner.LogException(exception, context);
         }
 
-        static bool AnyInput()
-        {
-            if (Input.anyKey) return true;
-            foreach (var axis in Axes)
-                if (Mathf.Abs(Input.GetAxisRaw(axis)) > 0.5f) return true;
-            return false;
-        }
     }
 }
 #endif

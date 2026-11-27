@@ -105,7 +105,7 @@ namespace Kenta.UI
             float dt = Time.unscaledDeltaTime;
             elapsed += dt;
             timer -= dt;
-            if (ArcadeInput.AnyInput()) timer = seconds;    // on touche : le délai repart
+            if (ArcadeInput.AnyActivity()) timer = seconds;    // on touche : le délai repart
             int left = Mathf.Max(0, Mathf.CeilToInt(timer));
             if (left != shownSeconds) { shownSeconds = left; timerText.Text = left.ToString("D2"); }
 

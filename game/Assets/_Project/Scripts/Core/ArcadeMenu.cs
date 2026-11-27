@@ -44,7 +44,7 @@ namespace Kenta.Core
         {
             float dt = Time.unscaledDeltaTime;
             held = ArcadeInput.CoinHeld() ? held + dt : 0f;
-            afk = ArcadeInput.AnyInput() ? 0f : afk + dt;
+            afk = ArcadeInput.AnyActivity() ? 0f : afk + dt;
             if (!leaving && (held >= HeldQuitTime || afk >= AfkTime))
             {
                 leaving = true;

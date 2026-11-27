@@ -51,7 +51,7 @@ namespace Kenta.Core
         [SerializeField, Range(0f, 1f)] float attractVolume = 0.5f;
 
         [Header("Durées (s)")]
-        [SerializeField] float attractLogoSeconds = 8f;
+        [SerializeField] float attractLogoSeconds = 15f;
         [SerializeField] float attractDemoSeconds = 20f;
         [SerializeField] float attractBoardSeconds = 8f;
         [Tooltip("Consignes : secondes sans action avant le retour à l'accueil.")]
@@ -133,7 +133,7 @@ namespace Kenta.Core
 
                 case GameState.Explain:
                     // personne ne touche à rien pendant explainDuration : retour à l'accueil (plus de passage automatique)
-                    if (ArcadeInput.AnyInput()) stateTimer = Mathf.Min(stateTimer, inputGuard);
+                    if (ArcadeInput.AnyActivity()) stateTimer = Mathf.Min(stateTimer, inputGuard);
                     if (guardPassed && ArcadeInput.ConfirmDown()) Enter(GameState.Config);
                     else if (stateTimer >= explainDuration) Enter(GameState.Attract);
                     break;

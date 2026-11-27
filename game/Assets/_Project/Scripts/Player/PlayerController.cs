@@ -678,6 +678,10 @@ namespace Kenta.Player
                 {
                     o.alive = false;
                     run.OnEnemyKilled(o, LastHitPressBeat);
+                    // un appui = un ennemi, le plus proche (la liste est triée de gauche à droite) : deux ennemis
+                    // rapprochés demandent deux appuis, sur le rythme (avant, un coup les tuait tous les deux)
+                    hitting = false;
+                    hitUntilBeat = -99;
                     continue;
                 }
                 if (!inverted && bodyRect.Overlaps(o.bounds) && (o.kind == LevelObjectKind.StepFace || o.kind == LevelObjectKind.Wall)

@@ -853,7 +853,31 @@ namespace Kenta.Level
             // Au début de chaque biome : le gardien miniature, qui « s'éveille » à la frontière (drop).
             var g = Group("Totems", Vector2.zero);
             for (int i = 1; i < Chart.sections.Length; i++)
-                Spr(g, "Totem", theme.totem, new Vector2(BeatToX(Chart.sections[i].startBeat) - 0.6f, 0f), 4);
+            {
+                float x = TotemX(BeatToX(Chart.sections[i].startBeat) - 0.6f);
+                // posé sur le sol réel (marches, rampes) : avant, toujours à 0, il flottait ou s'enfonçait
+                float y = Mathf.Min(HeightAt(x - TotemHalfWidth), HeightAt(x + TotemHalfWidth));
+                Spr(g, "Totem", theme.totem, new Vector2(PixelScreen.Snap(x), PixelScreen.Snap(y)), 4);
+            }
+        }
+
+        const float TotemHalfWidth = 0.3f;              // 20 px + contour, en unités (40 px/u), avec un peu de marge
+
+        /// <summary>Place du totem en x : recule avant un trou s'il tombait dessus (il flottait dans le vide).</summary>
+        float TotemX(float x)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                bool moved = false;
+                foreach (var gap in gaps)
+                    if (x + TotemHalfWidth > gap.x && x - TotemHalfWidth < gap.y)
+                    {
+                        x = gap.x - TotemHalfWidth - 0.1f;
+                        moved = true;
+                    }
+                if (!moved) break;
+            }
+            return x;
         }
 
         // ---------- Plafond, arrière-plan, lianes, portails de gravité ----------

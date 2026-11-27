@@ -531,6 +531,7 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
                 continue
             if hitting and not stomp and ov(hit_box, r):
                 en[3] = False
+                hitting, hit_until = False, -99          # un appui = un ennemi (le plus proche) : le suivant demande un autre appui
             elif ov(body, r):
                 return f"touché par l'ennemi du beat {eb} au beat {beat:.2f} (y {wy:.2f}, ennemi {ey:.2f})", {}
         cy = wy - h * 0.5 if inv else wy + h * 0.5

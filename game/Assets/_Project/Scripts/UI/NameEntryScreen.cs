@@ -72,7 +72,7 @@ namespace Kenta.UI
             float dt = Time.unscaledDeltaTime;
             timer -= dt;
             guard -= dt;
-            if (ArcadeInput.AnyInput()) timer = seconds;    // on touche : le délai repart
+            if (ArcadeInput.AnyActivity()) timer = seconds;    // on touche : le délai repart
             if (timerText != null) timerText.Text = Mathf.Max(0, Mathf.CeilToInt(timer)).ToString("D2");
             if (timer <= 0f) { Submit(); return; }
             if (guard > 0f) { Paint(); return; }

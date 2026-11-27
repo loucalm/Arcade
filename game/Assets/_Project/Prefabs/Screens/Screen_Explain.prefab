@@ -436,7 +436,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.UI.PixelText
   font: {fileID: 11400000, guid: 1a5abd17832fc46658ce26716ecea56e, type: 2}
-  text: '10 VIES : ON REPART AU DERNIER POINT'
+  text: "TON H\xC9ROS FIXE LA DIFFICULT\xC9"
   color: {r: 1, g: 0.82, b: 0.23, a: 1}
   align: 1
   scale: 1
@@ -801,6 +801,7 @@ MonoBehaviour:
   icons:
   - {fileID: 2366070005523894348}
   - {fileID: 7991784452766724379}
+  footer: {fileID: 1935462301049470547}
   beatsPerGesture: 2
 --- !u!1 &8766344338004428644
 GameObject:

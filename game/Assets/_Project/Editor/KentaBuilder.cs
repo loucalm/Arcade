@@ -317,6 +317,14 @@ namespace Kenta.EditorTools
             Set(comp, "logoY", 26f);
             SetArray(comp, "logoOnly", new UnityEngine.Object[] { logo.gameObject, subtitle.gameObject, hi.gameObject });
             Set(comp, "demoLabel", demo.gameObject);
+            // entrée façon arcade : lettres, éclairs, reflet (tools/gen-kenta-assets.py --only ui) et sons
+            Set(comp, "subtitle", subtitle);
+            SetArray(comp, "letters", Enumerable.Range(0, 5).Select(i => (UnityEngine.Object)Spr($"Gen/ui/logo_letter_{i}.png")).ToArray());
+            SetArray(comp, "letterWhites", Enumerable.Range(0, 5).Select(i => (UnityEngine.Object)Spr($"Gen/ui/logo_letter_{i}_white.png")).ToArray());
+            Set(comp, "logoWhite", Spr("Gen/ui/logo_white.png"));
+            SetArray(comp, "shine", Enumerable.Range(0, 10).Select(i => (UnityEngine.Object)Spr($"Gen/ui/logo_shine_{i}.png")).ToArray());
+            Set(comp, "letterSfx", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Audio/Sfx/sfx_land.wav"));
+            Set(comp, "impactSfx", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Audio/Sfx/sfx_kill.wav"));
             return SavePrefab(root, "Screen_Attract");
         }
 
@@ -849,13 +857,15 @@ namespace Kenta.EditorTools
             var levels = new LevelDef[biomes.Length];
             for (int i = 0; i < biomes.Length; i++)
             {
-                var l = Asset<LevelDef>(SoDir + $"Levels/Level_{i + 1:00}_{BiomeIds[i]}.asset");
+                string path = SoDir + $"Levels/Level_{i + 1:00}_{BiomeIds[i]}.asset";
+                bool isNew = AssetDatabase.LoadAssetAtPath<LevelDef>(path) == null;
+                var l = Asset<LevelDef>(path);
                 l.id = BiomeIds[i];
                 l.number = i + 1;
                 l.biome = biomes[i];
                 if (l.song == null || l.song == shared) l.song = LevelSong(i, shared);
                 if (l.thumbnail == null) l.thumbnail = AssetDatabase.LoadAssetAtPath<Sprite>(Art + $"Gen/ui/thumb_{BiomeIds[i]}.png");
-                l.stars = stars[Mathf.Min(i, stars.Length - 1)];
+                if (isNew) l.stars = stars[Mathf.Min(i, stars.Length - 1)];   // ensuite, les étoiles réglées à la main restent
                 EditorUtility.SetDirty(l);
                 levels[i] = l;
             }
@@ -1071,7 +1081,7 @@ namespace Kenta.EditorTools
             Set(flow, "nameEntry", nameEntry.GetComponent<NameEntryScreen>());
             Set(flow, "gameOverDuration", 4.5f);    // titre, note puis panneau : le temps de lire (bouton 1 pour passer)
             Set(flow, "gameOverHighscoreDuration", 3.5f);
-            Set(flow, "attractLogoSeconds", 8f);
+            Set(flow, "attractLogoSeconds", 15f);
             Set(flow, "attractDemoSeconds", 20f);
             Set(flow, "attractBoardSeconds", 8f);
             Set(flow, "catalog", catalog);
