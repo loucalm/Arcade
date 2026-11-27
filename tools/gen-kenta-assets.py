@@ -56,6 +56,13 @@ def gen_biomes(out, sheet):
 
 def gen_ui(out, sheet):
     put(out, "ui", "logo", ui.draw_logo(), sheet)
+    # entrée du titre (AttractScreen) : une image par lettre, silhouettes blanches pour les éclairs, reflet
+    put(out, "ui", "logo_white", ui.white_silhouette(ui.draw_logo()))
+    for i, ch in enumerate("KENTA"):
+        put(out, "ui", f"logo_letter_{i}", ui.draw_logo(ch))
+        put(out, "ui", f"logo_letter_{i}_white", ui.white_silhouette(ui.draw_logo(ch)))
+    for f, frame in enumerate(ui.draw_logo_shine()):
+        put(out, "ui", f"logo_shine_{f}", frame)
     put(out, "ui", "heart_full", ui.draw_heart(True), sheet)
     put(out, "ui", "heart_empty", ui.draw_heart(False), sheet)
     put(out, "ui", "panel", ui.draw_panel(), sheet)

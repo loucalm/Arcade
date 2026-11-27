@@ -2,6 +2,9 @@
 import math
 import random
 
+import numpy as np
+from PIL import Image
+
 from pixlib import Pix, blob, col, mix, outlined, shade
 
 INK = "#14101C"
@@ -126,8 +129,7 @@ ALL_CHARS = list(_G.keys()) + list(ACCENTS.keys())
 
 
 # ---------------------------------------------------------------- logo KENTA
-def draw_logo():
-    letters = "KENTA"
+def draw_logo(letters="KENTA"):
     s = 4
     gap = 3
     w = len(letters) * (5 * s) + (len(letters) - 1) * gap
@@ -152,6 +154,39 @@ def draw_logo():
     out.paste(shadow, 0, 0)
     out.paste(body, 0, 0)
     return outlined(outlined(out, "#14101C"), "#14101C", 1)
+
+
+LOGO_LETTER_STEP = 23        # écart (px) entre deux lettres du logo : 5 × 4 px de lettre + 3 px d'espace
+
+
+def white_silhouette(img):
+    """Silhouette blanche (même forme, tout blanc) : éclair posé par-dessus un sprite (entrée du titre)."""
+    im = (img.im if isinstance(img, Pix) else img).copy()
+    a = np.asarray(im).copy()
+    a[..., 0:3] = 255
+    out = Pix(im.width, im.height)
+    out.im = Image.fromarray(a, "RGBA")
+    return out
+
+
+def draw_logo_shine(frames=10, width=4):
+    """Reflet qui balaie le logo en diagonale (45°), une image par position : bande blanche à demi opaque limitée
+    aux lettres (pas au contour noir). Joué en boucle d'images par-dessus le logo (AttractScreen)."""
+    logo = draw_logo()
+    a = np.asarray(logo.im)
+    h, w = a.shape[:2]
+    ink = (a[..., 3] > 0) & ~((a[..., 0] < 40) & (a[..., 1] < 40) & (a[..., 2] < 50))
+    out = []
+    for f in range(frames):
+        c = -h + f * (w + 2 * h) / (frames - 1)
+        b = np.zeros((h, w, 4), np.uint8)
+        yy, xx = np.mgrid[0:h, 0:w]
+        band = (np.abs((xx - yy) - c) < width) & ink
+        b[band] = (255, 255, 255, 190)
+        p = Pix(w, h)
+        p.im = Image.fromarray(b, "RGBA")
+        out.append(p)
+    return out
 
 
 # ---------------------------------------------------------------- cœurs, cadres, boutons

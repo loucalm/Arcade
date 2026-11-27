@@ -645,6 +645,8 @@ MonoBehaviour:
   - {fileID: 5844826537131243344}
   timerText: {fileID: 2861203854293180930}
   seconds: 12
+  idleStep: 0.4
+  runStep: 0.06
 --- !u!1 &7486210109642003254
 GameObject:
   m_ObjectHideFlags: 0

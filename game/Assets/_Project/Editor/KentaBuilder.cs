@@ -315,6 +315,14 @@ namespace Kenta.EditorTools
             Set(comp, "logoY", 26f);
             SetArray(comp, "logoOnly", new UnityEngine.Object[] { logo.gameObject, subtitle.gameObject, hi.gameObject });
             Set(comp, "demoLabel", demo.gameObject);
+            // entrée façon arcade : lettres, éclairs, reflet (tools/gen-kenta-assets.py --only ui) et sons
+            Set(comp, "subtitle", subtitle);
+            SetArray(comp, "letters", Enumerable.Range(0, 5).Select(i => (UnityEngine.Object)Spr($"Gen/ui/logo_letter_{i}.png")).ToArray());
+            SetArray(comp, "letterWhites", Enumerable.Range(0, 5).Select(i => (UnityEngine.Object)Spr($"Gen/ui/logo_letter_{i}_white.png")).ToArray());
+            Set(comp, "logoWhite", Spr("Gen/ui/logo_white.png"));
+            SetArray(comp, "shine", Enumerable.Range(0, 10).Select(i => (UnityEngine.Object)Spr($"Gen/ui/logo_shine_{i}.png")).ToArray());
+            Set(comp, "letterSfx", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Audio/Sfx/sfx_land.wav"));
+            Set(comp, "impactSfx", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Audio/Sfx/sfx_kill.wav"));
             return SavePrefab(root, "Screen_Attract");
         }
 
