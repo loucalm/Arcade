@@ -855,13 +855,15 @@ namespace Kenta.EditorTools
             var levels = new LevelDef[biomes.Length];
             for (int i = 0; i < biomes.Length; i++)
             {
-                var l = Asset<LevelDef>(SoDir + $"Levels/Level_{i + 1:00}_{BiomeIds[i]}.asset");
+                string path = SoDir + $"Levels/Level_{i + 1:00}_{BiomeIds[i]}.asset";
+                bool isNew = AssetDatabase.LoadAssetAtPath<LevelDef>(path) == null;
+                var l = Asset<LevelDef>(path);
                 l.id = BiomeIds[i];
                 l.number = i + 1;
                 l.biome = biomes[i];
                 if (l.song == null || l.song == shared) l.song = LevelSong(i, shared);
                 if (l.thumbnail == null) l.thumbnail = AssetDatabase.LoadAssetAtPath<Sprite>(Art + $"Gen/ui/thumb_{BiomeIds[i]}.png");
-                l.stars = stars[Mathf.Min(i, stars.Length - 1)];
+                if (isNew) l.stars = stars[Mathf.Min(i, stars.Length - 1)];   // ensuite, les étoiles réglées à la main restent
                 EditorUtility.SetDirty(l);
                 levels[i] = l;
             }
