@@ -142,6 +142,11 @@ class Level:
     def glitch(self, beat, intensity, length):
         self.add(beat, "glitch", intensity=intensity, length=length)
 
+    def lightning(self, beat, intensity=1.0):
+        """Éclair dans le ciel (l'Orage) : un éclair zèbre le décor, le ciel s'illumine, l'écran blanchit un instant.
+        Sur un temps ; au plus un tous les 2 temps (borne publique : épilepsie photosensible, ADR-041)."""
+        self.add(beat, "lightning", intensity=intensity)
+
     def invert(self, beat, on=True):
         """Le monde passe en négatif (noir ↔ blanc) ou revient ; le héros et l'interface gardent leurs couleurs.
         Un état sur un temps fort, pas un clignotement : 3 bascules par seconde au plus (borne publique)."""

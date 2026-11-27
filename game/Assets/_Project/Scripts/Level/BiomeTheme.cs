@@ -21,6 +21,19 @@ namespace Kenta.Level
         [Tooltip("1280×360, boucle sans couture.")]
         public Sprite far, mid, near;
 
+        [Header("Astres et éclairs (BiomeBackdrop, ADR-041)")]
+        [Tooltip("Soleil seul (sorti du ciel) : il se couche au fil du morceau. Vide = pas de soleil (grotte, forge, orage).")]
+        public Sprite sun;
+        [Tooltip("Centre du soleil au départ, par rapport au centre du ciel 640×360, en px (y vers le haut). Écrit par tools/gen-kenta-assets.py (suns.json).")]
+        public Vector2 sunOffset;
+        [Tooltip("Hauteur (px, même repère) du centre du soleil couché : entièrement sous la ligne de sol.")]
+        public float sunSetY = -110f;
+        [Tooltip("Lune et étoiles de la nuit (section « fin ») ; seulement avec un soleil.")]
+        public Sprite moon;
+        public Sprite nightStars;
+        [Tooltip("Éclairs montrés sur l'événement `lightning` de la chart (l'Orage).")]
+        public Sprite[] bolts;
+
         [Header("Gardien (statue immobile, placée comme le ciel, derrière les montagnes)")]
         public Sprite guardian;
         [Tooltip("Centre du gardien par rapport au centre de l'écran 640×360, en px (y vers le haut). Écrit par tools/gemini-gardiens/clean.py (guardians.json).")]
