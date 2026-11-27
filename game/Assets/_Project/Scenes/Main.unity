@@ -2290,7 +2290,7 @@ MonoBehaviour:
   squashAmount: 0
   width: 0.5
   standHeight: 1
-  pickupRadius: 0.7
+  pickupRadius: 1
   maxSweep: 3
   jumpHeight: 1.5
   jumpAirBeats: 1

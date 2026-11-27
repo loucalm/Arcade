@@ -31,7 +31,7 @@ Règles :
 - [x] (2026-11-25) Morts « dans l'escalier » et dans les cuirassés au lieu du rebond → physique du héros en pas de 1/60 s (vérifié à 15 i/s avec des à-coups)
 - [x] (2026-11-26) Build Web de release refait après les niveaux 1 à 3, la difficulté par héros, le nouveau HUD et le CRT (`dist/Kenta`, 66 Mo dont `Build.wasm` 31 Mo, 1 min 30 de build) ; vérifié dans un navigateur : l'accueil et la démo tournent
 - [ ] **P0** Refaire un build Web (menu Kenta > Build Web (borne), module Web de 6000.3.23f1) et vérifier sur la borne : fps (overlay F9 absent en release : compter à l'œil ou via le panneau des performances de Firefox), plein écran, plus de morts sur les rampes
-- [ ] **P1** L'autoplay de Unity ramasse 373 pièces sur 395, le simulateur du générateur 395/395 : écart à trouver (déjà avant le 25/11)
+- [x] **P1** L'autoplay de Unity ramasse 373 pièces sur 395, le simulateur du générateur 395/395 : écart à trouver (déjà avant le 25/11). Trouvé le 2026-11-27 : le jeu ramenait le sol à 60 u au plus (`LevelBuilder.MaxHeight`), le refrain 2 de *Main Theme* monte à 69 u (voir plus bas)
 - [x] (2026-11-26) Trop de changements de zoom (10 plans larges, laids) → 4 : chaque refrain entier et deux phrases de 8 temps (beats 40 et 160) pour voir venir des chauves-souris
 - [x] (2026-11-26) Les cuirassés mouraient au rebond → ils restent en place (tremplin, son ressort s'écrase) et ne blessent plus une fois touchés
 - [x] (2026-11-26) Saut sur un cuirassé qui tuait au lieu de faire rebondir → rebond aussi si on le touche les pieds à moins de 0,6 u sous son dessus (saut un peu court ou encore en montée)
@@ -234,7 +234,7 @@ Verticalité, visuels après les obstacles de Lou, contenu. Détail, captures et
 - [ ] **P1** Passage à l'arrière-plan peu visible : sprite réduit, premier plan en silhouette, son étouffé ; l'image du héros se règle dans `PlayerController.SetVisualPlane` (D3 ; l'annonce une mesure avant est faite)
 - [ ] **P1** Le jeu se joue tout seul (139 PARFAIT, 0 BIEN) : contretemps, doubles croches, deux chemins pour le score (E4)
 - [x] (2026-11-25, `ResetMood` remet le sol à zéro) **P1** Démo de l'accueil → partie sans écran de fin : le décor glisse 0,6 s depuis la hauteur de la démo (remettre `groundValid` à faux au lancement)
-- [ ] **P1** L'autoplay du jeu ne ramasse que 372 pièces sur 395 alors que le simulateur du générateur les prend toutes (déjà vrai sur main après la PR #18). Les ratées sont presque toutes dans l'enchaînement de tambours du refrain 2 (beats 225 à 234, y 62 à 71) : l'arc du jeu ne suit pas celui du simulateur (rebond sur les cuirassés ?), à creuser
+- [x] **P1** L'autoplay du jeu ne ramasse que 372 pièces sur 395 alors que le simulateur du générateur les prend toutes (déjà vrai sur main après la PR #18). Les ratées sont presque toutes dans l'enchaînement de tambours du refrain 2 (beats 225 à 234, y 62 à 71). Cause (2026-11-27) : `LevelBuilder.MaxHeight` = 60 u aplatissait le sol à 60 u, les tambours ne montaient plus (la caméra, elle, suivait le vrai relief). Garde-fou relevé à 200 u, et le générateur refuse un niveau qui le dépasse (`MAX_HEIGHT`)
 - [ ] **P2** Contour sombre du héros et règle de couleur de la DA (le fond ne reprend jamais la couleur des pièces) (B2)
 - [ ] **P2** Rampes en escalier de colonnes de 8 px : tuiles de pente 1:1 et 1:2 par biome (A5)
 - [ ] **P2** Poteau planté au pied d'une falaise (Sylve, beat ~28) : à vérifier dans la chart (C5)
@@ -260,6 +260,10 @@ Verticalité, visuels après les obstacles de Lou, contenu. Détail, captures et
 - [ ] Tous sur Unity **6000.3.23f1** + MCP Unity v10.2.0
 
 ## Bugs / dettes connus
+- [x] (2026-11-27, retour de Lucas) Pièces mal placées et pas raccord avec la musique : la note sonnait toujours une double-croche trop tôt (ramassage ~0,3 temps avant + quantification) → jouée sur le temps de la pièce ; pièces sur la grille des croches, une au sommet de chaque saut, jamais collées à un ennemi ; rayon de ramassage 1 u (jeu et simulateur) et petite animation (`FX/CoinPickup`). Niveaux 1, 2, 3, *Main Theme* et 8 régénérés (seules les pièces changent)
+- [x] (2026-11-27, retour de Lucas) Repères de rythme : la grille de debug (F9) restait à hauteur fixe et n'existait pas en build → un trait par temps qui suit la caméra en hauteur, toujours affiché (`FX/BeatGuides`)
+- [x] (2026-11-27) Niveau 8, beat 192 : un portail de gravité pile à l'atterrissage faisait traverser le sol au héros (1,5 u) quand la bascule tombait une image avant le contact ; le simulateur, lui, s'était posé. Maintenant, si on touche le sol dans les 2 images, on se pose d'abord (`PlayerController.LandBeforeFlip`, `FLIP_LAND_SECONDS`). Vérifié dans le jeu (autoplay, Kenta) : toutes les pièces des niveaux 1, 2, 3, *Main Theme* (287/287) et 8 (344/344), sans mort (une mort sur une passe de *Main Theme* faite pendant que la machine était chargée, aucune sur les deux passes au repos)
+- [x] (2026-11-27) *Main Theme* devient le niveau 5 (`Level_05_echine`, 4 étoiles) ; le niveau 4 est en cours chez Jeremy
 - [x] (2026-11-26, retour de Lucas, sur la borne et le build de Lou) En fin de niveau, pas de « BRAVO » : le héros courait dans le vide et mourait. En build Web, la source audio peut rester « en lecture » après la fin du clip : la fin, attendue sur `!isPlaying`, n'était jamais vue. La fin se décide maintenant sur le temps du morceau (`Conductor.SongEnded`, 7 tests). **À vérifier sur la borne** avec un nouveau build
 - [ ] L'atlas `LiberationSans SDF - Fallback.asset` change tout seul : ne pas le commiter (`git restore`). Idéalement, activer « Clear Dynamic Data On Build ».
 - [ ] Tant que le classement de la borne a moins de 10 scores, tout score > 0 déclenche la saisie du nom (comportement du toolkit)

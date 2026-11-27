@@ -460,10 +460,15 @@ namespace Kenta.Core
         {
             Lums++;                            // les pièces rapportent des points, mais seul le timing des actions fait le combo
             AddPoints(lumPoints * Multiplier);
-            if (lum.hasNote) ActionSfx.Instance?.LumNote(lum.note);
+            if (lum.hasNote) ActionSfx.Instance?.LumNote(lum.note, lum.beat);      // sur le temps de la pièce
             else ActionSfx.Instance?.Lum(lum.sequenceIndex);
             FxPool.Instance?.Burst(lum.bounds.center, new Color(1f, 0.82f, 0.23f), 8, 4f, 0.14f, 0.35f, 0f, 0f);
-            if (lum.view != null) lum.view.SetActive(false);
+            if (lum.view != null)
+            {
+                var pop = lum.view.GetComponent<CoinPickup>();
+                if (pop != null) pop.Play();                   // elle saute et clignote, puis disparaît
+                else lum.view.SetActive(false);
+            }
             OnLumPicked?.Invoke(lum);
             OnStatsChanged?.Invoke();
         }

@@ -34,7 +34,10 @@ LEDGE_ASSIST = 0.4                           # pieds à moins de 0,4 u sous le h
 STEP_FACE = 0.25
 MAX_RISE = 1.0
 LUM_LANE_Y = (0.45, 1.9, 2.4)
-PICKUP = 0.7
+PICKUP = 1.0                                 # rayon de ramassage d'une pièce (PlayerController.pickupRadius)
+COIN_CLEARANCE = 1.1                         # pas de pièce à moins de 1,1 u du centre d'un ennemi (on ne voit plus l'ennemi)
+FLIP_LAND_SECONDS = 1.0 / 30                 # portail de gravité : on se pose d'abord si on touchait le sol dans les 2 images (PlayerController.LandBeforeFlip)
+MAX_HEIGHT = 200.0                           # hauteur maximale du sol dans le jeu (LevelBuilder.MaxHeight)
 
 # Durées faites pour un humain (ms), converties en beats au tempo du niveau par use()
 HUMAN_JITTER_MS = 40.0                       # tout le niveau survit à des appuis tous en avance ou tous en retard de 40 ms
@@ -386,6 +389,10 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
             up = w.flips[fi][1]
             fi += 1
             if up != inv:
+                if not grounded and vy < 0 and vine is None:
+                    top = w.land(x, hw, y, y + vy * FLIP_LAND_SECONDS, w.terrain(plane, inv))
+                    if top is not None:
+                        y, vy = top, 0.0
                 y, vy, inv, grounded, jump_buf, vine = -y, -vy, up, False, -99, None
         spans = w.terrain(plane, inv)
         if grounded:
@@ -676,15 +683,15 @@ def feet_at(track, beats, beat):
 
 
 def auto_lums(events, world, song):
-    """Pièces automatiques : un arc au-dessus de chaque saut, et des lignes de mélodie dans les espaces libres
-    (sur les croches où la mélodie ou le charleston attaque)."""
+    """Pièces automatiques, toutes sur la grille des croches (une note par pièce, jouée sur son temps) : une pièce au
+    sommet de chaque saut, et des lignes de mélodie dans les espaces libres, sur les croches où la mélodie attaque
+    nettement. Jamais deux pièces à moins d'une croche."""
     taken = [e["beat"] for e in events if e["type"] == "lum_trail"]
     air = [e["beat"] for e in events if e["type"] == "enemy_air"]
     busy = []                                 # (début, fin) : moments occupés par une action
     for j in world.jumps:
-        busy.append((j - 0.75, j + 1.0))
-    for h in world.hits:
-        busy.append((h - 0.75, h + 0.75))
+        busy.append((j - 0.25, j + 0.9))                # le saut : sa pièce est au sommet (j + 0,5)
+    # (pas de zone autour des frappes : resolve écarte les pièces des ennemis, COIN_CLEARANCE)
     for pad in world.bounces:
         busy.append((pad[3] - 0.5, pad[3] + pad[2] + 0.5))
     for v in world.vines:
@@ -692,15 +699,14 @@ def auto_lums(events, world, song):
     out = []
 
     def free(b):
-        return all(abs(b - t) > 0.2 for t in taken) and all(abs(b - t) > 0.35 for t in air)
+        return all(abs(b - t) > 0.4 for t in taken) and all(abs(b - t) > 0.35 for t in air)
 
     for j in world.jumps:
         if any(abs(j - pad[3]) < 1e-6 for pad in world.bounces) or any(abs(j - v[3]) < 1e-6 for v in world.vines):
             continue                          # les envolées et les lianes ont déjà leur arc
-        for d in (0.25, 0.5, 0.75):
-            if free(j + d):
-                out.append({"beat": j + d, "type": "lum_trail", "lane": 0})
-                taken.append(j + d)
+        if free(j + 0.5):                    # au sommet du saut : une seule pièce, sur le « et »
+            out.append({"beat": j + 0.5, "type": "lum_trail", "lane": 0})
+            taken.append(j + 0.5)
     k = 10
     while k < (NB - 4) * 2:
         b = k / 2
@@ -708,7 +714,7 @@ def auto_lums(events, world, song):
         if b < 5 or any(lo <= b <= hi for lo, hi in busy) or not free(b):
             continue
         i = int(b * 4)
-        if max(song["mid"][i], song["hi"][i]) < 0.3:
+        if song["melody"][i] is None or max(song["mid"][i], song["hi"][i]) < 0.3:
             continue
         out.append({"beat": b, "type": "lum_trail", "lane": 0})
         taken.append(b)
@@ -853,10 +859,16 @@ def resolve(events, song):
     beats = [tr[0] for tr in track]
     world = World(base)
     events = events + auto_lums(events, world, song)
+    foes = [(en[0], en[1] + 0.45) for en in world.enemies]        # centres des ennemis posés (sans les volants)
+    fly_x = [X(e["beat"] + ENEMY_CENTER) for e in events if e["type"] == "enemy_air"]
     out = []
     for e in events:
         if e["type"] == "lum_trail":
             y = track_at(track, beats, e["beat"])
+            x = X(e["beat"])
+            if any(abs(x - fx) < COIN_CLEARANCE and abs(y - fy) < COIN_CLEARANCE for fx, fy in foes) or \
+                    any(abs(x - fx) < COIN_CLEARANCE for fx in fly_x):
+                continue                                        # la pièce cacherait l'ennemi (ou la chauve-souris)
             params = {"height": round(y, 3), "hasNote": True, "note": note_for(e["beat"], song)}
             if track_state(track, beats, e["beat"])[1] == 1:
                 params["variant"] = "back"               # pièce de l'arrière-plan : on ne la prend que là-bas
@@ -892,6 +904,9 @@ def lint(events):
         if h1 - h0 > MAX_RISE + 1e-9:
             problems.append(f"marche de {h1 - h0:.2f} u au beat {b} (max {MAX_RISE})")
     for e in events:
+        h = e.get("params", {}).get("height")
+        if e["type"] in ("step", "ramp", "ceiling", "platform") and h is not None and abs(h) > MAX_HEIGHT:
+            problems.append(f"hauteur {h} au beat {e['beat']} : le jeu la ramène à ±{MAX_HEIGHT:.0f} u (LevelBuilder.MaxHeight)")
         if e["type"] in ("enemy", "block") and e["lane"] == 0:   # en vol ou au plafond, on le frappe justement en l'air
             for j in jumps:
                 if j < e["beat"] < j + 1.0 - 1e-9:

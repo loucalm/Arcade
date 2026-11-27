@@ -60,7 +60,9 @@ Scène unique `Scenes/Main.unity`. `Kenta.Core.GameFlow` est une machine à éta
 - Pistes de test générées par `tools/gen-test-beat.py` (kick sur chaque temps) : `Audio/Test/test_*_120.wav`.
 - ⚠️ Le navigateur exige une interaction avant de jouer du son. À vérifier **sur la borne** (l'appui sur un bouton de manette compte-t-il ?). Attract = « APPUIE SUR UN BOUTON », et ce premier appui débloque l'audio.
 - `LevelBuilder` : lit la chart JSON (`Charts/*.json` via `TextAsset`) et instancie les prefabs à `x = BeatToSeconds(beat) * runSpeed`. Pooling obligatoire.
-- `ActionSfx` : quantifie les sons d'action à la double-croche (`round(beat * 4) / 4`).
+- `ActionSfx` : quantifie les sons d'action à la double-croche (`round(beat * 4) / 4`). Exception, la note d'une pièce (`LumNote(note, beat)`) : elle sonne sur le temps de la pièce (`PlayDelayed`, 2 temps d'avance au plus), car on la ramasse ~0,3 temps avant ; quantifiée, elle sonnait une double-croche trop tôt.
+- ⚠️ Le jeu et le simulateur doivent rester identiques (`levelgen/engine.py` ↔ `PlayerController`, `LevelBuilder`). Écarts déjà trouvés : sol ramené à 60 u (`LevelBuilder.MaxHeight`, maintenant 200 u et vérifié par le générateur) ; portail de gravité à une image de l'atterrissage (`LandBeforeFlip`). Pour en chercher un : autoplay dans le jeu, liste des pièces restées `alive`, trajectoire comparée à celle du simulateur.
+- Pièces : sur la grille des croches, ramassées dans un rayon de **1 u** (`PlayerController.pickupRadius`, le même que `PICKUP` du simulateur `levelgen/engine.py` : à changer des deux côtés), avec un petit saut de 6 px (`FX/CoinPickup`). Règles de placement : `docs/level-design-musical.md`.
 - Clips musicaux : Vorbis, `Compressed In Memory`, `Preload Audio Data` activé. SFX courts : `Decompress On Load`.
 
 ## Gameplay et DA Kenta (voir [../docs/art-direction.md](../docs/art-direction.md))
@@ -101,7 +103,7 @@ Le jeu est en **pixel art agrandi d'un facteur entier** : vue du monde de 320 à
 - Outils de mesure locaux (non commités, dans `Scripts/Editor/`) : partie en lag simulé (15 i/s + à-coups), sonde d'objets actifs et d'allocations. En éditeur, ~12 Ko/image sont alloués par l'éditeur lui-même (même à l'accueil) : ne pas les attribuer au jeu.
 
 ## Debug
-- `Debug/` (namespace **`Kenta.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : grille de beats dans le niveau, et **F10 = autoplay** pour valider une chart.
+- `Debug/` (namespace **`Kenta.DebugTools`**, jamais `.Debug`, qui masquerait `UnityEngine.Debug`) : `RhythmDebugOverlay` affiche état, temps, beat, dérive et fps, avec un carré qui flashe sur le beat. Visible en éditeur et en Development Build, **F9** pour basculer (F1 ouvre l'aide de Firefox). Avec l'overlay affiché : **F10 = autoplay** pour valider une chart. Les repères de rythme (un trait par temps, plus marqué sur le 1er temps de la mesure) ne sont plus du debug : `FX/BeatGuides` les affiche toujours, et ils suivent la caméra en hauteur.
 - `GameFlow` (`Core/GameFlow.cs`) : les écrans sont des prefabs `Prefabs/Screens/Screen_*.prefab` sous le canvas `Screens` (sortingOrder −10, sous l'overlay Anatidae). En attendant le gameplay : +10 points par beat, **Start = fin de partie**.
 
 - **Tests** : Unity Test Framework, tests EditMode sans asmdef dans `Assets/_Project/Editor/Tests/` (MCP `run_tests`, mode EditMode). Tests Python des générateurs : `pytest tools/tests`.

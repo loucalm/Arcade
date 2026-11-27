@@ -1,5 +1,6 @@
 """Écriture d'un niveau : la classe `Level` construit les événements de la chart (docs/chart-format.md) et suit la
 hauteur du sol (relative) au fil de l'écriture. Les temps sont en beats : rien ici ne dépend du tempo."""
+import math
 
 
 class Level:
@@ -61,9 +62,16 @@ class Level:
 
 
     def lums(self, beat, count, step=0.5, lane=0):
-        """Ligne de pièces posées sur la trajectoire de l'autoplay (calculée par le simulateur, voir place_lums)."""
-        for i in range(count):
-            self.add(beat + i * step, "lum_trail", lane=i)
+        """Ligne de pièces posées sur la trajectoire de l'autoplay (engine.resolve), de `beat` à
+        `beat + (count − 1) × step`, toujours sur la grille des croches : chaque pièce joue sa note sur un temps ou un
+        « et » (2026-11-27 : en doubles croches, les arcs faisaient des rafales de notes trop serrées)."""
+        end = beat + (count - 1) * step
+        b = math.ceil(beat * 2 - 1e-9) / 2
+        i = 0
+        while b <= end + 1e-9:
+            self.add(b, "lum_trail", lane=i)
+            b += 0.5
+            i += 1
 
     def flyer(self, beat):
         """Ennemi en vol à frapper sur `beat` : sa hauteur est posée sur la trajectoire simulée (resolve)."""

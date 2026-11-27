@@ -29,7 +29,8 @@ namespace Kenta.Player
         [Header("Corps")]
         [SerializeField] float width = 0.5f;
         [SerializeField] float standHeight = 1.0f;
-        [SerializeField] float pickupRadius = 0.7f;
+        [Tooltip("Rayon de ramassage des pièces (u). Le même dans le simulateur (tools/levelgen/engine.py, PICKUP).")]
+        [SerializeField] float pickupRadius = 1f;
         [Tooltip("Collisions balayées entre deux frames (à-coup du navigateur) jusqu'à cette distance max.")]
         [SerializeField] float maxSweep = 3f;
 
@@ -100,6 +101,7 @@ namespace Kenta.Player
         // Gravité inversée : y, vy, groundTop sont dans le repère retourné (y' = −y monde) et le sol est le plafond en miroir.
         bool inverted;
         int flipCursor;
+        const float FlipLandSeconds = 1f / 30f;     // portail de gravité : atterrissage avancé de 2 images au plus
         // Plans : le héros ne touche que ce qui est sur son plan ; l'image change de calque au sommet du saut.
         int plane, visualPlane;
         // Liane en cours (null : aucune)
@@ -243,6 +245,7 @@ namespace Kenta.Player
             var flips = level.GravityFlips;
             while (flipCursor < flips.Count && flips[flipCursor].x <= beat)
             {
+                LandBeforeFlip(x, half);
                 SetGravity(flips[flipCursor].y > 0.5f, x);
                 flipCursor++;
             }
@@ -331,6 +334,19 @@ namespace Kenta.Player
 
         /// <summary>Hauteur dans le monde à `d` u des pieds, du côté du corps (en dessous des pieds tête en bas) : pour les effets.</summary>
         float BodySideY(float d) => WorldY + (inverted ? -d : d);
+
+        /// <summary>
+        /// Portail de gravité pile à l'atterrissage (niveau 8, beat 192) : si le héros allait se poser dans les 2 images
+        /// qui viennent, il se pose d'abord, puis part vers le plafond depuis le sol. Sinon, à une image près, il gardait sa
+        /// vitesse de chute, traversait le sol sur 1,5 u avant de remonter, et ratait les pièces posées sur l'arc du
+        /// simulateur (qui, lui, s'était posé). Même règle dans levelgen/engine.py (FLIP_LAND_SECONDS).
+        /// </summary>
+        void LandBeforeFlip(float x, float half)
+        {
+            if (grounded || vy >= 0f || vine != null) return;
+            float reach = -vy * FlipLandSeconds;
+            if (Terrain.TryLand(x, half, y, y - reach, out float top)) Land(x, top);
+        }
 
         /// <summary>Traverse un portail de gravité : on garde la position et la vitesse dans le monde, on tombe vers l'autre côté.</summary>
         void SetGravity(bool up, float x)
