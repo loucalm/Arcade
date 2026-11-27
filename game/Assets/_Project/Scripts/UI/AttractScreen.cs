@@ -57,7 +57,7 @@ namespace Kenta.UI
         string subtitleText;
         Vector2 hiBase;
         float intro = -1f, shineClock, baseY;
-        int lettersLanded;
+        int lettersLanded, steadyFrames;
         bool impactDone, pressDone, built, demoMode;
 
         void Awake()
@@ -150,7 +150,7 @@ namespace Kenta.UI
         {
             Build();
             intro = 0f;
-            lettersLanded = 0;
+            lettersLanded = steadyFrames = 0;
             impactDone = pressDone = false;
             shineClock = 0f;
             if (logoImage != null) logoImage.enabled = false;
@@ -239,7 +239,12 @@ namespace Kenta.UI
 
         void RunIntro(float dt)
         {
-            intro += dt;
+            // au lancement, les premières images sont très longues (chargement, audio) : sans ce garde, une image
+            // d'une seconde sautait toute la chute des lettres. On attend que le jeu tourne régulièrement, et le
+            // temps de l'entrée avance d'au plus 1/30 s par image.
+            if (dt > 0.1f) { steadyFrames = 0; return; }
+            if (steadyFrames < 10) { steadyFrames++; return; }
+            intro += Mathf.Min(dt, 1f / 30f);
             float t = intro;
             // les lettres tombent une à une (accélèrent) et frappent
             for (int i = 0; i < letterImages.Length; i++)
