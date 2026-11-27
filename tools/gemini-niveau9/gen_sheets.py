@@ -1498,6 +1498,75 @@ def negative_enemy(src):
     return im
 
 
+# ---------------------------------------------------------------- la Sourdine flottante (boss, 27/11 après-midi)
+
+FLOAT_W, FLOAT_H = 176, 168
+FLOAT_EYES = ((20, 46), (108, 46))          # coin haut-gauche des deux yeux (48×28) ; l'œil droit est retourné
+FLOAT_MOUTH_TOP = 88                         # haut de la bouche (120 de large, centrée)
+
+
+def float_mask():
+    """Silhouette de la Sourdine flottante : une masse arrondie, deux cornes, des coulures qui pendent, des traînées de
+    signal sur les côtés (le glitch de la DA)."""
+    W, H = FLOAT_W, FLOAT_H
+    m = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(m)
+    d.ellipse([8, 16, W - 9, 148], fill=255)
+    d.polygon([(34, 40), (62, 22), (20, 2)], fill=255)                       # corne gauche, vers le haut et l'extérieur
+    d.polygon([(W - 35, 40), (W - 63, 22), (W - 21, 2)], fill=255)          # corne droite
+    for x, w, length in ((40, 8, 20), (66, 6, 12), (104, 8, 24), (132, 6, 14)):   # coulures sous le corps
+        d.rectangle([x - w // 2, 136, x + w // 2 - 1, 136 + length], fill=255)
+        d.ellipse([x - w // 2 - 1, 136 + length - w // 2, x + w // 2, 136 + length + w // 2 + 1], fill=255)
+    for y, x0, x1, h in ((60, 0, 26, 2), (110, 2, 30, 1), (44, W - 30, W - 1, 2), (96, W - 28, W - 1, 3)):
+        d.rectangle([x0, y, x1, y + h - 1], fill=255)                          # traînées de signal déchiré
+    return m
+
+
+def outline_from_mask(m):
+    """Masse noire, contour blanc d'1 px (voisins en croix)."""
+    W, H = m.size
+    mp = m.load()
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    px = im.load()
+    for y in range(H):
+        for x in range(W):
+            if not mp[x, y]:
+                continue
+            edge = any(not (0 <= x + dx < W and 0 <= y + dy < H) or not mp[x + dx, y + dy]
+                       for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)))
+            px[x, y] = WHITE if edge else BLACK
+    return im
+
+
+def make_float_body():
+    """La Sourdine flottante (le visage est posé par le jeu : yeux, pupilles et bouche animés), et ses deux moitiés
+    tranchées par le dernier coup de katana (yeux fêlés, bouche qui hurle), coupées en diagonale avec un fil blanc."""
+    body = outline_from_mask(float_mask())
+    EXPORT["float_body"] = body
+    dead = body.copy()
+    eye = EXPORT["face_eyes"][4]                                              # fêlé
+    for k, (ex, ey) in enumerate(FLOAT_EYES):
+        dead.alpha_composite(eye.transpose(Image.FLIP_LEFT_RIGHT) if k else eye, (ex, ey))
+    mouth = EXPORT["mouths"][2]                                               # hurlement
+    dead.alpha_composite(mouth, ((FLOAT_W - mouth.width) // 2, FLOAT_MOUTH_TOP))
+    W, H = FLOAT_W, FLOAT_H
+    cut = lambda x: H / 2 + (x - W / 2) * -0.35                               # du bas-gauche vers le haut-droit
+    halves = []
+    for top in (True, False):
+        h = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        src, dst = dead.load(), h.load()
+        for y in range(H):
+            for x in range(W):
+                a = src[x, y]
+                if a[3] < 128 or (y < cut(x)) != top:
+                    continue
+                across = y + (1 if top else -1)                               # le pixel de l'autre côté de la coupe
+                on_cut = 0 <= across < H and src[x, across][3] >= 128 and (across < cut(x)) != top
+                dst[x, y] = WHITE if on_cut else a
+        halves.append(h)
+    EXPORT["float_half_top"], EXPORT["float_half_bottom"] = halves
+
+
 def install():
     B = os.path.join(GAME, "Gen", "biomes")
     single = {"wall": "wall_sourd", "block": "block_sourd", "ceil": "ceil_sourd", "post": "post_sourd",
@@ -1539,6 +1608,10 @@ def install():
         transparent(im).save(os.path.join(Bo, name + ".png"))
         written.append("boss/" + name)
     put(EXPORT["body"], "sourdine_body")
+    make_float_body()
+    put(EXPORT["float_body"], "sourdine_float")
+    put(EXPORT["float_half_top"], "sourdine_half_top")
+    put(EXPORT["float_half_bottom"], "sourdine_half_bottom")
     for k, mode in enumerate(("open", "half", "closed", "wide", "cracked")):
         put(EXPORT["face_eyes"][k], f"sourdine_eye_{mode}")
     for k, size in enumerate(("big", "mid", "pin")):

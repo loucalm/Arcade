@@ -112,6 +112,7 @@ namespace Kenta.Player
         // Ennemi cuirassé écrasé : on attend l'appui du grand rebond (sinon petit rebond)
         LevelObject pendingStomp;
         int orbCursor;
+        double lastOrbBeat = -99;             // temps de la dernière note de saut prise : un appui ne sert qu'à une note
         float frameStartY, curSpb = 0.4f, curGravity = 75f;
         /// <summary>Fenêtre de l'appui d'une note de saut ou d'un rebond sur un cuirassé, autour de son temps (beats).</summary>
         const float PressEarlyBeats = 0.35f, PressLateBeats = 0.35f;
@@ -119,6 +120,9 @@ namespace Kenta.Player
         const float OrbReach = 3f;
         /// <summary>Chute ralentie (u/s) près d'une note de saut, pendant sa fenêtre d'appui.</summary>
         const float OrbHover = 3f;
+        /// <summary>Note de saut : un appui jusqu'à 0,3 temps avant sa fenêtre est gardé et part à l'ouverture (avant, il
+        /// était ignoré : on appuyait un peu tôt, rien ne se passait, on tombait). Même règle dans levelgen/engine.py.</summary>
+        const float OrbMemoryBeats = 0.3f;
 
         LevelTerrain Terrain => plane == 1 ? level.Back : inverted ? level.CeilingMirror : level.Ground;
         /// <summary>Hauteur des pieds dans le monde (y est dans le repère de la gravité).</summary>
@@ -165,6 +169,7 @@ namespace Kenta.Player
             flipCursor = 0;
             while (flipCursor < level.GravityFlips.Count && level.GravityFlips[flipCursor].x <= beat) flipCursor++;
             lastJumpDownBeat = -99;
+            lastOrbBeat = -99;
             obstacleCursor = LevelBuilder.FirstIndexAfter(level.Obstacles, x - 4f);
             laserCursor = 0;
             while (laserCursor < level.Lasers.Count && level.Lasers[laserCursor].beat < beat - 1.0) laserCursor++;
@@ -494,12 +499,13 @@ namespace Kenta.Player
                 if (o.passed || o.plane != plane || inverted) continue;
                 if (Mathf.Abs(o.bounds.center.x - x) > 1.2f || Mathf.Abs(o.bounds.center.y - CenterWorldY()) > OrbReach) continue;
                 if (beat < o.beat - PressEarlyBeats || beat > o.beat + PressLateBeats) continue;
-                if (lastJumpDownBeat < o.beat - PressEarlyBeats)
+                if (lastJumpDownBeat < o.beat - PressEarlyBeats - OrbMemoryBeats || lastJumpDownBeat <= lastOrbBeat)
                 {
                     if (!grounded) vy = Mathf.Max(vy, -OrbHover);      // la note retient le héros le temps d'appuyer
                     continue;
                 }
                 o.passed = true;
+                lastOrbBeat = beat;
                 LaunchTo(o.beat + o.airBeats, beat, x);
                 run.OnObstacleCleared(o, lastJumpDownBeat);
                 if (o.view != null) o.view.SetActive(false);
