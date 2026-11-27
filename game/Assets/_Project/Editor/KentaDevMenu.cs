@@ -25,6 +25,14 @@ namespace Kenta.EditorTools
         [MenuItem("Kenta/Tester le niveau 9 (La Sourdine)")]
         static void PlayLevel9() => PlayFrom(26f, "sourd");
 
+        /// <summary>Le niveau 8, l'Orage : juste avant le drop (96), où les éclairs tombent tous les 2 temps (ADR-041).</summary>
+        [MenuItem("Kenta/Tester le niveau 8 (éclairs de l'Orage)")]
+        static void PlayLevel8() => PlayFrom(92f, "orage");
+
+        /// <summary>Le niveau 1, la Sylve : le soleil se couche, puis la nuit tombe à la section fin (128, ADR-041).</summary>
+        [MenuItem("Kenta/Tester le niveau 1 (coucher du soleil, nuit)")]
+        static void PlayLevel1Night() => PlayFrom(108f, "sylve");
+
         [MenuItem("Kenta/Tester le refrain (prototype)")]
         static void PlayRefrain() => PlayFrom(RefrainBeat);
 

@@ -360,6 +360,7 @@ namespace Kenta.Level
                     case "fx_invert":
                     case "screen_flip":
                     case "glitch":
+                    case "lightning":
                         FxEvents.Add(e);
                         break;
                     default:

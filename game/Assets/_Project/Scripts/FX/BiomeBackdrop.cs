@@ -15,6 +15,9 @@ namespace Kenta.FX
     /// reste au niveau du sol le plus bas de la vue au lieu de rester collé à l'écran pendant que le niveau monte et
     /// descend (audit du 2026-11-25). Sous chaque calque, sa dernière rangée (le pied, tools/kenta_art.py) est étirée
     /// jusqu'au bas de la vue. Le sol est lu sur CameraRig.HeightProbe, sans rien changer à la caméra.
+    /// Le ciel vit au fil du morceau (ADR-041) : le soleil (sprite à part) descend, rougit et passe derrière les
+    /// montagnes au début de la section « fin » ; la lune se lève alors et les étoiles s'allument. Dans l'Orage,
+    /// l'événement `lightning` de la chart zèbre le ciel d'un éclair (Strike).
     /// </summary>
     public class BiomeBackdrop : MonoBehaviour
     {
@@ -47,12 +50,30 @@ namespace Kenta.FX
         [Tooltip("Teinte du ciel tout en haut (plus froid, plus sombre) ; altitude pleine à 45 u.")]
         [SerializeField] Color highSky = new(0.72f, 0.78f, 0.98f, 1f);
 
+        [Header("Course du soleil, nuit, éclairs (ADR-041)")]
+        [Tooltip("Dérive horizontale (px du ciel 640×360) du soleil entre le départ et son coucher, vers le bord le plus proche.")]
+        [SerializeField] float sunDrift = 36f;
+        [Tooltip("Teinte du soleil couchant.")]
+        [SerializeField] Color sunsetColor = new(1f, 0.6f, 0.38f, 1f);
+        [Tooltip("Place de la lune levée (px du ciel 640×360, depuis le centre ; x du côté opposé au soleil).")]
+        [SerializeField] Vector2 moonHigh = new(150f, 96f);
+        [Tooltip("Durée (s) du lever de la lune et de l'allumage des étoiles.")]
+        [SerializeField] float nightFade = 2.5f;
+        [Tooltip("Durée (s) d'un éclair à l'écran (il s'éteint par paliers).")]
+        [SerializeField] float boltTime = 0.22f;
+        [SerializeField] Color boltSky = new(0.86f, 0.9f, 1f, 1f);
+
         SpriteRenderer sky;
         SpriteRenderer guardian;
         SpriteRenderer ground;
         SpriteRenderer groundFill;
         SpriteRenderer fogLayer;
         SpriteRenderer cloudLayer;
+        SpriteRenderer sun, moon, stars, bolt;
+        float dayProgress, nightAt = 1f, night, sunY, sunYVel;
+        bool sunPlaced;
+        float strike, strikePower;
+        Vector2 boltPlace;     // x : part de la demi-largeur de la vue (−1..1) ; y : inutilisé
         float altitude, altitudeVel;
         static readonly Color GroundFillTint = new(0.58f, 0.54f, 0.7f);    // comme le flanc des piliers du niveau
         const float GroundFillDepth = 8f;
@@ -71,7 +92,12 @@ namespace Kenta.FX
         {
             if (cam == null) cam = Camera.main;
             sky = Make("Sky", firstSortingOrder);
+            stars = Make("NightStars", firstSortingOrder + 1);     // devant le ciel, derrière tout le reste
+            moon = Make("Moon", firstSortingOrder + 2);
+            sun = Make("Sun", firstSortingOrder + 3);               // passe derrière les montagnes en se couchant
             guardian = Make("Guardian", firstSortingOrder + 5);    // derrière les montagnes lointaines (ADR-028)
+            bolt = Make("Bolt", firstSortingOrder + 25);           // devant les calques lointain et du milieu, derrière le proche
+            bolt.enabled = false;
             ground = Make("Ground", -5);
             ground.drawMode = SpriteDrawMode.Tiled;
             ground.tileMode = SpriteTileMode.Continuous;
@@ -135,6 +161,13 @@ namespace Kenta.FX
             current = biome;
             sky.sprite = biome.sky;
             guardian.sprite = biome.guardian;
+            if (sun != null)      // null : scripts rechargés en pleine partie (Play mode), astres perdus
+            {
+                sun.sprite = biome.sun;
+                moon.sprite = biome.sun != null ? biome.moon : null;
+                stars.sprite = biome.sun != null ? biome.nightStars : null;
+            }
+            sunPlaced = false;                                      // nouveau monde : le soleil se pose sans glisser
             ground.sprite = biome.ground;
             ground.size = new Vector2(8f, 0.5f);          // le sprite remet la taille à celle d'une tuile : on la rétablit
             groundFill.sprite = biome.fill;
@@ -153,6 +186,39 @@ namespace Kenta.FX
             groundValid = false;     // nouvelle partie (même enchaînée sur la démo) : le décor se pose sans glisser
             mood = moodFrom = moodTo = Color.white;
             moodT = moodBlend = 1f;
+            dayProgress = 0f;                                       // le jour se lève : soleil à sa place, pas de lune
+            night = 0f;
+            sunPlaced = false;
+            strike = 0f;
+        }
+
+        /// <summary>Part du morceau (0..1) où le soleil est couché et où la nuit tombe (début de la section « fin »).</summary>
+        public void SetNightAt(float progress) => nightAt = Mathf.Clamp(progress, 0.05f, 1f);
+
+        /// <summary>
+        /// Éclair (événement `lightning`, sur le temps) : un des éclairs du biome zèbre le ciel à une place tirée du
+        /// beat (même place à chaque partie), le ciel et les nuages s'illuminent puis s'éteignent par paliers.
+        /// </summary>
+        public void Strike(float intensity, float beat)
+        {
+            if (bolt == null) return;     // scripts rechargés en pleine partie (Play mode)
+            strike = 1f;
+            strikePower = Mathf.Clamp01(intensity);
+            var bolts = current != null ? current.bolts : null;
+            int seed = Mathf.RoundToInt(beat * 2f) * 7919;
+            bolt.sprite = bolts != null && bolts.Length > 0 ? bolts[(seed >> 3) % bolts.Length] : null;
+            bolt.flipX = (seed >> 5) % 2 == 1;
+            boltPlace = new Vector2(((seed % 1000) / 1000f) * 1.6f - 0.8f, 0f);
+        }
+
+        /// <summary>
+        /// Hauteur 0..1 du chemin du soleil couchant au temps t (0 = départ, 1 = couché) : lent au début, il plonge vers
+        /// la fin, comme un vrai coucher vu de près de l'horizon.
+        /// </summary>
+        public static float SunsetCurve(float t)
+        {
+            t = Mathf.Clamp01(t);
+            return t * t * (1.6f - 0.6f * t);
         }
 
         /// <summary>
@@ -176,7 +242,7 @@ namespace Kenta.FX
                        : n.StartsWith("roulement") ? new Color(0.96f, 0.86f, 0.82f)
                        : n.StartsWith("refrain") ? new Color(1f, 0.9f, 0.72f)
                        : n.StartsWith("final") ? new Color(1f, 0.8f, 0.7f)
-                       : n.StartsWith("fin") ? new Color(0.78f, 0.76f, 0.95f)
+                       : n.StartsWith("fin") ? new Color(0.62f, 0.64f, 0.92f)       // la nuit (ADR-041)
                        : Color.white;
             float light = Mathf.Lerp(1f, 0.86f, Mathf.Clamp01(progress));      // le jour baisse au fil du morceau
             return new Color(tint.r * light, tint.g * light, tint.b * light, 1f);
@@ -213,13 +279,16 @@ namespace Kenta.FX
             // altitude : hauteur du sol suivi au-dessus du départ du niveau (0 hors partie)
             altitude = Mathf.SmoothDamp(altitude, groundValid ? Mathf.Max(0f, groundSmooth) : 0f, ref altitudeVel, 0.8f, Mathf.Infinity, Time.deltaTime);
             float high = Mathf.Clamp01(altitude / 45f);
-            sky.color = mood * Color.Lerp(Color.white, highSky, high);
+            if (strike > 0f) strike = Mathf.Max(0f, strike - Time.deltaTime / Mathf.Max(0.01f, boltTime));
+            float lit = Mathf.Ceil(strike * 3f) / 3f * strikePower;                // paliers : pixel art, pas de fondu
+            sky.color = Color.Lerp(mood * Color.Lerp(Color.white, highSky, high), boltSky, lit * 0.55f);
             guardian.sprite = current.guardian;
             guardian.color = mood;
             guardian.transform.localScale = scale;
             Vector2 go = current.guardianOffset * (k / PixelScreen.Ppu);
             float sink = guardianSink * k / PixelScreen.Ppu;
             guardian.transform.position = new Vector3(PixelScreen.Snap(c.x + go.x), PixelScreen.Snap(c.y + go.y - sink + lift * Follow(0) - Sink(0)), 0f);
+            UpdateSkyBodies(c, half, halfH, k, lift);
             float fogH = halfH * 2f + 1f;
             // le sprite fait 1 × 8 px à 8 px/u (0,125 × 1 u) : la largeur se divise par celle du sprite, sinon la brume
             // ne couvre qu'une colonne au centre de l'écran
@@ -262,7 +331,7 @@ namespace Kenta.FX
                 for (int j = 0; j < 2; j++)
                 {
                     layers[i][j].transform.localScale = scale;
-                    layers[i][j].color = mood;
+                    layers[i][j].color = i == 0 ? Color.Lerp(mood, boltSky, lit * 0.35f) : mood;
                     layers[i][j].transform.position = new Vector3(PixelScreen.Snap(left + width * (j + 0.5f)), y, 0f);
                 }
                 // pied : dernière rangée du calque, étirée de son bas jusque sous la vue
@@ -277,6 +346,72 @@ namespace Kenta.FX
         }
 
         const float LayerHalfPx = 180f;                     // calques de 1280 × 360 px
+
+        /// <summary>
+        /// Soleil, lune, étoiles et éclair. Le soleil suit l'avancement du morceau jusqu'à `nightAt` : il descend
+        /// (SunsetCurve), dérive vers le bord le plus proche, rougit, et se colle peu à peu au calque lointain (qui suit
+        /// le sol) pour passer derrière ses montagnes. Passé `nightAt`, la lune se lève du côté opposé et les étoiles
+        /// s'allument, en paliers. Tout est posé sur la grille de pixels.
+        /// </summary>
+        void UpdateSkyBodies(Vector3 c, float half, float halfH, int k, float lift)
+        {
+            if (sun == null || moon == null || stars == null || bolt == null) return;   // rechargés en Play mode
+            var run = RunManager.Instance;
+            if (run != null && run.IsRunning) dayProgress = run.Progress;
+            float t = Mathf.Clamp01(dayProgress / nightAt);
+            float px = k / (float)PixelScreen.Ppu;                       // un px du ciel 640×360, en unités (pas de division entière)
+            float farY = lift * Follow(0) - Sink(0);                      // décalage du calque lointain (u)
+
+            if (sun.sprite != null)
+            {
+                Vector2 o = current.sunOffset;
+                float set = SunsetCurve(t);
+                float targetY = Mathf.Lerp(o.y, current.sunSetY, set);
+                // reprise à un checkpoint (le morceau recule) ou nouveau monde : il se pose sans glisser
+                if (!sunPlaced || Mathf.Abs(targetY - sunY) > 40f) { sunY = targetY; sunYVel = 0f; sunPlaced = true; }
+                else sunY = Mathf.SmoothDamp(sunY, targetY, ref sunYVel, 0.4f, Mathf.Infinity, Time.deltaTime);
+                float x = o.x + Mathf.Sign(o.x == 0f ? 1f : o.x) * sunDrift * t;
+                sun.enabled = set < 0.999f;
+                sun.transform.localScale = new Vector3(k, k, 1f);
+                sun.transform.position = new Vector3(PixelScreen.Snap(c.x + x * px), PixelScreen.Snap(c.y + sunY * px + farY * set), 0f);
+                float warm = Mathf.Clamp01((t - 0.45f) / 0.55f);
+                sun.color = Color.Lerp(Color.white, sunsetColor, Mathf.Round(warm * 4f) / 4f);
+            }
+            else sun.enabled = false;
+
+            float nightTarget = sun.sprite != null && dayProgress >= nightAt - 0.001f ? 1f : 0f;
+            night = Mathf.MoveTowards(night, nightTarget, Time.deltaTime / Mathf.Max(0.1f, nightFade));
+            float shown = Mathf.Round(night * 4f) / 4f;                    // paliers d'un quart
+            if (moon.sprite != null && shown > 0f)
+            {
+                float side = current.sunOffset.x >= 0f ? -1f : 1f;           // côté opposé au soleil
+                float rise = night * night * (3f - 2f * night);
+                float y = Mathf.Lerp(current.sunSetY, moonHigh.y, rise);
+                moon.enabled = true;
+                moon.transform.localScale = new Vector3(k, k, 1f);
+                moon.transform.position = new Vector3(PixelScreen.Snap(c.x + side * moonHigh.x * px),
+                                                      PixelScreen.Snap(c.y + y * px + farY * (1f - rise)), 0f);
+            }
+            else moon.enabled = false;
+            stars.enabled = stars.sprite != null && shown > 0f;
+            if (stars.enabled)
+            {
+                stars.transform.localScale = new Vector3(k, k, 1f);
+                stars.transform.position = sky.transform.position;
+                stars.color = new Color(1f, 1f, 1f, shown);
+            }
+
+            bolt.enabled = bolt.sprite != null && strike > 0f;
+            if (bolt.enabled)
+            {
+                float h = bolt.sprite.bounds.size.y * k;
+                bolt.transform.localScale = new Vector3(k, k, 1f);
+                // le haut de l'éclair dépasse un peu du haut de la vue : il tombe des nuages
+                bolt.transform.position = new Vector3(PixelScreen.Snap(c.x + boltPlace.x * half),
+                                                      PixelScreen.Snap(c.y + halfH + 0.25f - h * 0.5f), 0f);
+                bolt.color = new Color(1f, 1f, 1f, Mathf.Ceil(strike * 3f) / 3f);
+            }
+        }
 
         float Follow(int layer) => groundFollow != null && layer < groundFollow.Length ? groundFollow[layer] : 0f;
 
