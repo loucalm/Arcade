@@ -85,6 +85,7 @@ namespace Kenta.FX
 
         void Update()
         {
+            if (crtCamera == null || output == null || displayCanvas == null) return;   // scripts rechargés en pleine partie (Play mode) : objets créés à l'exécution perdus, pas d'erreur à chaque image
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (Input.GetKeyDown(KeyCode.F8)) EffectOn = !EffectOn;
 #endif

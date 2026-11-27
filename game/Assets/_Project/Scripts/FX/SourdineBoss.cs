@@ -123,6 +123,7 @@ namespace Kenta.FX
             var rig = CameraRig.Instance;
             var screen = PixelScreen.Instance;
             if (level == null || rig == null || screen == null || Conductor.Instance == null) return;
+            if (art == null || root == null || body == null || beamSr == null || warnSr == null) return;   // scripts rechargés en pleine partie (Play mode) : objets créés à l'exécution perdus, pas d'erreur à chaque image
             double beat = Conductor.Instance.SongBeat;
             Vector2 view = screen.ViewUnits;
             Vector3 cam = rig.transform.position;

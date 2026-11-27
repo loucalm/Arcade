@@ -448,8 +448,14 @@ namespace Kenta.Core
             int index = Chart.SectionIndexAt(beat);
             if (index > SectionIndex) EnterSection(index);
 
+            // piège : avec `OnWarning?.Invoke(warnings[warnCursor++].text)`, l'argument n'est pas évalué quand personne
+            // n'écoute : le curseur n'avançait pas et Unity se figeait (boucle infinie, 27/11)
             while (warnCursor < warnings.Count && warnings[warnCursor].beat <= beat)
-                OnWarning?.Invoke(warnings[warnCursor++].text);
+            {
+                string text = warnings[warnCursor].text;
+                warnCursor++;
+                OnWarning?.Invoke(text);
+            }
 
             var fx = level.FxEvents;
             while (fxCursor < fx.Count && fx[fxCursor].beat <= beat)
