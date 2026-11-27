@@ -108,7 +108,9 @@ def test_difficulty_increases_from_one_level_to_the_next():
     assert ordered[:2] == ["n1_sylve", "n2_bayou"]
     for a, b in zip(ordered, ordered[1:]):
         fa, fb = FICHES[a], FICHES[b]
-        assert RESULTS[a][2]["density"] < RESULTS[b][2]["density"], (a, b)
+        # actions par seconde (la densité est par mesure de jeu ; le niveau 9 joue sur une grille doublée, 280 BPM)
+        per_s = lambda n: RESULTS[n][2]["density"] * FICHES[n].bpm / 240.0
+        assert per_s(a) < per_s(b), (a, b, per_s(a), per_s(b))
         assert fa.margin_ms >= fb.margin_ms, (a, b)
         if b == "n9_sourdine":                       # le défi de l'élite (ADR-040) : tout, plus dense, sur un tempo plus lent
             assert set(fa.mechanics) <= set(fb.mechanics), (a, b)

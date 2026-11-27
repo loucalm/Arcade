@@ -8,18 +8,19 @@ action laisse au plus ~50 ms de marge. **BIKE est en triolets** : ses frappes to
 en triolet, 0,143 s). Chaque action est posée sur une attaque relevée dans l'audio (tools/data/n9_sourdine_accents.json,
 écrit par tools/accents-song.py) ; une grille droite tombait entre les frappes.
   python3 tools/analyse-song.py game/Assets/_Project/Audio/Music/n9_sourdine.ogg tools/data/n9_sourdine_analysis.json \\
-      --bpm 280 --offset 0.054 --beats 464
+      --bpm 280 --offset 0.028 --beats 464
   python3 tools/accents-song.py game/Assets/_Project/Audio/Music/n9_sourdine.ogg tools/data/n9_sourdine_accents.json \\
-      --bpm 280 --offset 0.054 --beats 464
+      --bpm 280 --offset 0.028 --beats 464 --seuil 0.4
 Forme (temps de jeu) : intro 0-48, rafale de triolets 48-64, blanc 64-72, drop 72-144, cassure 144-192, reprise 192-240,
 roulement 240-272, blanc 272-288 (la Sourdine arrive), second drop 288-416 (combat), dernier coup 416-448, couleur 448-464.
 
 Le niveau (ADR-040) : on part de la Sylve du niveau 1, en couleur et au calme. La musique monte, l'image se déchire, un
 tambour nous jette dans le drop : la Sourdine a avalé la couleur. Le monde est son négatif (planches de
 tools/gemini-niveau9), il passe du noir au blanc sur les temps forts (`invert`), se retourne, se dédouble. Au second drop,
-**la Sourdine en personne** se colle au bord droit de l'écran (FX/SourdineBoss) : elle tire des **lasers** sur toute la
-largeur (bas : sauter sur le temps ; haut : rester au sol) et crache des **notes noires** à frapper en vol. Le dernier
-coup sur le dernier temps fort la fend, et la couleur revient.
+**la Sourdine en personne** flotte à droite de l'écran et monte et descend sur le rythme (FX/SourdineBoss) : elle descend
+avant un **laser bas** (sauter sur le temps) et monte avant un **laser haut** (rester au sol), et crache des **notes
+noires** à frapper en vol. Au dernier temps fort, elle fond sur le chemin : le **coup de katana** final la fend en deux
+(ennemi de variante « boss »), et la couleur revient.
 Inversions : un état sur un temps fort, au plus une bascule par temps du morceau (borne publique).
 """
 import json
@@ -60,7 +61,7 @@ class Placer:
 
     def can_jump(self, t):
         return (self.free(t, 0.6) and all(abs(t - j) >= 1.25 for j in self.jumps)
-                and all(abs(t - h) >= 0.6 for h in self.hits))
+                and all(not (t - 0.6 <= h <= t + 1.05) for h in self.hits))   # aucune frappe pendant ce saut
 
     def can_hit(self, t):
         return (self.free(t, 0.6) and all(abs(t - h) >= 0.66 for h in self.hits)
@@ -105,6 +106,32 @@ class Placer:
                 k += 1
 
 
+def pulse(a, b, step=2.0):
+    """La pulsation du morceau (un temps de BIKE = 2 temps de jeu) entre a et b, hors des attaques déjà relevées (à ⅓
+    de temps près) : là où la basse tient ses notes, on garde le rythme sans attaque à suivre."""
+    marks = [x for x, _ in ACCENTS]
+    t, out = a - (a % step), []
+    while t < b:
+        if t >= a and all(abs(t - m) > 0.34 for m in marks):
+            out.append(t)
+        t += step
+    return out
+
+
+def fill_on(P, times, pattern, kinds=("gap", "wall")):
+    """Comme Placer.fill, sur des instants donnés (la pulsation)."""
+    k = kj = 0
+    for t in times:
+        want = pattern[k % len(pattern)]
+        if want == "J" and P.can_jump(t):
+            P.jump(t, kinds[kj % len(kinds)])
+            kj += 1
+            k += 1
+        elif P.can_hit(t):
+            P.hit(t)
+            k += 1
+
+
 def first(a, b, strong=0.0):
     """La première attaque de [a, b) (au-dessus de `strong`)."""
     xs = acc(a, b, strong)
@@ -125,7 +152,7 @@ def build():
     # ---- blanc 64-72 : la musique s'arrête ; le tambour sur l'attaque du blanc nous jette dans le drop
     t = first(68, 70)
     L.bounce(t, 72 - t, -1)
-    P.block(64, 72.5)
+    P.block(64, 74)                                      # on retombe du tambour : rien avant 74 (lisibilité)
     P.jumps.append(t)
 
     # ---- drop 72-144 : gestes composés sur les attaques fortes, frappes autour
@@ -142,11 +169,24 @@ def build():
     end = notes(L, t, [0.5, 1.5, 2.5, 1.5], air=1.33)
     P.jumps.append(t)
     P.block(t - 0.5, end + 0.8)
-    P.fill(72.5, 144, "HJH", strong=0.55)
+    P.fill(72.5, 144, "HHJH", strong=0.4)              # zone lente durcie (27/11) : les attaques discrètes aussi
+    fill_on(P, pulse(72.5, 140), "HH")
     P.block(140, 144)
 
-    # ---- cassure 144-192 : les attaques fortes décalées (x,17 / x,5 / x,83) : saut, frappe, saut
-    P.fill(144, 192, "JH", strong=0.55, kinds=("gap", "wall", "step+", "step-"))
+    # ---- cassure 144-192 : les attaques fortes décalées (x,17 / x,5 / x,83) : saut, frappe, saut ; la basse tient ses
+    # notes, peu d'attaques : une chaîne de cuirassés, des notes de saut, et la pulsation entre les attaques (durci le 27/11)
+    t = first(150, 153, 0.8)
+    if P.can_jump(t) and P.free(t + 1, 0.8) and P.free(t + 3, 0.6):
+        cuirasses(L, t + 1, (1.33, 1.33, 1.33))
+        P.jumps += [t, t + 1, t + 2.33, t + 3.67]
+        P.block(t - 0.5, t + 5.5)
+    t = first(170, 173, 0.6)
+    if P.can_jump(t) and P.free(t + 6, 0.8):
+        end = notes(L, t, [0.5, 1.5, 2.5, 1.5], air=1.33)
+        P.jumps.append(t)
+        P.block(t - 0.5, end + 0.8)
+    P.fill(144, 192, "JHH", strong=0.4, kinds=("gap", "wall", "step+", "step-"))
+    fill_on(P, pulse(144, 190), "HJH", kinds=("gap", "wall"))
 
     # ---- montée 192-240 : la grotte (au plafond, tête en bas), puis des rafales
     g0 = first(200, 202, 0.8)
@@ -155,7 +195,7 @@ def build():
     hang = [x for x in acc(g0 + 1, g1 - 1, 0.55) if all(abs(x - j) >= 1.2 for j in jumps_in)][::2][:5]
     grotte(L, g0, g1, jumps=tuple(jumps_in), hanging=tuple(hang))
     P.block(g0 - 2, g1 + 1.5)
-    P.fill(192, 240, "HHJ", strong=0.55)
+    P.fill(192, 240, "HHHJ", strong=0.4)
 
     # ---- roulement 240-272 : triolets sur presque tout, le plus d'appuis du niveau
     P.fill(240, 270, "HHHHJ", strong=0.55)
@@ -174,7 +214,7 @@ def build():
                 and all(abs(t - h) >= 1.0 for h in P.hits):
             L.laser(t, high=True)                        # rester au sol : le piège de lecture
             P.block(t - 0.7, t + 0.8)
-    for t in acc(296, 412, 0.55)[::5]:
+    for t in acc(296, 412, 0.55)[::3]:                   # une note noire toutes les 3 attaques (5 avant le 27/11)
         if P.can_hit(t) and all(abs(t - j) >= 1.3 for j in P.jumps):
             L.note(t)                                    # crachée par la bouche, frappée en vol
             P.hits.append(t)
@@ -184,14 +224,17 @@ def build():
         cuirasses(L, t, (1.0, 1.0))
         P.jumps += [t - 1, t, t + 1]
         P.block(t - 1.5, t + 2.6)
-    P.fill(288, 412, "HHJ", strong=0.55)
+    P.fill(288, 412, "HHHJ", strong=0.4)
+    fill_on(P, pulse(288, 410), "HH")
 
     # ---- dernier coup 416-448 : rafale, sauts serrés, le coup final sur la dernière attaque forte
-    P.fill(412, 444, "HHHJ", strong=0.55)
-    last = [x for x in acc(440, 448, 0.6) if P.can_hit(x)]
-    if last:
-        P.hit(last[-1])
-    L.boss(446, False)
+    P.fill(412, 441, "HHHHJ", strong=0.4)
+    # le dernier coup : la Sourdine fond sur le chemin (rien d'autre à l'écran), le katana la fend en deux
+    last = [x for x in acc(443, 448, 0.6) if P.can_hit(x)]
+    final = last[-1] if last else 446.0
+    L.add(final, "enemy", variant="boss")
+    P.hits.append(final)
+    L.boss(final + 6, False)                             # elle sort de scène après (déjà fendue)
 
     # ---- couleur 448-464 : on court, la Sylve respire
     P.fill(450, 462, "H", strong=0.8)
@@ -266,7 +309,7 @@ def effects(L):
 FICHE = Fiche(
     id="n9_sourdine",
     title="La Sourdine",
-    bpm=280.0, offset=0.054, beats=464,                 # le double du morceau (140), triolets à ⅔ de temps
+    bpm=280.0, offset=0.028, beats=464,                 # le double du morceau (140), triolets à ⅔ de temps ; premier temps mesuré sur les attaques (0,022 au début, 0,030 au pic)
     sections=SECTIONS,
     analysis="n9_sourdine_analysis.json",
     build=build,

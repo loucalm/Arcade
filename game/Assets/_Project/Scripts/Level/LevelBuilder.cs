@@ -57,6 +57,9 @@ namespace Kenta.Level
         public readonly List<ChartEvent> BossEvents = new();
         /// <summary>Notes noires crachées par la Sourdine (ennemis en vol à frapper) : leur image vole depuis sa bouche.</summary>
         public readonly List<LevelObject> Notes = new();
+        /// <summary>Le dernier coup du niveau 9 : un ennemi sans dessin (variante « boss »), que la Sourdine vient incarner ;
+        /// le katana qui le frappe la fend en deux (FX/SourdineBoss).</summary>
+        public LevelObject BossTarget { get; private set; }
         // Données d'autoplay (debug + démo de l'écran Attract).
         public readonly List<float> AutoJumpBeats = new();
         public readonly List<float> AutoHitBeats = new();
@@ -185,7 +188,10 @@ namespace Kenta.Level
                         };
                         bool note = flying && p.variant == "note" && theme.sourdine != null && theme.sourdine.noteBlack != null
                                     && theme.sourdine.noteBlack.Length > 0;
-                        o.view = note ? MakeNote(new Vector2(cx, ey))
+                        bool bossHit = enemy && !flying && !hanging && !stomp && p.variant == "boss";
+                        if (bossHit) BossTarget = o;
+                        o.view = bossHit ? Group("BossTarget", new Vector2(cx, ey)).gameObject   // la Sourdine est le dessin
+                            : note ? MakeNote(new Vector2(cx, ey))
                             : flying ? MakeFlyer(new Vector2(cx, ey), BiomeAt(e.beat))
                             : hanging ? MakeHanging(new Vector2(cx, p.height), BiomeAt(e.beat))
                             : stomp ? MakeStomper(new Vector2(cx, ey), BiomeAt(e.beat))
@@ -250,7 +256,11 @@ namespace Kenta.Level
                         float ly = p.height;
                         var o = new LevelObject { kind = LevelObjectKind.Lum, beat = e.beat, sequenceIndex = e.lane, hasNote = p.hasNote, note = p.note, plane = PlaneOf(e), bounds = new Rect(x - 0.3f, ly - 0.3f, 0.6f, 0.6f) };
                         o.view = MakeLum(new Vector2(x, ly));
-                        if (o.plane == 1) SendToBack(o.view, 0.75f);
+                        if (o.plane == 1)
+                        {
+                            SendToBack(o.view, 0.75f);
+                            SetLayerRecursive(o.view, 0);           // au fond : calque du monde, derrière le niveau
+                        }
                         Lums.Add(o);
                         lastX = Mathf.Max(lastX, x);
                         break;
@@ -471,6 +481,7 @@ namespace Kenta.Level
             FxEvents.Clear();
             Lasers.Clear();
             BossEvents.Clear();
+            BossTarget = null;
             Notes.Clear();
             AutoJumpBeats.Clear();
             AutoHitBeats.Clear();
@@ -1166,7 +1177,19 @@ namespace Kenta.Level
             var sr = Spr(t, "Sprite", theme.coinFrames[0], Vector2.zero, 14);
             sr.gameObject.AddComponent<SpriteCycle>().Setup(theme.coinFrames);
             t.gameObject.AddComponent<CoinPickup>();
+            // calque des acteurs, comme le héros : quand le monde passe en négatif (niveau 9, fx_invert), les pièces
+            // gardent leur or (ADR-040 : « seuls Kenta, son bandeau et les pièces gardent leur couleur »)
+            SetLayerRecursive(t.gameObject, ActorsLayer);
             return t.gameObject;
+        }
+
+        static int actorsLayer = -2;
+        static int ActorsLayer => actorsLayer != -2 ? actorsLayer : actorsLayer = Mathf.Max(0, LayerMask.NameToLayer("Actors"));
+
+        static void SetLayerRecursive(GameObject go, int layer)
+        {
+            go.layer = layer;
+            foreach (Transform c in go.transform) SetLayerRecursive(c.gameObject, layer);
         }
     }
 }
