@@ -26,13 +26,14 @@ namespace Kenta.EditorTools
         const string SoDir = "Assets/_Project/ScriptableObjects/";
         const string PrefabDir = "Assets/_Project/Prefabs/Screens/";
 
-        static readonly string[] BiomeIds = { "sylve", "bayou", "echos", "forge", "echine", "givre", "cite", "orage" };
-        static readonly string[] Labels = { "LA SYLVE", "LE BAYOU", "LES ÉCHOS", "LA FORGE", "L'ÉCHINE", "LE GIVRE", "LA CITÉ SOURDE", "LE GRAND ORAGE" };
-        static readonly string[] Sections = { "INTRO", "COUPLET A", "COUPLET B", "REFRAIN", "BREAK", "COUPLET C", "PRÉ-FINAL", "FINAL" };
-        static readonly string[] Guardians = { "CERF DE PIERRE", "GRENOUILLE-LUNE", "CHAUVE-SOURIS DE CRISTAL", "TAUREAU-ENCLUME", "CHAT-MONTAGNE", "RENARD DE GLACE", "LAPIN DE GRÈS", "OISEAU-TONNERRE" };
-        static readonly string[] Enemies = { "djembe", "crapaud", "chauve", "crabe", "golem", "morse", "gargouille", "nuage" };
-        static readonly string[] Sparks = { "#FF6A82", "#FFD2A0", "#4FC8C0", "#FFA040", "#FFD060", "#FFFFFF", "#EDB88A", "#E0B040" };
-        static readonly string[] Flashes = { "#FFFFFF", "#FFE6D0", "#CFE8FF", "#FFD8A8", "#FFFFFF", "#FFFFFF", "#FFF2DC", "#FFFFFF" };
+        // 9e monde : le monde sourd du niveau 9 (la Sylve décolorée par la Sourdine, tools/gemini-niveau9, ADR-040)
+        static readonly string[] BiomeIds = { "sylve", "bayou", "echos", "forge", "echine", "givre", "cite", "orage", "sourd" };
+        static readonly string[] Labels = { "LA SYLVE", "LE BAYOU", "LES ÉCHOS", "LA FORGE", "L'ÉCHINE", "LE GIVRE", "LA CITÉ SOURDE", "LE GRAND ORAGE", "LA SOURDINE" };
+        static readonly string[] Sections = { "INTRO", "COUPLET A", "COUPLET B", "REFRAIN", "BREAK", "COUPLET C", "PRÉ-FINAL", "FINAL", "SILENCE" };
+        static readonly string[] Guardians = { "CERF DE PIERRE", "GRENOUILLE-LUNE", "CHAUVE-SOURIS DE CRISTAL", "TAUREAU-ENCLUME", "CHAT-MONTAGNE", "RENARD DE GLACE", "LAPIN DE GRÈS", "OISEAU-TONNERRE", "LA SOURDINE" };
+        static readonly string[] Enemies = { "djembe", "crapaud", "chauve", "crabe", "golem", "morse", "gargouille", "nuage", "djembe_sourd" };
+        static readonly string[] Sparks = { "#FF6A82", "#FFD2A0", "#4FC8C0", "#FFA040", "#FFD060", "#FFFFFF", "#EDB88A", "#E0B040", "#FF2A4A" };
+        static readonly string[] Flashes = { "#FFFFFF", "#FFE6D0", "#CFE8FF", "#FFD8A8", "#FFFFFF", "#FFFFFF", "#FFF2DC", "#FFFFFF", "#FFFFFF" };
 
         static readonly Color Gold = new(1f, 0.82f, 0.23f);
         static readonly Color Dim = new(0.6f, 0.58f, 0.75f);
@@ -169,10 +170,10 @@ namespace Kenta.EditorTools
 
         static BiomeTheme[] BuildBiomes()
         {
-            var result = new BiomeTheme[8];
+            var result = new BiomeTheme[BiomeIds.Length];
             var guardianFile = Art + "Gen/biomes/guardians.json";
             var positions = File.Exists(guardianFile) ? JsonUtility.FromJson<GuardianList>(File.ReadAllText(guardianFile)).items : new GuardianPos[0];
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < BiomeIds.Length; i++)
             {
                 string id = BiomeIds[i];
                 var b = Asset<BiomeTheme>(SoDir + $"Biomes/Biome_{i + 1:00}_{id}.asset");
@@ -197,10 +198,10 @@ namespace Kenta.EditorTools
                 b.guardian = Spr($"Gen/biomes/guardian_{id}.png");
                 var pos = positions.FirstOrDefault(g => g.id == id);
                 b.guardianOffset = pos != null ? new Vector2(pos.x, pos.y) : Vector2.zero;
-                if (Enemies[i] == "djembe")
+                if (Enemies[i].StartsWith("djembe"))         // le djembé du PDF, ou son négatif (monde sourd)
                 {
-                    b.enemyFrames = new[] { Spr("Pdf/enemy_djembe_squash.png"), Spr("Pdf/enemy_djembe_stretch.png") };
-                    b.enemyBroken = Spr("Pdf/enemy_djembe_broken.png");
+                    b.enemyFrames = new[] { Spr($"Pdf/enemy_{Enemies[i]}_squash.png"), Spr($"Pdf/enemy_{Enemies[i]}_stretch.png") };
+                    b.enemyBroken = Spr($"Pdf/enemy_{Enemies[i]}_broken.png");
                 }
                 else if (Enemies[i] == "chauve")
                 {
@@ -218,6 +219,7 @@ namespace Kenta.EditorTools
                     b.enemyBroken = null;
                 }
                 b.spark = Hex(Sparks[i]);
+                b.monochrome = id == "sourd";
                 b.flash = Hex(Flashes[i]);
                 EditorUtility.SetDirty(b);
                 result[i] = b;
@@ -841,7 +843,7 @@ namespace Kenta.EditorTools
         /// </summary>
         static LevelCatalog BuildLevels(BiomeTheme[] biomes)
         {
-            int[] stars = { 1, 1, 2, 3, 3, 4, 4, 5 };
+            int[] stars = { 1, 2, 3, 4, 3, 4, 4, 5, 5 };     // les valeurs des LevelDef (le niveau 9 : le maximum)
             var shared = AssetDatabase.LoadAssetAtPath<SongData>(SoDir + "Songs/Song_Level01.asset");
             EnsureFolder(SoDir + "Levels");
             var levels = new LevelDef[biomes.Length];

@@ -63,6 +63,7 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `screen_split` | l'image se dédouble en une grille qui remplit tout l'écran : `copies` = 1 (normal), 4 (2×2, agrandies ×1,5) ou 9 (3×3, ×1), jusqu'au prochain `screen_split` (2 et 5 sont lus comme 4 et 9) | — |
 | `screen_flip` | l'image se retourne jusqu'au prochain `screen_flip` : `variant` = `"mirror"` (gauche-droite : on court vers la gauche), `"up"` (tête en bas), `"both"` (demi-tour), autre = à l'endroit. Miroir entier (pixel art net) ; l'interface reste à l'endroit | — |
 | `glitch` | grésillement (neige, image qui saute, couleurs) d'intensité `intensity` (0…1) pendant `length` beats, plus fort sur chaque temps | — |
+| `fx_invert` | le monde passe en négatif (`variant` = `"on"`) ou revient (`"off"`), jusqu'au prochain `fx_invert` ; seul le calque du monde s'inverse (le héros et l'interface gardent leurs couleurs). Un état sur un temps fort : au plus une bascule par temps (borne publique). Niveau 9 | — |
 
 Tous les obstacles (mur, ennemi, bloc, plafond, pièces) se posent **sur le sol principal à leur x** : un mur après une marche est posé en haut de la marche.
 
@@ -90,7 +91,7 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus 
 | `orb` | sauter en passant dessus | `height`, `step` |
 | `ceiling`, `back`, `gravity` | rien (décor et portails) ; on saute les trous (`jump`) | `length`, `height` |
 | `jump` | sauter (trou du plafond ou du chemin du fond) | `variant` |
-| `screen_split`, `screen_flip`, `glitch` | — (effets d'écran) | `copies` ; `variant` ; `intensity`, `length` |
+| `screen_split`, `screen_flip`, `glitch`, `fx_invert` | — (effets d'écran) | `copies` ; `variant` ; `intensity`, `length` ; `variant` |
 | `lum_line` | collecter | `count`, `step` (beats entre lums) |
 | `fx_flash` | — (visuel) | `intensity` |
 | `camera_shake` | — | `intensity`, `length` |

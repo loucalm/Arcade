@@ -120,6 +120,11 @@ class Level:
     def glitch(self, beat, intensity, length):
         self.add(beat, "glitch", intensity=intensity, length=length)
 
+    def invert(self, beat, on=True):
+        """Le monde passe en négatif (noir ↔ blanc) ou revient ; le héros et l'interface gardent leurs couleurs.
+        Un état sur un temps fort, pas un clignotement : 3 bascules par seconde au plus (borne publique)."""
+        self.add(beat, "fx_invert", variant="on" if on else "off")
+
 
 # ---------------------------------------------------------------- gestes composés, réutilisés d'un niveau à l'autre
 

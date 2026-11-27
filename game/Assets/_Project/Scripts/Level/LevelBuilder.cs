@@ -327,6 +327,7 @@ namespace Kenta.Level
                     case "camera":
                     case "section_change":
                     case "screen_split":
+                    case "fx_invert":
                     case "screen_flip":
                     case "glitch":
                         FxEvents.Add(e);
@@ -564,11 +565,9 @@ namespace Kenta.Level
         /// <summary>Biome de la section qui contient ce beat (un biome par section de la chart).</summary>
         public BiomeTheme BiomeAt(double beat)
         {
-            // le décor choisi par le joueur vaut pour tout le morceau (décision du 25/11 : les 8 « mondes » sont le
-            // même niveau, le choix est celui du décor). Les biomes nommés par les sections ne servent que sans choix.
-            if (LevelBiome != null) return LevelBiome;
+            // un niveau = un monde (son biome, LevelDef.biome), sauf les sections qui en changent : elles nomment
+            // l'asset du biome (le niveau 9 commence dans la Sylve, puis la Sourdine décolore le monde)
             int i = Chart != null ? Chart.SectionIndexAt(beat) : 0;
-            // une section peut changer de monde (ex. le refrain monte dans l'orage) : elle nomme l'asset du biome
             string named = Chart != null && Chart.sections.Length > 0 ? Chart.sections[Mathf.Clamp(i, 0, Chart.sections.Length - 1)].biome : null;
             if (!string.IsNullOrEmpty(named))
                 foreach (var b in theme.biomes)

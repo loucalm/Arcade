@@ -297,6 +297,7 @@ namespace Kenta.Core
             {
                 var e = level.FxEvents[fxCursor++];
                 if (e.type == "screen_split") glitch?.SetCopies(e.@params.copies);
+                if (e.type == "fx_invert") glitch?.SetInvert(e.@params.variant != "off");
                 if (e.type == "screen_flip")
                     glitch?.SetFlip(e.@params.variant == "mirror" || e.@params.variant == "both", e.@params.variant == "up" || e.@params.variant == "both");
             }
@@ -680,6 +681,11 @@ namespace Kenta.Core
                                                    e.@params.variant == "up" || e.@params.variant == "both");
                     rig.Flash(Color.white, 0.35f);
                     rig.Shake(0.15f, 0.2f);
+                    break;
+                case "fx_invert":
+                    // le monde passe en négatif (« on ») ou revient (« off ») : un état, pas un flash
+                    ScreenGlitch.Instance?.SetInvert(e.@params.variant != "off");
+                    rig.Punch(0.25f);
                     break;
                 case "glitch":
                     // grésillement calé sur les temps, pendant `length` beats

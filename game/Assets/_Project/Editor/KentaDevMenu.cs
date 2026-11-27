@@ -15,9 +15,15 @@ namespace Kenta.EditorTools
             // en revenant à l'éditeur, le bouton Play retrouve le flow normal (accueil, consignes…)
             EditorApplication.playModeStateChanged += s =>
             {
-                if (s == PlayModeStateChange.EnteredEditMode) SessionState.EraseFloat(DevStart.Key);
+                if (s != PlayModeStateChange.EnteredEditMode) return;
+                SessionState.EraseFloat(DevStart.Key);
+                SessionState.EraseString(DevStart.LevelKey);
             };
         }
+
+        /// <summary>Le niveau 9, La Sourdine (ADR-040) : depuis la fissure, juste avant que le monde perde sa couleur.</summary>
+        [MenuItem("Kenta/Tester le niveau 9 (La Sourdine)")]
+        static void PlayLevel9() => PlayFrom(26f, "sourd");
 
         [MenuItem("Kenta/Tester le refrain (prototype)")]
         static void PlayRefrain() => PlayFrom(RefrainBeat);
@@ -38,10 +44,11 @@ namespace Kenta.EditorTools
         [MenuItem("Kenta/Tester le refrain 2 (effets d'écran)")]
         static void PlayScreenFx() => PlayFrom(214.2f);
 
-        static void PlayFrom(float beat)
+        static void PlayFrom(float beat, string level = "")
         {
             if (EditorApplication.isPlaying) return;
             SessionState.SetFloat(DevStart.Key, beat);
+            SessionState.SetString(DevStart.LevelKey, level);
             EditorApplication.EnterPlaymode();
         }
     }

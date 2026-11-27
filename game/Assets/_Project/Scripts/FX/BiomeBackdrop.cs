@@ -162,7 +162,8 @@ namespace Kenta.FX
         public void SetSection(string sectionName, float progress, float blendSeconds = 1.2f)
         {
             moodFrom = mood;
-            moodTo = MoodFor(sectionName, progress);
+            // le monde sourd reste en noir et blanc pur : pas de refrain doré ni de couchant (ADR-040)
+            moodTo = current != null && current.monochrome ? Color.white : MoodFor(sectionName, progress);
             moodT = 0f;
             moodBlend = Mathf.Max(0.01f, blendSeconds);
         }
