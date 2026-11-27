@@ -104,7 +104,9 @@ namespace Kenta.UI
             if (logo != null)
             {
                 logoGlow = NewImage("Glow", logo, logoWhite, new Color(1f, 1f, 1f, 0f));
-                shineImage = NewImage("Shine", logo, null, Color.white);
+                // créée avec la première image du reflet : centrée, à sa taille (sans sprite, elle était étirée au logo
+                // puis agrandie de la taille du sprite : le reflet débordait du titre)
+                shineImage = NewImage("Shine", logo, shine != null && shine.Length > 0 ? shine[0] : null, Color.white);
                 shineImage.enabled = false;
             }
             int n = letters != null ? letters.Length : 0;
