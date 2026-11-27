@@ -118,8 +118,14 @@ namespace Kenta.Player
         const float PressEarlyBeats = 0.35f, PressLateBeats = 0.35f;
         /// <summary>Portée verticale d'une note de saut : on la prend même en arrivant vite, en fin de saut.</summary>
         const float OrbReach = 3f;
-        /// <summary>Chute ralentie (u/s) près d'une note de saut, pendant sa fenêtre d'appui.</summary>
-        const float OrbHover = 3f;
+        /// <summary>Chute ralentie (u/s) près d'une note de saut, pendant sa fenêtre d'appui, une fois à sa hauteur
+        /// (centre du héros à moins de OrbHoldAbove au-dessus d'elle). Avant, elle freinait dès l'ouverture de la fenêtre :
+        /// à 280 BPM (niveau 9), le héros, qui tombe à plus de 20 u/s, restait figé 2 à 3 u au-dessus de la note et
+        /// rebondissait dans le vide.</summary>
+        const float OrbHover = 3f, OrbHoldAbove = 0.1f;
+        /// <summary>Contact d'une note de saut : centre du héros à moins de 0,5 u du sien. Un appui en avance part là, ou
+        /// sur le temps de la note.</summary>
+        const float OrbTouch = 0.5f;
         /// <summary>Note de saut : un appui jusqu'à 0,3 temps avant sa fenêtre est gardé et part à l'ouverture (avant, il
         /// était ignoré : on appuyait un peu tôt, rien ne se passait, on tombait). Même règle dans levelgen/engine.py.</summary>
         const float OrbMemoryBeats = 0.3f;
@@ -499,9 +505,13 @@ namespace Kenta.Player
                 if (o.passed || o.plane != plane || inverted) continue;
                 if (Mathf.Abs(o.bounds.center.x - x) > 1.2f || Mathf.Abs(o.bounds.center.y - CenterWorldY()) > OrbReach) continue;
                 if (beat < o.beat - PressEarlyBeats || beat > o.beat + PressLateBeats) continue;
-                if (lastJumpDownBeat < o.beat - PressEarlyBeats - OrbMemoryBeats || lastJumpDownBeat <= lastOrbBeat)
+                float dy = CenterWorldY() - o.bounds.center.y;
+                bool armed = lastJumpDownBeat >= o.beat - PressEarlyBeats - OrbMemoryBeats && lastJumpDownBeat > lastOrbBeat;
+                if (!armed || (beat < o.beat && Mathf.Abs(dy) > OrbTouch))
                 {
-                    if (!grounded) vy = Mathf.Max(vy, -OrbHover);      // la note retient le héros le temps d'appuyer
+                    // pas d'appui : la note retient le héros à sa hauteur, le temps d'appuyer (au-dessus, il tombe vers elle).
+                    // Appui en avance : le rebond part au contact de la note, ou sur son temps.
+                    if (!armed && !grounded && dy <= OrbHoldAbove) vy = Mathf.Max(vy, -OrbHover);
                     continue;
                 }
                 o.passed = true;

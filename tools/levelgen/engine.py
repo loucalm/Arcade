@@ -27,7 +27,9 @@ AIR_HIT_BELOW, AIR_HIT_ABOVE = 3.5, 3.5             # zone de frappe en l'air (a
 STOMP_TOUCH = 0.15                           # on touche un cuirassé 0,15 beat avant son temps (fin d'un saut)
 ORB_MEMORY = 0.3                             # note de saut : un appui jusqu'à 0,3 temps avant sa fenêtre est gardé et part à
                                              # l'ouverture (PlayerController.CheckOrbs)
-ORB_HOLD = 3.0                               # chute ralentie (u/s) près d'une note pendant sa fenêtre, le temps d'appuyer
+ORB_HOLD = 3.0                               # chute ralentie (u/s) près d'une note pendant sa fenêtre, le temps d'appuyer,
+ORB_HOLD_ABOVE = 0.1                         # une fois à sa hauteur (centre à moins de 0,1 u au-dessus d'elle)
+ORB_TOUCH = 0.5                              # contact d'une note : un appui en avance part là, ou sur le temps de la note
 ORB_REACH = 3.0                              # note de saut : portée verticale (on la prend même en tombant vite)
 PRESS_EARLY = PRESS_LATE = 0.35              # appui d'une note de saut ou d'un grand rebond : fenêtre autour du temps
 VINE_EARLY = VINE_LATE = 0.35                # lâcher d'une liane : fenêtre autour de son temps (PlayerController)
@@ -436,8 +438,13 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
                     continue
                 if beat < o[2] - PRESS_EARLY or beat > o[2] + PRESS_LATE:
                     continue
-                if last_press < o[2] - PRESS_EARLY - ORB_MEMORY or last_press <= last_orb:
-                    vy = max(vy, -ORB_HOLD)                  # la note retient le héros pendant sa fenêtre, le temps d'appuyer
+                dy = y + 0.5 - o[1]
+                armed = last_press >= o[2] - PRESS_EARLY - ORB_MEMORY and last_press > last_orb
+                if not armed or (beat < o[2] and abs(dy) > ORB_TOUCH):
+                    # pas d'appui : la note retient le héros à sa hauteur (au-dessus, il tombe vers elle) ;
+                    # appui en avance : le rebond part au contact de la note, ou sur son temps
+                    if not armed and dy <= ORB_HOLD_ABOVE:
+                        vy = max(vy, -ORB_HOLD)
                     continue
                 o[4] = True
                 last_orb = beat
