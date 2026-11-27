@@ -1,9 +1,10 @@
-"""Niveau 9 — La Sourdine, le défi de l'élite (~300 essais), sur « BIKE » de Tangermusic (140 BPM).
+"""Niveau 9 — La Sourdine, le défi de l'élite (~300 essais), sur « BIKE » de Tangermusic (140 BPM, joué sur une grille de
+280 BPM : voir double_time).
 
 Morceau : Newgrounds 1191782, licence CC BY-NC-ND ; utilisé **entier, sans coupe**, avec l'accord de l'artiste (projet
 étudiant non commercial, Audio/LICENSES.md). Converti en .ogg tel quel (aucune coupe : la licence l'interdit).
   python3 tools/analyse-song.py game/Assets/_Project/Audio/Music/n9_sourdine.ogg tools/data/n9_sourdine_analysis.json \\
-      --bpm 140 --offset 0.034 --beats 232
+      --bpm 280 --offset 0.034 --beats 464        (grille du jeu : le double du morceau)
 Forme (temps ; énergie du morceau) : intro calme 0-28 (le vélo qui dévale), montée 28-36, drop 36-76, cassure 76-96
 (caisse claire sur chaque temps), reprise 96-120, roulement de caisse 120-144 (croches), second drop 144-224, fin 224-232.
 
@@ -17,8 +18,9 @@ Inversions : un état sur un temps fort, jamais plus d'une par temps (2,3 par se
 from levelgen.builder import Level, cuirasses, grotte, lianes, notes
 from levelgen.fiche import ALL, Fiche
 
-SECTIONS = [("intro", 0), ("fissure", 28), ("refrain : le silence", 36), ("écho", 76), ("montée", 96),
-            ("refrain : la sourdine", 144), ("le dernier coup", 208), ("la couleur", 224)]
+SECTIONS_SONG = [("intro", 0), ("fissure", 28), ("refrain : le silence", 36), ("écho", 76), ("montée", 96),
+                 ("refrain : la sourdine", 144), ("le dernier coup", 208), ("la couleur", 224)]
+SECTIONS = [(n, b * 2) for n, b in SECTIONS_SONG]   # grille du jeu à 280 BPM (voir double_time)
 SYLVE, SOURD = "Biome_01_sylve", "Biome_09_sourd"
 
 
@@ -208,7 +210,110 @@ def effects(L):
     L.invert(224, False)
 
 
-def build():
+# Grille à 280 BPM (le double du morceau, demande de Lou) : les scènes restent écrites en temps du morceau (140) et
+# `double_time` les recale sur la grille du jeu. Un saut dure toujours 1 temps de jeu (0,21 s), la course fait 3,2 u
+# par temps (15 u/s) : tout va deux fois plus vite. Les positions musicales doublent, mais les écarts liés au saut restent
+# ceux du jeu : cuirassé 1 temps après le saut, liane prise 0,75 temps après, première note 1 temps après, trou du
+# plafond de j + 0,2 à j + 0,7, falaise d'un tambour. Mesuré : à 280 BPM, une action laisse au plus ~50 ms de marge.
+TEMPO_FACTOR = 2
+
+
+def double_time(song_events):
+    k = TEMPO_FACTOR
+    prev_song_end = None
+    stomps = {e["beat"] for e in song_events if e["type"] == "enemy" and e.get("params", {}).get("variant") == "stomp"}
+    gaps = [e for e in song_events if e["type"] == "gap" and e.get("lane", 0) == 0]
+    bounces = [e for e in song_events if e["type"] == "bounce"]
+    jumps = {e["beat"] for e in song_events if e["type"] == "jump"}
+    first_vines = {g["beat"] + 0.75 for g in gaps}               # liane prise 3/4 de temps après le saut dans le vide
+    first_orbs = {g["beat"] + 1.0 for g in gaps}                  # première note 1 temps après le saut
+    # cuirassés enchaînés : un rebond par temps de jeu (une croche du morceau). Un rebond de 2 temps de jeu monterait à
+    # 6 u et cacherait le cuirassé suivant (règle du générateur) ; le premier garde sa place dans la musique.
+    chain = {}
+    prev_end = None
+    for e in sorted((x for x in song_events if x["type"] == "enemy" and x.get("params", {}).get("variant") == "stomp"),
+                    key=lambda x: x["beat"]):
+        b, air = e["beat"], e["params"]["length"]
+        nb = prev_end if prev_end is not None and abs(b - prev_song_end) < 1e-6 else b * k
+        last_of_chain = not any(abs(x["beat"] - (b + air)) < 1e-6 for x in song_events
+                                if x["type"] == "enemy" and x.get("params", {}).get("variant") == "stomp")
+        new_air = air * k if last_of_chain else 1.0
+        chain[b] = (nb, new_air)
+        prev_end, prev_song_end = nb + new_air, b + air
+    out = []
+    for e in song_events:
+        b = e["beat"]
+        p = dict(e.get("params", {}))
+        t = e["type"]
+        nb = b * k
+        if t == "enemy" and b in chain and p.get("variant") == "stomp":
+            nb, p["length"] = chain[b]
+        elif t == "jump" and (b + 1.0) in stomps:
+            nb = b * k + k - 1.0                                  # on saute 1 temps de jeu avant le cuirassé
+        elif t == "vine" and b in first_vines:
+            gap = b - 0.75
+            nb = gap * k + 0.75
+            p["length"] = round((b + p["length"]) * k - nb, 3)     # le lâcher reste à sa place dans la musique
+            p["step"] = p["step"] * k
+        elif t == "orb" and b in first_orbs:
+            gap = b - 1.0
+            nb = gap * k + 1.0
+            p["step"] = round((b + p["step"]) * k - nb, 3)         # la note suivante reste à sa place
+        elif t == "ceiling":
+            nb = b * k
+            length = p["length"] * k
+            end = b + p["length"]
+            if any(abs(end - (j + 0.2)) < 1e-6 for j in jumps):    # finit au bord d'un trou : 0,2 temps de jeu après le saut
+                length = (end - 0.2) * k + 0.2 - nb
+            if any(abs(b - (j + 0.7)) < 1e-6 for j in jumps):      # reprend après un trou : 0,7 temps de jeu après le saut
+                j = b - 0.7
+                new_start = j * k + 0.7
+                length += nb - new_start
+                nb = new_start
+            p["length"] = round(length, 3)
+        elif t == "step" and e.get("lane") == 1:                   # falaise d'un tambour (builder.bounce)
+            for bo in bounces:
+                b0, air = bo["beat"], bo["params"]["length"]
+                if not (b0 < b <= b0 + air):
+                    continue
+                before = [x for x in song_events if x["type"] == "step" and x["beat"] < b0]
+                h0 = before[-1]["params"]["height"] if before else 0.0
+                up = p["height"] > h0                              # on monte : falaise à la fin de l'envol
+                nb = b0 * k + (air - 1.0 if up else 1.0)        # l'envol garde sa durée en temps de jeu
+                break
+        elif t == "bounce":
+            pass                                                   # envol en temps de jeu : 4 temps monteraient à 55 u
+        else:
+            for key in ("length", "step"):
+                if key not in p:
+                    continue
+                if t == "gap" and e.get("lane", 0) == 0 and p[key] < 1.0:
+                    continue                                       # trou simple : franchi d'un saut, longueur inchangée
+                p[key] = round(p[key] * k, 3)
+        ne = dict(e, beat=round(nb, 3))
+        if p:
+            ne["params"] = p
+        out.append(ne)
+    # un ennemi juste après une réception (notes, liane, cuirassé) : le héros est haut, la caméra ne voit pas encore le
+    # sol ; il recule d'un temps de jeu (une croche du morceau) pour se voir 400 ms avant le coup
+    aerial = sorted(e["beat"] for e in out if e["type"] in ("orb", "vine")
+                    or (e["type"] == "enemy" and e.get("params", {}).get("variant") == "stomp"))
+    actions = [x for x in out if x["type"] in ("enemy", "jump", "gap", "wall", "step", "orb", "vine", "bounce")]
+    for e in out:
+        if e["type"] == "enemy" and e.get("lane", 0) == 0 and not e.get("params", {}).get("variant"):
+            landing = [a for a in aerial if 0 < e["beat"] - a <= 5.0]
+            prev = [x["beat"] for x in actions if x is not e and landing and landing[-1] < x["beat"] < e["beat"]]
+            free = not any(x is not e and abs(x["beat"] - (e["beat"] + 1.0)) < 1.0 for x in actions)
+            if landing and not prev and free:          # la première action après la réception, et la place est libre
+                e["beat"] = round(e["beat"] + 1.0, 3)
+            elif landing and not prev:                 # rafale juste après la réception : son premier coup est retiré
+                e["drop"] = True
+    out = [e for e in out if not e.pop("drop", False)]
+    out.sort(key=lambda e: (e["beat"], e["type"]))
+    return out
+
+
+def build_song_time():
     L = Level()
     intro(L)
     fissure(L)
@@ -219,24 +324,28 @@ def build():
     dernier_coup(L)
     couleur(L)
     effects(L)
-    for name, beat in SECTIONS:
+    for name, beat in SECTIONS_SONG:
         if beat > 0:
             L.add(beat, "section_change", intensity=1.2 if "refrain" in name else 0.5)
     L.ev.sort(key=lambda e: (e["beat"], e["type"]))
     return L.ev
 
 
+def build():
+    return double_time(build_song_time())
+
+
 FICHE = Fiche(
     id="n9_sourdine",
     title="La Sourdine",
-    bpm=140.0, offset=0.034, beats=232,
+    bpm=280.0, offset=0.034, beats=464,         # le double du morceau (140) : voir double_time
     sections=SECTIONS,
     analysis="n9_sourdine_analysis.json",
     build=build,
-    zoom=480, zoom_wide=640,
+    zoom=640, zoom_wide=640,                    # vue large fixe : à 15 u/s, la vue 480 montrait les ennemis trop tard
     scale=(6, 9, 11, 1, 4),                     # fa# mineur pentatonique (tonique estimée : fa#)
     mechanics=ALL,
-    margin_ms=100.0,                            # comme le niveau 8 ; la difficulté vient de la densité et de l'image
-    checkpoint_every=16,                        # un point de reprise toutes les 4 mesures (8 ailleurs) : pas de répit
+    margin_ms=50.0,                             # à 280 BPM, ~50 ms est le plus qu'une action peut laisser (mesuré)
+    checkpoint_every=32,                        # un point de reprise toutes les 4 mesures du morceau : pas de répit
     biomes={"intro": SYLVE, "fissure": SYLVE, "la couleur": SYLVE},   # le reste : le monde sourd (biome du niveau)
 )
