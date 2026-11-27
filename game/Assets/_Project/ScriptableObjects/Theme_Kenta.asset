@@ -42,3 +42,26 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 150c9781c32e748b188e04c5d3ac2b10, type: 3}
   - {fileID: 21300000, guid: 4c4a8652984d643ca9520325733804c6, type: 3}
   pixel: {fileID: 21300000, guid: 629e8e2125bc942ba8bb6e02d25d6ce3, type: 3}
+  sourdine:
+    body: {fileID: 21300000, guid: 09e7c61d0e2ae41ed87b1c1e68855611, type: 3}
+    eyes:
+    - {fileID: 21300000, guid: b42ac1607fba44d42a59cad85424c7e9, type: 3}
+    - {fileID: 21300000, guid: d3c97d2ed408542409d507c704f39e71, type: 3}
+    - {fileID: 21300000, guid: bd3b81f965d1d4ae6bc2654dc9795d86, type: 3}
+    - {fileID: 21300000, guid: 009f68551a6bb4e2e90bdb19b7c16358, type: 3}
+    - {fileID: 21300000, guid: 2576ca408dc074ed282071cb8323bfeb, type: 3}
+    pupils:
+    - {fileID: 21300000, guid: b10c7fd66f0c44be3ac7b1770de90052, type: 3}
+    - {fileID: 21300000, guid: ca284b5ecd4bb4f2cb7153ebcfdbc28b, type: 3}
+    - {fileID: 21300000, guid: 9250f8515860b450a82e0dc07d5ce4fa, type: 3}
+    mouths:
+    - {fileID: 21300000, guid: 5fd9d83afd53c4d4a9cdb4c913f43ce1, type: 3}
+    - {fileID: 21300000, guid: ceba023f853c4484bbf502de0d2044fa, type: 3}
+    - {fileID: 21300000, guid: 6a9544407f0ef4a8ca01d6f7dfffd386, type: 3}
+    beam: {fileID: 21300000, guid: 22f3491e6e38645bf8ea43e65f532ecc, type: 3}
+    beamWarning: {fileID: 21300000, guid: 7bf79eb9895394bd6b79f28fc5fa7b07, type: 3}
+    muzzle: {fileID: 21300000, guid: f3d8b735e9a0d4f9f88b51c9c6eb4f2a, type: 3}
+    noteBlack:
+    - {fileID: 21300000, guid: b0f37e163524847d1a6e2a761b081615, type: 3}
+    - {fileID: 21300000, guid: 7ab084e9d745641cb9534eedb059ac7e, type: 3}
+    noteGold: {fileID: 21300000, guid: 22a2322843b0041efb84f1087dc302b1, type: 3}

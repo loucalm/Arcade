@@ -33,6 +33,8 @@ JUMP_BUFFER = 0.35                           # appui en l'air juste avant d'atte
 LEDGE_ASSIST = 0.4                           # pieds à moins de 0,4 u sous le haut d'une marche ou d'un mur : on passe dessus
 STEP_FACE = 0.25
 MAX_RISE = 1.0
+LASER_START, LASER_LENGTH = 0.3, 0.4            # laser de la Sourdine : dangereux de beat + 0,3 à beat + 0,7 (sommet du saut)
+LASER_LOW_CLEAR, LASER_HIGH_CLEAR = 0.35, 0.6   # bas : pieds au moins 0,35 u au-dessus du sol ; haut : au plus 0,6 u
 LUM_LANE_Y = (0.45, 1.9, 2.4)
 PICKUP = 1.0                                 # rayon de ramassage d'une pièce (PlayerController.pickupRadius)
 COIN_CLEARANCE = 1.1                         # pas de pièce à moins de 1,1 u du centre d'un ennemi (on ne voit plus l'ennemi)
@@ -140,6 +142,7 @@ class World:
         self.flips = sorted((e["beat"], e["lane"] == 1) for e in events if e["type"] == "gravity")
         self.gaps, self.walls, self.enemies, self.platforms, self.bounces = [], [], [], [], []
         self.orbs = []           # [x, y du centre, beat, vol, prise, plan]
+        self.lasers = []         # [(beat, haut, durée)] : laser de la Sourdine, sur toute la largeur de l'écran
         self.vines = []          # [x_prise, x_lâcher, beat_prise, beat_lâcher, y_prise, y_lâcher, creux, vol, prise_faite]
         for e in events:
             p, b, t = e.get("params", {}), e["beat"], e["type"]
@@ -179,6 +182,11 @@ class World:
                 self.jumps.append(b)
             elif t == "jump":
                 self.jumps.append(b)                     # saut sans obstacle au sol (trou du plafond, du chemin du fond)
+            elif t == "laser":
+                high = e["lane"] == 1
+                self.lasers.append((b, high, p.get("length", LASER_LENGTH)))
+                if not high:
+                    self.jumps.append(b)                 # laser bas : on saute sur le temps (laser haut : on reste au sol)
             elif t == "vine":
                 ln = p.get("length", 2.0)
                 self.vines.append([X(b), X(b + ln), b, b + ln, p["height"], p["releaseHeight"], p.get("sag", 0.0),
@@ -512,6 +520,13 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
                     y, vy = wyy + 0.75, max(vy, 0.0)     # coup de pouce : on passe par-dessus la souche
                     wy = y
                     body = body_at(wy)
+        for lb, high, ln in w.lasers:
+            if lb + LASER_START <= beat <= lb + LASER_START + ln and not inv:
+                above = y - w.height_on(x, plane)
+                if not high and above < LASER_LOW_CLEAR:
+                    return f"touché par le laser bas du beat {lb} au beat {beat:.2f} (pieds à {above:.2f} u du sol)", {}
+                if high and above > LASER_HIGH_CLEAR:
+                    return f"touché par le laser haut du beat {lb} au beat {beat:.2f} (pieds à {above:.2f} u du sol)", {}
         for en in w.enemies:
             cx, ey, eb, alive, eplane, stomp, sair = en
             if not alive or eplane != plane:
@@ -878,7 +893,10 @@ def resolve(events, song):
             out.append({"beat": round(e["beat"], 3), "type": "lum_at", "lane": 0, "params": params})
         elif e["type"] == "enemy_air":
             y = feet_at(track, beats, e["beat"] + ENEMY_CENTER)           # au niveau des pieds quand on l'atteint
-            out.append({"beat": e["beat"], "type": "enemy", "lane": 1, "params": {"height": round(y + 0.1, 3)}})
+            params = {"height": round(y + 0.1, 3)}
+            if e.get("params", {}).get("variant"):
+                params["variant"] = e["params"]["variant"]          # note noire de la Sourdine : même jeu, autre image
+            out.append({"beat": e["beat"], "type": "enemy", "lane": 1, "params": params})
         else:
             out.append(e)
     # plans larges : tambours, grandes dénivellations, et ennemis qu'on ne verrait pas venir en vue serrée
@@ -920,7 +938,7 @@ def lint(events):
 def table(events):
     sym = {"gap": "G", "wall": "W", "enemy": "E", "step": "^", "ramp": "/", "platform": "P",
            "bounce": "T", "camera": "c", "vine": "V", "gravity": "g", "back": "B", "ceiling": "C",
-           "screen_split": "#", "glitch": "~", "orb": "o", "screen_flip": "%"}
+           "screen_split": "#", "glitch": "~", "orb": "o", "screen_flip": "%", "laser": "L"}
     rows = {}
     for e in events:
         if e["type"] not in sym:

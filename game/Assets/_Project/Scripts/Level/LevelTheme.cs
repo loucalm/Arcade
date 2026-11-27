@@ -27,5 +27,25 @@ namespace Kenta.Level
         public Sprite[] stomper;
         [Tooltip("Carré blanc de 1 px (40 px/unité) : traînée du bandeau, particules.")]
         public Sprite pixel;
+
+        [Header("La Sourdine (boss du niveau 9, Gen/boss : tools/gemini-niveau9/gen_sheets.py --install)")]
+        public SourdineSprites sourdine;
+    }
+
+    /// <summary>Pièces de la Sourdine, assemblées et animées par FX/SourdineBoss.</summary>
+    [System.Serializable]
+    public class SourdineSprites
+    {
+        public Sprite body;
+        [Tooltip("Œil : ouvert, mi-clos, fermé, grand ouvert (colère), fêlé.")]
+        public Sprite[] eyes;
+        [Tooltip("Pupille : dilatée, normale, tête d'épingle.")]
+        public Sprite[] pupils;
+        [Tooltip("Bouche : sourire, entrouverte, hurlement (charge le laser).")]
+        public Sprite[] mouths;
+        public Sprite beam, beamWarning, muzzle;
+        [Tooltip("Note noire (œil ouvert, œil fermé) et note dorée (renvoyée).")]
+        public Sprite[] noteBlack;
+        public Sprite noteGold;
     }
 }

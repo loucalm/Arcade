@@ -234,6 +234,19 @@ namespace Kenta.EditorTools
             t.heroes = heroes;
             t.coinFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/coin_{i}.png")).ToArray();
             t.totem = Spr("Gen/world/totem.png");
+            // la Sourdine, boss du niveau 9 (Gen/boss : tools/gemini-niveau9/gen_sheets.py --install)
+            t.sourdine = new SourdineSprites
+            {
+                body = Spr("Gen/boss/sourdine_body.png"),
+                eyes = new[] { "open", "half", "closed", "wide", "cracked" }.Select(m => Spr($"Gen/boss/sourdine_eye_{m}.png")).ToArray(),
+                pupils = new[] { "big", "mid", "pin" }.Select(m => Spr($"Gen/boss/sourdine_pupil_{m}.png")).ToArray(),
+                mouths = new[] { "smile", "half", "scream" }.Select(m => Spr($"Gen/boss/sourdine_mouth_{m}.png")).ToArray(),
+                beam = Spr("Gen/boss/beam.png"),
+                beamWarning = Spr("Gen/boss/beam_warning.png"),
+                muzzle = Spr("Gen/boss/beam_muzzle.png"),
+                noteBlack = new[] { Spr("Gen/boss/note_black_0.png"), Spr("Gen/boss/note_black_1.png") },
+                noteGold = Spr("Gen/boss/note_gold.png"),
+            };
             t.flyerFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/bat_{i}.png")).ToArray();   // tools/gen-bat.py
             t.flyer = t.flyerFrames[0] != null ? t.flyerFrames[0] : Spr("Pdf/enemy_chauve.png");   // ennemi volant commun
             t.stomper = new[] { Spr("Gen/world/stomper_0.png"), Spr("Gen/world/stomper_1.png") };   // cuirassé commun

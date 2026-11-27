@@ -939,6 +939,7 @@ def make_c_yeux():
         y = pad + 10 + row_gap
         sheet.alpha_composite(f, (x, y))
 
+    EXPORT.update(eye_s=small_frames, eye_l=large_frames)
     sheet_x4 = sheet.resize((W * 4, H * 4), Image.NEAREST)
     sheet_x4.save(os.path.join(OUT, "c_yeux.png"))
     print("Saved c_yeux.png", sheet_x4.size, "logical:", (W, H))
@@ -1400,6 +1401,7 @@ def make_e_attaques():
     nb1 = make_note_black(False)
     ng = make_note_gold()
 
+    EXPORT.update(beam=beam, beam_warning=warn, beam_muzzle=muzzle, note_black=[nb0, nb1], note_gold=ng)
     items = [beam, warn, muzzle, nb0, nb1, ng]
     pad = 12
     gap = 16
@@ -1530,6 +1532,28 @@ def install():
         negative_enemy(os.path.join(GAME, "Pdf", f"enemy_djembe_{kind}.png")).save(
             os.path.join(GAME, "Pdf", f"enemy_djembe_sourd_{kind}.png"))
         written.append(f"Pdf/enemy_djembe_sourd_{kind}")
+    # la Sourdine en boss (phase 4) : corps, visage, attaques, yeux du décor (Art/Kenta/Gen/boss)
+    Bo = os.path.join(GAME, "Gen", "boss")
+    os.makedirs(Bo, exist_ok=True)
+    def put(im, name):
+        transparent(im).save(os.path.join(Bo, name + ".png"))
+        written.append("boss/" + name)
+    put(EXPORT["body"], "sourdine_body")
+    for k, mode in enumerate(("open", "half", "closed", "wide", "cracked")):
+        put(EXPORT["face_eyes"][k], f"sourdine_eye_{mode}")
+    for k, size in enumerate(("big", "mid", "pin")):
+        put(EXPORT["pupils"][k], f"sourdine_pupil_{size}")
+    for k, mode in enumerate(("smile", "half", "scream")):
+        put(EXPORT["mouths"][k], f"sourdine_mouth_{mode}")
+    put(EXPORT["beam"], "beam")
+    put(EXPORT["beam_warning"], "beam_warning")
+    put(EXPORT["beam_muzzle"], "beam_muzzle")
+    for k, im in enumerate(EXPORT["note_black"]):
+        put(im, f"note_black_{k}")
+    put(EXPORT["note_gold"], "note_gold")
+    for size in ("s", "l"):
+        for k, mode in enumerate(("open", "look", "half", "closed")):
+            put(EXPORT[f"eye_{size}"][k], f"eye_{size}_{mode}")
     print("installé :", ", ".join(written))
 
 if __name__ == "__main__":

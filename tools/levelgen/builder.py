@@ -125,6 +125,20 @@ class Level:
         """L'image se retourne : « mirror » (on court vers la gauche), « up » (tête en bas), « both », « none »."""
         self.add(beat, "screen_flip", variant=mode)
 
+    def laser(self, beat, high=False, length=0.4):
+        """Laser de la Sourdine (boss à droite de l'écran), sur toute la largeur : annoncé (œil, tirets rouges), il tire
+        sur le temps et brûle de beat + 0,3 à beat + 0,3 + length. Bas : sauter sur le temps. Haut : rester au sol."""
+        self.add(beat, "laser", lane=1 if high else 0, length=length)
+
+    def boss(self, beat, on):
+        """La Sourdine entre (on) ou sort par la droite de l'écran."""
+        self.add(beat, "boss", lane=1 if on else 0)
+
+    def note(self, beat):
+        """Note noire crachée par la Sourdine : elle vole jusqu'au héros, à frapper en l'air sur `beat` (comme une
+        chauve-souris ; sa hauteur est posée sur la trajectoire simulée)."""
+        self.add(beat, "enemy_air", lane=1, variant="note")
+
     def glitch(self, beat, intensity, length):
         self.add(beat, "glitch", intensity=intensity, length=length)
 
