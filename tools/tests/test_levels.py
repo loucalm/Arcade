@@ -116,6 +116,8 @@ def test_difficulty_increases_from_one_level_to_the_next():
             assert set(fa.mechanics) <= set(fb.mechanics), (a, b)
             continue
         assert set(fa.mechanics) < set(fb.mechanics), (a, b)
+        if b == "n4_forge":                          # Chaos ID, joué au clic à 125 BPM (ADR-044) : plus lent que les Échos,
+            continue                                 # il monte d'un cran par la densité (ci-dessus) et les effets d'écran
         assert fa.bpm <= fb.bpm, (a, b)
 
 
@@ -135,18 +137,23 @@ def test_level_3_teaches_bats_jump_notes_and_gravity():
     assert not any(e["type"] in ("screen_flip", "screen_split", "glitch", "ramp", "bounce", "back") for e in events)
 
 
-def test_level_4_teaches_drums_ramps_and_back_plane():
-    """La Forge : tambours (dont une chaîne), rampes (course sur le mur et plongeon), arrière-plan, plans larges ; pas
-    encore d'effet d'écran (niveau 5). Un cran au-dessus des Échos et en dessous du niveau de base (le cumul) sur chaque
-    critère : actions par seconde, contretemps, dénivelé ; moins de plans larges que le niveau de base."""
+def test_level_4_teaches_drums_ramps_and_first_screen_effects():
+    """La Forge (refaite le 27/11 sur *Chaos ID* en 8-bit) : tambours (dont des chaînes) et rampes (course sur le mur,
+    dévalée, plongeon), et les premiers effets d'écran, en douceur : miroir gauche-droite (pas de tête en bas), écran
+    dédoublé (la grille 2×2, `ScreenGlitch.SetCopies`), grésillements. Pas d'arrière-plan (niveau 5). Un cran au-dessus des Échos et en
+    dessous du niveau de base sur chaque critère : actions par seconde, contretemps, dénivelé, plans larges."""
     events, _, stats, _ = RESULTS["n4_forge"]
     assert sum(1 for e in events if e["type"] == "bounce" and "variant" not in e.get("params", {})) >= 16
-    ramps = [e["params"]["height"] for e in events if e["type"] == "ramp"]
-    assert len(ramps) >= 8
-    assert sum(1 for e in events if e["type"] == "back") >= 4
+    assert sum(1 for e in events if e["type"] == "ramp") >= 6
+    assert not any(e["type"] == "back" for e in events)
     assert any(e["type"] == "camera" for e in events)
-    assert stats["max_y"] - stats["min_y"] > 30
-    assert not any(e["type"] in ("screen_flip", "screen_split", "glitch") for e in events)
+    flips = [e["params"]["variant"] for e in events if e["type"] == "screen_flip"]
+    splits = [e["params"]["copies"] for e in events if e["type"] == "screen_split"]
+    assert "mirror" in flips and set(flips) <= {"mirror", "none"}
+    assert 4 in splits and set(splits) <= {1, 4}
+    assert any(e["type"] == "glitch" for e in events)
+    base = RESULTS["shovel_knight"][0]
+    assert flips.count("mirror") < sum(1 for e in base if e["type"] == "screen_flip" and e["params"]["variant"] != "none")
     per_second = lambda n: RESULTS[n][2]["density"] * FICHES[n].bpm / 240.0
 
     def offbeat(n):

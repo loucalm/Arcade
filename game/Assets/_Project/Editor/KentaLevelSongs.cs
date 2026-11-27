@@ -25,8 +25,8 @@ namespace Kenta.EditorTools
         // Un niveau par ligne, dans l'ordre. Ajouter une ligne quand un niveau reçoit son morceau.
         static readonly Entry[] Levels =
         {
-            new Entry { song = "Song_04_forge", clip = "n4_forge_fire_maze.ogg", chart = "n4_forge.json",
-                        title = "FIRE MAZE", bpm = 151.29f, offset = 0.026f, preview = 80f },
+            new Entry { song = "Song_04_forge", clip = "n4_forge_chaos_id.ogg", chart = "n4_forge.json",
+                        title = "CHAOS ID", bpm = 125f, offset = 0.052f, preview = 96f },
         };
 
         [MenuItem("Kenta/Brancher les morceaux des niveaux")]
