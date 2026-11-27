@@ -6,6 +6,7 @@ Shader "Kenta/PixelDisplay"
     {
         [PerRendererData] _MainTex ("Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
+        _Invert ("Inversion (niveau 9 : le monde passe en négatif)", Range(0, 1)) = 0
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
         _StencilOp ("Stencil Operation", Float) = 0
@@ -45,6 +46,7 @@ Shader "Kenta/PixelDisplay"
 
             sampler2D _MainTex;
             fixed4 _Color;
+            half _Invert;
             float4 _ClipRect;
 
             v2f vert (appdata v)
@@ -60,6 +62,7 @@ Shader "Kenta/PixelDisplay"
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 c = tex2D(_MainTex, i.uv) * i.color;
+                c.rgb = lerp(c.rgb, c.a - c.rgb, _Invert);       // négatif d'une couleur prémultipliée
                 #ifdef UNITY_UI_CLIP_RECT
                 c *= UnityGet2DClipping(i.world.xy, _ClipRect);
                 #endif

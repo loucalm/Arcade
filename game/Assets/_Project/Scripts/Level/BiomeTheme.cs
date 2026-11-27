@@ -61,5 +61,7 @@ namespace Kenta.Level
         public Color spark = Color.white;
         [Tooltip("Couleur du flash du drop vers ce biome.")]
         public Color flash = Color.white;
+        [Tooltip("Monde en noir et blanc (le monde sourd du niveau 9) : pas de teinte de section ni de jour qui baisse.")]
+        public bool monochrome;
     }
 }

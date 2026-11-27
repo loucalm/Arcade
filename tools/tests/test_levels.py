@@ -77,11 +77,14 @@ def test_rail_keeps_hero_in_view(name):
 
 @pytest.mark.parametrize("name", NAMES)
 def test_level_keeps_one_world(name):
-    """Un niveau = un thème : aucune section ne change de monde (le décor suit le LevelDef, ADR-032)."""
-    assert FICHES[name].biomes == {}
+    """Un niveau = un thème (le décor suit le LevelDef, ADR-032) : aucune section ne change de monde, sauf celles que
+    la fiche nomme (niveau 9 : la Sylve, puis le monde sourd, ADR-040)."""
+    named = FICHES[name].biomes
+    if name != "n9_sourdine":
+        assert named == {}
     with open(engine.chart_path(FICHES[name]), encoding="utf-8") as f:
         chart = json.load(f)
-    assert all("biome" not in s for s in chart["sections"])
+    assert all(s.get("biome") == named.get(s["name"]) for s in chart["sections"])
 
 
 def test_level_1_only_teaches_jump_and_hit():
@@ -105,9 +108,13 @@ def test_difficulty_increases_from_one_level_to_the_next():
     assert ordered[:2] == ["n1_sylve", "n2_bayou"]
     for a, b in zip(ordered, ordered[1:]):
         fa, fb = FICHES[a], FICHES[b]
-        assert set(fa.mechanics) < set(fb.mechanics), (a, b)
         assert RESULTS[a][2]["density"] < RESULTS[b][2]["density"], (a, b)
-        assert fa.bpm <= fb.bpm and fa.margin_ms >= fb.margin_ms, (a, b)
+        assert fa.margin_ms >= fb.margin_ms, (a, b)
+        if b == "n9_sourdine":                       # le défi de l'élite (ADR-040) : tout, plus dense, sur un tempo plus lent
+            assert set(fa.mechanics) <= set(fb.mechanics), (a, b)
+            continue
+        assert set(fa.mechanics) < set(fb.mechanics), (a, b)
+        assert fa.bpm <= fb.bpm, (a, b)
 
 
 def test_level_2_teaches_vines_and_stompers():

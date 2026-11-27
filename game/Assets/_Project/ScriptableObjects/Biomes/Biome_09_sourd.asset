@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53b196c791744c4918ceff7c60ec08, type: 3}
+  m_Name: Biome_09_sourd
+  m_EditorClassIdentifier: Assembly-CSharp::Kenta.Level.BiomeTheme
+  label: LA SOURDINE
+  sectionName: SILENCE
+  guardianName: LA SOURDINE
+  sky: {fileID: 21300000, guid: d170b422ac369467baf2e320f811091a, type: 3}
+  far: {fileID: 21300000, guid: 02470d8b61fa442658c30c190a8d4e9a, type: 3}
+  mid: {fileID: 21300000, guid: 9632ba542c65d4be1857ae6950ce1c90, type: 3}
+  near: {fileID: 21300000, guid: 92bb459fcd3394cb7820cc46089cb1a3, type: 3}
+  guardian: {fileID: 21300000, guid: 6f94531e76f194c56aebc26be101c183, type: 3}
+  guardianOffset: {x: 139, y: 20}
+  ground: {fileID: 21300000, guid: 6f9b8247f6768476e80cf60d4cf09115, type: 3}
+  hazard: {fileID: 21300000, guid: 5f0f320502e534f398ea6afb2c5492eb, type: 3}
+  wall: {fileID: 21300000, guid: 67889326f39b742619ce4da3ae45c24a, type: 3}
+  block: {fileID: 21300000, guid: 01eceb051568f41559ff9c4437fbdcfc, type: 3}
+  ceiling: {fileID: 21300000, guid: ab3c2d5f6d389414690b6ac437c2af39, type: 3}
+  post: {fileID: 21300000, guid: 23c534ce09a25472bad51d19c2b017e0, type: 3}
+  fill: {fileID: 21300000, guid: 1e0ca05cab75d4776ae688f8ed5cfae0, type: 3}
+  fillDeep: {fileID: 21300000, guid: adb23a975d05c488f8a70fce14b75e2e, type: 3}
+  pillarDecor:
+  - {fileID: 21300000, guid: 9758e46cef5ea48039235f03b5c097f2, type: 3}
+  - {fileID: 21300000, guid: 7b5ed4acd99ce46a29d8410e7ad999ee, type: 3}
+  - {fileID: 21300000, guid: 443fe6a3265fa4b7e9f6696a13e19dcd, type: 3}
+  - {fileID: 21300000, guid: e4a7bf214e5df4a7db0800d5502e1fa6, type: 3}
+  cliff: {fileID: 21300000, guid: dfbb036f7e5754ffcb054d50ae424c50, type: 3}
+  platform: {fileID: 21300000, guid: bb7492ceb721d47cba2c74b3beb1db90, type: 3}
+  enemyFrames:
+  - {fileID: 21300000, guid: fee195f279f134e8888373459f0b703c, type: 3}
+  - {fileID: 21300000, guid: 68e29a9e0fa2f4c1ba8e58af7bf45bfb, type: 3}
+  enemyBroken: {fileID: 21300000, guid: d7545f96794554d14ac718706735f3b4, type: 3}
+  spark: {r: 1, g: 0.16470589, b: 0.2901961, a: 1}
+  flash: {r: 1, g: 1, b: 1, a: 1}
+  monochrome: 1

@@ -42,3 +42,4 @@ MonoBehaviour:
   enemyBroken: {fileID: 21300000, guid: 01b1283b90b5443399a050d4f5cff346, type: 3}
   spark: {r: 1, g: 0.41568628, b: 0.50980395, a: 1}
   flash: {r: 1, g: 1, b: 1, a: 1}
+  monochrome: 0
