@@ -33,10 +33,10 @@ Material:
     - _Corner: 0.05
     - _Curve: 0.12
     - _Fish: 0.06
-    - _Gain: 1.1
+    - _Gain: 1.12
     - _Glow: 0.12
-    - _LinePeriod: 3
-    - _Lines: 0.3
+    - _LinePeriod: 6
+    - _Lines: 0.35
     - _Soft: 0.15
     - _Vignette: 0.12
     - _Zoom: 1.04

@@ -11,12 +11,12 @@ Shader "Kenta/CrtDisplay"
         _Fish ("Fisheye", Range(0, 0.3)) = 0.06
         _Curve ("Bombé", Range(0, 0.3)) = 0.12
         _Corner ("Coins arrondis", Range(0.001, 0.2)) = 0.05
-        _Lines ("Lignes", Range(0, 0.6)) = 0.3
-        _LinePeriod ("Période des lignes (px)", Float) = 3
+        _Lines ("Lignes", Range(0, 0.6)) = 0.35
+        _LinePeriod ("Période des lignes (px)", Float) = 6
         _Soft ("Adoucissement", Range(0, 0.5)) = 0.15
         _Glow ("Lueur", Range(0, 0.6)) = 0.12
         _Vignette ("Vignette", Range(0, 0.6)) = 0.12
-        _Gain ("Gain", Range(0.5, 1.5)) = 1.1
+        _Gain ("Gain", Range(0.5, 1.5)) = 1.12
     }
     SubShader
     {
