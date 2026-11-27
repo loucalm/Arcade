@@ -59,7 +59,7 @@ namespace Kenta.UI
             Animate();
             if (Done || TimedOut) return;
             timer -= Time.unscaledDeltaTime;
-            if (ArcadeInput.AnyInput()) timer = Mathf.Max(timer, seconds - 0.3f);   // on touche : le délai repart (sans rejouer la garde)
+            if (ArcadeInput.AnyActivity()) timer = Mathf.Max(timer, seconds - 0.3f);   // on touche : le délai repart (sans rejouer la garde)
             timerText.Text = Mathf.Max(0, Mathf.CeilToInt(timer)).ToString("D2");
 
             var stick = ArcadeInput.Stick(1);

@@ -130,7 +130,7 @@ namespace Kenta.Core
 
                 case GameState.Explain:
                     // personne ne touche à rien pendant explainDuration : retour à l'accueil (plus de passage automatique)
-                    if (ArcadeInput.AnyInput()) stateTimer = Mathf.Min(stateTimer, inputGuard);
+                    if (ArcadeInput.AnyActivity()) stateTimer = Mathf.Min(stateTimer, inputGuard);
                     if (guardPassed && ArcadeInput.ConfirmDown()) Enter(GameState.Config);
                     else if (stateTimer >= explainDuration) Enter(GameState.Attract);
                     break;
