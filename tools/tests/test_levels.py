@@ -135,6 +135,37 @@ def test_level_3_teaches_bats_jump_notes_and_gravity():
     assert not any(e["type"] in ("screen_flip", "screen_split", "glitch", "ramp", "bounce", "back") for e in events)
 
 
+def test_level_4_teaches_drums_ramps_and_back_plane():
+    """La Forge : tambours (dont une chaîne), rampes (course sur le mur et plongeon), arrière-plan, plans larges ; pas
+    encore d'effet d'écran (niveau 5). Un cran au-dessus des Échos et en dessous du niveau de base (le cumul) sur chaque
+    critère : actions par seconde, contretemps, dénivelé ; moins de plans larges que le niveau de base."""
+    events, _, stats, _ = RESULTS["n4_forge"]
+    assert sum(1 for e in events if e["type"] == "bounce" and "variant" not in e.get("params", {})) >= 16
+    ramps = [e["params"]["height"] for e in events if e["type"] == "ramp"]
+    assert len(ramps) >= 8
+    assert sum(1 for e in events if e["type"] == "back") >= 4
+    assert any(e["type"] == "camera" for e in events)
+    assert stats["max_y"] - stats["min_y"] > 30
+    assert not any(e["type"] in ("screen_flip", "screen_split", "glitch") for e in events)
+    per_second = lambda n: RESULTS[n][2]["density"] * FICHES[n].bpm / 240.0
+
+    def offbeat(n):
+        w = engine.World(RESULTS[n][0])
+        acts = list(w.jumps) + list(w.hits)
+        return sum(1 for a in acts if abs(a - round(a)) > 1e-6) / len(acts)
+
+    def height(n):
+        return RESULTS[n][2]["max_y"] - RESULTS[n][2]["min_y"]
+
+    def wide(n):
+        zooms = engine.zooms_from_events(RESULTS[n][0])
+        return sum(1 for z in zooms if z > FICHES[n].zoom) / len(zooms)
+
+    for crit in (per_second, offbeat, height):
+        assert crit("n3_echos") < crit("n4_forge") < crit("shovel_knight"), crit.__name__
+    assert wide("n4_forge") < wide("shovel_knight")
+
+
 def test_obstacle_variety():
     """Le niveau 01 (futur niveau 6, le cumul) a toutes les mécaniques du jeu."""
     kinds = {e["type"] for e in EVENTS}

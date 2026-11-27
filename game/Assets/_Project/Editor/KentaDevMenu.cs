@@ -18,6 +18,7 @@ namespace Kenta.EditorTools
                 if (s != PlayModeStateChange.EnteredEditMode) return;
                 SessionState.EraseFloat(DevStart.Key);
                 SessionState.EraseString(DevStart.LevelKey);
+                SessionState.EraseBool(DevStart.AutoplayKey);
             };
         }
 
@@ -44,11 +45,20 @@ namespace Kenta.EditorTools
         [MenuItem("Kenta/Tester le refrain 2 (effets d'écran)")]
         static void PlayScreenFx() => PlayFrom(214.2f);
 
-        static void PlayFrom(float beat, string level = "")
+        /// <summary>Le niveau 4 (La Forge, tambours, rampes, arrière-plan) du début, joué à la main.</summary>
+        [MenuItem("Kenta/Tester le niveau 4 (La Forge)")]
+        static void PlayLevel4() => PlayFrom(1f, "forge");
+
+        /// <summary>Le niveau 4 en entier joué par l'IA (validation de la chart dans le vrai jeu).</summary>
+        [MenuItem("Kenta/Tester le niveau 4 en autoplay")]
+        static void PlayLevel4Auto() => PlayFrom(1f, "forge", true);
+
+        static void PlayFrom(float beat, string level = "", bool autoplay = false)
         {
             if (EditorApplication.isPlaying) return;
             SessionState.SetFloat(DevStart.Key, beat);
             SessionState.SetString(DevStart.LevelKey, level);
+            SessionState.SetBool(DevStart.AutoplayKey, autoplay);
             EditorApplication.EnterPlaymode();
         }
     }

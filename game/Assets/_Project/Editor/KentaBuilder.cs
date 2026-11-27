@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -41,6 +42,37 @@ namespace Kenta.EditorTools
         static Color Hex(string h) { ColorUtility.TryParseHtmlString(h, out var c); return c; }
 
         // ------------------------------------------------------------------ utilitaires
+        /// <summary>Images numérotées `prefix0.png`, `prefix1.png`… tant qu'elles existent (vide si aucune).</summary>
+        static Sprite[] Frames(string prefix, int max = 16)
+        {
+            var list = new List<Sprite>();
+            for (int k = 0; k < max; k++)
+            {
+                var s = AssetDatabase.LoadAssetAtPath<Sprite>(Art + prefix + k + ".png");
+                if (s == null) break;
+                list.Add(s);
+            }
+            return list.ToArray();
+        }
+
+        /// <summary>Sprite optionnel : null s'il n'existe pas.</summary>
+        static Sprite SprOrNull(string rel) => AssetDatabase.LoadAssetAtPath<Sprite>(Art + rel);
+
+        /// <summary>
+        /// Après tools/gemini-heros/clean.py et tools/gemini-ennemis/clean.py : met les nouveaux sprites dans les jeux
+        /// d'images des héros, les biomes et le thème (ScriptableObjects), sans toucher à la scène ni aux prefabs.
+        /// </summary>
+        [MenuItem("Kenta/Installer les sprites des héros et des ennemis")]
+        public static void InstallSpritesMenu()
+        {
+            AssetDatabase.Refresh();
+            var heroes = BuildHeroes();
+            var biomes = BuildBiomes();
+            BuildTheme(biomes, heroes);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[KentaBuilder] sprites installés : {heroes.Length} héros, {biomes.Length} biomes, thème.");
+        }
+
         static Sprite Spr(string rel)
         {
             var s = AssetDatabase.LoadAssetAtPath<Sprite>(Art + rel);
@@ -143,13 +175,23 @@ namespace Kenta.EditorTools
                 set.hitFrames = Enumerable.Range(0, 6).Select(k => Spr(g + $"hit_{k}.png")).ToArray();   // katana
                 set.hit = set.hitFrames[2];
                 set.crouch = Spr(g + "crouch.png");
-                set.climbCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"climb_{k}.png")).ToArray();
-                set.descendCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"descend_{k}.png")).ToArray();
+                set.climbCycle = Frames(g + "climb_");                        // 7 ou 8 images selon le héros (Gemini)
+                set.descendCycle = Frames(g + "descend_");
                 set.fallFrames = Enumerable.Range(0, 3).Select(k => Spr(g + $"fall_{k}.png")).ToArray();
                 set.vine = Spr(g + "vine.png");
                 set.wall = Spr(g + "wall.png");
                 set.hurt = Spr(g + "hurt.png");
                 set.death = Spr(g + "death.png");
+                // animations dessinées par Gemini (tools/gemini-heros/clean.py) ; vides avec la marionnette
+                set.victoryFrames = Frames(g + "victory_");
+                set.landFrames = Frames(g + "land_");
+                set.vineFrames = Frames(g + "vine_");
+                set.wallCycle = Frames(g + "wall_");
+                set.drumFrames = Frames(g + "drum_");
+                set.hurtFrames = Frames(g + "hurt_");
+                set.deathFrames = Frames(g + "death_");
+                set.airHitFrames = Frames(g + "airhit_");
+                set.portraits = Frames(g + "portrait_");
                 EditorUtility.SetDirty(set);
                 var p = Asset<HeroProfile>(SoDir + $"Heroes/Hero_{names[i]}.asset");
                 p.displayName = names[i];
@@ -198,7 +240,16 @@ namespace Kenta.EditorTools
                 b.guardian = Spr($"Gen/biomes/guardian_{id}.png");
                 var pos = positions.FirstOrDefault(g => g.id == id);
                 b.guardianOffset = pos != null ? new Vector2(pos.x, pos.y) : Vector2.zero;
-                if (Enemies[i].StartsWith("djembe"))         // le djembé du PDF, ou son négatif (monde sourd)
+                if (File.Exists(Art + $"Pdf/enemy_{Enemies[i]}_hurt.png"))
+                {
+                    // ennemis dessinés par Gemini (tools/gemini-ennemis/clean.py) : danse sur 2 temps, touché, cassé
+                    string e = $"Pdf/enemy_{Enemies[i]}";
+                    b.enemyFrames = new[] { Spr(e + "_squash.png"), Spr(e + "_stretch.png") };
+                    b.enemyBroken = SprOrNull(e + "_broken.png");
+                    b.enemyHurt = SprOrNull(e + "_hurt.png");
+                    b.enemyBrokenFrames = Frames(e + "_broken_");
+                }
+                else if (Enemies[i].StartsWith("djembe"))         // le djembé du PDF, ou son négatif (monde sourd)
                 {
                     b.enemyFrames = new[] { Spr($"Pdf/enemy_{Enemies[i]}_squash.png"), Spr($"Pdf/enemy_{Enemies[i]}_stretch.png") };
                     b.enemyBroken = Spr($"Pdf/enemy_{Enemies[i]}_broken.png");
@@ -232,7 +283,7 @@ namespace Kenta.EditorTools
             var t = Asset<LevelTheme>(SoDir + "Theme_Kenta.asset");
             t.biomes = biomes;
             t.heroes = heroes;
-            t.coinFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/coin_{i}.png")).ToArray();
+            t.coinFrames = Frames("Gen/world/coin_");                       // 4 (anciennes) ou 5 images (Gemini)
             t.totem = Spr("Gen/world/totem.png");
             // la Sourdine, boss du niveau 9 (Gen/boss : tools/gemini-niveau9/gen_sheets.py --install)
             t.sourdine = new SourdineSprites
@@ -253,6 +304,18 @@ namespace Kenta.EditorTools
             t.flyerFrames = Enumerable.Range(0, 4).Select(i => Spr($"Gen/world/bat_{i}.png")).ToArray();   // tools/gen-bat.py
             t.flyer = t.flyerFrames[0] != null ? t.flyerFrames[0] : Spr("Pdf/enemy_chauve.png");   // ennemi volant commun
             t.stomper = new[] { Spr("Gen/world/stomper_0.png"), Spr("Gen/world/stomper_1.png") };   // cuirassé commun
+            // dessinés par Gemini (tools/gemini-ennemis/clean.py) ; vides sinon (le code garde alors les anciens visuels)
+            t.flyerHang = Frames("Gen/world/bat_hang_");
+            var batHurt = SprOrNull("Gen/world/bat_hurt.png");
+            var batBroken = SprOrNull("Gen/world/bat_broken.png");
+            t.flyerBroken = batHurt != null && batBroken != null ? new[] { batHurt, batBroken } : new Sprite[0];
+            var stomped = Frames("Gen/world/stomper_stomped_").ToList();
+            var recover = SprOrNull("Gen/world/stomper_recover.png");
+            if (recover != null) stomped.Add(recover);
+            t.stomperStomped = stomped.ToArray();
+            t.drumFrames = Frames("Gen/world/drum_");
+            t.orbFrames = Frames("Gen/world/orb_");
+            t.vineKnot = SprOrNull("Gen/world/vine_knot.png");
             t.pixel = Spr("Gen/world/px.png");
             EditorUtility.SetDirty(t);
             return t;

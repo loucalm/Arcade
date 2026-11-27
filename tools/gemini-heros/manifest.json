@@ -1,0 +1,406 @@
+{
+  "_doc": "Quelle image de quelle planche (raw/sheets/<planche>.jpg) devient quelle image du jeu. Une image = \"planche:blob\" (numéro donné par blobs.py), \"planche:blob:L\" / \":R\" (moitié gauche / droite d'un blob qui a fusionné deux images côte à côte), \":T\" / \":B\" (moitié haute / basse). « erase » : rectangles [x0, y0, x1, y1] de la planche où effacer le texte (pixels gris, blancs ou noirs seulement : les cheveux restent). « stand » : images d'attente dont la hauteur donne l'échelle (54 px dans le jeu).",
+  "kenta": {
+    "stand": [
+      "kenta_1:0",
+      "kenta_1:2"
+    ],
+    "erase": {
+      "kenta_3": [
+        [
+          4,
+          2,
+          162,
+          30
+        ]
+      ],
+      "kenta_2": [
+        [
+          6,
+          467,
+          160,
+          497
+        ],
+        [
+          876,
+          618,
+          992,
+          647
+        ],
+        [
+          5,
+          1,
+          62,
+          31
+        ],
+        [
+          6,
+          618,
+          117,
+          648
+        ]
+      ]
+    },
+    "anims": {
+      "idle": [
+        "kenta_1:0",
+        "kenta_1:1:L",
+        "kenta_1:1:R",
+        "kenta_1:2"
+      ],
+      "victory": [
+        "kenta_1:3",
+        "kenta_1:4",
+        "kenta_1:5",
+        "kenta_1:6",
+        "kenta_1:7",
+        "kenta_1:8"
+      ],
+      "run": [
+        "kenta_1:9",
+        "kenta_1:10",
+        "kenta_1:11",
+        "kenta_1:12",
+        "kenta_1:13",
+        "kenta_1:14",
+        "kenta_1:15",
+        "kenta_1:16"
+      ],
+      "jump": [
+        "kenta_1:17",
+        "kenta_1:18",
+        "kenta_1:19",
+        "kenta_1:20",
+        "kenta_1:21",
+        "kenta_1:22",
+        "kenta_1:23",
+        "kenta_1:24"
+      ],
+      "land": [
+        "kenta_1:26",
+        "kenta_1:25"
+      ],
+      "fall": [
+        "kenta_1:32",
+        "kenta_1:33",
+        "kenta_1:34"
+      ],
+      "climb": [
+        "kenta_3:0",
+        "kenta_3:1",
+        "kenta_3:2",
+        "kenta_3:3",
+        "kenta_3:4",
+        "kenta_3:5",
+        "kenta_3:6",
+        "kenta_3:7"
+      ],
+      "descend": [
+        "kenta_3:9",
+        "kenta_3:10",
+        "kenta_3:11",
+        "kenta_3:12",
+        "kenta_3:13",
+        "kenta_3:14",
+        "kenta_3:15",
+        "kenta_3:16"
+      ],
+      "vine": [
+        "kenta_2:2",
+        "kenta_2:3",
+        "kenta_2:4",
+        "kenta_2:5"
+      ],
+      "wall": [
+        "kenta_3:18",
+        "kenta_3:19",
+        "kenta_3:20",
+        "kenta_3:21",
+        "kenta_3:22",
+        "kenta_3:23"
+      ],
+      "drum": [
+        "kenta_2:16",
+        "kenta_2:17",
+        "kenta_2:18",
+        "kenta_2:19"
+      ],
+      "hurt": [
+        "kenta_2:13",
+        "kenta_2:14",
+        "kenta_2:15"
+      ],
+      "death": [
+        "kenta_3:25",
+        "kenta_3:26",
+        "kenta_3:27",
+        "kenta_3:28",
+        "kenta_2:23"
+      ],
+      "hit": [
+        "kenta_2:24",
+        "kenta_2:25",
+        "kenta_2:26",
+        "kenta_2:27",
+        "kenta_2:28",
+        "kenta_2:29"
+      ],
+      "airhit": [
+        "kenta_2:31",
+        "kenta_2:32",
+        "kenta_2:33",
+        "kenta_2:34"
+      ],
+      "portrait": [
+        "kenta_2:35",
+        "kenta_2:36",
+        "kenta_2:37"
+      ]
+    }
+  },
+  "aiko": {
+    "stand": [
+      "aiko_1:0",
+      "aiko_1:1",
+      "aiko_1:2",
+      "aiko_1:3"
+    ],
+    "erase": {},
+    "anims": {
+      "idle": [
+        "aiko_1:0",
+        "aiko_1:1",
+        "aiko_1:2",
+        "aiko_1:3"
+      ],
+      "victory": [
+        "aiko_1:4",
+        "aiko_1:5",
+        "aiko_1:6",
+        "aiko_1:7",
+        "aiko_1:8",
+        "aiko_1:9"
+      ],
+      "run": [
+        "aiko_1:10",
+        "aiko_1:11",
+        "aiko_1:12",
+        "aiko_1:13",
+        "aiko_1:14",
+        "aiko_1:15",
+        "aiko_1:16",
+        "aiko_1:17"
+      ],
+      "jump": [
+        "aiko_1:18",
+        "aiko_1:19",
+        "aiko_1:20",
+        "aiko_1:21",
+        "aiko_1:22",
+        "aiko_1:23",
+        "aiko_1:24",
+        "aiko_1:25"
+      ],
+      "land": [
+        "aiko_1:26",
+        "aiko_1:27:T"
+      ],
+      "fall": [
+        "aiko_1:28",
+        "aiko_1:34",
+        "aiko_1:35"
+      ],
+      "climb": [
+        "aiko_1:29",
+        "aiko_1:30",
+        "aiko_1:36:T",
+        "aiko_1:31",
+        "aiko_1:32",
+        "aiko_1:33",
+        "aiko_1:27:B"
+      ],
+      "descend": [
+        "aiko_1:37",
+        "aiko_1:38",
+        "aiko_1:36:B",
+        "aiko_1:39",
+        "aiko_1:40",
+        "aiko_1:41",
+        "aiko_1:42"
+      ],
+      "vine": [
+        "aiko_2:0",
+        "aiko_2:1",
+        "aiko_2:2",
+        "aiko_2:3"
+      ],
+      "wall": [
+        "aiko_2:4",
+        "aiko_2:5",
+        "aiko_2:6",
+        "aiko_2:7",
+        "aiko_2:8",
+        "aiko_2:9"
+      ],
+      "drum": [
+        "aiko_2:10",
+        "aiko_2:11",
+        "aiko_2:12",
+        "aiko_2:13"
+      ],
+      "hurt": [
+        "aiko_2:17",
+        "aiko_2:18",
+        "aiko_2:19"
+      ],
+      "death": [
+        "aiko_2:20",
+        "aiko_2:21",
+        "aiko_2:22",
+        "aiko_2:23",
+        "aiko_2:24"
+      ],
+      "hit": [
+        "aiko_2:25",
+        "aiko_2:26",
+        "aiko_2:27",
+        "aiko_2:28",
+        "aiko_2:29",
+        "aiko_2:30"
+      ],
+      "airhit": [
+        "aiko_2:31",
+        "aiko_2:32",
+        "aiko_2:33",
+        "aiko_2:34"
+      ],
+      "portrait": [
+        "aiko_2:35",
+        "aiko_2:36",
+        "aiko_2:37"
+      ]
+    }
+  },
+  "ryo": {
+    "stand": [
+      "ryo_1:0",
+      "ryo_1:1",
+      "ryo_1:2",
+      "ryo_1:3"
+    ],
+    "erase": {},
+    "anims": {
+      "idle": [
+        "ryo_1:0",
+        "ryo_1:1",
+        "ryo_1:2",
+        "ryo_1:3"
+      ],
+      "victory": [
+        "ryo_1:4",
+        "ryo_1:5",
+        "ryo_1:6",
+        "ryo_1:7",
+        "ryo_1:8"
+      ],
+      "run": [
+        "ryo_1:9",
+        "ryo_1:10",
+        "ryo_1:11",
+        "ryo_1:12",
+        "ryo_1:13",
+        "ryo_1:14",
+        "ryo_1:15",
+        "ryo_1:16"
+      ],
+      "jump": [
+        "ryo_1:17",
+        "ryo_1:18",
+        "ryo_1:19",
+        "ryo_1:20",
+        "ryo_1:21",
+        "ryo_1:22",
+        "ryo_1:23",
+        "ryo_1:24"
+      ],
+      "land": [
+        "ryo_1:25",
+        "ryo_1:26"
+      ],
+      "fall": [
+        "ryo_1:27",
+        "ryo_1:35",
+        "ryo_1:36"
+      ],
+      "climb": [
+        "ryo_1:28",
+        "ryo_1:29",
+        "ryo_1:30",
+        "ryo_1:31",
+        "ryo_1:32",
+        "ryo_1:33",
+        "ryo_1:34"
+      ],
+      "descend": [
+        "ryo_1:37",
+        "ryo_1:38",
+        "ryo_1:39",
+        "ryo_1:40",
+        "ryo_1:41",
+        "ryo_1:42",
+        "ryo_1:43"
+      ],
+      "vine": [
+        "ryo_2:0",
+        "ryo_2:1",
+        "ryo_2:2",
+        "ryo_2:3"
+      ],
+      "wall": [
+        "ryo_2:4",
+        "ryo_2:5",
+        "ryo_2:6",
+        "ryo_2:7",
+        "ryo_2:8",
+        "ryo_2:9"
+      ],
+      "drum": [
+        "ryo_2:10",
+        "ryo_2:11",
+        "ryo_2:12",
+        "ryo_2:13"
+      ],
+      "hurt": [
+        "ryo_2:18",
+        "ryo_2:19",
+        "ryo_2:20"
+      ],
+      "death": [
+        "ryo_2:21",
+        "ryo_2:22",
+        "ryo_2:23",
+        "ryo_2:24",
+        "ryo_2:25"
+      ],
+      "hit": [
+        "ryo_2:26",
+        "ryo_2:27",
+        "ryo_2:28",
+        "ryo_2:29",
+        "ryo_2:30",
+        "ryo_2:31"
+      ],
+      "airhit": [
+        "ryo_2:33",
+        "ryo_2:34",
+        "ryo_2:35",
+        "ryo_2:36"
+      ],
+      "portrait": [
+        "ryo_2:38",
+        "ryo_2:39",
+        "ryo_2:40"
+      ]
+    }
+  }
+}

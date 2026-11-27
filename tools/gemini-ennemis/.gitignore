@@ -1,0 +1,3 @@
+# planches Gemini (raw/sheets/) versionnées ; sorties régénérables
+out/*
+!out/.gitkeep

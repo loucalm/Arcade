@@ -1045,6 +1045,8 @@ namespace Kenta.Level
             var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
             if (frames.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(sr, frames);
             if (frames == biome.enemyFrames) sr.color = new Color(0.6f, 0.75f, 1f);
+            if (theme.stomperStomped != null && theme.stomperStomped.Length > 0 && theme.stomperStomped[0] != null)
+                sr.gameObject.AddComponent<StompFrames>().Setup(sr, theme.stomperStomped);    // écrasé quand on saute dessus
             var arrow = new GameObject("Arrow").transform;
             arrow.SetParent(t, false);
             for (int k = 0; k < 2; k++)
@@ -1062,6 +1064,13 @@ namespace Kenta.Level
         GameObject MakeOrb(Vector2 center)
         {
             var t = Group("Orb", center);
+            if (theme.orbFrames != null && theme.orbFrames.Length > 0 && theme.orbFrames[0] != null)
+            {
+                // note de saut dessinée (Gemini) : une note cyan dans un anneau, qui pulse
+                var note = Spr(t, "Sprite", theme.orbFrames[0], Vector2.zero, 14);
+                note.gameObject.AddComponent<SpriteCycle>().Setup(theme.orbFrames, 8f);
+                return t.gameObject;
+            }
             var sr = Spr(t, "Sprite", theme.coinFrames[0], Vector2.zero, 14, 2f);
             sr.color = new Color(0.55f, 1f, 0.95f);
             sr.gameObject.AddComponent<SpriteCycle>().Setup(theme.coinFrames);
@@ -1075,6 +1084,13 @@ namespace Kenta.Level
         GameObject MakeHanging(Vector2 underside, BiomeTheme biome)
         {
             var t = Group("Hanging", underside);
+            if (theme.flyerHang != null && theme.flyerHang.Length > 0 && theme.flyerHang[0] != null)
+            {
+                // chauve-souris pendue (Gemini), accrochée par le haut au dessous du plafond ; elle ouvre les yeux sur le temps
+                var bat = Spr(t, "Sprite", theme.flyerHang[0], Vector2.zero, 10);
+                if (theme.flyerHang.Length > 1) t.gameObject.AddComponent<BeatFrames>().Setup(bat, theme.flyerHang);
+                return t.gameObject;
+            }
             var frames = biome.enemyFrames;
             var sr = Spr(t, "Sprite", frames[0], Vector2.zero, 10);
             sr.flipY = true;
@@ -1089,7 +1105,8 @@ namespace Kenta.Level
             float xg = BeatToX(o.grabBeat), xr = o.bounds.xMax;
             var anchor = new Vector2(PixelScreen.Snap((xg + xr) * 0.5f), PixelScreen.Snap(Mathf.Max(o.grabY, o.releaseY) + VineView.HandHeight + 2.2f));
             var t = Group("Vine", anchor);
-            if (biome.post != null) Spr(t, "Knot", biome.post, Vector2.zero, 9);
+            var knot = theme.vineKnot != null ? theme.vineKnot : biome.post;
+            if (knot != null) Spr(t, "Knot", knot, Vector2.zero, 9);
             var view = t.gameObject.AddComponent<VineView>();
             // au repos, la corde pend droit sous son nœud (jusqu'à la hauteur de la main) ; on l'attrape en passant
             view.Setup(theme.pixel, new Color(0.3f, 0.45f, 0.18f), new Vector2(anchor.x, o.grabY + VineView.HandHeight));
@@ -1124,7 +1141,9 @@ namespace Kenta.Level
         GameObject MakeBounce(Vector2 pos, BiomeTheme biome)
         {
             var t = Group("Bounce", pos);
-            var sr = Spr(t, "Sprite", biome.block, Vector2.zero, 10);
+            // tambour-tremplin dessiné (Gemini) : peau blanche tendue, chevron « rebond » ; sinon le tambour du biome
+            var drum = theme.drumFrames != null && theme.drumFrames.Length > 0 && theme.drumFrames[0] != null ? theme.drumFrames[0] : biome.block;
+            var sr = Spr(t, "Sprite", drum, Vector2.zero, 10);
             sr.gameObject.AddComponent<PressBump>();
             return t.gameObject;
         }

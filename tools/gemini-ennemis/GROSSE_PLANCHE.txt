@@ -1,0 +1,41 @@
+Create ONE big, clean **sprite sheet** with ALL the enemies and gameplay objects of my 2D pixel-art rhythm runner **Kenta** (school arcade cabinet, 1920×1080, integer upscaling, 40 px = 1 game unit). The hero (about 52 px tall, see the attached scale image) runs right on the beat and **slashes enemies with a katana**. Every enemy is a **musical instrument fused with a creature, driven mad by the Sourdine** (a stain of silence); hitting it retunes it and it bursts into coins. This sheet will be cut automatically by a script, so the grid must be perfectly regular.
+
+## Style
+- Keep each enemy's main colours and instrument from the attached scale image, but make them **much cooler**: stronger silhouettes, big expressive **white eyes** (the shared signature of all enemies), grumpy/crazy detuned expressions, cute and chunky, mischievous not scary, no gore. Keep the **same facing as the current sprite**.
+- Light from the top-left, 3 tones per material, 1-pixel dark outline #14101C, highlights on metal, wood and drum skins. Saturated colours that stand out on busy backgrounds.
+- Original designs only: do not imitate any existing game.
+
+## THE SHEET (exact layout, very important)
+- Flat **#FF00FF magenta background** everywhere. No text, labels, numbers, grid lines, ground or shadows.
+- **640 × 832 game pixels**: **13 rows of 64 px**, each row made of **10 cells of 64 × 64**, filled from the left (unused cells stay magenta). Draw it at **×2 (1280 × 1664 image)** if you can, otherwise ×1. Every game pixel a clean square, no anti-aliasing, no gradient, no blur. Nothing crosses a cell border.
+- Grounded enemies: centred, **feet or base on the bottom row of the cell**, 40-54 px tall. Flying things: centred in the cell.
+
+## Rows 1 to 8: the local enemies, 6 frames each, in this order
+`idle` · `squash` (beat 1: 15 % wider, 10 % lower, the instrument "hit") · `stretch` (beat 2: taller, hopping 2-3 px off the ground, eyes wide) · `hurt` (recoils, eyes squeezed shut, mouth open) · `broken_0` (a clean crack across the instrument, eyes turned into spirals or crosses) · `broken_1` (falls apart in 2-3 pieces, inside the cell).
+1. **Djembe-mushroom** (forest): red cap with white dots that is a djembe drum skin, small wooden legs; squash = the cap flattens like a hit drum skin; broken = the cap splits in two.
+2. **Bass-drum toad** (swamp): green toad whose belly is a bass drum (white skin, red rim); squash = throat and belly inflate.
+3. **Maracas bat on the ground** (crystal cave): purple bat standing, maracas in its feet; squash = shakes the maracas down, stretch = wings up.
+4. **Amp-crab** (volcano): black guitar amplifier body with a speaker cone, glowing orange lava cracks, eye stalks; squash = claws snap down like a snare hit.
+5. **Gong-golem** (mountain): small stone golem framing a golden gong with a face; squash = the gong vibrates (ring lines).
+6. **Xylophone-walrus** (glacier): brown walrus, tusks are mallets, xylophone bars on its belly; squash = strikes its own bars.
+7. **Trumpet-gargoyle** (ruined city): stone gargoyle with small wings blowing a golden trumpet; squash = puffed cheeks.
+8. **Kettledrum-cloud** (storm summit): grumpy blue storm cloud on a copper timpani with a small lightning spark; squash = the cloud swells.
+
+## Row 9: the flying bat (all levels), 9 frames, centred
+4 wing-flap frames (up, middle, down, middle) · 2 frames hanging upside down from the ceiling (asleep, then eyes open) · `hurt` · 2 `broken` (maracas fly away, then it spins down). Purple, white eyes, small fangs, a thin light rim on top edges so it reads on dark caves.
+
+## Row 10: the armoured beetle (springboard enemy), 5 frames, base on the bottom row
+The hero jumps on it and bounces high: teal armoured shell like a drum machine, a bright yellow pad on top ("press here"), little legs, angry yellow eyes in the shell slit. 2 walking/dancing frames · 2 `stomped` (shell squashed flat, pad pushed in, spring lines) · 1 `recover` (pops back up). About 42 × 33 px.
+
+## Row 11: drum-trampoline and jump note
+- **Drum-trampoline** (3 frames, about 48 × 40, base on the bottom row): must read instantly as "bounce here" (today it looks like a barrel): big drum, **taut white skin on top**, bright coloured rim, tension ropes, a small upward chevron painted on the shell. Idle · pressed (skin down, sides bulging) · launch (skin bulging up, two short motion lines).
+- **Jump note** (4 frames, about 24 × 24, centred): a glowing cyan eighth note (head, stem, flag) inside a ring, thin white rim; frames pulse (small, big, glow ring, small).
+
+## Row 12: coin and vine knot
+- **Coin** (4 frames, about 20 × 20, centred): gold disc with an engraved eighth note, outline #14101C, spinning (front, three-quarter, edge, three-quarter back).
+- **Vine knot** (1 frame, about 12 × 12, centred): green leafy knot with a small flower.
+
+## Row 13: gravity portal parts, in GREY-SCALE (the game tints them)
+The portal flips gravity (the hero falls up to the ceiling). Draw a mystical stone arch as parts, each in its own cell(s): **pillar** (16 px wide, a carved stone column with a glowing rune channel, seamless top-bottom, fill the cell height) · **lintel** (spanning 2 cells, about 80 × 20, with a double-arrow rune up and down) · **veil** (a seamless 48 × 32 shimmering tile of soft horizontal bands with a few sparkles, light grey).
+
+Take your time: a perfectly regular grid and consistent characters matter more than speed.

@@ -73,3 +73,12 @@ MonoBehaviour:
   - {fileID: 21300000, guid: d023e8fb38f3a47dcbba3e53ad82beb7, type: 3}
   - {fileID: 21300000, guid: 45ab22a673504497db118d6d6f5cf599, type: 3}
   - {fileID: 21300000, guid: d1ce9dd6ea2914cd699a72f27ad44daf, type: 3}
+  victoryFrames: []
+  landFrames: []
+  vineFrames: []
+  wallCycle: []
+  drumFrames: []
+  hurtFrames: []
+  deathFrames: []
+  airHitFrames: []
+  portraits: []

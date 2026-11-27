@@ -55,6 +55,10 @@ namespace Kenta.Level
         public Sprite[] enemyFrames;
         [Tooltip("Image « cassé » : montrée une fraction de seconde quand on le frappe.")]
         public Sprite enemyBroken;
+        [Tooltip("Touché : l'image du coup (tools/gemini-ennemis/clean.py).")]
+        public Sprite enemyHurt;
+        [Tooltip("Cassé, en quelques images : la fêlure, puis les morceaux. Jouées là où l'ennemi a été frappé.")]
+        public Sprite[] enemyBrokenFrames;
 
         [Header("Couleurs")]
         [Tooltip("Étincelles et particules du biome.")]

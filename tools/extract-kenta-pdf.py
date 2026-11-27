@@ -60,6 +60,10 @@ def save(img, name, anchor=True):
 
 
 def main():
+    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "game", "Assets", "_Project", "Art",
+                                   "Kenta", "Pdf", ".gemini")) and "--force" not in __import__("sys").argv:
+        raise SystemExit("Les ennemis et objets viennent de Gemini (tools/gemini-ennemis/clean.py) : rien n'est écrasé. "
+                         "--force pour revenir aux anciens sprites.")
     os.makedirs(OUT, exist_ok=True)
     doc = pymupdf.open(PDF)
     n = 0

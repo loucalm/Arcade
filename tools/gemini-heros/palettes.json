@@ -1,0 +1,163 @@
+{
+ "kenta": {
+  "contour": "#14101C",
+  "skin": [
+   "#DDA47E",
+   "#F6C9A0",
+   "#F6C9A0"
+  ],
+  "hair": [
+   "#A8321C",
+   "#E8542C",
+   "#FF9A4A"
+  ],
+  "band": [
+   "#C8CCD4",
+   "#F2F2F3",
+   "#FFFFFF"
+  ],
+  "top": [
+   "#18213E",
+   "#233056",
+   "#3A4458"
+  ],
+  "pants": [
+   "#2A2A36",
+   "#3A3A4A",
+   "#3A3A4A"
+  ],
+  "shoes": [
+   "#4A2816",
+   "#6A3A22",
+   "#6A3A22"
+  ],
+  "eye": [
+   "#C8862A",
+   "#FFFFFF"
+  ],
+  "mouth": "#7A3A2A",
+  "blush": "#F0998A",
+  "scarf": [
+   "#A8321C",
+   "#D8502A",
+   "#FF6B3D"
+  ],
+  "belt": "#6A3A22",
+  "buckle": "#E8B84A",
+  "band_plate": "#9AA4B4",
+  "katana_acier": [
+   "#7C8698",
+   "#C9D1DE",
+   "#FFFFFF"
+  ]
+ },
+ "aiko": {
+  "contour": "#14101C",
+  "skin": [
+   "#E2B39A",
+   "#F8D8C0",
+   "#F8D8C0"
+  ],
+  "hair": [
+   "#1E6E70",
+   "#2FA3A0",
+   "#5FD0C8"
+  ],
+  "band": [
+   "#5A3AA8",
+   "#8A5CFF",
+   "#C8C0E8"
+  ],
+  "top": [
+   "#C8C0D8",
+   "#F2EEF6",
+   "#FFFFFF"
+  ],
+  "pants": [
+   "#2A2448",
+   "#3A3260",
+   "#3A3260"
+  ],
+  "shoes": [
+   "#3A2418",
+   "#5A3A2A",
+   "#5A3A2A"
+  ],
+  "eye": [
+   "#5A3AA8",
+   "#FFFFFF"
+  ],
+  "mouth": "#7A3A2A",
+  "blush": "#EAA8A2",
+  "sash": [
+   "#5A3AA8",
+   "#8A5CFF",
+   "#8A5CFF"
+  ],
+  "katana_acier": [
+   "#7C8698",
+   "#C9D1DE",
+   "#FFFFFF"
+  ]
+ },
+ "ryo": {
+  "contour": "#14101C",
+  "skin": [
+   "#C48E6C",
+   "#E8B890",
+   "#E8B890"
+  ],
+  "hair": [
+   "#A8B0BC",
+   "#E8ECF0",
+   "#FFFFFF"
+  ],
+  "band": [
+   "#7A1A28",
+   "#B02A3A",
+   "#D04A5A"
+  ],
+  "top": [
+   "#1E4A34",
+   "#2E6A4A",
+   "#3AA86A"
+  ],
+  "pants": [
+   "#2A2622",
+   "#3A3430",
+   "#3A3430"
+  ],
+  "shoes": [
+   "#30261A",
+   "#4A3A2A",
+   "#4A3A2A"
+  ],
+  "eye": [
+   "#3AA86A",
+   "#FFFFFF"
+  ],
+  "mouth": "#7A3A2A",
+  "blush": "#D98A70",
+  "shirt": [
+   "#C8CCD4",
+   "#F2F2F3",
+   "#F2F2F3"
+  ],
+  "belt": "#5A3A2A",
+  "bass": [
+   "#7A1A28",
+   "#B02A3A",
+   "#D04A5A"
+  ],
+  "bass_neck": [
+   "#2A1A1A",
+   "#5A3A2A",
+   "#5A3A2A"
+  ],
+  "katana_acier": [
+   "#7C8698",
+   "#C9D1DE",
+   "#FFFFFF"
+  ]
+ }
+}

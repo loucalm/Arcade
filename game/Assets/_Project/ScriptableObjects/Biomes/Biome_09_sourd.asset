@@ -40,6 +40,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: fee195f279f134e8888373459f0b703c, type: 3}
   - {fileID: 21300000, guid: 68e29a9e0fa2f4c1ba8e58af7bf45bfb, type: 3}
   enemyBroken: {fileID: 21300000, guid: d7545f96794554d14ac718706735f3b4, type: 3}
+  enemyHurt: {fileID: 0}
+  enemyBrokenFrames: []
   spark: {r: 1, g: 0.16470589, b: 0.2901961, a: 1}
   flash: {r: 1, g: 1, b: 1, a: 1}
   monochrome: 1

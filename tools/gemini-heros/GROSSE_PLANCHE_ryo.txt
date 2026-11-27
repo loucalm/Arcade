@@ -1,0 +1,51 @@
+Create ONE big, clean **sprite sheet** with ALL the animations of the hero **Ryo**, for my 2D pixel-art rhythm runner game **Kenta** (school arcade cabinet, 1920×1080, integer upscaling, 40 px = 1 game unit). The hero runs to the right on the beat of the music, **jumps (button 1)** and **slashes with a katana (button 2)**. This sheet will be cut automatically by a script, so the grid must be perfectly regular.
+
+## The character
+**Ryo**, the bassist: wild **white mane**, **red headband**, green jacket over a white shirt, dark trousers, **bass guitar slung on the back like a greatsword**, katana with a bronze guard on the hip. Older, calm, heavy and powerful movements.
+The heroes carry the **Bandana of the Score** (a headband engraved with the last melody of the world). Keep the colours and signature details of the attached current sprite, but make the character **much cooler**:
+- strong silhouette readable at ~54 px tall, about 3.5 heads tall (not chibi), big expressive hair, slightly bigger hands and feet;
+- dynamic action poses: clear line of action, anticipation and overshoot; hair, headband knot, scarf/ponytail/coat tails **follow through** 1-2 frames behind the body; smear frames allowed on fast moves (as pixel art, not blur);
+- light from the top-left, 3 tones per material, a 1-pixel dark outline #14101C around the whole character, selective inner lines, a small glint on the katana blade and metal;
+- expressive face: eyes with a white highlight, eyebrows showing effort, a grin or a shout on big moves;
+- original design: do not imitate any existing game or character.
+
+## Palette of Ryo (shadow, base, light)
+- outline: #14101C
+- skin: #C48E6C, #E8B890, #E8B890
+- hair: #A8B0BC, #E8ECF0, #FFFFFF
+- headband: #7A1A28, #B02A3A, #D04A5A
+- jacket: #1E4A34, #2E6A4A, #3AA86A
+- trousers: #2A2622, #3A3430, #3A3430
+- boots/shoes: #30261A, #4A3A2A, #4A3A2A
+- eyes (iris, highlight): #3AA86A, #FFFFFF
+- mouth: #7A3A2A
+- blush: #D98A70
+- shirt: #C8CCD4, #F2F2F3, #F2F2F3
+- belt: #5A3A2A
+- bass: #7A1A28, #B02A3A, #D04A5A
+- bass_neck: #2A1A1A, #5A3A2A, #5A3A2A
+- katana blade (shadow, base, edge): #7C8698, #C9D1DE, #FFFFFF
+
+## THE SHEET (exact layout, very important)
+- Flat **#FF00FF magenta background** everywhere. No text, no labels, no numbers, no grid lines, no ground, no shadows, no dust, no sparks.
+- The sheet is **960 × 720 game pixels**, made of **10 rows of 72 px**. Draw it at **×2 (1920 × 1440 image)** if you can, otherwise ×1; every game pixel must be a clean square of the same size, no anti-aliasing, no gradients, no blur.
+- Rows 1 to 8: **cells of 96 × 72**, 10 cells per row, filled from the left (empty cells stay magenta).
+- Rows 9 and 10: **cells of 160 × 72**, 6 cells per row (the katana slash needs room in front).
+- In every cell: the hero **faces right**, is centred horizontally, and in all grounded frames his **feet touch the bottom row of pixels of the cell**. In the air, the whole body stays inside the cell. Nothing crosses a cell border.
+- The hero stands **52-56 px tall** (hair included); collision box 20 × 40 px centred at the bottom of the cell (see the attached template: green = ground, blue = axis, yellow = collision, cyan = target silhouette).
+- The **same character** in every frame: same proportions, colours and pixel size; only the pose changes.
+- Draw only the knot and two SHORT tails of the headband (the game draws the long trail itself).
+
+## The rows, left to right
+1. **Idle** (4): weight on the back leg, hand on the katana grip, breathing, blink on frame 4. Then **Victory** (6): spins the katana, sheathes it with a sharp click, raises the bass over his shoulder, headband knot snapping.
+2. **Run** (8): two strides (contact, down, passing, up, then the other leg); torso leaning forward 10-15°, arms pumping, hair/scarf bouncing once per stride. Must loop perfectly.
+3. **Jump** (8): crouch, push-off, knees up, a full **somersault in 4 frames**, open up, ready to land. Then **Land** (2): squash with bent knees, stand up.
+4. **Climb a slope** (8): running up a steep slope, torso leaning far forward, high knees, short strides. Loops.
+5. **Run down a slope** (8): torso leaning back, long braking strides, arms out for balance. Loops.
+6. **Fall** (3): step into the void, then 2 looping falling frames with arms up. **Vine** (4): hanging by one hand above the head (rope not drawn), the other arm out, legs swinging forward then back. **Hurt** (3): knocked back, grimace with squeezed eyes, recover.
+7. **Wall run** (6): sprinting up an almost vertical wall, body tilted 60° forward, feet clawing; loops. **Drum launch** (4): crouched on a drum, explosive extension, arms up in a star, spinning up.
+8. **Death** (5): thrown backwards, falling, bouncing on the ground, lying on the back, still; the katana falls beside him (no blood, family-friendly). Then **Portraits** (3): head-and-shoulders, three-quarter view facing right, centred in the cell: neutral, determined, victory shout.
+9. **Ground slash** (6, cells 160 × 72, hero centred in the cell): draw the katana, the cut starts, **full cut with a crescent trail** in pale cream (#FFF6D8, #F6E6B0) with a thin edge in the headband colour, the trail fades, follow-through, back on guard. The trail **stops 76 px in front of the hero's axis** (the real reach of the hit).
+10. **Air slash** (4, cells 160 × 72): the same cut in mid-air, knees tucked, torso twisted, same trail rule.
+
+Total: 79 frames on one sheet. Take your time: precision of the grid and consistency of the character matter more than speed.

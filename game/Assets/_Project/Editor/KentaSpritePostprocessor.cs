@@ -30,8 +30,10 @@ namespace Kenta.EditorTools
             else if (name.StartsWith("wall_")) pivot = new Vector2(0.5f, 1f / 34f);              // 36×32 + contour d'1 px
             else if (name.StartsWith("block_")) pivot = new Vector2(0.5f, 1f / 40f);             // 38×38 + contour
             else if (name == "totem") pivot = new Vector2(0.5f, 1f / 48f);                       // 20×46 + contour
-            else if (name.StartsWith("stomper_")) pivot = new Vector2(0.5f, 1f / 33f);           // cuirassé 42×33, contour sous les pieds
-            else if (name.StartsWith("bat_")) pivot = new Vector2(0.5f, 1f / 49f);               // chauve-souris du PDF + liseré d'1 px (tools/gen-bat.py)
+            else if (name.StartsWith("stomper_")) pivot = new Vector2(0.5f, 0f);                 // cuirassé (Gemini) : case commune, pieds en bas
+            else if (name.StartsWith("bat_hang_")) pivot = new Vector2(0.5f, 1f);                // chauve-souris pendue : accrochée par le haut
+            else if (name.StartsWith("bat_")) pivot = new Vector2(0.5f, 0f);                     // chauve-souris (Gemini) : case commune, bas de la case
+            else if (name.StartsWith("drum_")) pivot = new Vector2(0.5f, 1f / 40f);              // tambour-tremplin (Gemini), posé comme l'ancien `block`
             else if (name == "panel") border = new Vector4(4, 4, 4, 4);
             else if (name == "plate") border = new Vector4(3, 3, 3, 3);
 

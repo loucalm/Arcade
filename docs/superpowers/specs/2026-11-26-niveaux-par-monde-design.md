@@ -119,6 +119,7 @@ Il n'y a rien entre 121 et 140 BPM. Si le niveau 2 doit aller plus vite que le 1
 **Mise à jour du 2026-11-27 (Lucas)** : le niveau 4 est écrit par Jeremy ; *Main Theme* (toutes les mécaniques) passe en niveau 5.
 
 **Mise à jour du 2026-11-26 (Lucas)** : en attendant, le niveau 4 joue le niveau de base (toutes les mécaniques, *Main Theme*) pour monter tout de suite en difficulté après les Échos ; il sera réécrit sur *Stage 2*.
+**Mise à jour du 2026-11-26 (Jeremy)** : niveau 4 écrit sur *Fire Maze* de JadeWizard (CC BY 4.0, 151,3 BPM : *Stage 2* ne sonnait pas assez volcan ; `tools/levels/n4_forge.py`) ; le niveau de base ne sert plus qu'aux niveaux 5 à 8.
 
 **Étape 4 — Niveau 6 (Grand Orage)** : réécrire le niveau 01 actuel sur sa nouvelle musique, avec les contretemps et les doubles croches.
 

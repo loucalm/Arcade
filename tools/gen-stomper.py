@@ -95,6 +95,10 @@ def frame(squash):
 
 
 def main():
+    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "game", "Assets", "_Project", "Art",
+                                   "Kenta", "Pdf", ".gemini")) and "--force" not in __import__("sys").argv:
+        raise SystemExit("Les ennemis et objets viennent de Gemini (tools/gemini-ennemis/clean.py) : rien n'est écrasé. "
+                         "--force pour revenir aux anciens sprites.")
     frames = [frame(False), frame(True)]
     # recadrage commun (les deux images gardent la même taille et les pieds au même endroit)
     boxes = [f.getbbox() for f in frames]

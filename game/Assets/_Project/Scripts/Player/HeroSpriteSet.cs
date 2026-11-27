@@ -34,5 +34,25 @@ namespace Kenta.Player
         public Sprite[] descendCycle;
         [Tooltip("Chute depuis un bord : le pas dans le vide, puis la chute en boucle.")]
         public Sprite[] fallFrames;
+
+        [Header("Animations dessinées par Gemini (tools/gemini-heros/clean.py)")]
+        [Tooltip("Victoire (fin de niveau) : moulinet du katana, rengainé, pose ; la dernière image est tenue.")]
+        public Sprite[] victoryFrames;
+        [Tooltip("Atterrissage : écrasé, se relève.")]
+        public Sprite[] landFrames;
+        [Tooltip("Liane : suspendu d'une main, les jambes balancent (boucle).")]
+        public Sprite[] vineFrames;
+        [Tooltip("Course sur le mur (boucle avec la distance).")]
+        public Sprite[] wallCycle;
+        [Tooltip("Envol de tambour : accroupi, détente, étoile, vrille.")]
+        public Sprite[] drumFrames;
+        [Tooltip("Touché : recul, grimace (début de la mort).")]
+        public Sprite[] hurtFrames;
+        [Tooltip("Mort : projeté, tombe, rebondit, couché ; la dernière image est tenue.")]
+        public Sprite[] deathFrames;
+        [Tooltip("Coup de katana en l'air, 4 images (160×72, héros centré).")]
+        public Sprite[] airHitFrames;
+        [Tooltip("Portraits 64×64 pour les menus : neutre, déterminé, victoire.")]
+        public Sprite[] portraits;
     }
 }

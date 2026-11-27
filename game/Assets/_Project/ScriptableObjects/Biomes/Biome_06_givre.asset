@@ -39,7 +39,12 @@ MonoBehaviour:
   enemyFrames:
   - {fileID: 21300000, guid: 11074a7833ea04dbba9e5bfa51f5e1db, type: 3}
   - {fileID: 21300000, guid: 48ebf63960cdc45bab2946bd6ce8bac5, type: 3}
-  enemyBroken: {fileID: 0}
+  enemyBroken: {fileID: 21300000, guid: 1d35bf81b57c04cec8a94d6c699861d3, type: 3}
+  enemyHurt: {fileID: 21300000, guid: 4e6bcfb5434534aaca9f26d3c0878dfa, type: 3}
+  enemyBrokenFrames:
+  - {fileID: 21300000, guid: 4c9b0d3bf8457476d948107093719f79, type: 3}
+  - {fileID: 21300000, guid: 650dcd10d907e4996acd8961a8ab03ca, type: 3}
+  - {fileID: 21300000, guid: 5ab6fcb45a2fc4db09e4c842f5d79bff, type: 3}
   spark: {r: 1, g: 1, b: 1, a: 1}
   flash: {r: 1, g: 1, b: 1, a: 1}
   monochrome: 0

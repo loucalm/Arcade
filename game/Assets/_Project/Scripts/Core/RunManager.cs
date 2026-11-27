@@ -164,6 +164,7 @@ namespace Kenta.Core
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+            if (GetComponent<BreakFx>() == null) gameObject.AddComponent<BreakFx>();   // casse des ennemis (pool créé une fois)
         }
 
         void Start()
@@ -494,8 +495,44 @@ namespace Kenta.Core
             FxPool.Instance?.Burst(enemy.bounds.center, Color.white, 10, 6f, 0.15f, 0.35f, 0f, 0f);
             CameraRig.Instance?.Shake(0.18f, 0.15f);
             CameraRig.Instance?.Punch(0.15f);
+            PlayBreak(enemy, biome);
             if (enemy.view != null) enemy.view.SetActive(false);
             OnStatsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Casse de l'ennemi frappé (images Gemini) : la chauve-souris a la sienne, les autres celle de leur biome (touché,
+        /// fêlé, en morceaux). Jouée là où il était, dans le même sens (pendu au plafond : la tête en bas).
+        /// </summary>
+        void PlayBreak(LevelObject enemy, BiomeTheme biome)
+        {
+            if (BreakFx.Instance == null || enemy.view == null) return;
+            var sr = enemy.view.GetComponentInChildren<SpriteRenderer>();
+            if (sr == null) return;
+            var theme = level != null ? level.Theme : null;
+            bool bat = theme != null && (Contains(theme.flyerFrames, sr.sprite) || Contains(theme.flyerHang, sr.sprite));
+            if (bat) { BreakFx.Instance.Play(sr, theme.flyerBroken); return; }
+            if (biome == null || biome.enemyBrokenFrames == null || biome.enemyBrokenFrames.Length == 0) return;
+            if (breakFrames == null || breakBiome != biome)
+            {
+                breakBiome = biome;
+                int n = biome.enemyBrokenFrames.Length + (biome.enemyHurt != null ? 1 : 0);
+                breakFrames = new Sprite[n];
+                int k = 0;
+                if (biome.enemyHurt != null) breakFrames[k++] = biome.enemyHurt;
+                foreach (var f in biome.enemyBrokenFrames) breakFrames[k++] = f;
+            }
+            BreakFx.Instance.Play(sr, breakFrames);
+        }
+
+        BiomeTheme breakBiome;
+        Sprite[] breakFrames;
+
+        static bool Contains(Sprite[] list, Sprite s)
+        {
+            if (list == null || s == null) return false;
+            foreach (var x in list) if (x == s) return true;
+            return false;
         }
 
         /// <summary>Ennemi cuirassé écrasé : effets seulement (le jugement vient de l'appui du grand rebond).</summary>
@@ -507,7 +544,10 @@ namespace Kenta.Core
             CameraRig.Instance?.Punch(0.25f);
             // le cuirassé reste en place (tremplin) : son ressort s'écrase
             if (enemy.view != null)
+            {
                 foreach (var bump in enemy.view.GetComponentsInChildren<PressBump>()) bump.Press();
+                foreach (var stomp in enemy.view.GetComponentsInChildren<StompFrames>()) stomp.Press();
+            }
         }
 
         public void OnObstacleCleared(LevelObject obstacle, double actionBeat)
