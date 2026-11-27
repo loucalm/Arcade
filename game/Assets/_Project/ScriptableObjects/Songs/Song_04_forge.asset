@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36ff3b5dc283e46f3862081906125f9a, type: 3}
   m_Name: Song_04_forge
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.Rhythm.SongData
-  title: FIRE MAZE
-  clip: {fileID: 8300000, guid: b882cef67cd0a42b7b98786774ca1cd7, type: 3}
+  title: CHAOS ID
+  clip: {fileID: 8300000, guid: 3ddbffd8e43e44bc69e10308879f0a65, type: 3}
   remixClip: {fileID: 0}
-  bpm: 151.29
-  offsetSeconds: 0.026
+  bpm: 125
+  offsetSeconds: 0.052
   beatsPerBar: 4
   chart: {fileID: 4900000, guid: b3ab8ab3c579247e59d42a9fb3e99efe, type: 3}
-  previewBeat: 80
+  previewBeat: 96
