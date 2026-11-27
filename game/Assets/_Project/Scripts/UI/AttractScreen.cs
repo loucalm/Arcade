@@ -42,7 +42,7 @@ namespace Kenta.UI
         const int LetterStep = 23;                   // kenta_ui.LOGO_LETTER_STEP
 
         // chronologie (secondes depuis PlayIntro)
-        const float LetterStart = 0.2f, LetterGap = 0.13f, LetterFall = 0.16f, WhiteFade = 0.2f;
+        const float LetterStart = 0.05f, LetterGap = 0.11f, LetterFall = 0.16f, WhiteFade = 0.2f;
         const float BigImpact = LetterStart + 4 * LetterGap + LetterFall + 0.12f;      // ≈ 1,0 s
         const float LogoGlow = 0.5f, JitterEnd = BigImpact + 0.35f;
         const float TypeStart = BigImpact + 0.2f, TypeStep = 0.035f;
@@ -243,7 +243,7 @@ namespace Kenta.UI
             // d'une seconde sautait toute la chute des lettres. On attend que le jeu tourne régulièrement, et le
             // temps de l'entrée avance d'au plus 1/30 s par image.
             if (dt > 0.1f) { steadyFrames = 0; return; }
-            if (steadyFrames < 10) { steadyFrames++; return; }
+            if (steadyFrames < 3) { steadyFrames++; return; }
             intro += Mathf.Min(dt, 1f / 30f);
             float t = intro;
             // les lettres tombent une à une (accélèrent) et frappent
