@@ -242,6 +242,7 @@ namespace Kenta.Core
             }
             // test d'un passage dans l'éditeur (menu Kenta > Tester le refrain) : on démarre au beat demandé
             ScreenGlitch.Instance?.ResetAll();
+            ScreenGlitch.Instance?.SetCorruptionTracks(level.Corruption, level.Grayscale);
             double start = demo ? 0 : DevStart.Beat;
             runStartBeat = start;
             if (start > 0) PrepareStartAt(start);
@@ -424,6 +425,7 @@ namespace Kenta.Core
             StopAllCoroutines();
             IsRunning = false;
             ScreenGlitch.Instance?.ResetAll();
+            ScreenGlitch.Instance?.SetCorruptionTracks(null, null);
             if (stopMusic) Conductor.Instance?.Stop();
             if (hideWorld)
             {

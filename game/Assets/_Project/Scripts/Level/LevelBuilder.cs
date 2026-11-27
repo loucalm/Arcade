@@ -51,6 +51,8 @@ namespace Kenta.Level
         /// <summary>Événements visuels de la chart (fx_flash, camera_shake, camera_zoom, camera, section_change, screen_split,
         /// glitch), triés par beat.</summary>
         public readonly List<ChartEvent> FxEvents = new();
+        /// <summary>Corruption du monde et noir et blanc (événements `fx_corrupt`, `fx_gray` ; niveau 9, ADR-042).</summary>
+        public readonly CorruptionCurve Corruption = new(), Grayscale = new();
         /// <summary>Lasers de la Sourdine (lane 0 = bas, à sauter ; 1 = haut, rester au sol), triés par beat.</summary>
         public readonly List<ChartEvent> Lasers = new();
         /// <summary>Entrées (lane 1) et sorties (lane 0) de la Sourdine, le boss du niveau 9.</summary>
@@ -363,6 +365,12 @@ namespace Kenta.Level
                     case "lightning":
                         FxEvents.Add(e);
                         break;
+                    case "fx_corrupt":
+                    case "fx_gray":
+                        // un état qui glisse vers `intensity` en `length` temps, lu sur le temps du morceau
+                        (e.type == "fx_corrupt" ? Corruption : Grayscale)
+                            .Add(e.beat, e.@params != null ? e.@params.intensity : 0f, e.@params != null ? e.@params.length : 0f);
+                        break;
                     default:
                         Debug.LogWarning($"LevelBuilder: type d'événement non géré « {e.type} » (beat {e.beat}).");
                         break;
@@ -479,6 +487,8 @@ namespace Kenta.Level
             Orbs.Clear();
             GravityFlips.Clear();
             FxEvents.Clear();
+            Corruption.Clear();
+            Grayscale.Clear();
             Lasers.Clear();
             BossEvents.Clear();
             BossTarget = null;

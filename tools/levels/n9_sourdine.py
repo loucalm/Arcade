@@ -248,16 +248,26 @@ def build():
 
 
 def effects(L):
-    """La Sourdine prend la couleur, puis l'image. Entrée dans le monde sourd (48-72) : l'image grésille de plus en plus
-    sur la rafale, tremble sur chaque triolet, se fige en quatre copies dans le blanc, puis flash, secousse et négatif sur
-    le drop. Ensuite : inversions sur les temps forts (au plus une par temps du morceau), miroir, tête en bas, dédoublé."""
-    for k, b in enumerate((48, 52, 56, 60)):
-        L.glitch(b, 0.2 + 0.15 * k, 4)
+    """La Sourdine prend la couleur, puis l'image. Entrée dans le monde sourd, d'un totem à l'autre (ADR-042) : au totem
+    de la fissure (48) la Sylve est encore intacte, puis ses sprites se corrompent de plus en plus sur la rafale (bandes
+    décalées, couleurs qui se séparent, blocs déplacés ou réduits à des aplats saturés) ; dans le blanc (64) la couleur
+    s'en va, barres R/V/B et trame apparaissent ; pendant le vol du tambour l'image se défait tout à fait ; au totem du
+    drop (72) : flash, secousse, le monde sourd en noir et blanc, et son négatif. Ensuite : un reste de corruption,
+    inversions sur les temps forts (au plus une par temps du morceau), miroir, tête en bas, dédoublé."""
+    L.corrupt(48, 0.12, 2)                              # premier frisson au totem de la fissure
+    L.corrupt(50, 0.5, 14)                              # les sprites se corrompent sur la rafale
+    L.glitch(56, 0.25, 4)
+    L.glitch(60, 0.4, 4)
     for t in acc(56, 64, 0.8):
         L.add(t, "camera_shake", intensity=0.4 + 0.08 * (t - 56), length=0.3)
-    L.screen_split(64, 4)                               # le blanc : l'image se fige en quatre copies…
-    L.glitch(66, 0.9, 2)
-    L.screen_split(68, 1)                               # … qui se recollent sur le tambour
+    L.corrupt(64, 0.65, 2)                              # le blanc : barres et trame, la couleur s'en va
+    L.gray(64, 0.6, 4)
+    t = first(68, 70)                                   # le tambour : le saut reste lisible, puis l'image se défait
+    L.corrupt(t, 1.0, 72 - t)
+    L.gray(t, 1.0, 72 - t)
+    L.glitch(t, 0.7, 72 - t)
+    L.corrupt(72, 0.05, 2)                              # le monde sourd : un reste de corruption, qui vit
+    L.gray(74, 0.0, 2)                                  # le monde sourd est déjà décoloré (rend leur rouge aux lasers)
     L.add(72, "fx_flash", intensity=1.0)                # le drop : flash, secousse, le monde passe en négatif
     L.add(72, "camera_shake", intensity=1.0, length=1.0)
     L.add(72, "camera_zoom", intensity=1.0, length=0.5)
@@ -278,6 +288,8 @@ def effects(L):
     L.screen_split(256, 4)
     L.screen_split(264, 1)
     L.glitch(264, 0.8, 8)
+    L.corrupt(264, 0.5, 4)                              # la Sourdine approche : le monde se défait encore
+    L.corrupt(272, 0.05, 1)
     L.add(272, "fx_flash", intensity=0.6)               # la Sourdine arrive
     L.add(272, "camera_shake", intensity=0.6, length=2.0)
     L.invert(288, True)
@@ -303,6 +315,8 @@ def effects(L):
     L.screen_flip(432, "mirror")
     L.screen_flip(440, "none")
     L.add(446, "fx_flash", intensity=0.8)               # le dernier coup : la couleur revient
+    L.corrupt(446, 0.7, 0)                              # un dernier sursaut de corruption, puis l'image se répare
+    L.corrupt(446.5, 0.0, 1.5)
     L.invert(448, False)
 
 
