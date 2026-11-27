@@ -157,7 +157,10 @@ def gen_thumbnail(out, sheet):
 
 def gen_heroes(out, sheet):
     """Toutes les images des héros, dessinées par la marionnette de tools/hero_rig.py (tools/gen-heroes.py). Plus lancé
-    quand les héros viennent de Gemini (tools/gemini-heros/clean.py, marqueur Gen/heroes/.gemini_<héros>)."""
+    quand les héros viennent de la v2 (tools/heros-v2/import.py, marqueur .v2_<héros>) ou de Gemini (.gemini_<héros>)."""
+    if os.path.exists(os.path.join(out, "heroes", ".v2_kenta")):
+        print("héros : v2 (tools/heros-v2/import.py), pas écrasés ici")
+        return
     if os.path.exists(os.path.join(out, "heroes", ".gemini_kenta")):
         print("héros : marionnette + tête Gemini (tools/gemini-heros/hybrid.py --install), pas écrasés ici")
         return

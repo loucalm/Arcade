@@ -18,7 +18,7 @@ game/Assets/_Project/Art/Kenta/Gen/heroes/ (hero_<id>_<anim>_<k>.png + images se
 death), et suppression des anciennes images en trop d'une animation (ex. climb_7 quand il n'y en a plus que 7).
 Ensuite, dans Unity : menu Kenta > Installer les sprites des héros et des ennemis.
 
-Usage : python3 tools/gemini-heros/clean.py [kenta aiko ryo] [--install]   (dépendances : pillow, numpy, scipy)
+Usage : python3 tools/gemini-heros/clean.py [kenta aiko ryo] [--install] [--force]   (dépendances : pillow, numpy, scipy)
 """
 import argparse
 import glob
@@ -253,7 +253,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("heroes", nargs="*", default=list(k for k in MANIFEST if not k.startswith("_")))
     ap.add_argument("--install", action="store_true")
+    ap.add_argument("--force", action="store_true", help="écrase même si les sprites v2 (.v2_<héros>) sont installés")
     args = ap.parse_args()
+    if args.install and not args.force:
+        blocked = [h for h in args.heroes if os.path.exists(os.path.join(GAME, f".v2_{h}"))]
+        if blocked:
+            sys.exit(
+                f"refus d'écraser les héros v2 ({', '.join(blocked)} : marqueur .v2_<héros> présent dans {GAME}). "
+                "Ajoute --force pour passer outre."
+            )
     for hero in args.heroes:
         frames, s = build(hero)
         previews(hero, frames)

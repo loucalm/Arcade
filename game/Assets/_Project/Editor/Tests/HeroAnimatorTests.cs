@@ -95,5 +95,22 @@ namespace Kenta.EditorTests
         {
             Assert.AreEqual(-1, HeroAnimator.JumpFrameIndex(0.5f, 0));
         }
+
+        [TestCase(-0.1f, 0)]
+        [TestCase(0f, 0)]
+        [TestCase(0.13f, 0)]
+        [TestCase(0.14f, 1)]       // 0,14 s par image : 6 images d'attente en boucle (fin de niveau)
+        [TestCase(0.71f, 5)]
+        [TestCase(0.85f, 0)]       // deuxième tour (6 × 0,14 = 0,84 s)
+        public void LoopFrameIndex_LoopsAtFixedStep(float elapsed, int expected)
+        {
+            Assert.AreEqual(expected, HeroAnimator.LoopFrameIndex(elapsed, 0.14f, 6));
+        }
+
+        [Test]
+        public void LoopFrameIndex_NoFramesGivesMinusOne()
+        {
+            Assert.AreEqual(-1, HeroAnimator.LoopFrameIndex(0.5f, 0.14f, 0));
+        }
     }
 }

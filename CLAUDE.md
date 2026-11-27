@@ -43,6 +43,8 @@ git clone https://github.com/XariusExcl/anatidae-arcade tools/anatidae-arcade &&
 # Après chaque build Unity (sortie game/Build) : package → dist/Kenta + borne locale
 tools/package-build.sh
 # Après un changement de sprites : python3 tools/gen-kenta-assets.py puis, dans Unity, menu Kenta > Reconstruire thèmes, prefabs et scène
+# Héros v2 (planches dans tools/heros-v2/raw/, ADR-045) : import → Gen/heroes/, puis menu Kenta > Installer les sprites des héros et des ennemis
+python3 tools/heros-v2/import.py
 # Danse des ennemis du PDF à une image (versions écrasée et étirée, ADR-039)
 python3 tools/gen-enemies.py
 # Après un changement de décor : vignettes des niveaux (écran de sélection)

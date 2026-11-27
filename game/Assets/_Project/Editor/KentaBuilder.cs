@@ -59,7 +59,7 @@ namespace Kenta.EditorTools
         static Sprite SprOrNull(string rel) => AssetDatabase.LoadAssetAtPath<Sprite>(Art + rel);
 
         /// <summary>
-        /// Après tools/gemini-heros/clean.py et tools/gemini-ennemis/clean.py : met les nouveaux sprites dans les jeux
+        /// Après tools/heros-v2/import.py et tools/gemini-ennemis/clean.py : met les nouveaux sprites dans les jeux
         /// d'images des héros, les biomes et le thème (ScriptableObjects), sans toucher à la scène ni aux prefabs.
         /// </summary>
         [MenuItem("Kenta/Installer les sprites des héros et des ennemis")]
@@ -164,25 +164,26 @@ namespace Kenta.EditorTools
             {
                 var set = Asset<HeroSpriteSet>(SoDir + $"Heroes/HeroSprites_{names[i]}.asset");
                 string n = ids[i];
-                // marionnette de tools/hero_rig.py (tools/gen-heroes.py) ; les sprites du PDF restent dans Pdf/
+                // héros v2 dessinés (tools/heros-v2/import.py, ADR-045) ; les sprites du PDF restent dans Pdf/
                 string g = $"Gen/heroes/hero_{n}_";
                 set.idle = Spr(g + "idle.png");
-                set.idleCycle = Enumerable.Range(0, 4).Select(k => Spr(g + $"idle_{k}.png")).ToArray();
-                set.runCycle = Enumerable.Range(0, 8).Select(k => Spr(g + $"run_{k}.png")).ToArray();
+                set.idleCycle = Frames(g + "idle_");                          // 6 images en v2
+                set.runCycle = Frames(g + "run_");                            // 8 images (Kenta, Aiko) ou 9 (Ryo)
                 set.run = set.runCycle[0];
-                set.jumpFrames = Enumerable.Range(0, 8).Select(k => Spr(g + $"jump_{k}.png")).ToArray();
+                set.jumpFrames = Frames(g + "jump_");                         // 8 images
                 set.jump = set.jumpFrames[1];
-                set.hitFrames = Enumerable.Range(0, 6).Select(k => Spr(g + $"hit_{k}.png")).ToArray();   // katana
+                set.hitFrames = Frames(g + "hit_");                           // katana (6 images)
                 set.hit = set.hitFrames[2];
                 set.crouch = Spr(g + "crouch.png");
-                set.climbCycle = Frames(g + "climb_");                        // 7 ou 8 images selon le héros (Gemini)
-                set.descendCycle = Frames(g + "descend_");
-                set.fallFrames = Enumerable.Range(0, 3).Select(k => Spr(g + $"fall_{k}.png")).ToArray();
+                set.climbCycle = Frames(g + "climb_");                        // 8 images
+                set.descendCycle = Frames(g + "descend_");                    // 8 images
+                set.fallFrames = Frames(g + "fall_");                         // 3 images
                 set.vine = Spr(g + "vine.png");
                 set.wall = Spr(g + "wall.png");
                 set.hurt = Spr(g + "hurt.png");
                 set.death = Spr(g + "death.png");
-                // animations dessinées par Gemini (tools/gemini-heros/clean.py) ; vides avec la marionnette
+                // animations optionnelles : vine_ et hurt_ (2 images) sont fournies en v2 ; victory, land, wall_,
+                // drum, death_, airhit et portrait restent vides (le code retombe sur les poses de base)
                 set.victoryFrames = Frames(g + "victory_");
                 set.landFrames = Frames(g + "land_");
                 set.vineFrames = Frames(g + "vine_");
