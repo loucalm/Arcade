@@ -10,8 +10,8 @@ namespace Kenta.Level
     /// </summary>
     public class VineView : MonoBehaviour
     {
-        /// <summary>Hauteur de la main au-dessus des pieds (u).</summary>
-        public const float HandHeight = 1.1f;
+        /// <summary>Hauteur de la main au-dessus des pieds (u) : 54 px pour la main levée des sprites v2.</summary>
+        public const float HandHeight = 1.35f;
         const int MaxDots = 120;
         const float Dot = 2f / PixelScreen.Ppu;                 // pas de 2 px de jeu entre deux carrés
         const int LeafEvery = 7;

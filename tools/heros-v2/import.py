@@ -873,10 +873,246 @@ def build_ryo(src_dir):
     return res
 
 
+def _find_gemini_sheet(src_dir, hero_id, sheet_name):
+    gdir = os.path.join(src_dir, "gemini")
+    for ext in (".png", ".jpg", ".jpeg"):
+        p = os.path.join(gdir, f"{hero_id}_{sheet_name}{ext}")
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def _load_gemini(path):
+    rgb = np.array(Image.open(path).convert("RGB"))
+    fg = keep_main_components(flood_bg_mask(rgb), min_area=600)
+    return rgb, fg
+
+
+def _split_rows_by_valleys(fg, nrows):
+    """Trouve les bornes verticales des `nrows` rangées d'une planche."""
+    row_sum = fg.sum(axis=1)
+    ys = np.where(row_sum > 0)[0]
+    if len(ys) == 0:
+        return [(0, fg.shape[0])]
+    y_min, y_max = int(ys[0]), int(ys[-1]) + 1
+    if nrows == 1:
+        return [(y_min, y_max)]
+    step = (y_max - y_min) / nrows
+    cuts = [y_min]
+    for i in range(1, nrows):
+        est = y_min + i * step
+        lo = max(cuts[-1] + 20, int(est - step * 0.30))
+        hi = min(y_max - 20, int(est + step * 0.30))
+        my = lo + int(np.argmin(row_sum[lo:hi]))
+        cuts.append(my)
+    cuts.append(y_max)
+    return [(cuts[i], cuts[i + 1]) for i in range(nrows)]
+
+
+def _fix_ryo_colour_drift(rgb, fg):
+    """Corrige la dérive occasionnelle vers Kenta (cheveux orange / veste noire) sur quelques frames de Ryo."""
+    out = rgb.copy()
+    r = out[:, :, 0].astype(np.int16)
+    g = out[:, :, 1].astype(np.int16)
+    b = out[:, :, 2].astype(np.int16)
+    # Cheveux orange -> blanc/gris Ryo
+    orange_hair = fg & (r > 130) & (r - g > 30) & (r - b > 45)
+    hi_hair = orange_hair & (r > 180)
+    lo_hair = orange_hair & ~hi_hair
+    out[hi_hair] = (0xE8, 0xEC, 0xF0)
+    out[lo_hair] = (0xA8, 0xB0, 0xBC)
+    return out
+
+
+def _align_vine_fist(spr, fist_y_from_bottom=54):
+    """Centre la main levée (sommet du sprite) sur x=CW//2 et y=CH-fist_y_from_bottom."""
+    spr = remove_small_islands(spr, min_pixels=6)
+    a = np.asarray(spr)
+    alpha = a[:, :, 3] >= 128
+    ys, xs = np.nonzero(alpha)
+    if len(xs) == 0:
+        return place_in_canvas(spr)
+    y_top = int(ys.min())
+    fist_band = alpha[y_top:min(a.shape[0], y_top + 6), :]
+    fys, fxs = np.nonzero(fist_band)
+    fist_cx = int(round(float(np.median(fxs)))) if len(fxs) > 0 else spr.width // 2
+    fist_cy = y_top + 2
+
+    canvas = Image.new("RGBA", (CW, CH), (0, 0, 0, 0))
+    dx = (CW // 2) - fist_cx
+    dy = (CH - fist_y_from_bottom) - fist_cy
+    # Clamp pour ne rien couper hors du canevas 96x72
+    dx = max(1, min(CW - spr.width - 1, dx))
+    dy = max(1, min(CH - spr.height, dy))
+    canvas.alpha_composite(spr, (dx, dy))
+    return canvas
+
+
+def _place_airhit(spr):
+    """Place un sprite de coup en l'air dans 160×72 avec le corps centré autour de x=80 et l'arc vers la droite."""
+    spr = remove_small_islands(spr, min_pixels=4)
+    a = np.asarray(spr)
+    alpha = a[:, :, 3] >= 128
+    rgb = a[:, :, :3].astype(np.int16)
+    luma = rgb.mean(axis=-1)
+    # Le corps (hors traînée crème très claire) sert à centrer le héros sur x = HIT_W // 2
+    body = alpha & (luma < 210)
+    ys, xs = np.nonzero(body)
+    if len(xs) == 0:
+        ys, xs = np.nonzero(alpha)
+    if len(xs) == 0:
+        return Image.new("RGBA", (HIT_W, CH), (0, 0, 0, 0))
+    body_cx = int(round(float(np.median(xs))))
+    body_bot = int(ys.max())
+    dx = (HIT_W // 2) - body_cx
+    dy = (CH - 10) - body_bot
+    dx = max(1, min(HIT_W - spr.width - 1, dx))
+    dy = max(1, min(CH - spr.height - 1, dy))
+    canvas = Image.new("RGBA", (HIT_W, CH), (0, 0, 0, 0))
+    canvas.alpha_composite(spr, (dx, dy))
+    # Coupe tout pixel d'arc dépassant HIT_REACH_PX devant l'axe (HIT_W//2 + 76 = 156)
+    out = np.array(canvas)
+    max_x = HIT_W // 2 + HIT_REACH_PX
+    if max_x < HIT_W:
+        out[:, max_x:, :] = 0
+    return Image.fromarray(out, "RGBA")
+
+
+def apply_gemini_overrides(hero_id, res, src_dir):
+    """Charge les planches complémentaires/corrigées de tools/heros-v2/raw/gemini/ si elles existent."""
+    base_scale = {"kenta": 0.180, "aiko": 0.242, "ryo": 0.200}[hero_id]
+
+    p_run = _find_gemini_sheet(src_dir, hero_id, "run")
+    if p_run:
+        rgb, fg = _load_gemini(p_run)
+        sc = base_scale * (1376.0 / rgb.shape[1])
+        rows = _split_rows_by_valleys(fg, 2)
+        frames = extract_grid(rgb, fg, rows, [4, 4], sc)
+        if hero_id == "ryo" and len(frames) == 8:
+            # Recolorise les pixels de cheveux/veste qui auraient dérivé sur la frame 5
+            r_list = []
+            for idx, (y0, y1) in enumerate(rows):
+                for c_idx, (x0, x1) in enumerate(split_row_by_valleys(fg[y0:y1], 4)):
+                    f_idx = idx * 4 + c_idx
+                    sub_rgb = _fix_ryo_colour_drift(rgb[y0:y1, x0:x1], fg[y0:y1, x0:x1]) if f_idx == 5 else rgb[y0:y1, x0:x1]
+                    sub_fg = keep_largest_component(fg[y0:y1, x0:x1])
+                    r_list.append(place_in_canvas(downsample_crisp(sub_rgb, sub_fg, sc)))
+            frames = r_list
+        # Supprime run_8 éventuel (ancien Ryo) pour garder un cycle propre à 8 frames
+        res.pop("run_8", None)
+        for k, im in enumerate(frames):
+            res[f"run_{k}"] = im
+
+    p_jl = _find_gemini_sheet(src_dir, hero_id, "jump_land")
+    if p_jl:
+        rgb, fg = _load_gemini(p_jl)
+        sc = base_scale * (1376.0 / rgb.shape[1])
+        rows = _split_rows_by_valleys(fg, 2)
+        dys = [0, 4, 10, 14, 12, 8, 4, 0, 0, 0]
+        jl_frames = []
+        idx = 0
+        for (y0, y1) in rows:
+            for (x0, x1) in split_row_by_valleys(fg[y0:y1], 5):
+                sub_rgb = rgb[y0:y1, x0:x1]
+                sub_fg = keep_largest_component(fg[y0:y1, x0:x1])
+                if hero_id == "ryo" and idx in (2, 5, 9):
+                    sub_rgb = _fix_ryo_colour_drift(sub_rgb, sub_fg)
+                spr = downsample_crisp(sub_rgb, sub_fg, sc)
+                jl_frames.append(place_in_canvas(spr, dy=dys[idx]))
+                idx += 1
+        for k in range(8):
+            res[f"jump_{k}"] = jl_frames[k]
+        res["land_0"] = jl_frames[8]
+        res["land_1"] = jl_frames[9]
+
+    p_vd = _find_gemini_sheet(src_dir, hero_id, "vine_drum")
+    if p_vd:
+        rgb, fg = _load_gemini(p_vd)
+        sc = base_scale * (1376.0 / rgb.shape[1])
+        rows = _split_rows_by_valleys(fg, 2)
+        # Rangée 1 : liane (4 frames) avec la main levée alignée au centre-haut
+        y0, y1 = rows[0]
+        for k, (x0, x1) in enumerate(split_row_by_valleys(fg[y0:y1], 4)):
+            sub_fg = keep_largest_component(fg[y0:y1, x0:x1])
+            spr = downsample_crisp(rgb[y0:y1, x0:x1], sub_fg, sc)
+            res[f"vine_{k}"] = _align_vine_fist(spr, fist_y_from_bottom=54)
+        res["vine"] = res["vine_0"]
+        # Rangée 2 : tambour (4 frames)
+        y0, y1 = rows[1]
+        drum_dys = [0, 8, 12, 10]
+        for k, (x0, x1) in enumerate(split_row_by_valleys(fg[y0:y1], 4)):
+            sub_fg = keep_largest_component(fg[y0:y1, x0:x1])
+            spr = downsample_crisp(rgb[y0:y1, x0:x1], sub_fg, sc)
+            res[f"drum_{k}"] = place_in_canvas(spr, dy=drum_dys[k])
+
+    p_wv = _find_gemini_sheet(src_dir, hero_id, "wall_victory")
+    if p_wv:
+        rgb, fg = _load_gemini(p_wv)
+        sc = base_scale * (1376.0 / rgb.shape[1])
+        rows = _split_rows_by_valleys(fg, 2)
+        wall_frames = extract_grid(rgb, fg, [rows[0]], [6], sc)
+        for k, im in enumerate(wall_frames):
+            res[f"wall_{k}"] = im
+        res["wall"] = res["wall_0"]
+        vic_frames = extract_grid(rgb, fg, [rows[1]], [6], sc)
+        for k, im in enumerate(vic_frames):
+            res[f"victory_{k}"] = im
+
+    p_hd = _find_gemini_sheet(src_dir, hero_id, "hurt_death")
+    if p_hd:
+        rgb, fg = _load_gemini(p_hd)
+        sc = base_scale * (1376.0 / rgb.shape[1])
+        rows = _split_rows_by_valleys(fg, 2)
+        hd_frames = []
+        for r_idx, (y0, y1) in enumerate(rows):
+            for c_idx, (x0, x1) in enumerate(split_row_by_valleys(fg[y0:y1], 4)):
+                sub_fg = fg[y0:y1, x0:x1]
+                # Garde le katana tombé au sol dans death_2..4
+                spr = downsample_crisp(rgb[y0:y1, x0:x1], sub_fg, sc)
+                hd_frames.append(place_in_canvas(spr, min_island=3))
+        for k in range(3):
+            res[f"hurt_{k}"] = hd_frames[k]
+        res["hurt"] = res["hurt_0"]
+        for k in range(5):
+            res[f"death_{k}"] = hd_frames[3 + k]
+        res["death"] = res["death_4"]
+
+    p_ah = _find_gemini_sheet(src_dir, hero_id, "airhit")
+    if p_ah:
+        rgb, fg = _load_gemini(p_ah)
+        sc = base_scale * (1376.0 / rgb.shape[1])
+        rows = _split_rows_by_valleys(fg, 2)
+        idx = 0
+        for (y0, y1) in rows:
+            for (x0, x1) in split_row_by_valleys(fg[y0:y1], 2):
+                spr = downsample_crisp(rgb[y0:y1, x0:x1], fg[y0:y1, x0:x1], sc)
+                res[f"airhit_{idx}"] = _place_airhit(spr)
+                idx += 1
+
+    p_pt = _find_gemini_sheet(src_dir, hero_id, "portrait")
+    if p_pt:
+        rgb, fg = _load_gemini(p_pt)
+        rows = _split_rows_by_valleys(fg, 1)
+        y0, y1 = rows[0]
+        for k, (x0, x1) in enumerate(split_row_by_valleys(fg[y0:y1], 3)):
+            sub_fg = keep_largest_component(fg[y0:y1, x0:x1])
+            ys, xs = np.nonzero(sub_fg)
+            bh = max(1, int(ys.max() - ys.min() + 1)) if len(ys) > 0 else 1
+            bw = max(1, int(xs.max() - xs.min() + 1)) if len(xs) > 0 else 1
+            sc_p = min(56.0 / bh, 56.0 / bw)
+            spr = downsample_crisp(rgb[y0:y1, x0:x1], sub_fg, sc_p)
+            res[f"portrait_{k}"] = place_in_canvas(spr, cw=64, ch=64)
+
+
 def save_hero(hero_id, frames, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     for name, im in frames.items():
-        expected = (HIT_W, CH) if name.startswith("hit_") else (CW, CH)
+        if name.startswith(("hit_", "airhit_")):
+            expected = (HIT_W, CH)
+        elif name.startswith("portrait_"):
+            expected = (64, 64)
+        else:
+            expected = (CW, CH)
         assert im.size == expected, f"{hero_id}_{name}: {im.size}"
         im.save(os.path.join(out_dir, f"hero_{hero_id}_{name}.png"), optimize=True)
     with open(os.path.join(out_dir, f".v2_{hero_id}"), "w", encoding="utf-8") as f:
@@ -891,11 +1127,20 @@ def make_contact_sheet(all_heroes, path):
             [f"idle_{k}" for k in range(6)]
             + [k for k in sorted(f) if k.startswith("run_")]
             + [f"jump_{k}" for k in range(8)]
+            + [k for k in sorted(f) if k.startswith("land_")]
             + [f"hit_{k}" for k in range(6)]
+            + [k for k in sorted(f) if k.startswith("airhit_")]
             + [f"climb_{k}" for k in range(8)]
             + [f"descend_{k}" for k in range(8)]
             + [f"fall_{k}" for k in range(3)]
-            + ["crouch", "vine_0", "vine_1", "wall", "hurt_0", "hurt_1", "death"]
+            + ["crouch"]
+            + [k for k in sorted(f) if k.startswith("vine_")]
+            + [k for k in sorted(f) if k.startswith("drum_")]
+            + ([k for k in sorted(f) if k.startswith("wall_")] or ["wall"])
+            + [k for k in sorted(f) if k.startswith("victory_")]
+            + [k for k in sorted(f) if k.startswith("hurt_")]
+            + ([k for k in sorted(f) if k.startswith("death_")] or ["death"])
+            + [k for k in sorted(f) if k.startswith("portrait_")]
         )
         rows.append([f[k] for k in order if k in f])
     cols = 12
@@ -923,6 +1168,8 @@ def main():
         "aiko": build_aiko(args.src),
         "ryo": build_ryo(args.src),
     }
+    for hid, frames in all_heroes.items():
+        apply_gemini_overrides(hid, frames, args.src)
     total = 0
     for hid, frames in all_heroes.items():
         save_hero(hid, frames, args.out)
