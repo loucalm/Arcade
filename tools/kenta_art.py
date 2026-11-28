@@ -272,7 +272,8 @@ def vents_json(b, scale=BG_SCALE):
     """Cratères d'où jaillit l'éruption (BiomeBackdrop.Erupt) : px de l'image du calque lointain (1280×360), y depuis
     le haut. Vide pour les biomes sans volcan."""
     vents = [[x * scale, y * scale] for x, y in VOLCANO_VENTS] if b["far"]["kind"] == "volcano" else []
-    return dict(id=b["id"], vents=vents)
+    # `points` : la même liste en objets, lisible par JsonUtility (KentaBuilder), qui ne lit pas les tableaux de tableaux
+    return dict(id=b["id"], vents=vents, points=[dict(x=x, y=y) for x, y in vents])
 
 
 def lava_flow(p, f, x0, y0, y1, amp, phase, drift):

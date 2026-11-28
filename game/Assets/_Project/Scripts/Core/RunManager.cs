@@ -251,6 +251,8 @@ namespace Kenta.Core
             // test d'un passage dans l'éditeur (menu Kenta > Tester le refrain) : on démarre au beat demandé
             ScreenGlitch.Instance?.ResetAll();
             ScreenGlitch.Instance?.SetCorruptionTracks(level.Corruption, level.Grayscale);
+            // météo du décor (ADR-047) : lue sur le temps du morceau, une reprise retrouve la bonne intensité
+            if (backdrop != null) backdrop.SetWeather(level.Weather, Conductor.Instance != null ? Conductor.Instance.BeatsPerBar : 4);
             double start = demo ? 0 : DevStart.Beat;
             runStartBeat = start;
             if (start > 0) PrepareStartAt(start);
@@ -434,6 +436,7 @@ namespace Kenta.Core
             IsRunning = false;
             ScreenGlitch.Instance?.ResetAll();
             ScreenGlitch.Instance?.SetCorruptionTracks(null, null);
+            if (backdrop != null) backdrop.SetWeather(null);
             if (stopMusic) Conductor.Instance?.Stop();
             if (hideWorld)
             {
@@ -774,6 +777,12 @@ namespace Kenta.Core
                     // (le générateur en met au plus un tous les 2 temps : épilepsie photosensible)
                     if (backdrop != null) backdrop.Strike(intensity, e.beat);
                     rig.Flash(new Color(0.85f, 0.9f, 1f), 0.32f * intensity);
+                    break;
+                case "eruption":
+                    // éruption d'un volcan du décor (la Forge, ADR-047) : la lave jaillit du cratère, le ciel rougit par
+                    // paliers. Pas de flash (le générateur en met au plus une tous les 2 temps : épilepsie photosensible)
+                    if (backdrop != null) backdrop.Erupt(intensity, e.beat);
+                    rig.Shake(0.1f * intensity, 0.25f);
                     break;
                 case "glitch":
                     // grésillement calé sur les temps, pendant `length` beats

@@ -133,6 +133,8 @@ MonoBehaviour:
   align: 1
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &2009456951058665744
 GameObject:
   m_ObjectHideFlags: 0
@@ -187,6 +189,8 @@ MonoBehaviour:
   align: 1
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &2359775681225079254
 GameObject:
   m_ObjectHideFlags: 0
@@ -304,6 +308,8 @@ MonoBehaviour:
   align: 1
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &6131769924079312428
 GameObject:
   m_ObjectHideFlags: 0
@@ -358,6 +364,8 @@ MonoBehaviour:
   align: 1
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &6148345408237450395
 GameObject:
   m_ObjectHideFlags: 0
@@ -412,6 +420,8 @@ MonoBehaviour:
   align: 1
   scale: 4
   plate: 1
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &8522038202763350912
 GameObject:
   m_ObjectHideFlags: 0
@@ -466,3 +476,5 @@ MonoBehaviour:
   align: 1
   scale: 3
   plate: 1
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
