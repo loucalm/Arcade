@@ -160,7 +160,21 @@ namespace Kenta.Level
         /// <summary>Biome du niveau (un niveau = un monde) ; null = un biome par section (ancien fonctionnement).</summary>
         public BiomeTheme LevelBiome { get; private set; }
 
-        public void Build(ChartData chart, float bpm, BiomeTheme biome = null)
+        /// <summary>Sol après le dernier obstacle (u).</summary>
+        const float TerrainTail = 60f;
+        /// <summary>Sol au-delà de la fin du morceau (u) : le héros court jusqu'à la dernière note, quelle que soit la vitesse.</summary>
+        const float SongEndTail = 20f;
+
+        /// <summary>
+        /// Fin du sol : 60 u après le dernier obstacle, et au moins 20 u au-delà de la fin du morceau. Au niveau 8 (240 BPM,
+        /// 12,8 u/s), 60 u ne couvraient que 19 temps : le morceau durait 6 temps de plus que le sol, et le héros tombait
+        /// dans le vide juste avant la fin, à chaque essai (28/11).
+        /// </summary>
+        public static float TerrainEndX(float lastObstacleX, float songEndX) =>
+            Mathf.Max(lastObstacleX + TerrainTail, songEndX + SongEndTail);
+
+        /// <summary>Construit le niveau. `songEndBeat` : fin du morceau en temps (0 = inconnue), pour que le sol la couvre.</summary>
+        public void Build(ChartData chart, float bpm, BiomeTheme biome = null, double songEndBeat = 0)
         {
             Clear();
             Chart = chart;
@@ -464,8 +478,9 @@ namespace Kenta.Level
             AutoHitBeats.Sort();
 
             float lastBeat = chart.events.Length > 0 ? chart.events[^1].beat : 0f;
-            BuildTerrain(lastX + 60f);
-            BuildGround(lastX + 60f);
+            float endX = TerrainEndX(lastX, songEndBeat > 0 ? BeatToX(songEndBeat) : 0f);
+            BuildTerrain(endX);
+            BuildGround(endX);
             BuildCeiling();
             BuildBack();
             BuildBeatGrid(Mathf.CeilToInt(lastBeat) + 16);

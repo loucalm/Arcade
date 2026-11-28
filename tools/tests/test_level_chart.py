@@ -1,10 +1,9 @@
-"""Tests du générateur de chart (tools/gen-level-chart.py) : faisabilité et verticalité."""
+"""Tests du validateur de l'ancien générateur (tools/gen-level-chart.py). La chart du niveau 5, qu'il produisait,
+est maintenant générée et vérifiée par tools/gen-level.py (fiche shovel_knight, tools/tests/test_levels.py)."""
 import importlib.util
-import json
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CHART = os.path.join(ROOT, "game", "Assets", "_Project", "Charts", "level01_shovel_knight.json")
 
 
 def gen():
@@ -54,15 +53,3 @@ def test_validate_rejects_short_platform():
 
 def test_descending_step_needs_no_jump():
     assert gen().validate([ev(4, "step", height=1.0), ev(8, "step", height=0.0), ev(8.5, "enemy")]) == []
-
-
-def test_generated_chart_is_feasible_and_vertical():
-    with open(CHART, encoding="utf-8") as f:
-        chart = json.load(f)
-    events = chart["events"]
-    assert gen().validate(events) == []
-    steps = [e for e in events if e["type"] == "step"]
-    platforms = [e for e in events if e["type"] == "platform"]
-    assert len(steps) >= 4
-    assert len(platforms) >= 2
-    assert max(e["params"]["height"] for e in steps + platforms) >= 1.0

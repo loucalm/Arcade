@@ -221,7 +221,8 @@ namespace Kenta.Core
             song = songData;
             IsDemo = demo;
             Chart = ChartData.Parse(chart);
-            level.Build(Chart, song.bpm, biome);
+            double songEndBeat = song.clip != null ? (song.clip.length - song.offsetSeconds) * song.bpm / 60.0 : 0;
+            level.Build(Chart, song.bpm, biome, songEndBeat);
             Kenta.FX.SourdineBoss.Setup(level, level.transform.parent);   // le boss du niveau 9 (rien ailleurs)
 
             TotalLums = level.Lums.Count;
