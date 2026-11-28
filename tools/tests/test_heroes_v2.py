@@ -233,3 +233,17 @@ def test_air_slash_reaches_hit_reach_px():
     with Image.open(sprite_path("kenta", "airhit_1")) as im:
         cols = np.nonzero(np.asarray(im)[:, :, 3].max(axis=0) >= 128)[0]
     assert abs(int(cols.max()) - (HIT_SIZE[0] // 2 + HIT_REACH_PX)) <= 1, int(cols.max())
+
+
+@pytest.mark.parametrize("hero", HEROES)
+def test_run_cycle_is_stabilized(hero):
+    """tools/heros-v2/stabilize.py : en course, la tête ne saute plus (≤ 6 px de haut en bas, ±1 px en largeur)."""
+    tops, cxs = [], []
+    for k in range(expected_families(hero)["run"]):
+        with Image.open(sprite_path(hero, f"run_{k}")) as im:
+            a = np.asarray(im)[:, :, 3] > 0
+        top = int(np.nonzero(a.sum(axis=1) >= 2)[0][0])
+        tops.append(top)
+        cxs.append(float(np.median(np.nonzero(a[top + 6: top + 14])[1])))
+    assert max(tops) - min(tops) <= 6, (hero, tops)
+    assert max(cxs) - min(cxs) <= 2.0, (hero, cxs)
