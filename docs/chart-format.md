@@ -67,6 +67,8 @@ Le `beat` d'un événement d'obstacle = **le temps où le joueur doit agir** (ap
 | `fx_invert` | le monde passe en négatif (`variant` = `"on"`) ou revient (`"off"`), jusqu'au prochain `fx_invert` ; seul le calque du monde s'inverse (le héros et l'interface gardent leurs couleurs). Un état sur un temps fort : au plus une bascule par temps (borne publique). Niveau 9 | — |
 | `fx_corrupt` | le monde se corrompt (bandes décalées, couleurs séparées, blocs de sprite déplacés ou en aplats de couleur pure, pixels morts ; au-delà de 0,55 : barres R/V/B et trame) : va vers `intensity` (0…1) en `length` temps, depuis la valeur du moment ; lu sur le temps du morceau (juste après une reprise). Calque du monde seul, propre autour du héros. Niveau 9 (ADR-042) | — |
 | `fx_gray` | le monde perd sa couleur : va vers `intensity` (0 = couleur, 1 = noir et blanc) en `length` temps ; le héros, les pièces et l'interface gardent la leur. Niveau 9 (ADR-042) | — |
+| `weather` | **météo du décor** (ADR-047), derrière le niveau : `variant` = `rain` (gouttes lâchées en double-croches), `snow` (flocons, rafale sur le 1 de la mesure) ou `embers` (braises qui montent sur les temps 1 et 3). Un état : va vers `intensity` (0…1, 0 = plus rien) en `length` temps, lu sur le temps du morceau (une reprise retrouve la bonne météo). Décor pur, ignoré par le simulateur | — |
+| `eruption` | un volcan du décor (la Forge) crache sa lave depuis son cratère (`Gen/biomes/vents.json`), le ciel rougit par paliers puis s'éteint ; pas de flash. Jamais deux à moins de 2 temps (vérifié par `Level.eruption`) | — |
 
 Tous les obstacles (mur, ennemi, bloc, plafond, pièces) se posent **sur le sol principal à leur x** : un mur après une marche est posé en haut de la marche.
 
@@ -95,6 +97,7 @@ Contraintes de faisabilité (le saut dure 1 beat, sommet à **1,5 u** au-dessus 
 | `ceiling`, `back`, `gravity` | rien (décor et portails) ; on saute les trous (`jump`) | `length`, `height` |
 | `jump` | sauter (trou du plafond ou du chemin du fond) | `variant` |
 | `screen_split`, `screen_flip`, `glitch`, `fx_invert`, `fx_corrupt`, `fx_gray` | — (effets d'écran) | `copies` ; `variant` ; `intensity`, `length` ; `variant` ; `intensity`, `length` ; `intensity`, `length` |
+| `weather`, `eruption` | — (décor) | `variant`, `intensity`, `length` ; `intensity` |
 | `lum_line` | collecter | `count`, `step` (beats entre lums) |
 | `fx_flash` | — (visuel) | `intensity` |
 | `camera_shake` | — | `intensity`, `length` |
