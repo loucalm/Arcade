@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 0a383b0e0d35b406089f33a68ad8f97d
+guid: b490bf53414b04b48bad3dc7ad1a92d7
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -418422481720626336
-    second: hero_ryo_run_8_0
+      213: -752361875966357406
+    second: hero_kenta_victory_4_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: hero_ryo_run_8_0
+      name: hero_kenta_victory_4_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 063310348f6713af0800000000000000
-      internalID: -418422481720626336
+      spriteID: 2609a782cd21f85f0800000000000000
+      internalID: -752361875966357406
       vertices: []
       indices: 
       edges: []

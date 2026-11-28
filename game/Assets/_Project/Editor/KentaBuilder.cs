@@ -182,8 +182,8 @@ namespace Kenta.EditorTools
                 set.wall = Spr(g + "wall.png");
                 set.hurt = Spr(g + "hurt.png");
                 set.death = Spr(g + "death.png");
-                // animations optionnelles : vine_ et hurt_ (2 images) sont fournies en v2 ; victory, land, wall_,
-                // drum, death_, airhit et portrait restent vides (le code retombe sur les poses de base)
+                // animations optionnelles : vide = le code retombe sur les poses de base. En v2, Kenta a toutes les siennes
+                // (planches tools/heros-v2/raw/gemini/), Ryo seulement land_, Aiko aucune (Gemini à court d'images)
                 set.victoryFrames = Frames(g + "victory_");
                 set.landFrames = Frames(g + "land_");
                 set.vineFrames = Frames(g + "vine_");

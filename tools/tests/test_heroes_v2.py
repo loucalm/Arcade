@@ -10,6 +10,10 @@ HEROES_DIR = os.path.join(ROOT, "game", "Assets", "_Project", "Art", "Kenta", "G
 HEROES = ("kenta", "aiko", "ryo")
 SIZE = (96, 72)
 HIT_SIZE = (160, 72)
+PORTRAIT_SIZE = (64, 64)
+VINE_SIZE = (96, 96)
+VINE_GRIP_PX = 54   # VineView.HandHeight = 1,35 u : le poing sur la liane, au-dessus du pivot
+VINE_PIVOT_PX = 24  # pivot des images de liane (KentaSpritePostprocessor), depuis le bas de la toile
 HIT_REACH_PX = 76  # PlayerController.hitReach = 1,9 u × 40 px/u
 INK = (0x14, 0x10, 0x1C)
 ARC_CREAM = (0xFF, 0xF6, 0xC8)
@@ -20,9 +24,10 @@ SINGLES = ("idle", "crouch", "vine", "wall", "hurt", "death")
 
 
 def expected_families(hero):
-    return {
+    """Familles et nombre exact d'images : une image en trop (ancienne, d'un autre dessin) casse un cycle."""
+    fams = {
         "idle": 6,
-        "run": 9 if hero == "ryo" else 8,
+        "run": 8,
         "jump": 8,
         "hit": 6,
         "climb": 8,
@@ -31,6 +36,21 @@ def expected_families(hero):
         "vine": 2,
         "hurt": 2,
     }
+    if hero == "kenta":   # planches Gemini complémentaires (tools/heros-v2/raw/gemini/)
+        fams.update(vine=4, hurt=3, airhit=4, land=2, drum=4, victory=6, wall=6, death=5, portrait=3)
+    if hero == "ryo":
+        fams.update(land=2)
+    return fams
+
+
+def expected_size(name):
+    if name.startswith(("hit_", "airhit_")):
+        return HIT_SIZE
+    if name.startswith("portrait_"):
+        return PORTRAIT_SIZE
+    if name == "vine" or name.startswith("vine_"):
+        return VINE_SIZE
+    return SIZE
 
 
 def expected_names(hero):
@@ -60,10 +80,9 @@ def test_every_family_exists_with_expected_count(hero):
 @pytest.mark.parametrize("hero", HEROES)
 def test_all_sprites_have_expected_size_rgba_and_non_empty(hero):
     for name in expected_names(hero):
-        expected_size = HIT_SIZE if name.startswith("hit_") else SIZE
         with Image.open(sprite_path(hero, name)) as im:
             assert im.mode == "RGBA", (hero, name, im.mode)
-            assert im.size == expected_size, (hero, name, im.size)
+            assert im.size == expected_size(name), (hero, name, im.size)
             alpha = np.asarray(im)[:, :, 3]
             assert (alpha >= 128).any(), (hero, name, "image vide")
 
@@ -192,3 +211,25 @@ def test_v2_marker_exists(hero):
     assert os.path.isfile(marker), f"marqueur manquant : {marker}"
     with open(marker, encoding="utf-8") as f:
         assert f.read().strip(), f"marqueur vide : {marker}"
+
+
+@pytest.mark.parametrize("hero", HEROES)
+def test_vine_grip_is_on_the_rope_end(hero):
+    """La corde du jeu arrive à VINE_GRIP_PX au-dessus du pivot : le poing (2 px sous le haut des mains) y est, centré."""
+    names = ["vine"] + [f"vine_{k}" for k in range(expected_families(hero)["vine"])]
+    for name in names:
+        with Image.open(sprite_path(hero, name)) as im:
+            alpha = np.asarray(im)[:, :, 3] >= 128
+        rows = np.nonzero(alpha.any(axis=1))[0]
+        pivot_row = VINE_SIZE[1] - VINE_PIVOT_PX
+        grip = pivot_row - (int(rows.min()) + 2)
+        assert abs(grip - VINE_GRIP_PX) <= 1, (hero, name, grip)
+        fist_x = float(np.median(np.nonzero(alpha[rows.min():rows.min() + 6])[1]))
+        assert abs(fist_x - VINE_SIZE[0] / 2) <= 1.5, (hero, name, fist_x)
+
+
+def test_air_slash_reaches_hit_reach_px():
+    """Coup en l'air : la traînée de la coupe pleine va jusqu'à la portée de frappe, comme au sol."""
+    with Image.open(sprite_path("kenta", "airhit_1")) as im:
+        cols = np.nonzero(np.asarray(im)[:, :, 3].max(axis=0) >= 128)[0]
+    assert abs(int(cols.max()) - (HIT_SIZE[0] // 2 + HIT_REACH_PX)) <= 1, int(cols.max())

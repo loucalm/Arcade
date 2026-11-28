@@ -75,16 +75,49 @@ MonoBehaviour:
   - {fileID: 21300000, guid: d023e8fb38f3a47dcbba3e53ad82beb7, type: 3}
   - {fileID: 21300000, guid: 45ab22a673504497db118d6d6f5cf599, type: 3}
   - {fileID: 21300000, guid: d1ce9dd6ea2914cd699a72f27ad44daf, type: 3}
-  victoryFrames: []
-  landFrames: []
+  victoryFrames:
+  - {fileID: 21300000, guid: 3a0c3d1f1c6844e898c93d375ce106f3, type: 3}
+  - {fileID: 21300000, guid: e9c3aff73ef8f40be9d3973152fff268, type: 3}
+  - {fileID: 21300000, guid: c0cc833be1820472d9165e941b848457, type: 3}
+  - {fileID: 21300000, guid: 851b03648ec0e41c1befe7d6b5172162, type: 3}
+  - {fileID: 21300000, guid: b490bf53414b04b48bad3dc7ad1a92d7, type: 3}
+  - {fileID: 21300000, guid: d8b1f1e184bde4f30a560107c6bf933e, type: 3}
+  landFrames:
+  - {fileID: 21300000, guid: bbe3eb99779ea4bd2bbd61da6928107f, type: 3}
+  - {fileID: 21300000, guid: f01aed2eb763b4cbf8a2065b3b1b90cf, type: 3}
   vineFrames:
   - {fileID: 21300000, guid: 6f215f78e29114a8badfdb05849110eb, type: 3}
   - {fileID: 21300000, guid: 485e7dfa60d664dffa0da0ebd83a6a1e, type: 3}
-  wallCycle: []
-  drumFrames: []
+  - {fileID: 21300000, guid: 9aac3599ae543401b8a71da73490f895, type: 3}
+  - {fileID: 21300000, guid: 729ff596a518b45e6bdb79aaab025f39, type: 3}
+  wallCycle:
+  - {fileID: 21300000, guid: d3cd06fffada74be2a81ec7764f6efc0, type: 3}
+  - {fileID: 21300000, guid: e66d0728d10d94252bec31872e81061a, type: 3}
+  - {fileID: 21300000, guid: 14bc05fba28da4a858fad1461ef8b8fd, type: 3}
+  - {fileID: 21300000, guid: d26a389d6772f4d82939b31f8a3cabcc, type: 3}
+  - {fileID: 21300000, guid: fd9479b9bf11d44c18e3b5c685126de6, type: 3}
+  - {fileID: 21300000, guid: 4fdbf9b88b01940db994529747ae29e0, type: 3}
+  drumFrames:
+  - {fileID: 21300000, guid: b52496911f08b40da8aa004a8b7e12b4, type: 3}
+  - {fileID: 21300000, guid: 82d57734ab7aa4e818849afbabec5305, type: 3}
+  - {fileID: 21300000, guid: 506c4c1d26281492abe51507981e19d5, type: 3}
+  - {fileID: 21300000, guid: e96e29da75c84483e8fdecb5edbc937a, type: 3}
   hurtFrames:
   - {fileID: 21300000, guid: 3ac996e10fa784bbe890283e5ded852b, type: 3}
   - {fileID: 21300000, guid: 26c02b49e47184092b6a41893d7df21f, type: 3}
-  deathFrames: []
-  airHitFrames: []
-  portraits: []
+  - {fileID: 21300000, guid: db5e4f0dd2d1a40b4bd29e74c5ad764f, type: 3}
+  deathFrames:
+  - {fileID: 21300000, guid: 7a22e093230224c9591ee3953bfd4526, type: 3}
+  - {fileID: 21300000, guid: ba4a5b29e65d64d39ab07e6acc016ef3, type: 3}
+  - {fileID: 21300000, guid: dc615c6ffe9ca47289a51b0df8426042, type: 3}
+  - {fileID: 21300000, guid: a136e462a902e498f9ad6994fe113ceb, type: 3}
+  - {fileID: 21300000, guid: e9ce971ae54a04e9090415d64583d04d, type: 3}
+  airHitFrames:
+  - {fileID: 21300000, guid: d619424ff49be47268e933e29d1b1177, type: 3}
+  - {fileID: 21300000, guid: 8b36ec3057b7840018978a860186800a, type: 3}
+  - {fileID: 21300000, guid: 0917da04bce5f438e8905802a1b1651e, type: 3}
+  - {fileID: 21300000, guid: bc764b1baae8c4d6fae98720de436083, type: 3}
+  portraits:
+  - {fileID: 21300000, guid: ff012bba22df0468cb2cb16a1440a4e6, type: 3}
+  - {fileID: 21300000, guid: 37864db85d8634fda888ba0a588e544c, type: 3}
+  - {fileID: 21300000, guid: a65e3425b71c14393a30d6b023f86e92, type: 3}
