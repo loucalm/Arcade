@@ -113,9 +113,14 @@ namespace Kenta.Player
         LevelObject pendingStomp;
         int orbCursor;
         double lastOrbBeat = -99;             // temps de la dernière note de saut prise : un appui ne sert qu'à une note
-        float frameStartY, curSpb = 0.4f, curGravity = 75f;
+        float frameStartY, curSpb = 0.4f, curGravity = 75f, curJumpAirBeats = 1f;
         /// <summary>Fenêtre de l'appui d'une note de saut ou d'un rebond sur un cuirassé, autour de son temps (beats).</summary>
         const float PressEarlyBeats = 0.35f, PressLateBeats = 0.35f;
+        /// <summary>Planchers en secondes à très haut BPM (> 220 BPM) : identiques à tools/levelgen/engine.py.</summary>
+        const float MinHitActiveSeconds = 0.080f, MinPressWindowSeconds = 0.095f;
+        float EffectivePressWindow => Mathf.Max(PressEarlyBeats, MinPressWindowSeconds / Mathf.Max(0.05f, curSpb));
+        float EffectiveJumpBuffer => Mathf.Max(jumpBufferWindowBeats, MinPressWindowSeconds / Mathf.Max(0.05f, curSpb));
+        float EffectiveHitActive => Mathf.Max(hitActiveBeats, MinHitActiveSeconds / Mathf.Max(0.05f, curSpb));
         /// <summary>Portée verticale d'une note de saut : on la prend même en arrivant vite, en fin de saut.</summary>
         const float OrbReach = 3f;
         /// <summary>Chute ralentie (u/s) près d'une note de saut, pendant sa fenêtre d'appui, une fois à sa hauteur
@@ -246,9 +251,11 @@ namespace Kenta.Player
         {
             nowBeat = beat;
             float x = level.BeatToX(beat);
+            float speedScale = level.SpeedScaleAt(beat);
 
-            // Physique réglée en beats : sommet à jumpHeight, retour au sol après jumpAirBeats.
-            float airTime = jumpAirBeats * spb;
+            // Physique réglée en beats : sommet à jumpHeight, retour au sol après jumpAirBeats / speedScale (3,2 u par saut).
+            curJumpAirBeats = jumpAirBeats / Mathf.Max(0.2f, speedScale);
+            float airTime = curJumpAirBeats * spb;
             float gravity = 8f * jumpHeight / (airTime * airTime);
             float jumpVelocity = 4f * jumpHeight / airTime;
             float half = width * 0.5f;
@@ -287,30 +294,32 @@ namespace Kenta.Player
                 lastJumpDownBeat = beat;
                 jumpBufferBeat = vine != null ? -99 : beat;     // pendu à une liane, l'appui sert seulement au lâcher
                 // appui en avance sur une liane : il est gardé (lâcher à l'ouverture de la fenêtre) ; la main se resserre
-                if (vine != null && beat < vine.beat - VineEarlyBeats) squash = Squash(0.85f, 1.15f);
+                if (vine != null && beat < vine.beat - EffectivePressWindow) squash = Squash(0.85f, 1.15f);
                 // appui juste après le décollage d'un tambour : il compte pour le rebond
                 if (pendingBounce != null && beat - pendingBounce.beat <= 0.5) run.OnObstacleCleared(pendingBounce, beat);
                 pendingBounce = null;
             }
             if (pendingBounce != null && beat - pendingBounce.beat > 0.5) pendingBounce = null;
-            bool coyote = !grounded && vy <= 0f && y > groundTop - 0.2f && beat - lastGroundedBeat <= coyoteBeats;
-            if (beat - jumpBufferBeat <= jumpBufferWindowBeats && (grounded || coyote)) Jump(jumpVelocity, beat, x);
+            bool coyote = !grounded && vy <= 0f && y > groundTop - 0.2f && beat - lastGroundedBeat <= coyoteBeats / Mathf.Max(0.2f, speedScale);
+            if (beat - jumpBufferBeat <= EffectiveJumpBuffer && (grounded || coyote)) Jump(jumpVelocity, beat, x);
 
             // Frappe
             if (cmd.hitDown)
             {
                 LastHitPressBeat = beat;
-                hitUntilBeat = beat + hitActiveBeats;
-                slashDuration = slashTimer = hitActiveBeats * spb;
+                float activeBeats = EffectiveHitActive;
+                hitUntilBeat = beat + activeBeats;
+                slashDuration = slashTimer = activeBeats * spb;
                 ActionSfx.Instance?.Hit();
                 squash = Squash(1.2f, 0.92f);
             }
 
             // Rebond sur un cuirassé : l'appui (en avance ou juste après l'avoir écrasé) donne le grand rebond
+            float pressWin = EffectivePressWindow;
             if (pendingStomp != null)
             {
-                if (lastJumpDownBeat >= pendingStomp.beat - PressEarlyBeats) BigBounce(pendingStomp, beat, x);
-                else if (beat > pendingStomp.beat + PressLateBeats) pendingStomp = null;
+                if (lastJumpDownBeat >= pendingStomp.beat - pressWin) BigBounce(pendingStomp, beat, x);
+                else if (beat > pendingStomp.beat + pressWin) pendingStomp = null;
             }
             // Notes de saut : en l'air près d'une note, l'appui relance le saut
             CheckOrbs(x, beat);
@@ -423,7 +432,8 @@ namespace Kenta.Player
             bool pressed = lastJumpDownBeat > vineGrabBeat;     // appui après la prise (en avance : gardé jusqu'à la fenêtre)
             float arcY = Mathf.Lerp(vine.grabY, vine.releaseY, u) - vine.sag * Mathf.Sin(Mathf.PI * u);
             float arcVy = (float)(((vine.releaseY - vine.grabY) - vine.sag * Mathf.PI * Mathf.Cos(Mathf.PI * u)) / (len * spb));
-            if ((!pressed || beat < vine.beat - VineEarlyBeats) && beat <= vine.beat + VineLateBeats)
+            float vineWin = EffectivePressWindow;
+            if ((!pressed || beat < vine.beat - vineWin) && beat <= vine.beat + vineWin)
             {
                 y = arcY;
                 vy = arcVy;
@@ -445,8 +455,9 @@ namespace Kenta.Player
             }
             // lâcher : on arrive au temps prévu (lâcher + vol) sur la liane suivante si elle commence là, sinon sur le sol
             double arrive = o.beat + o.airBeats;
-            float t = (float)System.Math.Max(0.3, arrive - beat) * spb;
-            float xLand = x + t * level.RunSpeed;
+            double landBeat = System.Math.Max(beat + 0.3, arrive);
+            float t = (float)(landBeat - beat) * spb;
+            float xLand = level.BeatToX(landBeat);
             float target = level.HeightOnPlane(xLand, plane);
             foreach (var next in level.Vines)
                 if (next != o && Mathf.Abs(next.grabBeat - (float)arrive) < 0.05f) { target = next.grabY; break; }
@@ -481,7 +492,7 @@ namespace Kenta.Player
         /// <summary>Envol calculé pour arriver au temps `arrive` sur la cible suivante (comme un tambour).</summary>
         void LaunchTo(double arrive, double beat, float x)
         {
-            float xGuess = x + (float)((arrive - beat) * curSpb) * level.RunSpeed;
+            float xGuess = level.BeatToX(arrive);
             float target = ArrivalTarget(arrive, xGuess, out double touch);
             float t = (float)System.Math.Max(0.3, touch - beat) * curSpb;
             vy = (target - y + 0.5f * curGravity * t * t) / t;
@@ -497,6 +508,7 @@ namespace Kenta.Player
         void CheckOrbs(float x, double beat)
         {
             var orbs = level.Orbs;
+            float pressWin = EffectivePressWindow;
             while (orbCursor < orbs.Count && orbs[orbCursor].bounds.xMax < x - 1.5f) orbCursor++;
             for (int i = orbCursor; i < orbs.Count; i++)
             {
@@ -504,9 +516,9 @@ namespace Kenta.Player
                 if (o.bounds.xMin > x + 1.5f) break;
                 if (o.passed || o.plane != plane || inverted) continue;
                 if (Mathf.Abs(o.bounds.center.x - x) > 1.2f || Mathf.Abs(o.bounds.center.y - CenterWorldY()) > OrbReach) continue;
-                if (beat < o.beat - PressEarlyBeats || beat > o.beat + PressLateBeats) continue;
+                if (beat < o.beat - pressWin || beat > o.beat + pressWin) continue;
                 float dy = CenterWorldY() - o.bounds.center.y;
-                bool armed = lastJumpDownBeat >= o.beat - PressEarlyBeats - OrbMemoryBeats && lastJumpDownBeat > lastOrbBeat;
+                bool armed = lastJumpDownBeat >= o.beat - pressWin - OrbMemoryBeats && lastJumpDownBeat > lastOrbBeat;
                 if (!armed || (beat < o.beat && Mathf.Abs(dy) > OrbTouch))
                 {
                     // pas d'appui : la note retient le héros à sa hauteur, le temps d'appuyer (au-dessus, il tombe vers elle).
@@ -538,7 +550,7 @@ namespace Kenta.Player
             airBeats = 0.5f;
             squash = Squash(1.3f, 0.75f);
             pendingStomp = o;
-            if (lastJumpDownBeat >= o.beat - PressEarlyBeats) BigBounce(o, beat, x);
+            if (lastJumpDownBeat >= o.beat - EffectivePressWindow) BigBounce(o, beat, x);
         }
 
         void BigBounce(LevelObject o, double beat, float x)
@@ -584,7 +596,7 @@ namespace Kenta.Player
             grounded = false;
             jumpBufferBeat = -99;
             jumpStartBeat = airStartBeat = beat;
-            airBeats = jumpAirBeats;
+            airBeats = curJumpAirBeats;
             spinning = spinOnJump;
             squash = Squash(0.82f, 1.2f);
             ActionSfx.Instance?.Jump();
@@ -631,7 +643,7 @@ namespace Kenta.Player
                 o.passed = true;
                 float t = o.airBeats * spb;
                 if (o.targetPlane >= 0) plane = o.targetPlane;          // tambour de plan : on retombe sur l'autre chemin
-                float landTop = level.HeightOnPlane(x + t * level.RunSpeed, plane);
+                float landTop = level.HeightOnPlane(level.BeatToX(beat + o.airBeats), plane);
                 vy = (landTop - y + 0.5f * gravity * t * t) / t;
                 grounded = false;
                 IsBouncing = true;

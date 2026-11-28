@@ -19,3 +19,4 @@ MonoBehaviour:
   chart: {fileID: 0}
   stars: 4
   thumbnail: {fileID: 21300000, guid: 546126fe96ce242b1913778c614f01d2, type: 3}
+  lockedBySourdineHard: 0

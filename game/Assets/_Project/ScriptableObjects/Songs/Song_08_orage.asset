@@ -18,5 +18,5 @@ MonoBehaviour:
   bpm: 180
   offsetSeconds: 0.035
   beatsPerBar: 4
-  chart: {fileID: 4900000, guid: 84c513c6f8fc045abbd52ea8608a1e76, type: 3}
-  previewBeat: 272
+  chart: {fileID: 4900000, guid: a8707668433324302afc511299e85507, type: 3}
+  previewBeat: 96

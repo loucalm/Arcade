@@ -19,7 +19,7 @@ Toute PR qui casse un de ces points est refusée. Détails : [docs/anatidae.md](
 ## Invariants du système rythmique
 Détails : [docs/game-design.md](docs/game-design.md), [docs/chart-format.md](docs/chart-format.md).
 1. **L'horloge maître est l'audio** (`Conductor.SongTime`). Aucune logique de rythme ne doit se baser uniquement sur `Time.deltaTime`.
-2. **Vitesse de course constante** : `x = BeatToSeconds(beat) * runSpeed`. Le joueur ne ralentit jamais.
+2. **Vitesse de course calée sur le rythme** : `x = BeatToSeconds(beat) * runSpeed` (par morceaux si la chart contient un événement `speed_change`, ex. intro calme à `0.5×` puis drop à `1.0×` au niveau 8 ; `LevelBuilder.BeatToX`). Le joueur ne ralentit jamais de lui-même.
 3. Le niveau est **généré à partir d'une chart JSON**. On ne place rien à la main en dur dans les scènes de niveau.
 4. Les sons d'action sont **quantifiés à la double-croche** la plus proche. La tolérance est celle d'un plateformeur, pas d'un jeu de rythme (la note d'une pièce : sur le temps de la pièce, ADR-038).
 5. Tout ce qui réagit au tempo s'abonne à `Conductor.OnBeat(int beat)`. Pas de minuteries locales.

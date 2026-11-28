@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36ff3b5dc283e46f3862081906125f9a, type: 3}
   m_Name: Song_05_echine
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.Rhythm.SongData
-  title: MAIN THEME
+  title: L'ASCENSION
   clip: {fileID: 8300000, guid: d617f71fc8f9e4ae88592260461eaa21, type: 3}
   remixClip: {fileID: 0}
   bpm: 150

@@ -40,6 +40,7 @@ namespace Kenta.Core
         [SerializeField] int lifeBonus = 500;
         [SerializeField] int comboPerMultiplier = 8;
         [SerializeField] int maxMultiplier = 8;
+        int activeComboStep = 8;
 
         [Header("Points (× multiplicateur)")]
         [SerializeField] int lumPoints = 10;
@@ -63,7 +64,11 @@ namespace Kenta.Core
         public int Combo { get; private set; }
         public int Lums { get; private set; }
         public int TotalLums { get; private set; }
-        public int Multiplier => MultiplierFor(Combo, comboPerMultiplier, maxMultiplier);
+        public int Multiplier => MultiplierFor(Combo, activeComboStep, maxMultiplier);
+
+        /// <summary>Pas de combo adapté au nombre d'actions du niveau : rend le ×8 atteignable aussi sur les niveaux courts (N1/N2).</summary>
+        public static int ComboStepForActions(int totalActions, int defaultStep) =>
+            totalActions <= 0 ? defaultStep : Mathf.Clamp(Mathf.RoundToInt(totalActions * 0.78f / 14f), 3, defaultStep);
 
         /// <summary>
         /// Paliers croissants : passer de ×m à ×(m+1) demande m × comboPerMultiplier / 2 actions de plus
@@ -220,6 +225,7 @@ namespace Kenta.Core
             Kenta.FX.SourdineBoss.Setup(level, level.transform.parent);   // le boss du niveau 9 (rien ailleurs)
 
             TotalLums = level.Lums.Count;
+            activeComboStep = ComboStepForActions(level.AutoJumpBeats.Count + level.AutoHitBeats.Count, comboPerMultiplier);
             ResetAttemptStats();
             BuildWarnings();
 
@@ -671,7 +677,11 @@ namespace Kenta.Core
             warnCursor = 0;
             if (Chart?.events == null) return;
             int perBar = Chart.beatsPerBar > 0 ? Chart.beatsPerBar : 4;
-            double lastBack = -99, lastVine = -99;
+            float bpm = song != null && song.bpm > 0f ? song.bpm : Chart.bpm > 0f ? Chart.bpm : 120f;
+            // Au moins 1 mesure ET au moins 1,6 s d'anticipation (à 240-280 BPM, 4 beats ne font que 0,85-1,0 s)
+            double leadBeats = Math.Max(perBar, Math.Ceiling(1.6 * bpm / 60.0));
+            double lastBack = -99, lastVine = -99, lastInvert = -99;
+            float curSpeed = 1f;
             foreach (var e in Chart.events)
             {
                 string text = null;
@@ -695,8 +705,20 @@ namespace Kenta.Core
                         else if (mode == "up") text = "▼ L'ÉCRAN SE RETOURNE";
                         else if (mode == "both") text = "L'ÉCRAN FAIT DEMI-TOUR !";
                         break;
+                    case "fx_invert":
+                        if (e.@params != null && e.@params.variant != "off" && e.beat - lastInvert > 32)
+                        {
+                            text = "MONDE EN NÉGATIF !";
+                            lastInvert = e.beat;
+                        }
+                        break;
+                    case "speed_change":
+                        float s = e.@params != null && e.@params.intensity > 0f ? e.@params.intensity : 1f;
+                        if (e.beat > 0f && s > curSpeed * 1.2f) text = "►► ACCÉLÉRATION !";
+                        curSpeed = s;
+                        break;
                 }
-                if (text != null) warnings.Add((e.beat - perBar, text));
+                if (text != null) warnings.Add((Math.Max(0.0, e.beat - leadBeats), text));
             }
             warnings.Sort((a, b) => a.beat.CompareTo(b.beat));
         }
@@ -782,6 +804,8 @@ namespace Kenta.Core
             if (!IsRunning) return;
             Completed = true;
             if (!IsDemo) AddPoints(completionBonus + Lives * lifeBonus);
+            if (LevelScores.CheckSecretUnlock(Level, true, Difficulty, IsDemo, Autoplay) && LevelScores.Online && GameFlow.Instance != null)
+                GameFlow.Instance.StartCoroutine(LevelScores.UploadSecretUnlock());
             OnStatsChanged?.Invoke();
             Finish(true);
         }

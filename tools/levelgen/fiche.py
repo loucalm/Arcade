@@ -25,6 +25,7 @@ MECHANICS = {
     "screen_flip": "écran en miroir ou tête en bas",
     "glitch": "grésillement de l'image",
     "laser": "laser de la Sourdine (bas : sauter sur le temps ; haut : rester au sol)",
+    "speed_change": "changement de vitesse de course en cours de morceau",
 }
 ALL = frozenset(MECHANICS)
 
@@ -41,7 +42,8 @@ def mechanics_of(events):
     used = set()
     for e in events:
         t, lane, v = e["type"], e.get("lane", 0), e.get("params", {}).get("variant", "")
-        if t in ("gap", "wall", "platform", "vine", "orb", "ramp", "screen_split", "screen_flip", "glitch", "laser"):
+        if t in ("gap", "wall", "platform", "vine", "orb", "ramp", "screen_split", "screen_flip", "glitch", "laser",
+                 "speed_change"):
             used.add(t)
         elif t == "step" and lane == 0:
             used.add("step")

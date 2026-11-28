@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Anatidae;
+using Kenta.Level;
 using UnityEngine;
 
 namespace Kenta.Core
@@ -19,14 +20,15 @@ namespace Kenta.Core
 
     /// <summary>
     /// Classement de chaque niveau (top 10, une entrée par nom), stocké dans l'Extradata de la borne : une clé
-    /// « top_&lt;id du niveau&gt; » par niveau, valeur JSON (ADR-032). La liste officielle de la borne
-    /// (HighscoreManager) reste remplie à part. Sans la borne (éditeur, serveur absent), tout reste en mémoire et
-    /// aucun appel réseau n'est fait : pas d'erreur en console.
+    /// « top_&lt;id du niveau&gt; » par niveau, valeur JSON (ADR-032), ainsi que le déblocage du niveau 10 secret
+    /// (« unlock_n10 »). La liste officielle de la borne (HighscoreManager) reste remplie à part. Sans la borne
+    /// (éditeur, serveur absent), tout reste en mémoire / PlayerPrefs et aucun appel réseau n'est fait.
     /// </summary>
     public static class LevelScores
     {
         public const int Max = 10;
         public const string KeyPrefix = "top_";
+        public const string UnlockSecretKey = "unlock_n10";
 
         [Serializable]
         class Wrapper
@@ -36,12 +38,60 @@ namespace Kenta.Core
 
         static readonly Dictionary<string, List<LevelScoreEntry>> cache = new();
         static readonly List<LevelScoreEntry> Empty = new();
+        static bool secretUnlocked;
 
         /// <summary>Vrai une fois l'Extradata de la borne lue : les nouveaux scores y sont alors envoyés.</summary>
         public static bool Online { get; private set; }
 
-        /// <summary>Incrémenté à chaque changement d'un classement (l'affichage se rafraîchit).</summary>
+        /// <summary>Incrémenté à chaque changement d'un classement ou d'un déblocage (l'affichage se rafraîchit).</summary>
         public static int Version { get; private set; }
+
+        /// <summary>Vrai si quelqu'un a terminé La Sourdine (niveau 9) en difficulté maximale (DUR / une vie).</summary>
+        public static bool SecretUnlocked => secretUnlocked;
+
+        /// <summary>Vrai si le niveau est encore enchaîné (niveau 10 tant que La Sourdine en DUR n'est pas vaincue).</summary>
+        public static bool IsLocked(LevelDef level) => level != null && level.lockedBySourdineHard && !secretUnlocked;
+
+        /// <summary>Vrai si le niveau peut être lancé (débloqué et muni d'un morceau et d'une chart).</summary>
+        public static bool IsPlayable(LevelDef level) =>
+            level != null && !IsLocked(level) && level.song != null && level.song.clip != null && level.Chart != null;
+
+        /// <summary>Charge l'état de déblocage local (borne hors ligne ou session locale).</summary>
+        public static void LoadLocal()
+        {
+            if (PlayerPrefs.GetInt(UnlockSecretKey, 0) == 1 && !secretUnlocked)
+            {
+                secretUnlocked = true;
+                Version++;
+            }
+        }
+
+        /// <summary>
+        /// Débloque le niveau 10 uniquement si le niveau 9 (« sourd ») est terminé en mode DUR (RetryMode.OneLife),
+        /// hors démo et hors autoplay. Renvoie vrai si le déblocage vient d'avoir lieu.
+        /// </summary>
+        public static bool CheckSecretUnlock(LevelDef level, bool completed, RetryMode difficulty, bool isDemo, bool autoplay,
+                                             bool savePrefs = true)
+        {
+            if (!completed || isDemo || autoplay || difficulty != RetryMode.OneLife || level == null || level.id != "sourd")
+                return false;
+            if (secretUnlocked) return false;
+            secretUnlocked = true;
+            if (savePrefs)
+            {
+                PlayerPrefs.SetInt(UnlockSecretKey, 1);
+                PlayerPrefs.Save();
+            }
+            Version++;
+            return true;
+        }
+
+        /// <summary>Persiste le déblocage du niveau 10 dans l'Extradata de la borne ; ne fait rien hors ligne.</summary>
+        public static IEnumerator UploadSecretUnlock()
+        {
+            if (!Online || !secretUnlocked) yield break;
+            yield return ExtradataManager.SetExtraData(UnlockSecretKey, "1");
+        }
 
         public static IReadOnlyList<LevelScoreEntry> Top(string levelId) =>
             levelId != null && cache.TryGetValue(levelId, out var l) ? l : Empty;
@@ -77,7 +127,9 @@ namespace Kenta.Core
             if (!ExtradataManager.HasFetchedExtraData) yield break;
             foreach (var e in ExtradataManager.ExtraData)
             {
-                if (e.key == null || !e.key.StartsWith(KeyPrefix)) continue;
+                if (e.key == null) continue;
+                if (e.key == UnlockSecretKey && e.value == "1") { secretUnlocked = true; continue; }
+                if (!e.key.StartsWith(KeyPrefix)) continue;
                 cache[e.key.Substring(KeyPrefix.Length)] = FromJson(e.value);
             }
             Online = true;
@@ -131,6 +183,7 @@ namespace Kenta.Core
         public static void ResetForTests()
         {
             cache.Clear();
+            secretUnlocked = false;
             Online = false;
             Version = 0;
         }

@@ -84,11 +84,78 @@ namespace Kenta.Level
         /// <summary>Chemin de l'arrière-plan (plan 1), derrière le niveau : on y saute par un tambour.</summary>
         public LevelTerrain Back { get; } = new LevelTerrain();
         readonly List<GroundSpan> ceilingSpans = new();       // dessous réel du plafond (pas en miroir)
+        struct SpeedSegment { public double beat; public float x, scale; }
+        readonly List<SpeedSegment> speedSegments = new();
         float secondsPerBeat = 0.5f;
         Transform root;
         GameObject beatGrid;
 
-        public float BeatToX(double beat) => (float)(beat * secondsPerBeat * RunSpeed);
+        /// <summary>Facteur de vitesse de course au beat donné (1 par défaut ; ex. 0,5 sur une intro calme avant un drop ×2).</summary>
+        public float SpeedScaleAt(double beat)
+        {
+            if (speedSegments.Count == 0) return 1f;
+            float s = speedSegments[0].scale;
+            for (int i = 0; i < speedSegments.Count; i++)
+            {
+                if (speedSegments[i].beat <= beat + 1e-6) s = speedSegments[i].scale;
+                else break;
+            }
+            return s;
+        }
+
+        public float BeatToX(double beat)
+        {
+            if (speedSegments.Count == 0) return (float)(beat * secondsPerBeat * RunSpeed);
+            var seg = speedSegments[0];
+            for (int i = 0; i < speedSegments.Count; i++)
+            {
+                if (speedSegments[i].beat <= beat + 1e-6) seg = speedSegments[i];
+                else break;
+            }
+            return seg.x + (float)((beat - seg.beat) * secondsPerBeat * RunSpeed * seg.scale);
+        }
+
+        public double XToBeat(float x)
+        {
+            float basePerBeat = Mathf.Max(1e-4f, secondsPerBeat * RunSpeed);
+            if (speedSegments.Count == 0) return x / basePerBeat;
+            var seg = speedSegments[0];
+            for (int i = 0; i < speedSegments.Count; i++)
+            {
+                if (speedSegments[i].x <= x + 1e-4f) seg = speedSegments[i];
+                else break;
+            }
+            return seg.beat + (x - seg.x) / (basePerBeat * Mathf.Max(0.1f, seg.scale));
+        }
+
+        void BuildSpeedSegments(ChartEvent[] events)
+        {
+            speedSegments.Clear();
+            if (events == null) return;
+            var raw = new List<(double beat, float scale)>();
+            foreach (var e in events)
+                if (e.type == "speed_change")
+                    raw.Add((e.beat, Mathf.Max(0.2f, e.@params != null && e.@params.intensity > 0f ? e.@params.intensity : 1f)));
+            if (raw.Count == 0) return;
+            raw.Sort((a, b) => a.beat.CompareTo(b.beat));
+            float initScale = raw[0].beat <= 0.0 ? raw[0].scale : 1f;
+            speedSegments.Add(new SpeedSegment { beat = 0.0, x = 0f, scale = initScale });
+            double curB = 0.0;
+            float curX = 0f, curS = initScale;
+            foreach (var (b, s) in raw)
+            {
+                if (b <= 0.0)
+                {
+                    speedSegments[0] = new SpeedSegment { beat = 0.0, x = 0f, scale = s };
+                    curS = s;
+                    continue;
+                }
+                curX += (float)((b - curB) * secondsPerBeat * RunSpeed * curS);
+                curB = b;
+                curS = s;
+                speedSegments.Add(new SpeedSegment { beat = curB, x = curX, scale = curS });
+            }
+        }
 
         /// <summary>Biome du niveau (un niveau = un monde) ; null = un biome par section (ancien fonctionnement).</summary>
         public BiomeTheme LevelBiome { get; private set; }
@@ -99,6 +166,7 @@ namespace Kenta.Level
             Chart = chart;
             LevelBiome = biome;
             secondsPerBeat = 60f / bpm;
+            BuildSpeedSegments(chart.events);
             if (!Mathf.Approximately(chart.bpm, bpm))
                 Debug.LogWarning($"LevelBuilder: BPM de la chart ({chart.bpm}) ≠ BPM du SongData ({bpm}). Le SongData fait foi.");
 
@@ -112,7 +180,8 @@ namespace Kenta.Level
                 if (e.type == "step")
                 {
                     float h = Mathf.Clamp(e.@params.height, -MaxHeight, MaxHeight);
-                    float x = BeatToX(e.beat + StepFaceBeats);
+                    float s = SpeedScaleAt(e.beat);
+                    float x = BeatToX(e.beat + StepFaceBeats / s);
                     steps.Add(new Vector3(x, h, 0f));
                     // lane 1 = falaise : on l'atteint en vol (tambour) ; pas de saut attendu, s'y cogner au sol reste mortel
                     if (h - h0 > StepFaceMin && e.lane != 1)
@@ -147,8 +216,9 @@ namespace Kenta.Level
                 {
                     case "gap":
                     {
-                        float len = p.length > 0 ? p.length : GapDefaultLength;
-                        float x0 = BeatToX(e.beat + GapStartBeats), x1 = BeatToX(e.beat + GapStartBeats + len);
+                        float s = SpeedScaleAt(e.beat);
+                        float len = p.length > 0 ? p.length : GapDefaultLength / s;
+                        float x0 = BeatToX(e.beat + GapStartBeats / s), x1 = BeatToX(e.beat + GapStartBeats / s + len);
                         gaps.Add(new Vector2(x0, x1));
                         float gh = HeightAt(x0);
                         // lane 1 = vide (sous une suite de plateformes) : pas jugé, pas de saut de l'autoplay
@@ -160,7 +230,8 @@ namespace Kenta.Level
                     }
                     case "wall":
                     {
-                        float x0 = BeatToX(e.beat + WallStartBeats);   // le sprite du mur fait 36×32 px : hauteur fixe de 0,8 u
+                        float s = SpeedScaleAt(e.beat);
+                        float x0 = BeatToX(e.beat + WallStartBeats / s);   // le sprite du mur fait 36×32 px : hauteur fixe de 0,8 u
                         // hitbox indulgente (0,7 × 0,75 u) dans le sprite de 0,9 × 0,8 u, centrée pareil
                         var o = new LevelObject { kind = LevelObjectKind.Wall, beat = e.beat, bounds = new Rect(x0 + 0.1f, HeightAt(x0 + 0.45f), 0.7f, 0.75f) };
                         o.view = MakeWall(o.bounds, BiomeAt(e.beat));
@@ -177,7 +248,8 @@ namespace Kenta.Level
                         bool hanging = enemy && e.lane == 2;        // pendu au plafond (dessous du plafond à `height`)
                         bool stomp = enemy && p.variant == "stomp"; // cuirassé : on lui saute dessus (appui au rebond, sur `beat`)
                         int plane = PlaneOf(e);
-                        float cx = BeatToX(e.beat + (stomp ? -StompTouchBeats : EnemyCenterBeats));
+                        float s = SpeedScaleAt(e.beat);
+                        float cx = BeatToX(e.beat + (stomp ? -StompTouchBeats : EnemyCenterBeats) / s);
                         float ey = flying ? p.height : hanging ? p.height - 0.9f : plane == 1 ? BackHeightAt(cx) : HeightAt(cx);
                         var o = new LevelObject
                         {
@@ -269,8 +341,9 @@ namespace Kenta.Level
                     }
                     case "platform":
                     {
-                        float len = p.length > 0 ? p.length : 1f;
-                        float x0 = BeatToX(e.beat + StepStartBeats), x1 = BeatToX(e.beat + StepStartBeats + len);
+                        float s = SpeedScaleAt(e.beat);
+                        float len = p.length > 0 ? p.length : 1f / s;
+                        float x0 = BeatToX(e.beat + StepStartBeats / s), x1 = BeatToX(e.beat + StepStartBeats / s + len);
                         float top = Mathf.Clamp(p.height, -MaxHeight, MaxHeight);
                         platforms.Add(new GroundSpan(x0, x1, top, true));
                         Platforms.Add(new LevelObject { kind = LevelObjectKind.Platform, beat = e.beat, bounds = Rect.MinMaxRect(x0, top, x1, top) });
@@ -294,7 +367,8 @@ namespace Kenta.Level
                     case "jump":
                     {
                         // saut sans trou dans le sol du niveau (trou du plafond, du chemin du fond) : jugé quand on le passe
-                        float x0 = BeatToX(e.beat + GapStartBeats), x1 = BeatToX(e.beat + GapStartBeats + GapDefaultLength);
+                        float s = SpeedScaleAt(e.beat);
+                        float x0 = BeatToX(e.beat + GapStartBeats / s), x1 = BeatToX(e.beat + (GapStartBeats + GapDefaultLength) / s);
                         Obstacles.Add(new LevelObject { kind = LevelObjectKind.Gap, beat = e.beat, plane = PlaneOf(e), bounds = Rect.MinMaxRect(x0, -1000f, x1, -999f) });
                         AutoJumpBeats.Add(e.beat);
                         lastX = Mathf.Max(lastX, x1);
@@ -352,6 +426,8 @@ namespace Kenta.Level
                         break;
                     case "boss":
                         BossEvents.Add(e);
+                        break;
+                    case "speed_change":
                         break;
                     case "fx_flash":
                     case "camera_shake":
@@ -507,6 +583,7 @@ namespace Kenta.Level
             chunkLo = -1; chunkHi = -2;
             ceilingSpans.Clear();
             backProfile.Clear();
+            speedSegments.Clear();
         }
 
         /// <summary>
@@ -617,7 +694,7 @@ namespace Kenta.Level
 
         public int BiomeIndexAt(double beat) => Chart != null ? Mathf.Clamp(Chart.SectionIndexAt(beat), 0, theme.biomes.Length - 1) : 0;
 
-        BiomeTheme BiomeAtX(float x) => BiomeAt(x / (secondsPerBeat * RunSpeed));
+        BiomeTheme BiomeAtX(float x) => BiomeAt(XToBeat(x));
 
         SpriteRenderer Spr(Transform parent, string name, Sprite sprite, Vector2 pos, int order, float scale = 1f)
         {

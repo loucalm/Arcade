@@ -251,6 +251,6 @@ FICHE = Fiche(
     build=build,
     zoom=480, zoom_wide=640,                 # vitesse : 3,2 u par temps, soit 8 u/s à 150 BPM
     scale=(9, 0, 2, 4, 7),                   # la mineur pentatonique (la, do, ré, mi, sol)
-    mechanics=ALL - {"laser"},               # tout : c'est le cumul (futur niveau 6) ; le laser n'est qu'au boss du niveau 9
+    mechanics=ALL - {"laser", "speed_change"},  # tout : c'est le cumul ; laser = boss N9, speed_change = accélération N8
     margin_ms=120.0,
 )

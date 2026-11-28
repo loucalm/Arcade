@@ -167,7 +167,7 @@ def test_level_4_teaches_drums_ramps_and_back_plane():
 
 
 def test_obstacle_variety():
-    """Le niveau 01 (futur niveau 6, le cumul) a toutes les mécaniques du jeu."""
+    """Le niveau 5 (Shovel Knight / L'Ascension) a les mécaniques classiques du jeu hors boss et accélération."""
     kinds = {e["type"] for e in EVENTS}
     for k in ("gap", "wall", "enemy", "bounce", "platform", "step", "ramp",
               "vine", "gravity", "ceiling", "back", "screen_split", "glitch"):
@@ -175,6 +175,38 @@ def test_obstacle_variety():
     assert sum(1 for e in EVENTS if e["type"] == "wall") >= 2
     assert sum(1 for e in EVENTS if e["type"] == "enemy" and e["lane"] == 1) >= 10
     assert mechanics_of(EVENTS) == set(FICHE.mechanics)
+
+
+def test_level_6_teaches_screen_reflections_without_glitch():
+    events, _, stats, _ = RESULTS["n6_givre"]
+    assert sum(1 for e in events if e["type"] == "screen_flip") >= 4
+    assert sum(1 for e in events if e["type"] == "screen_split") >= 2
+    assert sum(1 for e in events if e["type"] == "platform") >= 5
+    assert not any(e["type"] in ("glitch", "laser", "speed_change") for e in events)
+    assert stats["max_y"] - stats["min_y"] > 20
+
+
+def test_level_7_orage_has_verticality_and_balanced_checkpoints():
+    _, _, stats, _ = RESULTS["n7_orage"]
+    assert stats["max_y"] - stats["min_y"] > 22
+    cps = stats["checkpoints"]
+    max_gap_s = max(b - a for a, b in zip(cps, cps[1:])) * 60.0 / FICHES["n7_orage"].bpm
+    assert max_gap_s <= 13.5
+
+
+def test_level_8_cite_accelerates_from_chill_to_hardcore():
+    events, _, stats, _ = RESULTS["n8_cite"]
+    speeds = [(e["beat"], e["params"]["intensity"]) for e in events if e["type"] == "speed_change"]
+    assert speeds[0] == (0, 0.5)
+    assert speeds[1][1] == 1.0 and 76 <= speeds[1][0] <= 80
+    assert stats["max_y"] - stats["min_y"] > 30
+    assert any(76.0 <= cp <= 80.0 for cp in stats["checkpoints"])
+
+
+def test_level_9_sourdine_has_verticality_and_mid_drop_checkpoint():
+    _, _, stats, _ = RESULTS["n9_sourdine"]
+    assert stats["max_y"] - stats["min_y"] > 20
+    assert any(130.0 <= cp <= 145.0 for cp in stats["checkpoints"])
 
 
 # ------------------------------------------------------------------ le moteur à un autre tempo, avec une fiche réduite

@@ -162,6 +162,11 @@ class Level:
         Un état sur un temps fort, pas un clignotement : 3 bascules par seconde au plus (borne publique)."""
         self.add(beat, "fx_invert", variant="on" if on else "off")
 
+    def speed(self, beat, scale):
+        """Facteur de vitesse de course à partir de `beat` (ex. 0.5 pour une intro à demi-tempo sur une grille doublée,
+        puis 1.0 au drop). Les obstacles et la durée de saut s'adaptent pour garder exactement 3,2 u par saut."""
+        self.add(beat, "speed_change", intensity=float(scale))
+
 
 # ---------------------------------------------------------------- gestes composés, réutilisés d'un niveau à l'autre
 
