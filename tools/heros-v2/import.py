@@ -16,7 +16,9 @@ Usage : python3 tools/heros-v2/import.py [dossier_source]
 Ensuite, dans Unity : menu Kenta > Installer les sprites des héros et des ennemis
 """
 import argparse
+import glob
 import os
+import re
 from collections import deque
 
 import numpy as np
@@ -36,6 +38,13 @@ HIT_SLASH = {  # mêmes réglages (a0, a1, épaisseur, estompée) que HIT_KEYS 2
     2: (4, 166, 0.58, False),
     3: (70, 166, 0.34, True),
 }
+AIRHIT_SLASH = {1: HIT_SLASH[2], 2: HIT_SLASH[3]}  # coup en l'air en 4 images : coupe pleine, puis traînée qui s'efface
+# Liane : le jeu tire la corde jusqu'à la main, à VineView.HandHeight = 1,35 u = 54 px au-dessus du pivot. Les images de
+# liane sortent sur une toile plus haute, le héros pendu sous ses mains, les pieds sous le pivot ;
+# KentaSpritePostprocessor met leur pivot à VINE_PIVOT_PX du bas. Changer les trois ensemble.
+VINE_GRIP_PX = 54
+VINE_CH = 96
+VINE_PIVOT_PX = 24
 MARKER_TEXT = "Sprites v2 (tools/heros-v2/import.py) : ne pas écraser\n"
 
 # Échelle de réduction par héros et par planche (hauteur debout homogène : ~52 px Kenta/Ryo, ~49 px Aiko)
@@ -366,61 +375,66 @@ def slash_mask(a0, a1, tmax, cy=31.0, target_x=None, exp=0.65):
 def widen_hit_frame(im, frame_idx):
     """Étend hit_0..5 en 160×72 (+32 px transparents par côté, pivot inchangé) et trace la traînée derrière le héros."""
     pad = (HIT_W - CW) // 2
-    arr = np.zeros((CH, HIT_W, 4), dtype=np.uint8)
-    if frame_idx in HIT_SLASH:
-        hero = np.zeros((CH, HIT_W, 4), dtype=np.uint8)
-        hero[:, pad:pad + CW] = np.asarray(im)
-        hero_opaque = hero[:, :, 3] > 0
-
-        a0, a1, tmax, faded = HIT_SLASH[frame_idx]
-        if faded:
-            # hit_3 : croissant fin de la marionnette (HIT_KEYS 3 tel quel), sans comblement ni épaississement
-            outer, core = slash_mask(a0, a1, tmax, cy=31.0, target_x=None, exp=0.9)
-        else:
-            main_alpha = np.zeros((CH, HIT_W), dtype=bool)
-            main_alpha[:, pad:pad + CW] = np.asarray(remove_small_islands(im, min_pixels=6))[:, :, 3] >= 128
-            main_right = np.full(CH, -1, dtype=np.int32)
-            for y in range(CH):
-                xs = np.nonzero(main_alpha[y])[0]
-                if len(xs) > 0:
-                    main_right[y] = int(xs.max())
-
-            cy = detect_arc_cy(hero)
-            ry = min(29.0, cy - 2.0, CH - 2.0 - cy)
-            row_cy = int(round(CH - 0.5 - cy))
-            band_rights = [main_right[y] for y in range(max(0, row_cy - 6), min(CH, row_cy + 7)) if main_right[y] >= 0]
-            target_x = None
-            if band_rights:
-                front_col = float(np.median(band_rights))
-                target_x = (front_col - 2.0) + 0.5 - HIT_W / 2.0
-
-            outer, core = slash_mask(a0, a1, tmax, cy=cy, target_x=target_x)
-
-            bridge_y0 = max(0, int(round(row_cy - ry * 0.55)))
-            bridge_y1 = min(CH - 1, int(round(row_cy + ry * 0.85)))
-            for y in range(CH):
-                h_right = int(main_right[y])
-                if h_right < 0 or not outer[y].any():
-                    continue
-                c_cols = np.nonzero(outer[y])[0]
-                c_left = int(c_cols.min())
-                overlap = max(0, h_right - 2)
-                if c_left < overlap:
-                    outer[y, :overlap] = False
-                    core[y, :overlap] = False
-                elif bridge_y0 <= y <= bridge_y1 and c_left > overlap:
-                    outer[y, overlap:c_left] = True
-
-        outline = dilate4(outer) & ~outer & ~hero_opaque
-        arr[outline, :3] = INK
-        arr[outline, 3] = 255
-        arr[outer, :3] = ARC_CREAM
-        arr[outer, 3] = 255
-        if not faded:
-            arr[core, :3] = ARC_WHITE
-    canvas = Image.fromarray(arr, "RGBA")
+    canvas = Image.new("RGBA", (HIT_W, CH), (0, 0, 0, 0))
     canvas.alpha_composite(im, (pad, 0))
+    if frame_idx in HIT_SLASH:
+        return draw_slash(canvas, *HIT_SLASH[frame_idx])
     return canvas
+
+
+def draw_slash(canvas, a0, a1, tmax, faded):
+    """Trace la traînée du katana derrière le héros d'une toile HIT_W × CH, jusqu'à HIT_REACH_PX devant le pivot.
+    Pleine : elle part de l'avant du héros (2 px de chevauchement, sans trou). Estompée : croissant fin, sans comblement."""
+    hero = np.asarray(canvas)
+    hero_opaque = hero[:, :, 3] > 0
+    if faded:
+        # croissant fin de la marionnette (HIT_KEYS 3 tel quel), sans comblement ni épaississement
+        outer, core = slash_mask(a0, a1, tmax, cy=31.0, target_x=None, exp=0.9)
+    else:
+        main_alpha = np.asarray(remove_small_islands(canvas, min_pixels=6))[:, :, 3] >= 128
+        main_right = np.full(CH, -1, dtype=np.int32)
+        for y in range(CH):
+            xs = np.nonzero(main_alpha[y])[0]
+            if len(xs) > 0:
+                main_right[y] = int(xs.max())
+
+        cy = detect_arc_cy(hero)
+        ry = min(29.0, cy - 2.0, CH - 2.0 - cy)
+        row_cy = int(round(CH - 0.5 - cy))
+        band_rights = [main_right[y] for y in range(max(0, row_cy - 6), min(CH, row_cy + 7)) if main_right[y] >= 0]
+        target_x = None
+        if band_rights:
+            front_col = float(np.median(band_rights))
+            target_x = (front_col - 2.0) + 0.5 - HIT_W / 2.0
+
+        outer, core = slash_mask(a0, a1, tmax, cy=cy, target_x=target_x)
+
+        bridge_y0 = max(0, int(round(row_cy - ry * 0.55)))
+        bridge_y1 = min(CH - 1, int(round(row_cy + ry * 0.85)))
+        for y in range(CH):
+            h_right = int(main_right[y])
+            if h_right < 0 or not outer[y].any():
+                continue
+            c_cols = np.nonzero(outer[y])[0]
+            c_left = int(c_cols.min())
+            overlap = max(0, h_right - 2)
+            if c_left < overlap:
+                outer[y, :overlap] = False
+                core[y, :overlap] = False
+            elif bridge_y0 <= y <= bridge_y1 and c_left > overlap:
+                outer[y, overlap:c_left] = True
+
+    arr = np.zeros((CH, HIT_W, 4), dtype=np.uint8)
+    outline = dilate4(outer) & ~outer & ~hero_opaque
+    arr[outline, :3] = INK
+    arr[outline, 3] = 255
+    arr[outer, :3] = ARC_CREAM
+    arr[outer, 3] = 255
+    if not faded:
+        arr[core, :3] = ARC_WHITE
+    out = Image.fromarray(arr, "RGBA")
+    out.alpha_composite(canvas)
+    return out
 
 
 def split_row_by_valleys(fg_row, expected_n, min_gap_frac=0.35):
@@ -1087,6 +1101,9 @@ def apply_gemini_overrides(hero_id, res, src_dir):
             for (x0, x1) in split_row_by_valleys(fg[y0:y1], 2):
                 spr = downsample_crisp(rgb[y0:y1, x0:x1], fg[y0:y1, x0:x1], sc)
                 res[f"airhit_{idx}"] = _place_airhit(spr)
+                if idx in AIRHIT_SLASH:
+                    # l'arc de Gemini s'arrête vers +50 px : la traînée va jusqu'à la portée de frappe, comme au sol
+                    res[f"airhit_{idx}"] = draw_slash(res[f"airhit_{idx}"], *AIRHIT_SLASH[idx])
                 idx += 1
 
     p_pt = _find_gemini_sheet(src_dir, hero_id, "portrait")
@@ -1104,6 +1121,28 @@ def apply_gemini_overrides(hero_id, res, src_dir):
             res[f"portrait_{k}"] = place_in_canvas(spr, cw=64, ch=64)
 
 
+def align_vine(im):
+    """Héros pendu à la liane : le poing (2 px sous le haut des mains levées) à VINE_GRIP_PX au-dessus du pivot, centré,
+    sur une toile CW × VINE_CH dont le pivot est à VINE_PIVOT_PX du bas (les pieds pendent dessous)."""
+    spr = remove_small_islands(im, min_pixels=6)
+    alpha = np.asarray(spr)[:, :, 3] >= 128
+    ys, xs = np.nonzero(alpha)
+    assert len(xs) > 0, "image de liane vide"
+    y0, y1, x0, x1 = int(ys.min()), int(ys.max()), int(xs.min()), int(xs.max())
+    crop = spr.crop((x0, y0, x1 + 1, y1 + 1))
+    fist_cx = int(round(float(np.median(np.nonzero(alpha[y0:y0 + 6, :])[1])))) - x0
+    top = VINE_CH - VINE_PIVOT_PX - (VINE_GRIP_PX + 2)
+    left = CW // 2 - fist_cx
+    assert 0 <= left and left + crop.width <= CW and top + crop.height <= VINE_CH, (left, top, crop.size)
+    canvas = Image.new("RGBA", (CW, VINE_CH), (0, 0, 0, 0))
+    canvas.alpha_composite(crop, (left, top))
+    return canvas
+
+
+def is_vine(name):
+    return name == "vine" or name.startswith("vine_")
+
+
 def save_hero(hero_id, frames, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     for name, im in frames.items():
@@ -1111,10 +1150,22 @@ def save_hero(hero_id, frames, out_dir):
             expected = (HIT_W, CH)
         elif name.startswith("portrait_"):
             expected = (64, 64)
+        elif is_vine(name):
+            expected = (CW, VINE_CH)
         else:
             expected = (CW, CH)
         assert im.size == expected, f"{hero_id}_{name}: {im.size}"
         im.save(os.path.join(out_dir, f"hero_{hero_id}_{name}.png"), optimize=True)
+    # une famille refaite avec moins d'images (ex. la course de Ryo : 9 → 8) ne garde pas ses anciennes images en trop ;
+    # Unity retire leur .meta à la prochaine actualisation
+    families = {m.group(1) for m in (re.fullmatch(r"(.+)_(\d+)", n) for n in frames) if m}
+    prefix = f"hero_{hero_id}_"
+    for path in glob.glob(os.path.join(out_dir, prefix + "*.png")):
+        name = os.path.basename(path)[len(prefix):-4]
+        m = re.fullmatch(r"(.+)_(\d+)", name)
+        if m and m.group(1) in families and name not in frames:
+            os.remove(path)
+            print(f"retirée : {os.path.basename(path)}")
     with open(os.path.join(out_dir, f".v2_{hero_id}"), "w", encoding="utf-8") as f:
         f.write(MARKER_TEXT)
 
@@ -1146,12 +1197,13 @@ def make_contact_sheet(all_heroes, path):
     cols = 12
     total_rows = sum((len(r) + cols - 1) // cols for r in rows)
     cell_w = HIT_W
-    sheet = Image.new("RGBA", (cols * cell_w, total_rows * CH), (65, 68, 82, 255))
+    rh = VINE_CH                                          # rangées assez hautes pour la liane, images posées par le bas
+    sheet = Image.new("RGBA", (cols * cell_w, total_rows * rh), (65, 68, 82, 255))
     ry = 0
     for r in rows:
         for i, im in enumerate(r):
             ox = (cell_w - im.width) // 2
-            sheet.alpha_composite(im, ((i % cols) * cell_w + ox, (ry + i // cols) * CH))
+            sheet.alpha_composite(im, ((i % cols) * cell_w + ox, (ry + i // cols) * rh + rh - im.height))
         ry += (len(r) + cols - 1) // cols
     sheet.resize((sheet.width * 2, sheet.height * 2), Image.NEAREST).save(path)
 
@@ -1170,6 +1222,8 @@ def main():
     }
     for hid, frames in all_heroes.items():
         apply_gemini_overrides(hid, frames, args.src)
+        for name in [n for n in frames if is_vine(n)]:
+            frames[name] = align_vine(frames[name])
     total = 0
     for hid, frames in all_heroes.items():
         save_hero(hid, frames, args.out)

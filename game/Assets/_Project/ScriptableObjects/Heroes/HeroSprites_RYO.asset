@@ -30,7 +30,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: bf204a51e62eb43abb72a241b1ce6bcc, type: 3}
   - {fileID: 21300000, guid: c2db1ed717a5146ae97acd18f74d72fe, type: 3}
   - {fileID: 21300000, guid: 0b15ef16d5a9f4707ae257209182f18a, type: 3}
-  - {fileID: 21300000, guid: 0a383b0e0d35b406089f33a68ad8f97d, type: 3}
   jump: {fileID: 21300000, guid: c50bcbe29056f48fd902a3149f718383, type: 3}
   hit: {fileID: 21300000, guid: eaec19ee5c705452987088658291c6e8, type: 3}
   vine: {fileID: 21300000, guid: 6b8ce1f5388ed43a5ac65da53e8addc8, type: 3}
@@ -77,7 +76,9 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 25f0951e3ce93463a954c002af94052f, type: 3}
   - {fileID: 21300000, guid: 5ef1df16075dc4387bddec2949df5890, type: 3}
   victoryFrames: []
-  landFrames: []
+  landFrames:
+  - {fileID: 21300000, guid: b6adcbf27d92248a3afbfc16a09d90b3, type: 3}
+  - {fileID: 21300000, guid: 76181eaf902ad47ef946297ba7c8d5d4, type: 3}
   vineFrames:
   - {fileID: 21300000, guid: 3d97f3344a358432d9a6732cee2b7fbb, type: 3}
   - {fileID: 21300000, guid: 470dc7d0088824f39a8c41c6aaf0d141, type: 3}

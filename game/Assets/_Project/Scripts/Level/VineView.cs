@@ -10,7 +10,8 @@ namespace Kenta.Level
     /// </summary>
     public class VineView : MonoBehaviour
     {
-        /// <summary>Hauteur de la main au-dessus des pieds (u) : 54 px pour la main levée des sprites v2.</summary>
+        /// <summary>Hauteur de la main au-dessus des pieds (u) : 54 px, le poing des images de liane des héros v2
+        /// (tools/heros-v2/import.py, VINE_GRIP_PX ; changer les deux ensemble).</summary>
         public const float HandHeight = 1.35f;
         const int MaxDots = 120;
         const float Dot = 2f / PixelScreen.Ppu;                 // pas de 2 px de jeu entre deux carrés

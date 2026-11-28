@@ -15,6 +15,9 @@ namespace Kenta.EditorTools
         const string Root = "Assets/_Project/Art/Kenta/";
         public const float WorldPpu = 40f;
         public const float UiPpu = 100f;
+        /// <summary>Images de liane des héros (toile de 96 px de haut) : pivot à 24 px du bas, le héros pendu sous ses mains
+        /// (tools/heros-v2/import.py, VINE_CH et VINE_PIVOT_PX ; changer ensemble).</summary>
+        const float HeroVineCanvasH = 96f, HeroVinePivotPx = 24f;
 
         void OnPreprocessTexture()
         {
@@ -26,7 +29,9 @@ namespace Kenta.EditorTools
             var pivot = new Vector2(0.5f, 0.5f);
             var border = Vector4.zero;
 
-            if (rel.StartsWith("Pdf/") || rel.StartsWith("Gen/heroes/")) pivot = new Vector2(0.5f, 0f);                         // pieds en bas
+            if (rel.StartsWith("Gen/heroes/") && (name.EndsWith("_vine") || name.Contains("_vine_")))
+                pivot = new Vector2(0.5f, HeroVinePivotPx / HeroVineCanvasH);                                                // liane : pieds sous le pivot
+            else if (rel.StartsWith("Pdf/") || rel.StartsWith("Gen/heroes/")) pivot = new Vector2(0.5f, 0f);                    // pieds en bas
             else if (name.StartsWith("wall_")) pivot = new Vector2(0.5f, 1f / 34f);              // 36×32 + contour d'1 px
             else if (name.StartsWith("block_")) pivot = new Vector2(0.5f, 1f / 40f);             // 38×38 + contour
             else if (name == "totem") pivot = new Vector2(0.5f, 1f / 48f);                       // 20×46 + contour
