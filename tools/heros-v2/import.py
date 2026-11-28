@@ -24,6 +24,8 @@ from collections import deque
 import numpy as np
 from PIL import Image
 
+from stabilize import stabilize_hero  # même dossier : cycles recalés (tête, pieds), voir stabilize.py
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(ROOT, "game", "Assets", "_Project", "Art", "Kenta", "Gen", "heroes")
@@ -1248,6 +1250,7 @@ def main():
     ap.add_argument("src", nargs="?", default=DEFAULT_SRC)
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--preview", default=None)
+    ap.add_argument("--no-stabilize", action="store_true", help="garder les cycles tels que découpés (sans stabilize.py)")
     args = ap.parse_args()
 
     all_heroes = {
@@ -1259,6 +1262,8 @@ def main():
         apply_gemini_overrides(hid, frames, args.src)
         for name in [n for n in frames if is_vine(n)]:
             frames[name] = align_vine(frames[name])
+        if not args.no_stabilize:
+            stabilize_hero(frames, hero=hid)
     total = 0
     for hid, frames in all_heroes.items():
         save_hero(hid, frames, args.out)
