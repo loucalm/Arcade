@@ -53,6 +53,8 @@ namespace Kenta.Level
         public readonly List<ChartEvent> FxEvents = new();
         /// <summary>Corruption du monde et noir et blanc (événements `fx_corrupt`, `fx_gray` ; niveau 9, ADR-042).</summary>
         public readonly CorruptionCurve Corruption = new(), Grayscale = new();
+        /// <summary>Météo du décor (événement `weather`, ADR-047) : pluie, neige, braises, lues sur le temps du morceau.</summary>
+        public readonly WeatherTracks Weather = new();
         /// <summary>Lasers de la Sourdine (lane 0 = bas, à sauter ; 1 = haut, rester au sol), triés par beat.</summary>
         public readonly List<ChartEvent> Lasers = new();
         /// <summary>Entrées (lane 1) et sorties (lane 0) de la Sourdine, le boss du niveau 9.</summary>
@@ -453,7 +455,12 @@ namespace Kenta.Level
                     case "screen_flip":
                     case "glitch":
                     case "lightning":
+                    case "eruption":
                         FxEvents.Add(e);
+                        break;
+                    case "weather":
+                        if (!Weather.AddEvent(e))
+                            Debug.LogWarning($"LevelBuilder: météo inconnue « {e.@params?.variant} » (beat {e.beat}).");
                         break;
                     case "fx_corrupt":
                     case "fx_gray":
@@ -579,6 +586,7 @@ namespace Kenta.Level
             GravityFlips.Clear();
             FxEvents.Clear();
             Corruption.Clear();
+            Weather.Clear();
             Grayscale.Clear();
             Lasers.Clear();
             BossEvents.Clear();

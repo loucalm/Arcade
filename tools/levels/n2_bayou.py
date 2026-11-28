@@ -149,6 +149,10 @@ def build():
     for name, beat in SECTIONS:
         if beat > 0:
             L.add(beat, "section_change", intensity=1.2 if name == "refrain" else 0.5)
+    # météo du décor (ADR-047) : ciel clair, puis la pluie arrive au pont, averse à la montée, accalmie à la fin
+    L.weather(128, "rain", 0.35, 8)
+    L.weather(176, "rain", 1.0, 4)
+    L.weather(192, "rain", 0.0, 16)
     L.ev.sort(key=lambda e: (e["beat"], e["type"]))
     return L.ev
 

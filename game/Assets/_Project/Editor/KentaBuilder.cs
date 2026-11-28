@@ -212,6 +212,10 @@ namespace Kenta.EditorTools
         [Serializable] class GuardianList { public GuardianPos[] items; }
         [Serializable] class SunPos { public string id; public float x, y, set; }
         [Serializable] class SunList { public SunPos[] items; }
+        // cratères de l'éruption (ADR-047) : JsonUtility ne lit pas les tableaux de tableaux, d'où l'objet Vent
+        [Serializable] class Vent { public float x, y; }
+        [Serializable] class VentSet { public string id; public Vent[] points; }
+        [Serializable] class VentList { public VentSet[] items; }
 
         static BiomeTheme[] BuildBiomes()
         {
@@ -220,6 +224,8 @@ namespace Kenta.EditorTools
             var positions = File.Exists(guardianFile) ? JsonUtility.FromJson<GuardianList>(File.ReadAllText(guardianFile)).items : new GuardianPos[0];
             var sunFile = Art + "Gen/biomes/suns.json";
             var suns = File.Exists(sunFile) ? JsonUtility.FromJson<SunList>(File.ReadAllText(sunFile)).items : new SunPos[0];
+            var ventFile = Art + "Gen/biomes/vents.json";
+            var vents = File.Exists(ventFile) ? JsonUtility.FromJson<VentList>(File.ReadAllText(ventFile)).items : new VentSet[0];
             for (int i = 0; i < BiomeIds.Length; i++)
             {
                 string id = BiomeIds[i];
@@ -252,6 +258,8 @@ namespace Kenta.EditorTools
                 b.sunSetY = sun != null ? sun.set : -110f;
                 b.moon = sun != null ? Spr("Gen/biomes/moon.png") : null;
                 b.nightStars = sun != null ? Spr("Gen/biomes/night_stars.png") : null;
+                var vent = vents.FirstOrDefault(v => v.id == id);
+                b.vents = vent != null ? vent.points.Select(v => new Vector2(v.x, v.y)).ToArray() : new Vector2[0];
                 b.bolts = id == "orage" ? Enumerable.Range(0, 3).Select(k => Spr($"Gen/biomes/bolt_{k}.png")).ToArray() : new Sprite[0];
                 if (File.Exists(Art + $"Pdf/enemy_{Enemies[i]}_hurt.png"))
                 {
@@ -1167,6 +1175,16 @@ namespace Kenta.EditorTools
             var backdropGo = new GameObject("Backdrop");
             var backdrop = backdropGo.AddComponent<BiomeBackdrop>();
             Set(backdrop, "cam", cam);
+            // météo du décor et lave des éruptions (ADR-047), sur le même objet que le décor
+            var weather = backdropGo.AddComponent<WeatherFx>();
+            Set(weather, "cam", cam);
+            Set(weather, "rain", Spr("Gen/biomes/weather_rain.png"));
+            Set(weather, "snowSmall", Spr("Gen/biomes/weather_snow_0.png"));
+            Set(weather, "snowBig", Spr("Gen/biomes/weather_snow_1.png"));
+            Set(weather, "ember", Spr("Gen/biomes/weather_ember.png"));
+            Set(weather, "lavaBlob", Spr("Gen/biomes/weather_eruption_blob.png"));
+            Set(weather, "smoke", Spr("Gen/biomes/weather_eruption_smoke.png"));
+            Set(backdrop, "weather", weather);
 
             var fxPool = UnityEngine.Object.FindFirstObjectByType<FxPool>();
             Set(fxPool, "square", theme.pixel);

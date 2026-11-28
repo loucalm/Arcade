@@ -58,6 +58,11 @@ def gen_biomes(out, sheet):
     # astres et éclairs (BiomeBackdrop, ADR-041) : place des soleils, lune et étoiles de la nuit, éclairs de l'Orage
     with open(os.path.join(out, "biomes", "suns.json"), "w") as f:
         json.dump(dict(items=[art.sun_json(b) for b in BIOMES if b["sun"]]), f, indent=1)
+    # cratères de la Forge, d'où jaillit l'éruption (BiomeBackdrop.Erupt, événement `eruption`)
+    with open(os.path.join(out, "biomes", "vents.json"), "w") as f:
+        json.dump(dict(items=[art.vents_json(b) for b in BIOMES if art.vents_json(b)["vents"]]), f, indent=1)
+    for name in ("rain", "snow_0", "snow_1", "ember", "eruption_blob", "eruption_smoke"):   # météo (WeatherFx)
+        put(out, "biomes", f"weather_{name}", art.draw_weather(name))
     put(out, "biomes", "moon", art.draw_moon(), sheet)
     put(out, "biomes", "night_stars", art.draw_night_stars())
     for k in range(3):

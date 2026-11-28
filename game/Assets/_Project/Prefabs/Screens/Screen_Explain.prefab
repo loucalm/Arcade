@@ -54,6 +54,8 @@ MonoBehaviour:
   align: 0
   scale: 2
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &1586804777817608742
 GameObject:
   m_ObjectHideFlags: 0
@@ -183,6 +185,8 @@ MonoBehaviour:
   align: 1
   scale: 1
   plate: 1
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &3050787864959134243
 GameObject:
   m_ObjectHideFlags: 0
@@ -237,6 +241,8 @@ MonoBehaviour:
   align: 0
   scale: 2
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &3162328713387594765
 GameObject:
   m_ObjectHideFlags: 0
@@ -441,6 +447,8 @@ MonoBehaviour:
   align: 1
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &5209329047659321904
 GameObject:
   m_ObjectHideFlags: 0
@@ -570,6 +578,8 @@ MonoBehaviour:
   align: 0
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &5533117391451243787
 GameObject:
   m_ObjectHideFlags: 0
@@ -624,6 +634,8 @@ MonoBehaviour:
   align: 0
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &6819278736357965219
 GameObject:
   m_ObjectHideFlags: 0
@@ -678,6 +690,8 @@ MonoBehaviour:
   align: 1
   scale: 2
   plate: 1
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &6996908018516913388
 GameObject:
   m_ObjectHideFlags: 0
@@ -732,6 +746,8 @@ MonoBehaviour:
   align: 1
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}
 --- !u!1 &8634188975893915184
 GameObject:
   m_ObjectHideFlags: 0
@@ -857,3 +873,5 @@ MonoBehaviour:
   align: 1
   scale: 1
   plate: 0
+  outline: 0
+  outlineColor: {r: 0.078431375, g: 0.0627451, b: 0.14117648, a: 1}

@@ -211,6 +211,16 @@ def build():
     for name, beat in SECTIONS:
         if beat > 0:
             L.add(beat, "section_change", intensity=1.2 if "refrain" in name else 0.5)
+    # décor (ADR-047) : braises tout le niveau, plus nombreuses aux refrains ; une éruption sur le 1 de chaque refrain,
+    # puis toutes les 2 mesures dans le final
+    L.weather(0, "embers", 0.4, 0)
+    for start in (96, 156, 216):
+        L.weather(start, "embers", 0.8, 2)
+        L.eruption(start)
+    for back in (108, 168):
+        L.weather(back, "embers", 0.4, 4)
+    for b in range(228, 236, 8):
+        L.eruption(b)
     L.ev.sort(key=lambda e: (e["beat"], e["type"]))
     return L.ev
 

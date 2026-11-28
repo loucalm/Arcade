@@ -147,6 +147,23 @@ class Level:
         Sur un temps ; au plus un tous les 2 temps (borne publique : épilepsie photosensible, ADR-041)."""
         self.add(beat, "lightning", intensity=intensity)
 
+    WEATHER_KINDS = ("rain", "snow", "embers")
+
+    def weather(self, beat, kind, intensity, length=4.0):
+        """Météo du décor (ADR-047) : pluie, neige ou braises, derrière le niveau. Un état : va vers `intensity` (0..1,
+        0 = plus rien) en `length` temps. Décor pur, le simulateur l'ignore."""
+        if kind not in self.WEATHER_KINDS:
+            raise ValueError(f"météo inconnue « {kind} » (attendu : {', '.join(self.WEATHER_KINDS)})")
+        self.add(beat, "weather", variant=kind, intensity=float(intensity), length=float(length))
+
+    def eruption(self, beat, intensity=1.0):
+        """Éruption d'un volcan du décor (la Forge, ADR-047) : la lave jaillit du cratère, le ciel rougit par paliers,
+        sans flash. Jamais deux à moins de 2 temps (borne publique : épilepsie photosensible)."""
+        for e in self.ev:
+            if e["type"] == "eruption" and abs(e["beat"] - beat) < 2:
+                raise ValueError(f"éruptions trop proches : {e['beat']} et {beat} (2 temps au moins)")
+        self.add(beat, "eruption", intensity=float(intensity))
+
     def corrupt(self, beat, level, length=0.0):
         """Le monde se corrompt (niveau 9, ADR-042) : bandes décalées, couleurs séparées, blocs de sprite déplacés ou
         réduits à des aplats saturés, pixels morts ; au-delà de 0,55, barres R/V/B et trame. Va vers `level` (0..1) en

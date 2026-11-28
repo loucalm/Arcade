@@ -63,6 +63,14 @@ namespace Kenta.FX
         [SerializeField] float boltTime = 0.22f;
         [SerializeField] Color boltSky = new(0.86f, 0.9f, 1f, 1f);
 
+        [Header("Météo et éruptions (ADR-047)")]
+        [Tooltip("Pluie, neige, braises et lave des éruptions, derrière le niveau.")]
+        [SerializeField] WeatherFx weather;
+        [Tooltip("Teinte vers laquelle le ciel et le décor rougissent pendant une éruption.")]
+        [SerializeField] Color eruptionSky = new(0.85f, 0.25f, 0.1f, 1f);
+        [Tooltip("Durée (s) de la lueur d'une éruption (elle monte vite puis s'éteint par paliers).")]
+        [SerializeField] float eruptionTime = 1f;
+
         SpriteRenderer sky;
         SpriteRenderer guardian;
         SpriteRenderer ground;
@@ -75,6 +83,10 @@ namespace Kenta.FX
         float strike, strikePower;
         Vector2 boltPlace;     // x : part de la demi-largeur de la vue (−1..1) ; y : inutilisé
         float altitude, altitudeVel;
+        float eruptT = 99f, eruptPower;
+        // calque lointain à l'écran (mis à jour à chaque image) : pour placer la lave sur son cratère
+        float farLeft, farY, farWidth, farPx;
+        bool farValid;
         static readonly Color GroundFillTint = new(0.58f, 0.54f, 0.7f);    // comme le flanc des piliers du niveau
         const float GroundFillDepth = 8f;
         readonly SpriteRenderer[][] layers = new SpriteRenderer[3][];
@@ -118,6 +130,8 @@ namespace Kenta.FX
             fogLayer.color = new Color(fog.r, fog.g, fog.b, 1f);
             cloudLayer = Make("CloudSea", firstSortingOrder + 35);   // devant les calques, sous la brume et le niveau
             cloudLayer.sprite = FogSprite(0f, 0.5f, 0.35f);      // 50 % au bas de l'image, rien au-dessus du tiers
+            if (weather == null) weather = GetComponent<WeatherFx>();
+            if (weather != null) weather.Init(cam, firstSortingOrder + 38);   // devant les 3 calques et la mer de nuages, sous la brume
         }
 
         /// <summary>Brume en dégradé vertical (8 bandes, pixel art) : sprite de 1 × 1 unité.</summary>
@@ -211,6 +225,73 @@ namespace Kenta.FX
             boltPlace = new Vector2(((seed % 1000) / 1000f) * 1.6f - 0.8f, 0f);
         }
 
+        /// <summary>Météo du niveau (LevelBuilder.Weather) ; null = plus de météo (fin de partie, menus).</summary>
+        public void SetWeather(WeatherTracks tracks, int beatsPerBar = 4)
+        {
+            if (weather != null) weather.SetTracks(tracks, beatsPerBar);
+            if (tracks == null) eruptT = 99f;
+        }
+
+        /// <summary>
+        /// Éruption (événement `eruption`, sur le temps) : la lave jaillit du cratère du calque lointain le plus proche du
+        /// centre de la vue, retombe, la fumée monte ; le ciel et le décor rougissent puis s'éteignent par paliers.
+        /// Rien dans un biome sans cratère.
+        /// </summary>
+        public void Erupt(float intensity, float beat)
+        {
+            var vents = current != null ? current.vents : null;
+            if (vents == null || vents.Length == 0 || !farValid || cam == null) return;
+            eruptT = 0f;
+            eruptPower = Mathf.Clamp01(intensity);
+            if (weather == null) return;
+            float cx = cam.transform.position.x, best = float.MaxValue;
+            Vector2 at = Vector2.zero;
+            for (int j = 0; j < 2; j++)
+                foreach (var v in vents)
+                {
+                    var w = new Vector2(farLeft + farWidth * j + v.x * farPx, farY + (LayerHalfPx - v.y) * farPx);
+                    if (Mathf.Abs(w.x - cx) < best) { best = Mathf.Abs(w.x - cx); at = w; }
+                }
+            float far = parallax != null && parallax.Length > 0 ? parallax[0] : 0.12f;
+            int blobs = Mathf.RoundToInt(14 * eruptPower);
+            for (int i = 0; i < blobs; i++)
+                weather.Spawn(weather.LavaBlob, at + new Vector2(Random.Range(-0.1f, 0.1f), 0.05f),
+                              new Vector2(Random.Range(-1.4f, 1.4f), Random.Range(3.5f, 6f)), Random.Range(1.1f, 1.6f),
+                              Color.white, 7f, far, 0f, FarFxOrder(firstSortingOrder));
+            for (int i = 0; i < 4; i++)
+                weather.Spawn(weather.Smoke, at + new Vector2(Random.Range(-0.2f, 0.2f), 0.2f),
+                              new Vector2(Random.Range(-0.2f, 0.3f), Random.Range(0.5f, 0.9f)), 2.2f, Color.white, 0f, far, 0.1f,
+                              FarFxOrder(firstSortingOrder));
+        }
+
+        /// <summary>Plan des particules du calque lointain (lave, fumée) : juste devant lui, derrière le milieu (+20).</summary>
+        public static int FarFxOrder(int firstSortingOrder) => firstSortingOrder + 11;
+
+        /// <summary>
+        /// Lueur d'une éruption `t` s après son début : monte vite jusqu'à 0,35 × intensité puis s'éteint avant 1 s, par
+        /// paliers d'un quart (pas de fondu, pas de flash). 0 dans un biome sans cratère.
+        /// </summary>
+        public static float EruptionGlow(float t, float intensity, bool hasVents)
+        {
+            if (!hasVents || t < 0f || t >= 1f) return 0f;
+            float shape = t < 0.15f ? t / 0.15f : 1f - (t - 0.15f) / 0.85f;
+            float max = 0.35f * Mathf.Clamp01(intensity);
+            return max * Mathf.Round(Mathf.Clamp01(shape) * 4f) / 4f;
+        }
+
+        /// <summary>Ambiance de la section, assombrie par la météo, rougie par une éruption.</summary>
+        Color Shade()
+        {
+            Color m = weather != null ? mood * weather.SkyTint : mood;
+            if (eruptT < 1f)
+            {
+                bool vents = current != null && current.vents != null && current.vents.Length > 0;
+                m = Color.Lerp(m, eruptionSky, EruptionGlow(eruptT / Mathf.Max(0.05f, eruptionTime), eruptPower, vents));
+            }
+            m.a = 1f;
+            return m;
+        }
+
         /// <summary>
         /// Hauteur 0..1 du chemin du soleil couchant au temps t (0 = départ, 1 = couché) : lent au début, il plonge vers
         /// la fin, comme un vrai coucher vu de près de l'horizon.
@@ -272,6 +353,8 @@ namespace Kenta.FX
                 moodT = Mathf.Min(1f, moodT + Time.deltaTime / moodBlend);
                 mood = Color.Lerp(moodFrom, moodTo, moodT * moodT * (3f - 2f * moodT));
             }
+            if (eruptT < 99f) eruptT += Time.deltaTime;
+            Color shade = Shade();
             float half = cam.orthographicSize * cam.aspect;
             float halfH = cam.orthographicSize;
             // sol suivi par le décor : le plus bas de la vue, lissé (en partie seulement ; menus : décor collé à l'écran)
@@ -281,9 +364,9 @@ namespace Kenta.FX
             float high = Mathf.Clamp01(altitude / 45f);
             if (strike > 0f) strike = Mathf.Max(0f, strike - Time.deltaTime / Mathf.Max(0.01f, boltTime));
             float lit = Mathf.Ceil(strike * 3f) / 3f * strikePower;                // paliers : pixel art, pas de fondu
-            sky.color = Color.Lerp(mood * Color.Lerp(Color.white, highSky, high), boltSky, lit * 0.55f);
+            sky.color = Color.Lerp(shade * Color.Lerp(Color.white, highSky, high), boltSky, lit * 0.55f);
             guardian.sprite = current.guardian;
-            guardian.color = mood;
+            guardian.color = shade;
             guardian.transform.localScale = scale;
             Vector2 go = current.guardianOffset * (k / PixelScreen.Ppu);
             float sink = guardianSink * k / PixelScreen.Ppu;
@@ -303,7 +386,7 @@ namespace Kenta.FX
                 Vector2 cs = cloudLayer.sprite.bounds.size;
                 cloudLayer.transform.localScale = new Vector3((fogH * cam.aspect + 1f) / cs.x, fogH / cs.y, 1f);
                 cloudLayer.transform.position = new Vector3(c.x, c.y, 0f);
-                cloudLayer.color = new Color(cloudSea.r * mood.r, cloudSea.g * mood.g, cloudSea.b * mood.b, Mathf.Round(clouds * 6f) / 6f);
+                cloudLayer.color = new Color(cloudSea.r * shade.r, cloudSea.g * shade.g, cloudSea.b * shade.b, Mathf.Round(clouds * 6f) / 6f);
             }
             if (ground.enabled && ground.sprite != null)
             {
@@ -328,10 +411,14 @@ namespace Kenta.FX
                 float offset = Mathf.Repeat(c.x * parallax[i], width);
                 float left = c.x - half - offset;
                 float y = PixelScreen.Snap(c.y + lift * Follow(i) - Sink(i));
+                if (i == 0)
+                {
+                    farLeft = left; farY = y; farWidth = width; farPx = width / strip.rect.width; farValid = true;
+                }
                 for (int j = 0; j < 2; j++)
                 {
                     layers[i][j].transform.localScale = scale;
-                    layers[i][j].color = i == 0 ? Color.Lerp(mood, boltSky, lit * 0.35f) : mood;
+                    layers[i][j].color = i == 0 ? Color.Lerp(shade, boltSky, lit * 0.35f) : shade;
                     layers[i][j].transform.position = new Vector3(PixelScreen.Snap(left + width * (j + 0.5f)), y, 0f);
                 }
                 // pied : dernière rangée du calque, étirée de son bas jusque sous la vue
@@ -339,7 +426,7 @@ namespace Kenta.FX
                 float bottom = y - height * 0.5f;
                 float rows = Mathf.Max(0f, Mathf.Ceil((bottom - (c.y - halfH) + 1f) * PixelScreen.Ppu / k));
                 foot.enabled = foot.sprite != null && rows > 0f;
-                foot.color = mood;
+                foot.color = shade;
                 foot.transform.localScale = new Vector3(k * Mathf.Ceil((half * 2f + 2f) / (foot.sprite != null ? foot.sprite.bounds.size.x : 1f)), k * rows, 1f);
                 foot.transform.position = new Vector3(PixelScreen.Snap(c.x), bottom, 0f);
             }

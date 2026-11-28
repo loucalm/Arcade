@@ -25,6 +25,7 @@ MonoBehaviour:
   moon: {fileID: 21300000, guid: 4f03933dce9c245ada00d06db46e9a10, type: 3}
   nightStars: {fileID: 21300000, guid: 8f647b7e1603c4e0a8b8fa02ef4e9a13, type: 3}
   bolts: []
+  vents: []
   guardian: {fileID: 21300000, guid: 436cee3af03fa4b7f922915f682ead88, type: 3}
   guardianOffset: {x: 139, y: 39}
   ground: {fileID: 21300000, guid: 414ab6473285b4f218e0cec40ce63834, type: 3}

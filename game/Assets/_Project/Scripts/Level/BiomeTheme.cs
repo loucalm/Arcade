@@ -33,6 +33,8 @@ namespace Kenta.Level
         public Sprite nightStars;
         [Tooltip("Éclairs montrés sur l'événement `lightning` de la chart (l'Orage).")]
         public Sprite[] bolts;
+        [Tooltip("Cratères d'où jaillit l'éruption (événement `eruption`, ADR-047) : px de l'image 1280×360 du calque lointain, y depuis le haut. Écrits par tools/gen-kenta-assets.py (vents.json). Vide = pas d'éruption.")]
+        public Vector2[] vents;
 
         [Header("Gardien (statue immobile, placée comme le ciel, derrière les montagnes)")]
         public Sprite guardian;
