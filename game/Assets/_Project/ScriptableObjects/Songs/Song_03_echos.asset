@@ -19,4 +19,4 @@ MonoBehaviour:
   offsetSeconds: 0.02
   beatsPerBar: 4
   chart: {fileID: 4900000, guid: 68043a47eff6c4f1d9af3f1fdaeee736, type: 3}
-  previewBeat: 32
+  previewBeat: 64

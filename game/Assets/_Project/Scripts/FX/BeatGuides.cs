@@ -39,9 +39,8 @@ namespace Kenta.FX
             if (cam == null) return;
             float halfH = cam.orthographicSize, halfW = halfH * cam.aspect;
             Vector3 c = cam.transform.position;
-            float unitsPerBeat = level.BeatToX(1);
             float left = c.x - halfW - 0.5f, right = c.x + halfW + 0.5f;
-            int first = FirstBeat(left, unitsPerBeat);
+            int first = Mathf.Max(0, Mathf.CeilToInt((float)level.XToBeat(left)));
             float y = PixelScreen.Snap(c.y);
             float height = (halfH * 2f + 2f) * PixelScreen.Ppu;          // la vue entière, et un peu plus
             for (int i = 0; i < lines.Length; i++)

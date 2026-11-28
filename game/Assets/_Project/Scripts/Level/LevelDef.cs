@@ -20,6 +20,8 @@ namespace Kenta.Level
         [Range(1, 5)] public int stars = 1;
         [Tooltip("Vignette 40×24 de la liste des niveaux (Gen/ui/thumb_<biome>.png).")]
         public Sprite thumbnail;
+        [Tooltip("Niveau secret (10 ???) : affiché enchaîné tant que La Sourdine n'a pas été terminée en difficulté DUR.")]
+        public bool lockedBySourdineHard;
 
         public TextAsset Chart => chart != null ? chart : (song != null ? song.chart : null);
         public string Label => biome != null ? biome.label : id;

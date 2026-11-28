@@ -34,6 +34,9 @@ ORB_REACH = 3.0                              # note de saut : portée verticale 
 PRESS_EARLY = PRESS_LATE = 0.35              # appui d'une note de saut ou d'un grand rebond : fenêtre autour du temps
 VINE_EARLY = VINE_LATE = 0.35                # lâcher d'une liane : fenêtre autour de son temps (PlayerController)
 JUMP_BUFFER = 0.35                           # appui en l'air juste avant d'atterrir : le saut part à l'atterrissage
+HIT_ACTIVE_BEATS = 0.30                      # durée active du katana (beats), avec plancher en secondes à très haut BPM
+MIN_HIT_ACTIVE_S = 0.080                     # ≥ 80 ms (~5 images à 60 i/s) même à 240-280 BPM (identique à PlayerController)
+MIN_PRESS_WINDOW_S = 0.095                   # ≥ 95 ms sur le buffer de saut / notes / lianes (identique à PlayerController)
 LEDGE_ASSIST = 0.4                           # pieds à moins de 0,4 u sous le haut d'une marche ou d'un mur : on passe dessus
 STEP_FACE = 0.25
 MAX_RISE = 1.0
@@ -60,6 +63,10 @@ ZOOM = ZOOM_WIDE = 480
 PENTA = ()
 ANALYSIS = None
 MIN_MARGIN = HUMAN_JITTER = ENEMY_LEAD = MIN_LEAD = CHECKPOINT_LEAD = None
+EFF_HIT_ACTIVE = HIT_ACTIVE_BEATS
+EFF_PRESS_WIN = PRESS_EARLY
+EFF_JUMP_BUF = JUMP_BUFFER
+SPEED_SEGS = []
 WIDE_MARGIN = []
 CHECKPOINT_EVERY = 8
 
@@ -68,16 +75,55 @@ def ms_to_beats(ms):
     return ms * BPM / 60000.0
 
 
+def set_speed_events(events):
+    """Construit la table des segments de vitesse (événement `speed_change`, vide sur les niveaux à vitesse fixe)."""
+    global SPEED_SEGS
+    raw = sorted((e["beat"], max(0.2, float(e.get("params", {}).get("intensity", 1.0))))
+                 for e in events if e["type"] == "speed_change")
+    if not raw:
+        SPEED_SEGS = []
+        return
+    init_s = raw[0][1] if raw[0][0] <= 0.0 else 1.0
+    segs = [(0.0, 0.0, init_s)]
+    cur_b, cur_x, cur_s = 0.0, 0.0, init_s
+    for b, s in raw:
+        if b <= 0.0:
+            segs[0] = (0.0, 0.0, s)
+            cur_s = s
+            continue
+        cur_x += (b - cur_b) * SPB * RUN_SPEED * cur_s
+        cur_b, cur_s = float(b), s
+        segs.append((cur_b, cur_x, cur_s))
+    SPEED_SEGS = segs
+
+
+def speed_scale(beat):
+    if not SPEED_SEGS:
+        return 1.0
+    s = SPEED_SEGS[0][2]
+    for b0, _, sc in SPEED_SEGS:
+        if b0 <= beat + 1e-6:
+            s = sc
+        else:
+            break
+    return s
+
+
 def use(fiche):
     """Pose le niveau en cours : tempo, longueur, sections, vue, gamme, marges (converties en beats)."""
     global FICHE, BPM, OFFSET, SPB, RUN_SPEED, GRAVITY, JUMP_V, NB, SECTIONS, BIOMES, ZOOM, ZOOM_WIDE, PENTA
     global ANALYSIS, MIN_MARGIN, HUMAN_JITTER, ENEMY_LEAD, MIN_LEAD, CHECKPOINT_LEAD, WIDE_MARGIN, CHECKPOINT_EVERY
+    global EFF_HIT_ACTIVE, EFF_PRESS_WIN, EFF_JUMP_BUF, SPEED_SEGS
     FICHE = fiche
     BPM, OFFSET, NB = float(fiche.bpm), fiche.offset, fiche.beats
     SPB = 60.0 / BPM
     RUN_SPEED = fiche.run_speed if fiche.run_speed is not None else round(UNITS_PER_BEAT * BPM / 60.0, 4)
     GRAVITY = 8 * JUMP_HEIGHT / (JUMP_BEATS * SPB) ** 2
     JUMP_V = 4 * JUMP_HEIGHT / (JUMP_BEATS * SPB)
+    EFF_HIT_ACTIVE = max(HIT_ACTIVE_BEATS, MIN_HIT_ACTIVE_S / SPB)
+    EFF_PRESS_WIN = max(PRESS_EARLY, MIN_PRESS_WINDOW_S / SPB)
+    EFF_JUMP_BUF = max(JUMP_BUFFER, MIN_PRESS_WINDOW_S / SPB)
+    SPEED_SEGS = []
     SECTIONS, BIOMES = list(fiche.sections), dict(fiche.biomes)
     ZOOM, ZOOM_WIDE = fiche.zoom, fiche.zoom_wide
     PENTA = tuple(fiche.scale)
@@ -96,7 +142,15 @@ def chart_path(fiche):
 
 
 def X(beat):
-    return beat * SPB * RUN_SPEED
+    if not SPEED_SEGS:
+        return beat * SPB * RUN_SPEED
+    b0, x0, sc = SPEED_SEGS[0]
+    for sb, sx, ssc in SPEED_SEGS:
+        if sb <= beat + 1e-6:
+            b0, x0, sc = sb, sx, ssc
+        else:
+            break
+    return x0 + (beat - b0) * SPB * RUN_SPEED * sc
 
 
 # ---------------------------------------------------------------- simulateur (miroir de LevelBuilder + PlayerController)
@@ -118,6 +172,7 @@ class Span:
 
 class World:
     def __init__(self, events):
+        set_speed_events(events)
         self.events = events
         self.knots = []          # (x, h, linear)
         self.faces = []          # (x, h0, h1, beat)
@@ -127,7 +182,8 @@ class World:
             p = e.get("params", {})
             if e["type"] == "step":
                 h = p["height"]
-                x = X(e["beat"] + STEP_FACE_START)
+                sc = speed_scale(e["beat"])
+                x = X(e["beat"] + STEP_FACE_START / sc)
                 self.knots.append((x, h, False))
                 if h - h0 > STEP_FACE and e["lane"] != 1:
                     self.faces.append((x, h0, h, e["beat"]))
@@ -151,18 +207,20 @@ class World:
         for e in events:
             p, b, t = e.get("params", {}), e["beat"], e["type"]
             plane = plane_of(e)
+            sc = speed_scale(b)
             if t == "gap":
-                x0 = X(b + GAP_START)
-                self.gaps.append((x0, x0 + X(p.get("length", 0.6))))
+                ln = p.get("length", 0.6 / sc)
+                x0, x1 = X(b + GAP_START / sc), X(b + GAP_START / sc + ln)
+                self.gaps.append((x0, x1))
                 if e["lane"] != 1:
                     self.jumps.append(b)
             elif t == "wall":
-                x0 = X(b + WALL_START)
+                x0 = X(b + WALL_START / sc)
                 self.walls.append((x0, self.height(x0 + 0.45), b))
                 self.jumps.append(b)
             elif t in ("enemy", "block"):
                 stomp = p.get("variant") == "stomp"
-                cx = X(b - STOMP_TOUCH) if stomp else X(b + ENEMY_CENTER)
+                cx = X(b - STOMP_TOUCH / sc) if stomp else X(b + ENEMY_CENTER / sc)
                 if e["lane"] == 1:
                     ey = p["height"]
                 elif e["lane"] == 2:
@@ -175,7 +233,8 @@ class World:
                 self.orbs.append([X(b), p["height"], b, p.get("step", 1.0), False, plane])
                 self.jumps.append(b)
             elif t == "platform":
-                x0, x1 = X(b + STEP_START), X(b + STEP_START + p.get("length", 1.0))
+                ln = p.get("length", 1.0 / sc)
+                x0, x1 = X(b + STEP_START / sc), X(b + STEP_START / sc + ln)
                 self.platforms.append(Span(x0, x1, p["height"], p["height"], True))
                 self.jumps.append(b)
             elif t == "bounce":
@@ -360,10 +419,10 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
                 return v[4], arrive
         return w.height_on(x_land, plane), arrive
 
-    def launch(arrive, beat_, x_, y_):
-        target, touch = arrival(arrive, x_ + (arrive - beat_) * SPB * RUN_SPEED)
+    def launch(arrive, beat_, x_, y_, grav_):
+        target, touch = arrival(arrive, X(arrive))
         ta = max(0.3, touch - beat_) * SPB
-        return (target - y_ + 0.5 * GRAVITY * ta * ta) / ta
+        return (target - y_ + 0.5 * grav_ * ta * ta) / ta
     ji = hi = 0
     while ji < len(w.jumps) and w.jumps[ji] < start - 1e-6:
         ji += 1
@@ -393,11 +452,15 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
             missed = [round(l[2], 2) for l in w.lums if l[3]]
             return None, {"max_y": top_y, "min_y": bot_y, "lums": len(w.lums), "missed": missed}
         x = X(beat)
+        sc = max(0.2, speed_scale(beat))
+        air_t = (JUMP_BEATS / sc) * SPB
+        grav = 8.0 * JUMP_HEIGHT / (air_t * air_t)
+        jump_v = 4.0 * JUMP_HEIGHT / air_t
         jump = False
         while ji < len(w.jumps) and w.jumps[ji] + offset(w.jumps[ji]) <= beat:
             jump, ji = True, ji + 1
         while hi < len(w.hits) and w.hits[hi] + offset(w.hits[hi]) <= beat:
-            hit_until, hi = beat + 0.3, hi + 1
+            hit_until, hi = beat + EFF_HIT_ACTIVE, hi + 1
         # portails de gravité : même position et même vitesse dans le monde
         while fi < len(w.flips) and w.flips[fi][0] <= beat:
             up = w.flips[fi][1]
@@ -421,25 +484,25 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
             last_press = beat
         if jump and vine is None:
             jump_buf = beat
-        coyote = not grounded and vy <= 0 and beat - last_ground <= 0.12
-        if beat - jump_buf <= JUMP_BUFFER and (grounded or coyote):
-            vy, grounded, jump_buf = JUMP_V, False, -99
+        coyote = not grounded and vy <= 0 and beat - last_ground <= 0.12 / sc
+        if beat - jump_buf <= EFF_JUMP_BUF and (grounded or coyote):
+            vy, grounded, jump_buf = jump_v, False, -99
         # cuirassé écrasé : l'appui (en avance ou juste après) donne le grand rebond
         if pending is not None:
-            if last_press >= pending[2] - PRESS_EARLY:
-                vy, grounded, jump_buf = launch(pending[2] + pending[6], beat, x, y), False, -99
+            if last_press >= pending[2] - EFF_PRESS_WIN:
+                vy, grounded, jump_buf = launch(pending[2] + pending[6], beat, x, y, grav), False, -99
                 pending = None
-            elif beat > pending[2] + PRESS_LATE:
+            elif beat > pending[2] + EFF_PRESS_WIN:
                 pending = None
         # notes de saut : en l'air près d'une note, l'appui relance le saut
         if not inv:
             for o in w.orbs:
                 if o[4] or o[5] != plane or abs(o[0] - x) > 1.2 or abs(o[1] - (y + 0.5)) > ORB_REACH:
                     continue
-                if beat < o[2] - PRESS_EARLY or beat > o[2] + PRESS_LATE:
+                if beat < o[2] - EFF_PRESS_WIN or beat > o[2] + EFF_PRESS_WIN:
                     continue
                 dy = y + 0.5 - o[1]
-                armed = last_press >= o[2] - PRESS_EARLY - ORB_MEMORY and last_press > last_orb
+                armed = last_press >= o[2] - EFF_PRESS_WIN - ORB_MEMORY and last_press > last_orb
                 if not armed or (beat < o[2] and abs(dy) > ORB_TOUCH):
                     # pas d'appui : la note retient le héros à sa hauteur (au-dessus, il tombe vers elle) ;
                     # appui en avance : le rebond part au contact de la note, ou sur son temps
@@ -449,7 +512,7 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
                 o[4] = True
                 last_orb = beat
                 # relance vers la note suivante (ou le sol) sur son temps : un appui en avance ou en retard arrive à l'heure
-                vy, grounded, jump_buf = launch(o[2] + o[3], beat, x, y), False, -99
+                vy, grounded, jump_buf = launch(o[2] + o[3], beat, x, y, grav), False, -99
                 break
         # lianes : prise en passant, balancier sur un arc, lâcher vers la liane suivante ou le sol
         if vine is None and not inv:
@@ -466,26 +529,27 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
             arc_y = yg + (yr - yg) * u - sag * math.sin(math.pi * u)
             arc_vy = ((yr - yg) - sag * math.pi * math.cos(math.pi * u)) / ((br - bg) * SPB)
             pressed = last_press > vine_grab
-            if (not pressed or beat < br - VINE_EARLY) and beat <= br + VINE_LATE:
+            if (not pressed or beat < br - EFF_PRESS_WIN) and beat <= br + EFF_PRESS_WIN:
                 y, vy, grounded, swinging = arc_y, arc_vy, False, True
             elif not pressed:
                 y, vy, jump_buf, vine = arc_y, min(arc_vy, 0.0), -99, None      # la main glisse : on tombe
             else:
                 arrive = br + air
-                ta = max(0.3, arrive - beat) * SPB
-                target = w.height_on(x + ta * RUN_SPEED, plane)
+                land_beat = max(beat + 0.3, arrive)
+                ta = (land_beat - beat) * SPB
+                target = w.height_on(X(land_beat), plane)
                 for nv in w.vines:
                     if nv is not vine and abs(nv[2] - arrive) < 0.05:
                         target = nv[4]
                         break
                 y = arc_y
-                vy = (target - y + 0.5 * GRAVITY * ta * ta) / ta
+                vy = (target - y + 0.5 * grav * ta * ta) / ta
                 jump_buf, vine = -99, None
         frame_start_y = y
         if not grounded and not swinging:
             yp = y
-            y += vy * dt - 0.5 * GRAVITY * dt * dt
-            vy -= GRAVITY * dt
+            y += vy * dt - 0.5 * grav * dt * dt
+            vy -= grav * dt
             top = w.land(x, hw, yp, y, spans) if vy <= 0 else None
             if top is not None:
                 y, vy, grounded = top, 0.0, True
@@ -501,8 +565,8 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
             pad[4] = True
             plane = target
             ta = air * SPB
-            land_top = w.height_on(x + ta * RUN_SPEED, plane)
-            vy = (land_top - y + 0.5 * GRAVITY * ta * ta) / ta
+            land_top = w.height_on(X(beat + air), plane)
+            vy = (land_top - y + 0.5 * grav * ta * ta) / ta
             grounded, jump_buf = False, -99
         # collisions, dans le monde
         h = stand
@@ -549,10 +613,10 @@ def simulate(events, fps=60, track=None, late=0.0, stop=None, start=0.0):
                 # écrasé : petit rebond d'un demi-temps ; l'appui déjà fait donne tout de suite le grand rebond
                 en[3] = False
                 y = max(y, ey + 0.9)
-                vy, grounded = 0.5 * GRAVITY * 0.5 * SPB, False
+                vy, grounded = 0.5 * grav * 0.5 * SPB, False
                 pending = en
-                if last_press >= eb - PRESS_EARLY:
-                    vy, jump_buf, pending = launch(eb + sair, beat, x, y), -99, None
+                if last_press >= eb - EFF_PRESS_WIN:
+                    vy, jump_buf, pending = launch(eb + sair, beat, x, y, grav), -99, None
                 wy = y
                 body = body_at(wy)
                 continue
@@ -890,7 +954,7 @@ def resolve(events, song):
     world = World(base)
     events = events + auto_lums(events, world, song)
     foes = [(en[0], en[1] + 0.45) for en in world.enemies]        # centres des ennemis posés (sans les volants)
-    fly_x = [X(e["beat"] + ENEMY_CENTER) for e in events if e["type"] == "enemy_air"]
+    fly_x = [X(e["beat"] + ENEMY_CENTER / speed_scale(e["beat"])) for e in events if e["type"] == "enemy_air"]
     out = []
     for e in events:
         if e["type"] == "lum_trail":
@@ -904,7 +968,7 @@ def resolve(events, song):
                 params["variant"] = "back"               # pièce de l'arrière-plan : on ne la prend que là-bas
             out.append({"beat": round(e["beat"], 3), "type": "lum_at", "lane": 0, "params": params})
         elif e["type"] == "enemy_air":
-            y = feet_at(track, beats, e["beat"] + ENEMY_CENTER)           # au niveau des pieds quand on l'atteint
+            y = feet_at(track, beats, e["beat"] + ENEMY_CENTER / speed_scale(e["beat"]))           # au niveau des pieds quand on l'atteint
             params = {"height": round(y + 0.1, 3)}
             if e.get("params", {}).get("variant"):
                 params["variant"] = e["params"]["variant"]          # note noire de la Sourdine : même jeu, autre image
@@ -931,8 +995,9 @@ def lint(events):
     w = World(events)
     jumps = w.jumps
     for a, c in zip(jumps, jumps[1:]):
-        if c - a < 1.0 - 1e-9:
-            problems.append(f"sauts trop proches : {a} et {c}")
+        min_gap = 1.0 / speed_scale(a)
+        if c - a < min_gap - 1e-9:
+            problems.append(f"sauts trop proches : {a} et {c} (min {min_gap:.2f})")
     for x, h0, h1, b in w.faces:
         if h1 - h0 > MAX_RISE + 1e-9:
             problems.append(f"marche de {h1 - h0:.2f} u au beat {b} (max {MAX_RISE})")
@@ -942,7 +1007,8 @@ def lint(events):
             problems.append(f"hauteur {h} au beat {e['beat']} : le jeu la ramène à ±{MAX_HEIGHT:.0f} u (LevelBuilder.MaxHeight)")
         if e["type"] in ("enemy", "block") and e["lane"] == 0:   # en vol ou au plafond, on le frappe justement en l'air
             for j in jumps:
-                if j < e["beat"] < j + 1.0 - 1e-9:
+                span = 1.0 / speed_scale(j)
+                if j < e["beat"] < j + span - 1e-9:
                     problems.append(f"ennemi au beat {e['beat']} pendant le saut du beat {j}")
     return problems
 

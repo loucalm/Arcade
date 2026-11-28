@@ -331,12 +331,12 @@ namespace Kenta.UI
             deathTimer = DeathMessageTime;
         }
 
-        // annonce d'une surprise (une mesure avant) : à la place de l'intitulé, en or, avec un pouls léger
+        // annonce d'une surprise (au moins 1,5 s à l'écran même à très haut BPM) : à la place de l'intitulé, en or, avec un pouls léger
         void HandleWarning(string text)
         {
             warning = text;
             var c = Conductor.Instance;
-            warningDuration = warningTimer = (float)(c != null ? c.SecondsPerBeat * 4.0 : 1.6);
+            warningDuration = warningTimer = Mathf.Max(1.5f, (float)(c != null ? c.SecondsPerBeat * 4.0 : 1.6));
         }
 
         void HandleLum(LevelObject lum) => coinT = 0f;
@@ -532,25 +532,32 @@ namespace Kenta.UI
         {
             var rig = CameraRig.Instance;
             var screen = PixelScreen.Instance;
+            var glitch = ScreenGlitch.Instance;
             bool sCover = false, fCover = false, tCover = false, lCover = false;
             if (rig != null && screen != null)
             {
                 Vector2 cam = rig.ExactPosition;
-                float unitsToUi = PixelScreen.Ppu * (HudLayout.ScreenWidth / (float)Mathf.Max(1, screen.ViewWidth));
-                // en dessous de cette hauteur (monde), rien ne peut toucher le HUD ni l'intitulé
-                float lowest = cam.y + (HudLayout.Top + LabelTop - HudLayout.PlateHeight) / unitsToUi;
+                int viewW = Mathf.Max(1, screen.ViewWidth);
+                bool flipX = glitch != null && glitch.FlipX;
+                bool flipY = glitch != null && glitch.FlipY;
+                int copies = glitch != null ? glitch.Copies : 1;
+                float unitsToUi = PixelScreen.Ppu * (HudLayout.ScreenWidth / (float)viewW);
+                // Hors retournement ni division d'écran, élagage rapide des objets bas ; sinon le bas du monde peut être en haut !
+                float lowest = (!flipY && copies <= 1)
+                    ? cam.y + (HudLayout.Top + LabelTop - HudLayout.PlateHeight) / unitsToUi
+                    : float.NegativeInfinity;
                 float halfW = HudLayout.ScreenWidth * 0.5f / unitsToUi;
                 bool label = labelPlate.Visibility > 0.01f;
 
                 if (heroSprite != null && heroTransform != null && heroTransform.gameObject.activeInHierarchy)
                 {
                     var b = heroSprite.bounds;
-                    Cover(b.min, b.max, cam, unitsToUi, label, ref sCover, ref fCover, ref tCover, ref lCover);
+                    Cover(b.min, b.max, cam, viewW, flipX, flipY, copies, label, ref sCover, ref fCover, ref tCover, ref lCover);
                 }
                 if (level != null)
                 {
-                    CoverList(level.Lums, false, cam, unitsToUi, lowest, halfW, label, ref sCover, ref fCover, ref tCover, ref lCover);
-                    CoverList(level.Obstacles, true, cam, unitsToUi, lowest, halfW, label, ref sCover, ref fCover, ref tCover, ref lCover);
+                    CoverList(level.Lums, false, cam, viewW, flipX, flipY, copies, lowest, halfW, label, ref sCover, ref fCover, ref tCover, ref lCover);
+                    CoverList(level.Obstacles, true, cam, viewW, flipX, flipY, copies, lowest, halfW, label, ref sCover, ref fCover, ref tCover, ref lCover);
                 }
             }
             scorePlate.CoverTarget = sCover ? coveredAlpha : 1f;
@@ -563,8 +570,9 @@ namespace Kenta.UI
             labelPlate.Tick(dt, CoverFadeSpeed);
         }
 
-        void CoverList(System.Collections.Generic.List<LevelObject> list, bool enemiesOnly, Vector2 cam, float unitsToUi,
-                       float lowest, float halfW, bool label, ref bool s, ref bool f, ref bool t, ref bool l)
+        void CoverList(System.Collections.Generic.List<LevelObject> list, bool enemiesOnly, Vector2 cam, int viewW,
+                       bool flipX, bool flipY, int copies, float lowest, float halfW, bool label,
+                       ref bool s, ref bool f, ref bool t, ref bool l)
         {
             for (int i = 0; i < list.Count; i++)
             {
@@ -573,21 +581,29 @@ namespace Kenta.UI
                 var b = o.bounds;
                 if (b.yMax < lowest || b.xMax < cam.x - halfW || b.xMin > cam.x + halfW) continue;
                 if (o.view == null || !o.view.activeInHierarchy) continue;
-                Cover(b.min, b.max, cam, unitsToUi, label, ref s, ref f, ref t, ref l);
+                Cover(b.min, b.max, cam, viewW, flipX, flipY, copies, label, ref s, ref f, ref t, ref l);
             }
         }
 
-        void Cover(Vector2 min, Vector2 max, Vector2 cam, float unitsToUi, bool label, ref bool s, ref bool f, ref bool t, ref bool l)
+        void Cover(Vector2 min, Vector2 max, Vector2 cam, int viewW, bool flipX, bool flipY, int copies, bool label,
+                   ref bool s, ref bool f, ref bool t, ref bool l)
         {
-            // interface : plaques ancrées en haut à gauche de l'écran 320×180 (x depuis la gauche, y négatif depuis le haut)
-            float x0 = (min.x - cam.x) * unitsToUi + HudLayout.ScreenWidth * 0.5f;
-            float x1 = (max.x - cam.x) * unitsToUi + HudLayout.ScreenWidth * 0.5f;
-            float y0 = (min.y - cam.y) * unitsToUi - HudLayout.Top;
-            float y1 = (max.y - cam.y) * unitsToUi - HudLayout.Top;
-            s |= Hit(scorePlate, x0, x1, y0, y1);
-            f |= Hit(friezePlate, x0, x1, y0, y1);
-            t |= statsPlate.gameObject.activeSelf && Hit(statsPlate, x0, x1, y0, y1);
-            l |= label && Hit(labelPlate, x0, x1, y0, y1);
+            // Seuls les cadrans du haut (0 en normal, 0 et 1 en grille 2×2) peuvent toucher les plaques du HUD
+            int checkQuads = copies >= 2 ? 2 : 1;
+            for (int q = 0; q < checkQuads; q++)
+            {
+                Vector2 p0 = HudLayout.WorldToUiQuad(min, cam, viewW, PixelScreen.Ppu, flipX, flipY, copies, q, out _);
+                Vector2 p1 = HudLayout.WorldToUiQuad(max, cam, viewW, PixelScreen.Ppu, flipX, flipY, copies, q, out _);
+                // interface : plaques ancrées en haut à gauche de l'écran 320×180 (x depuis la gauche, y négatif depuis le haut)
+                float x0 = Mathf.Min(p0.x, p1.x) + HudLayout.ScreenWidth * 0.5f;
+                float x1 = Mathf.Max(p0.x, p1.x) + HudLayout.ScreenWidth * 0.5f;
+                float y0 = Mathf.Min(p0.y, p1.y) - HudLayout.Top;
+                float y1 = Mathf.Max(p0.y, p1.y) - HudLayout.Top;
+                s |= Hit(scorePlate, x0, x1, y0, y1);
+                f |= Hit(friezePlate, x0, x1, y0, y1);
+                t |= statsPlate.gameObject.activeSelf && Hit(statsPlate, x0, x1, y0, y1);
+                l |= label && Hit(labelPlate, x0, x1, y0, y1);
+            }
         }
 
         static bool Hit(HudPlate p, float x0, float x1, float y0, float y1)

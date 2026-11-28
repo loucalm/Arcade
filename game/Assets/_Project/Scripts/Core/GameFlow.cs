@@ -82,6 +82,7 @@ namespace Kenta.Core
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+            LevelScores.LoadLocal();
             if (attractScreen != null) attract = attractScreen.GetComponent<AttractScreen>();
         }
 
@@ -270,16 +271,25 @@ namespace Kenta.Core
 
             if (p == AttractPhase.Demo && run != null && catalog != null && catalog.levels != null && catalog.levels.Length > 0)
             {
-                // une vraie partie en autoplay, sur un monde différent à chaque passage
-                var level = catalog.levels[demoIndex % catalog.levels.Length];
-                demoIndex++;
-                boardLevel = level;
-                if (rig != null) rig.AutoScroll = 0f;
-                if (backdrop != null) backdrop.SetGroundVisible(false);
-                menuLooping = false;
-                run.BeginRun(level, demo: true);
-                Conductor.Instance?.SetVolume(attractVolume);
-                return;
+                // une vraie partie en autoplay, sur un monde jouable et débloqué différent à chaque passage (jamais 10 ??? verrouillé)
+                LevelDef level = null;
+                int total = catalog.levels.Length;
+                for (int tries = 0; tries < total; tries++)
+                {
+                    var cand = catalog.levels[demoIndex % total];
+                    demoIndex++;
+                    if (LevelScores.IsPlayable(cand)) { level = cand; break; }
+                }
+                if (level != null)
+                {
+                    boardLevel = level;
+                    if (rig != null) rig.AutoScroll = 0f;
+                    if (backdrop != null) backdrop.SetGroundVisible(false);
+                    menuLooping = false;
+                    run.BeginRun(level, demo: true);
+                    Conductor.Instance?.SetVolume(attractVolume);
+                    return;
+                }
             }
 
             run?.StopRun(hideWorld: true, stopMusic: false);

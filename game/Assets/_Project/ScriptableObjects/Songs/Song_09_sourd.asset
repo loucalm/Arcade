@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36ff3b5dc283e46f3862081906125f9a, type: 3}
   m_Name: Song_09_sourd
   m_EditorClassIdentifier: Assembly-CSharp::Kenta.Rhythm.SongData
-  title: "BIKE \u2014 TANGERMUSIC"
+  title: LA SOURDINE
   clip: {fileID: 8300000, guid: 414f2ddf292a94b57a684c3dec8717f9, type: 3}
   remixClip: {fileID: 0}
   bpm: 280

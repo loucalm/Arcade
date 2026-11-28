@@ -19,15 +19,20 @@ namespace Kenta.UI
         [SerializeField, Min(1)] int scale = 1;
         [Tooltip("Plaque sombre derrière le texte : lisible sur n'importe quel décor.")]
         [SerializeField] bool plate;
+        [Tooltip("Contour d'1 px sur les 4 côtés (sans plaque rectangulaire) : lisible partout, même en négatif.")]
+        [SerializeField] bool outline;
+        [SerializeField] Color outlineColor = new(20 / 255f, 16 / 255f, 36 / 255f, 1f);
 
         const int PlatePadX = 3, PlatePadY = 2;
         Image plateImage;
 
         readonly List<Image> glyphs = new();
+        readonly List<Image> outlines = new();
         string built;
-        Color builtColor;
+        Color builtColor, builtOutlineColor;
         Align builtAlign;
         int builtScale;
+        bool builtPlate, builtOutline;
 
         public string Text
         {
@@ -43,6 +48,24 @@ namespace Kenta.UI
 
         public int Scale { get => scale; set { scale = Mathf.Max(1, value); Rebuild(); } }
 
+        public bool Plate
+        {
+            get => plate;
+            set { if (plate != value) { plate = value; Rebuild(); } }
+        }
+
+        public bool Outline
+        {
+            get => outline;
+            set { if (outline != value) { outline = value; Rebuild(); } }
+        }
+
+        public Color OutlineColor
+        {
+            get => outlineColor;
+            set { if (outlineColor != value) { outlineColor = value; Rebuild(); } }
+        }
+
         public PixelFontData Font => font;
 
         void OnEnable()
@@ -50,6 +73,7 @@ namespace Kenta.UI
             // Les glyphs sont recréés à chaque activation : on retire d'abord ceux qu'un prefab aurait pu garder.
             for (int i = transform.childCount - 1; i >= 0; i--) Destroy(transform.GetChild(i).gameObject);
             glyphs.Clear();
+            outlines.Clear();
             plateImage = null;
             built = null;
             Rebuild();
@@ -61,25 +85,55 @@ namespace Kenta.UI
             Rebuild();
         }
 
+        static readonly Vector2Int[] OutlineDirs = { new(-1, 0), new(1, 0), new(0, -1), new(0, 1) };
+
         void Rebuild()
         {
             if (font == null) return;
-            if (text == built && color == builtColor && align == builtAlign && scale == builtScale) return;
+            if (text == built && color == builtColor && align == builtAlign && scale == builtScale
+                && plate == builtPlate && outline == builtOutline && outlineColor == builtOutlineColor) return;
             built = text; builtColor = color; builtAlign = align; builtScale = scale;
+            builtPlate = plate; builtOutline = outline; builtOutlineColor = outlineColor;
 
             int n = text.Length;
             int total = MeasureWidth(font, text, scale);
-            float cursor = align switch
+            float startCursor = align switch
             {
                 Align.Left => 0f,
                 Align.Right => -total,
                 _ => -Mathf.Floor(total * 0.5f),
             };
-            UpdatePlate(cursor, total);
+            UpdatePlate(startCursor, total);
+
+            int neededOutlines = outline ? n * 4 : 0;
+            float outCursor = startCursor;
+            for (int i = 0; i < Mathf.Max(neededOutlines, outlines.Count); i++)
+            {
+                if (i >= outlines.Count) outlines.Add(NewGlyph());
+                var img = outlines[i];
+                if (i >= neededOutlines) { img.gameObject.SetActive(false); continue; }
+                int charIdx = i / 4;
+                int dirIdx = i % 4;
+                if (dirIdx == 0 && charIdx > 0) outCursor += font.AdvanceOf(text[charIdx - 1]) * scale;
+                var sprite = font.Get(text[charIdx]);
+                img.gameObject.SetActive(sprite != null);
+                if (sprite != null)
+                {
+                    img.sprite = sprite;
+                    img.color = outlineColor;
+                    var rt = (RectTransform)img.transform;
+                    rt.sizeDelta = sprite.rect.size * scale;
+                    var d = OutlineDirs[dirIdx];
+                    rt.anchoredPosition = new Vector2(outCursor + d.x, -Mathf.Floor(sprite.rect.height * scale * 0.5f) + d.y);
+                }
+            }
+
+            float cursor = startCursor;
             for (int i = 0; i < Mathf.Max(n, glyphs.Count); i++)
             {
                 if (i >= glyphs.Count) glyphs.Add(NewGlyph());
                 var img = glyphs[i];
+                img.transform.SetAsLastSibling();
                 if (i >= n) { img.gameObject.SetActive(false); continue; }
                 var sprite = font.Get(text[i]);
                 int adv = font.AdvanceOf(text[i]) * scale;

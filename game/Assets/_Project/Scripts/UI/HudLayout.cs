@@ -147,6 +147,38 @@ namespace Kenta.UI
             return (world - cam) * (ppu * k);
         }
 
+        /// <summary>Nombre de vues affichées à l'écran par ScreenGlitch (1 normal, 4 en grille 2×2).</summary>
+        public static int ActiveQuadCount(int copies) => copies >= 2 ? 4 : 1;
+
+        /// <summary>
+        /// Projette un point du monde dans le cadran <paramref name="quadIndex"/> (0..3 en 2×2, 0 seul en plein écran) de
+        /// l'interface 320×180 (origine au centre), en tenant compte du zoom de la caméra, du miroir X et du retournement Y.
+        /// Renvoie aussi les bornes de ce cadran dans l'interface pour y garder les textes flottants.
+        /// </summary>
+        public static Vector2 WorldToUiQuad(Vector2 world, Vector2 cam, int viewWidth, int ppu,
+                                            bool flipX, bool flipY, int copies, int quadIndex, out Rect quadBounds)
+        {
+            float vw = Mathf.Max(1, viewWidth);
+            float vh = vw * 9f / 16f;
+            float u = (world.x - cam.x) * ppu / vw;
+            float v = (world.y - cam.y) * ppu / vh;
+            if (flipX) u = -u;
+            if (flipY) v = -v;
+
+            if (copies >= 2)
+            {
+                int col = quadIndex & 1;
+                int row = (quadIndex >> 1) & 1;
+                float cw = ScreenWidth * 0.5f, ch = ScreenHeight * 0.5f;
+                Vector2 center = new((col - 0.5f) * cw, (0.5f - row) * ch);
+                quadBounds = new Rect(center.x - cw * 0.5f, center.y - ch * 0.5f, cw, ch);
+                return new Vector2(center.x + u * cw, center.y + v * ch);
+            }
+
+            quadBounds = new Rect(-ScreenWidth * 0.5f, -ScreenHeight * 0.5f, ScreenWidth, ScreenHeight);
+            return new Vector2(u * ScreenWidth, v * ScreenHeight);
+        }
+
         /// <summary>Rectangle d'interface (origine au centre) d'une plaque collée en haut, de bord gauche <paramref name="left"/>.</summary>
         public static Rect TopPlateRect(int left, int width) => new(left - ScreenWidth / 2, BandBottom, width, PlateHeight);
     }

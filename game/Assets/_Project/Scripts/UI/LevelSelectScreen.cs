@@ -43,7 +43,7 @@ namespace Kenta.UI
         readonly StickRepeat repeat = new();
         LevelCatalog catalog;
         int cursor, shownIndex = -1, shownVersion = -1, shownSeconds = -1;
-        float scroll, timer, elapsed, stableTime;
+        float scroll, timer, elapsed, stableTime, lockShake;
         bool previewed;
 
         public bool Done { get; private set; }
@@ -75,7 +75,7 @@ namespace Kenta.UI
         {
             EnsureCards();
             timer = seconds;
-            elapsed = stableTime = 0f;
+            elapsed = stableTime = lockShake = 0f;
             Done = Back = TimedOut = false;
             previewed = false;
             shownIndex = shownVersion = shownSeconds = -1;
@@ -114,6 +114,7 @@ namespace Kenta.UI
 
             scroll = Mathf.Lerp(scroll, cursor, 1f - Mathf.Exp(-dt * scrollSharpness));
             if (Mathf.Abs(scroll - cursor) < 0.01f) scroll = cursor;
+            if (lockShake > 0f) lockShake = Mathf.Max(0f, lockShake - dt);
             Layout();
 
             if (shownIndex != SelectedIndex || shownVersion != LevelScores.Version) RefreshPanel();
@@ -148,6 +149,8 @@ namespace Kenta.UI
                 if (card.gameObject.activeSelf != exists) card.gameObject.SetActive(exists);
                 if (!exists) continue;
                 var r = LevelListLayout.CardRect(LevelListLayout.Offset(i, scroll, n));
+                if (i == sel && lockShake > 0f)
+                    r.x += Mathf.RoundToInt(Mathf.Sin(lockShake * 58f) * 3f);
                 card.Place(r);
                 card.Show(catalog.levels[i], i == sel);
             }
@@ -160,13 +163,29 @@ namespace Kenta.UI
             shownVersion = LevelScores.Version;
             if (level == null) return;
 
-            string label = level.Label.ToUpperInvariant();
+            bool locked = LevelScores.IsLocked(level);
+            string label = locked ? "???" : level.Label.ToUpperInvariant();
             nameText.Scale = NameScale(font, label, nameMaxWidth);
             nameText.Text = label;
+            nameText.Color = locked ? new Color(0.88f, 0.28f, 0.36f) : Color.white;
             var song = level.song;
-            songText.Text = song != null ? song.title.ToUpperInvariant() : "";
-            infoText.Text = song != null ? LevelListLayout.FormatInfo(song.bpm, song.clip != null ? song.clip.length : 0f) : "";
-            for (int i = 0; i < stars.Length; i++) stars[i].color = i < level.stars ? Gold : StarOff;
+            if (locked)
+            {
+                songText.Text = "FINIR LA SOURDINE";
+                infoText.Text = "EN DIFFICULTÉ MAX";
+            }
+            else if (song == null || song.clip == null || level.Chart == null)
+            {
+                songText.Text = "BIENTÔT...";
+                infoText.Text = "";
+            }
+            else
+            {
+                songText.Text = song.title.ToUpperInvariant();
+                infoText.Text = LevelListLayout.FormatInfo(song.bpm, song.clip.length);
+            }
+            var starLit = locked ? new Color(0.88f, 0.28f, 0.36f) : Gold;
+            for (int i = 0; i < stars.Length; i++) stars[i].color = i < level.stars ? starLit : StarOff;
 
             var top = LevelScores.Top(level.id);
             for (int k = 0; k < boardNames.Length; k++)
@@ -188,13 +207,24 @@ namespace Kenta.UI
             previewed = true;
             var level = Selected;
             var conductor = Conductor.Instance;
-            if (level == null || level.song == null || level.song.clip == null || conductor == null) return;
+            if (conductor == null) return;
+            if (level == null || LevelScores.IsLocked(level) || level.song == null || level.song.clip == null)
+            {
+                conductor.Stop();
+                return;
+            }
             if (conductor.IsPlaying && conductor.Song == level.song) return;
             conductor.Play(level.song, level.song.previewBeat, loop: true);
         }
 
         void Confirm()
         {
+            if (!LevelScores.IsPlayable(Selected))
+            {
+                lockShake = 0.32f;
+                ActionSfx.Instance?.Hurt();
+                return;
+            }
             GameSession.LevelIndex = SelectedIndex;
             GameSession.Level = Selected;
             Done = true;

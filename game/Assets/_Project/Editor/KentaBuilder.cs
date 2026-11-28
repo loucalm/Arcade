@@ -664,7 +664,8 @@ namespace Kenta.EditorTools
             var labelPlate = HudPlateNode(tr, "LabelPlate", px);
             var label = AddText(labelPlate.transform, font, "Label", "", Vector2.zero, Color.white, 1, PixelText.Align.Left);
 
-            var judgeLabel = AddText(tr, font, "Judge", "", Vector2.zero, Gold, 1, PixelText.Align.Center, true);
+            var judgeLabel = AddText(tr, font, "Judge", "", Vector2.zero, Gold, 1, PixelText.Align.Center, false);
+            judgeLabel.Outline = true;
             var popup = root.GetComponent<JudgePopup>();
             if (popup == null) popup = root.AddComponent<JudgePopup>();
             Set(popup, "label", judgeLabel);
@@ -943,24 +944,42 @@ namespace Kenta.EditorTools
         /// </summary>
         static LevelCatalog BuildLevels(BiomeTheme[] biomes)
         {
-            int[] stars = { 1, 2, 3, 4, 3, 4, 4, 5, 5 };     // les valeurs des LevelDef (le niveau 9 : le maximum)
+            int[] stars = { 1, 2, 3, 4, 4, 4, 5, 5, 5 };     // les valeurs par défaut (Orage et Cité échangés dans le catalogue : 7 puis 8)
             var shared = AssetDatabase.LoadAssetAtPath<SongData>(SoDir + "Songs/Song_Level01.asset");
             EnsureFolder(SoDir + "Levels");
-            var levels = new LevelDef[biomes.Length];
+            var byBiome = new LevelDef[biomes.Length];
             for (int i = 0; i < biomes.Length; i++)
             {
                 string path = SoDir + $"Levels/Level_{i + 1:00}_{BiomeIds[i]}.asset";
                 bool isNew = AssetDatabase.LoadAssetAtPath<LevelDef>(path) == null;
                 var l = Asset<LevelDef>(path);
                 l.id = BiomeIds[i];
-                l.number = i + 1;
                 l.biome = biomes[i];
                 if (l.song == null || l.song == shared) l.song = LevelSong(i, shared);
                 if (l.thumbnail == null) l.thumbnail = AssetDatabase.LoadAssetAtPath<Sprite>(Art + $"Gen/ui/thumb_{BiomeIds[i]}.png");
-                if (isNew) l.stars = stars[Mathf.Min(i, stars.Length - 1)];   // ensuite, les étoiles réglées à la main restent
-                EditorUtility.SetDirty(l);
-                levels[i] = l;
+                if (isNew) l.stars = stars[Mathf.Min(i, stars.Length - 1)];
+                byBiome[i] = l;
             }
+            // Ordre de difficulté (ADR-044) : 1..6, puis 7 = Orage (index biome 7), 8 = Cité (index biome 6), 9 = Sourdine (8), 10 = Secret
+            int[] order = { 0, 1, 2, 3, 4, 5, 7, 6, 8 };
+            var levels = new LevelDef[10];
+            for (int k = 0; k < order.Length; k++)
+            {
+                var l = byBiome[order[k]];
+                l.number = k + 1;
+                EditorUtility.SetDirty(l);
+                levels[k] = l;
+            }
+            var secret = Asset<LevelDef>(SoDir + "Levels/Level_10_secret.asset");
+            secret.id = "secret";
+            secret.number = 10;
+            secret.stars = 5;
+            secret.lockedBySourdineHard = true;
+            if (secret.biome == null) secret.biome = biomes[8];
+            if (secret.thumbnail == null) secret.thumbnail = AssetDatabase.LoadAssetAtPath<Sprite>(Art + "Gen/ui/thumb_sourd.png");
+            EditorUtility.SetDirty(secret);
+            levels[9] = secret;
+
             var catalog = Asset<LevelCatalog>(SoDir + "LevelCatalog.asset");
             catalog.levels = levels;
             EditorUtility.SetDirty(catalog);

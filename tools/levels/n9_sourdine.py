@@ -142,22 +142,26 @@ def build():
     L = Level()
     P = Placer(L)
 
-    # ---- intro 0-48 : la Sylve au calme, une action sur les attaques fortes
+    # ---- intro 0-48 : la Sylve au calme, montée progressive sur deux collines avant la fissure
+    L.ramp(22, 3.0, +4)
+    P.block(21, 26)
+    L.ramp(38, 3.0, +4)
+    P.block(37, 42)
     P.fill(2, 48, "HHJ", strong=0.8)
     P.block(44, 48)                                      # on souffle avant la rafale (point de reprise)
 
     # ---- fissure 48-64 : la rafale de triolets, une frappe par triolet, un saut de temps en temps
     P.fill(48, 63.5, "HHHJ", strong=0.55)
 
-    # ---- blanc 64-72 : la musique s'arrête ; le tambour sur l'attaque du blanc nous jette dans le drop
+    # ---- blanc 64-72 : la musique s'arrête ; le tambour sur l'attaque du blanc nous projette haut dans le drop
     t = first(68, 70)
-    L.bounce(t, 72 - t, -1)
+    L.bounce(t, 72 - t, +6)                              # → +14 u
     P.block(64, 74)                                      # on retombe du tambour : rien avant 74 (lisibilité)
     P.jumps.append(t)
 
-    # ---- drop 72-144 : gestes composés sur les attaques fortes, frappes autour
+    # ---- drop 72-144 : gestes composés, grande paroi verticale et plongeon avec palier de reprise
     t = first(80, 82, 0.8)                               # cuirassés : saut sur l'attaque, rebonds d'un temps
-    cuirasses(L, t + 1, (1.0, 1.0))
+    cuirasses(L, t + 1, (1.0, 1.0), rise=2.0)            # → +16 u
     P.jumps += [t, t + 1, t + 2]
     P.block(t - 0.5, t + 3.5)
     t = first(96, 98, 0.8)                               # lianes : saut sur l'attaque, deux balanciers
@@ -165,36 +169,45 @@ def build():
     L.flyer(t + 2.0)
     P.jumps.append(t)
     P.block(t - 0.5, end + 0.8)
-    t = first(120, 122, 0.8)                             # notes de saut : une par ⅔ de temps… trop serré ; une par temps
+    L.ramp(108, 4.0, +8)                                 # ascension brutale dans le silence (+24 u, compatible 30 i/s)
+    P.block(107, 113.5)
+    t = first(120, 122, 0.8)                             # notes de saut au sommet
     end = notes(L, t, [0.5, 1.5, 2.5, 1.5], air=1.33)
     P.jumps.append(t)
-    P.block(t - 0.5, end + 0.8)
-    P.fill(72.5, 144, "HHJH", strong=0.4)              # zone lente durcie (27/11) : les attaques discrètes aussi
-    fill_on(P, pulse(72.5, 140), "HH")
-    P.block(140, 144)
+    P.block(t - 0.5, end + 2.5)
+    L.ramp(130, 3.5, -12)                                # grand plongeon (−12 u → +12 u)
+    P.block(129, 139.5)                                  # palier franc 133.5..139.5 : coupe le tunnel de 26 s sans checkpoint !
+    P.fill(72.5, 144, "HHJH", strong=0.4)
+    fill_on(P, pulse(72.5, 142), "HH")
+    P.block(141, 144)
 
-    # ---- cassure 144-192 : les attaques fortes décalées (x,17 / x,5 / x,83) : saut, frappe, saut ; la basse tient ses
-    # notes, peu d'attaques : une chaîne de cuirassés, des notes de saut, et la pulsation entre les attaques (durci le 27/11)
+    # ---- cassure 144-192 : flèche brisée (+8 u) puis dévalée vers la grotte (−12 u)
     t = first(150, 153, 0.8)
     if P.can_jump(t) and P.free(t + 1, 0.8) and P.free(t + 3, 0.6):
         cuirasses(L, t + 1, (1.33, 1.33, 1.33))
         P.jumps += [t, t + 1, t + 2.33, t + 3.67]
         P.block(t - 0.5, t + 5.5)
+    L.ramp(162, 4.0, +8)                                 # → +20 u (compatible 30 i/s)
+    P.block(161, 167.5)
     t = first(170, 173, 0.6)
     if P.can_jump(t) and P.free(t + 6, 0.8):
         end = notes(L, t, [0.5, 1.5, 2.5, 1.5], air=1.33)
         P.jumps.append(t)
-        P.block(t - 0.5, end + 0.8)
-    P.fill(144, 192, "JHH", strong=0.4, kinds=("gap", "wall", "step+", "step-"))
+        P.block(t - 0.5, end + 3.0)                      # atterrissage dégagé pour voir venir les ennemis au sol
+    L.ramp(184, 3.5, -12)                                # → +8 u
+    P.block(183, 189.5)
+    P.fill(144, 192, "JHH", strong=0.4, kinds=("gap", "wall"))
     fill_on(P, pulse(144, 190), "HJH", kinds=("gap", "wall"))
 
-    # ---- montée 192-240 : la grotte (au plafond, tête en bas), puis des rafales
+    # ---- montée 192-240 : la grotte (au plafond, tête en bas), puis plongeon final vers l'arène du boss
     g0 = first(200, 202, 0.8)
     g1 = first(216, 218, 0.8)
-    jumps_in = [x for x in acc(g0 + 2, g1 - 1.5, 0.8)][::3][:3]
-    hang = [x for x in acc(g0 + 1, g1 - 1, 0.55) if all(abs(x - j) >= 1.2 for j in jumps_in)][::2][:5]
+    jumps_in = [x for x in acc(g0 + 2.2, g1 - 1.5, 0.8)][::3][:3]
+    hang = [x for x in acc(g0 + 2.2, g1 - 1, 0.55) if all(abs(x - j) >= 1.2 for j in jumps_in)][::2][:5]
     grotte(L, g0, g1, jumps=tuple(jumps_in), hanging=tuple(hang))
     P.block(g0 - 2, g1 + 1.5)
+    L.ramp(232, 3.0, -8)                                 # retour à 0 u pour l'arène de la Sourdine
+    P.block(231, 236)
     P.fill(192, 240, "HHHJ", strong=0.4)
 
     # ---- roulement 240-272 : triolets sur presque tout, le plus d'appuis du niveau

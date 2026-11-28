@@ -116,5 +116,19 @@ namespace Kenta.EditorTests
             t.Build();
             Assert.IsFalse(t.HitsSide(2f, 0.25f, 0.2f));
         }
+
+        [Test]
+        public void TerrainEnd_CoversTheSongEnd_WhenTheSongOutlastsTheObstacles()
+        {
+            // niveau 8 : dernier obstacle à 1300 u, fin du morceau à 1380 u → le sol va au-delà de la fin du morceau
+            Assert.AreEqual(1400f, LevelBuilder.TerrainEndX(1300f, 1380f), 1e-3f);
+        }
+
+        [Test]
+        public void TerrainEnd_KeepsSixtyUnitsAfterTheLastObstacle_OtherwiseOrWithoutSong()
+        {
+            Assert.AreEqual(1360f, LevelBuilder.TerrainEndX(1300f, 1310f), 1e-3f);
+            Assert.AreEqual(1360f, LevelBuilder.TerrainEndX(1300f, 0f), 1e-3f);
+        }
     }
 }
