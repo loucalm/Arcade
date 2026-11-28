@@ -9,7 +9,7 @@ tour seulement : pas de rotation fractionnaire en pixel art).
 
 La tête vient de l'image d'attente de Gemini (tools/gemini-heros/clean.py), coupée sous le menton (HEAD_ROWS).
 
-Usage : python3 tools/gemini-heros/hybrid.py [kenta aiko ryo] [--install] [--only run,jump,...]
+Usage : python3 tools/gemini-heros/hybrid.py [kenta aiko ryo] [--install] [--force] [--only run,jump,...]
   sans --install : aperçus dans tools/gemini-heros/out/hybride_<héros>.png
 """
 import argparse
@@ -105,8 +105,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("heroes", nargs="*", default=["kenta", "aiko", "ryo"])
     ap.add_argument("--install", action="store_true")
+    ap.add_argument("--force", action="store_true", help="écrase même si les sprites v2 (.v2_<héros>) sont installés")
     ap.add_argument("--only", default="", help="animations à rendre (ex. run,jump) ; toutes par défaut")
     args = ap.parse_args()
+    if args.install and not args.force:
+        blocked = [h for h in args.heroes if os.path.exists(os.path.join(GAME, f".v2_{h}"))]
+        if blocked:
+            sys.exit(
+                f"refus d'écraser les héros v2 ({', '.join(blocked)} : marqueur .v2_<héros> présent dans {GAME}). "
+                "Ajoute --force pour passer outre."
+            )
     gen = load(os.path.join(TOOLS, "gen-heroes.py"), "gen_heroes")
     only = [s for s in args.only.split(",") if s]
     os.makedirs(OUT, exist_ok=True)

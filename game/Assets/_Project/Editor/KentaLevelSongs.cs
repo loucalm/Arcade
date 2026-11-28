@@ -6,8 +6,8 @@ using UnityEngine;
 namespace Kenta.EditorTools
 {
     /// <summary>
-    /// Branche les morceaux, les charts et l'échelle complète des 10 niveaux (ADR-035, ADR-044) :
-    /// N1 Sylve (117 BPM) → N2 Bayou (120) → N3 Échos (140) → N4 Forge (151,3) → N5 Échine (150, L'Ascension) →
+    /// Branche les morceaux, les charts et l'échelle complète des 10 niveaux (ADR-035, ADR-046) :
+    /// N1 Sylve (117 BPM) → N2 Bayou (120) → N3 Échos (140) → N4 Forge (125, Chaos ID) → N5 Échine (150, L'Ascension) →
     /// N6 Givre (168, Boss Battle #2) → N7 Grand Orage (180) → N8 Cité Sourde (120→240, Atama no Taisou) →
     /// N9 La Sourdine (280, BIKE) → N10 « ??? » (secret enchaîné, débloqué en finissant N9 en DUR).
     /// Menu : Kenta &gt; Brancher les morceaux des niveaux. Rejouable sans risque.

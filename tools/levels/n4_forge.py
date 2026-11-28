@@ -1,193 +1,212 @@
-"""Niveau 4 — La Forge, sur *Fire Maze* (JadeWizard, OpenGameArt, CC BY 4.0), 151,3 BPM (ADR-035).
+"""Niveau 4 — La Forge, sur *Chaos ID* de Soularflair et @canmastersmash (Free Music Archive, CC BY 4.0), 125 BPM
+(ADR-035, ADR-044, plan : docs/superpowers/plans/2026-11-27-niveau-4-volcan.md).
 
-Un volcan. La verticalité arrive. Trois nouveautés, apprises en 4 temps (seule, répétée, variée, combinée) :
-- les **tambours** (montée, puis refrain) : un tambour seul qui envoie sur un étage, deux à la suite, puis la chaîne
-  de quatre tambours au refrain, un par temps ;
-- les **rampes** : la course sur le mur (automatique) et la **dévalée** ; au refrain, le plongeon (deux pentes) ;
-- l'**arrière-plan** : un tambour nous pose sur le chemin du fond, on y frappe et on y saute pendant que les piliers
-  du premier plan passent devant, puis un tambour nous ramène devant.
-Les gestes des niveaux 1 à 3 restent (trous, souches, ennemis, cuirassés, lianes, notes de saut, chauves-souris, et
-la gravité inversée au début du passage 2). **Pas d'effet d'écran** (niveau 5).
+La marche entre les Échos (niveau 3) et le Main Theme (niveau 5). Deux nouveautés, apprises en 4 temps (seule,
+répétée, variée, combinée) :
+- le **volcan qui monte** : tambours (un seul, deux à la suite, la chaîne de quatre sur les coups forts) et rampes
+  (la course sur le mur, la dévalée, le plongeon) ;
+- les **effets d'écran**, le premier niveau qui en a : un grésillement sur chaque coup fort, un miroir sur une phrase
+  calme (rien à faire pendant le retournement), l'écran dédoublé (la grille 2×2, le seul dédoublé du jeu) sur des
+  gestes simples, puis les deux au final. Pas de tête en bas (niveau 5 et plus). Chaque effet est annoncé une mesure
+  avant par le bandeau.
+Les gestes des Échos restent (trous, marches, murs, ennemis, cuirassés, lianes, chauves-souris, notes de saut, grotte).
+Le morceau est plus lent que les Échos (125 contre 140 BPM) : la difficulté monte par la densité (ennemis en croches,
+doublés), et la course est accélérée à 8 u/s (3,84 u par temps au lieu de 3,2 : Échos 7,5 u/s, niveau de base 8). Les
+actions restent sur les mêmes temps, les obstacles s'écartent. Au-delà de 8,35 u/s, les frappes en avance ratent
+l'ennemi (marge sous 120 ms).
 
-Progression (mesurée par le simulateur, voir `tools/tests/test_levels.py`) : chaque niveau monte d'un cran sur chaque
-critère, sans saut brutal. Actions par seconde : 0,70 → 0,95 → 1,19 → ≈ 1,3 ; pic sur une phrase de 8 temps entre
-celui des Échos et celui du niveau de base ; un peu de contretemps (les Échos n'en ont presque pas, le niveau de base
-43 %) ; dénivelé de 25 à 35 u (Échos 11 u, niveau de base 70 u) ; plans larges seulement sur les refrains.
+Forme du morceau (temps, mesurée sur l'original) : riffs de 12 mesures (0, 48, 108), coups forts de 3 mesures plus
+brillants (96, 156, 216), pont (168), montée de plus en plus forte (192), fin (228) et fondu.
 
-Morceau monté par `tools/cut-song.py` : la boucle de 32 mesures jouée deux fois, puis 4 mesures, en copies entières
-(`--offset 0`), fondu sur 8 temps, 1 min 48 :
-  python3 tools/cut-song.py "<Fire Maze>/fire_maze.mp3" \
-      game/Assets/_Project/Audio/Music/n4_forge_fire_maze.ogg --bpm 151.29 --offset 0 --bars 0-31,0-31,0-3 --fade 8
-  python3 tools/analyse-song.py game/Assets/_Project/Audio/Music/n4_forge_fire_maze.ogg \
-      tools/data/n4_forge_analysis.json --bpm 151.29 --offset 0.026 --beats 272
-Tempo mesuré : 151,29 BPM (dérive < 10 ms après les raccords), premier temps à 26 ms ; la mineur. Grosse caisse sur
-les temps 1 à 3 de chaque mesure, phrases de 4 mesures. Forme (temps) : boucle 0-128, rejouée 128-256, coda 256-272.
+Morceau : l'original, entier (MP3 320 kbps de FMA, 1 min 55, joué au clic : 125,00 BPM, dérive < 3 ms ; premier temps
+à 0,052 s, au début de l'attaque : à 0,069 s, sur son pic, les actions tombaient 18 ms trop tard), seulement converti
+en OGG. Une version 8-bit rejouée par la machine (essai du 27/11) sonnait faux sur tout le morceau : abandonnée.
+  python3 tools/cut-song.py "Soularflair - Chaos ID (tribal, instrumental, metal).mp3" \\
+      game/Assets/_Project/Audio/Music/n4_forge_chaos_id.ogg --bpm 125 --offset 0.052 --bars 0-end
+  python3 tools/analyse-song.py game/Assets/_Project/Audio/Music/n4_forge_chaos_id.ogg \\
+      tools/data/n4_forge_analysis.json --bpm 125 --offset 0.052 --beats 236
+Crédit (demandé par l'artiste) : « Music by Soularflair and @canmastersmash (IG) - Chaos ID ». L'artiste demande
+aussi qu'on le prévienne quand on utilise sa musique.
 """
 from levelgen.builder import Level, cuirasses, grotte, lianes, notes
 from levelgen.fiche import Fiche
 
-SECTIONS = [("intro", 0), ("montée", 32), ("couplet", 48), ("refrain", 80), ("arrière-plan", 112),
-            ("intro 2", 128), ("roulement", 160), ("couplet 2", 176), ("refrain 2", 208), ("final", 240)]
+SECTIONS = [("intro", 0), ("couplet", 48), ("refrain", 96), ("couplet 2", 108), ("refrain 2", 156), ("pont", 168),
+            ("montée", 192), ("refrain 3", 216), ("final", 228)]
+
+
+def drop(L, b, glitch=0.35, descend=0.0):
+    """Un coup fort (12 temps, plan large) : un tambour sur le drop, un ennemi, la chaîne de quatre tambours sur les
+    temps (on grimpe à chaque rebond), puis un ennemi, un trou, un ennemi ; avec `descend`, on finit en redescendant
+    (le plongeon, 2 temps). Le grésillement souligne le coup."""
+    L.glitch(b, glitch, 4)
+    L.bounce(b - 0.5, 2.5, +4)                  # le drop : → b + 2
+    L.enemy(b + 3)
+    for k in (4, 5, 6, 7):                      # la chaîne, un tambour par temps
+        L.bounce(b + k, 1.0, +1.5, lums=False)
+    L.lums(b + 4.25, 15, 0.25)
+    L.enemy(b + 9)
+    if descend:
+        L.ramp(b + 10, 2.0, descend)            # → b + 12
+        return
+    L.gap(b + 10, 0.5)
+    L.enemy(b + 11)
 
 
 def scene_intro(L):
-    """0-32 : ce que les Échos ont appris, en accéléré ; puis le premier tambour, sur la fin de la phrase."""
+    """0-48 : ce que les Échos ont appris, puis le premier tambour, seul, sur la fin de la phrase."""
     L.gap(4, 0.5)
     L.enemy(6)
     L.step(8, +1)
     L.enemy(10)
+    L.enemy(11)                                 # doublé (125 BPM : la densité remplace la vitesse)
     L.wall(12)
     L.enemy(14)
-    cuirasses(L, 17)                            # 16 saut, 17 appui, → 19
+    L.enemy(16)
+    L.enemy(17)
+    L.gap(18, 0.5)
     L.enemy(20)
-    notes(L, 22, [0.5, 1.5])                    # 23, 24, → 25
+    cuirasses(L, 23)                            # 22 saut, 23 appui, → 25
     L.enemy(26)
-    L.gap(28, 0.5)
-    L.bounce(30, 2.0, +2)                       # le premier tambour : on se pose un étage plus haut (32)
+    L.enemy(28)
+    notes(L, 30, [0.5, 1.5])                    # 31, 32, → 33
+    L.enemy(34)
+    L.enemy(35)
+    L.step(36, +1)
+    L.enemy(38)
+    L.enemy(40)
+    L.enemy(41)
+    L.gap(43, 0.5)
+    L.bounce(45, 2.0, +2)                       # le premier tambour : on se pose un étage plus haut (47)
+
+
+def scene_couplet(L):
+    """48-96 : le tambour encore, la course sur le mur, deux tambours à la suite, la dévalée, une liane et sa
+    chauve-souris, deux cuirassés, des notes de saut ; le drop du refrain arrive par un tambour."""
+    L.enemy(49)
+    L.enemy(50)
+    L.enemy(51)
+    L.bounce(52, 2.0, +2)                       # → 54
+    L.enemy(55)
+    L.enemy(57)
+    L.ramp(58, 1.5, +4)                         # la première course sur le mur
+    L.enemy(61)
+    L.gap(62, 0.5)
+    L.enemy(64)
+    L.enemy(64.5)                               # en croches : la densité remplace la vitesse
+    L.enemy(65)
+    for k in (0, 1):                            # deux tambours à la suite
+        L.bounce(66 + k, 1.0, +1.5, lums=False)
+    L.lums(66.25, 7, 0.25)
+    L.enemy(70)
+    L.enemy(70.5)
+    L.enemy(71)
+    L.ramp(72, 1.5, -5)                         # la dévalée
+    L.enemy(75)
+    lianes(L, 76, [1.25])                       # → 79
+    L.flyer(77)
+    L.enemy(80)
+    L.enemy(81)
+    cuirasses(L, 84, (1.0, 2.0))                # 83 saut, 84, 85, → 87
+    L.enemy(88)
+    notes(L, 89, [0.5, 1.5])                    # → 92
+    L.enemy(93)
+    L.enemy(94)
+
+
+def scene_couplet2(L):
+    """108-156 : on redescend, puis le premier miroir (120-132) sur une phrase calme : rien pendant le retournement,
+    des ennemis et une marche ensuite. Puis la grotte (gravité inversée) et deux cuirassés."""
+    L.enemy(109)
+    L.ramp(110, 2.5, -8)                        # le plongeon après le coup fort
+    L.enemy(113)
+    L.enemy(114)
+    L.enemy(115)
+    L.enemy(116)
+    L.gap(117, 0.5)
+    L.enemy(118)
+    L.screen_flip(120, "mirror")                # on court vers la gauche
+    L.enemy(124)
+    L.enemy(126)
+    L.step(127, +1)
+    L.enemy(129)
+    L.enemy(130)
+    L.screen_flip(132, "none")
+    L.enemy(133)
+    L.enemy(134)
+    grotte(L, 137, 145, jumps=(139, 142), hanging=(140, 144))
+    L.enemy(147)
+    cuirasses(L, 150, (1.0, 2.0))               # 149 saut, 150, 151, → 153
+    L.enemy(154)
+
+
+def scene_pont(L):
+    """168-192 : l'écran dédoublé en 2×2 (168-180) sur des gestes simples, puis un escalier à contretemps et de toit en
+    toit."""
+    L.screen_split(168, 4)
+    L.enemy(169)
+    L.enemy(170)
+    L.enemy(171)
+    L.gap(172, 0.5)
+    L.enemy(174)
+    L.enemy(175)
+    L.step(177, +1)
+    L.enemy(178)
+    L.screen_split(180, 1)
+    for k in (181.5, 182.5, 183.5):             # une marche par demi-temps de retard
+        L.step(k, +1)
+    L.gap(185, 0.5)
+    L.step(186, +1)
+    L.gap(187, 0.5)
+    L.ramp(188, 1.0, -5)                        # on redescend du toit
+    L.enemy(190)
+    L.enemy(190.5)
+    L.enemy(191)
 
 
 def scene_montee(L):
-    """32-48 : un tambour seul, la course sur le mur, un trou au sommet."""
-    L.enemy(33)
-    L.bounce(36, 2.0, +2)                       # → 38
-    L.enemy(39)
-    L.ramp(40, 1.5, +4)                         # course sur le mur
-    L.enemy(43)
-    L.gap(44, 0.5)
-    L.enemy(45)
-    L.enemy(47)
-
-
-def scene_couplet(L, b, variant=False):
-    """48-80 : deux tambours à la suite, deux cuirassés enchaînés, la dévalée, une liane et sa chauve-souris, une
-    course sur le mur, des notes de saut avant le refrain. Au passage 2, un peu plus haut et plus bas."""
-    for k in (0, 1):                            # deux tambours, on grimpe à chaque rebond
-        L.bounce(b + k, 1.0, +1.5, lums=False)
-    L.lums(b + 0.25, 7, 0.25)
-    L.enemy(b + 4)                              # pas trop tôt après les tambours : il doit se voir venir
-    L.enemy(b + 5)
-    L.add(b + 6, "jump")                        # on saute sur le premier cuirassé…
-    L.stomp(b + 7, 1.0)                         # … rebond court (le second reste à l'image)…
-    L.stomp(b + 8, 2.0)                         # … puis vers la falaise
-    L.cliff(b + 9.25, 1.0)
-    L.enemy(b + 13)
-    L.ramp(b + 14, 1.5, -5)                     # la dévalée (≤ 5,5 u : pas de plan large hors des refrains)
-    L.enemy(b + 17)
-    lianes(L, b + 18, [1.25])                   # → b + 21
-    L.flyer(b + 19)
-    L.enemy(b + 22)
-    L.ramp(b + 23, 1.5, +5 if variant else +4)  # course sur le mur
-    L.enemy(b + 25)                             # au sommet du mur
-    notes(L, b + 26, [0.5, 1.5])                # → b + 29
-    L.enemy(b + 30)
-
-
-def scene_refrain(L, b):
-    """80-112 (plan large) : on monte au sommet du volcan, puis on plonge.
-      79,5 tambour sur le drop ; 84 course sur le mur ; 86 un tambour qui relance ;
-      89    la chaîne : quatre tambours, un par temps, on grimpe à chaque rebond ;
-      94    le sommet : deux ennemis et un trou ;
-      97    le plongeon : deux pentes, le sol reste à l'image ;
-      105   on rebondit (chauve-souris), et on finit au sol en frappant."""
-    L.bounce(b - 0.5, 2.5, +4)                  # le drop
-    L.enemy(b + 3)
-    L.ramp(b + 4, 1.5, +3)
-    L.bounce(b + 6, 1.5, +2)
-    for k in (9, 10, 11, 12):                   # la chaîne de tambours, sur les temps
-        L.bounce(b + k, 1.0, +1.5, lums=False)
-    L.lums(b + 9.25, 15, 0.25)
-    L.enemy(b + 14)
-    L.gap(b + 15, 0.5)
-    L.enemy(b + 16)
-    L.ramp(b + 17, 2.5, -9)                     # le plongeon
-    L.ramp(b + 19.5, 2.0, -6)
-    L.enemy(b + 23)
-    L.gap(b + 24, 0.5)
-    L.bounce(b + 25, 1.5, +2)
-    L.flyer(b + 25.5)
-    L.enemy(b + 28)
-    L.enemy(b + 29)
-    L.enemy(b + 30)
-    L.enemy(b + 31)
-
-
-def back_passage(L, b):
-    """L'arrière-plan (de b à b + 11,5) : un tambour nous pose sur le chemin du fond, 1 u plus haut ; on y frappe trois
-    fois et on saute son trou pendant que deux piliers du premier plan passent devant ; un tambour nous ramène."""
-    h = L.h
-    L.to_plane(b, 1.5, "to_back")               # b → b + 1,5
-    L.back(b + 1, 3.2, 1.0)
-    L.back(b + 4.7, 5.8, 1.0)                   # trou de b + 4,2 à b + 4,7
-    L.back_enemy(b + 2.5)
-    L.add(b + 4, "jump", variant="back")
-    L.back_enemy(b + 5.5)
-    L.back_enemy(b + 7.5)
-    L.cliff(b + 4.25, 2.5)                      # deux piliers du premier plan, plus hauts que le héros
-    L.cliff(b + 4.9, -2.5)
-    L.cliff(b + 6.0, 2.5)
-    L.cliff(b + 6.8, -2.5)
-    L.to_plane(b + 10, 1.5, "to_front")         # b + 10 → b + 11,5
-    L.h = h
-
-
-def scene_arriere_plan(L):
-    """112-128 : le premier passage dans l'arrière-plan."""
-    L.enemy(113)
-    back_passage(L, 114.5)                      # → 126
-    L.enemy(127)
-
-
-def scene_intro2(L):
-    """128-160 : la boucle revient, plus dure : la grotte de lave (gravité inversée), deux cuirassés, deux lianes."""
-    L.enemy(129)
-    grotte(L, 132, 140, jumps=(134, 137), hanging=(135, 139))
-    L.enemy(142)
-    L.enemy(143)
-    cuirasses(L, 146, (1.0, 2.0))               # 145 saut, 146, 147, → 149
-    L.enemy(150)
-    lianes(L, 152, [1.25, 1.0])                 # → 157
-    L.flyer(153)
-    L.enemy(158)
-
-
-def scene_roulement(L):
-    """160-176 : les premières croches enchaînées : un escalier à contretemps (une marche par demi-temps de retard),
-    puis de toit en toit sur les temps."""
-    for k in (161.5, 162.5, 163.5, 164.5):
-        L.step(k, +1)
-    L.gap(166, 0.5)
-    L.step(167, +1)
-    L.gap(168, 0.5)
-    L.step(169, +1)
-    L.ramp(170, 1.0, -5)                        # on redescend du toit
-    L.enemy(172)
-    L.enemy(173)
-    L.enemy(174)
-    L.enemy(175)
+    """192-216 : la montée : deux lianes, des notes de saut, puis le second miroir (208-216) avec un tambour."""
+    L.enemy(193)
+    lianes(L, 194, [1.25, 1.0])                 # → 199
+    L.flyer(195)
+    L.enemy(200)
+    L.enemy(200.5)
+    L.enemy(201)
+    notes(L, 202, [0.5, 1.5, 0.5])              # → 206
+    L.enemy(207)
+    L.screen_flip(208, "mirror")
+    L.enemy(210)
+    L.enemy(210.5)
+    L.enemy(211)
+    L.bounce(212, 1.5, +2)                      # → 213,5
+    L.enemy(214)
+    L.screen_flip(216, "none")
 
 
 def scene_final(L):
-    """240-272 (fondu à la fin) : un dernier passage dans l'arrière-plan, et on finit au sol en frappant."""
-    L.enemy(241)
-    back_passage(L, 242.5)                      # → 254
-    L.enemy(255)
-    L.enemy(257)
-    L.wall(259)
-    L.enemy(261)
-    L.enemy(263)                                # le dernier coup
+    """216-236 : le dernier coup fort, écran dédoublé (2×2) et grésillement ; on redescend et on finit en
+    frappant."""
+    L.screen_split(216, 4)
+    drop(L, 216, glitch=0.45)
+    L.screen_split(228, 1)
+    L.ramp(228, 2.0, -8)
+    L.enemy(231)
+    L.enemy(231.5)
+    L.enemy(232)
+    L.wall(233)
+    L.enemy(234)
+    L.enemy(235)                                # le dernier coup
 
 
 def build():
     L = Level()
     scene_intro(L)
+    scene_couplet(L)
+    drop(L, 96)
+    scene_couplet2(L)
+    drop(L, 156, glitch=0.4, descend=-8)        # on redescend vers le pont
+    scene_pont(L)
     scene_montee(L)
-    scene_couplet(L, 48)
-    scene_refrain(L, 80)
-    scene_arriere_plan(L)
-    scene_intro2(L)
-    scene_roulement(L)
-    scene_couplet(L, 176, variant=True)
-    scene_refrain(L, 208)
     scene_final(L)
     for name, beat in SECTIONS:
         if beat > 0:
@@ -198,14 +217,15 @@ def build():
 
 FICHE = Fiche(
     id="n4_forge",
-    title="Fire Maze - JadeWizard",
-    bpm=151.29, offset=0.026, beats=272,
+    title="Chaos ID - Soularflair & canmastersmash",
+    bpm=125.0, offset=0.052, beats=236,
+    run_speed=8.0,                           # 3,84 u par temps : à 3,2, le niveau défilait plus lentement que les Échos
     sections=SECTIONS,
     analysis="n4_forge_analysis.json",
     build=build,
-    zoom=480, zoom_wide=640, wide_on_refrains=True,     # plans larges sur les refrains (montée et plongeon)
-    scale=(9, 0, 2, 4, 7),                   # la mineur pentatonique (la, do, ré, mi, sol)
+    zoom=480, zoom_wide=640, wide_on_refrains=True,     # plans larges sur les coups forts (la chaîne de tambours)
+    scale=(1, 4, 6, 8, 11),                  # do dièse mineur pentatonique (do#, mi, fa#, sol#, si)
     mechanics=frozenset({"gap", "wall", "step", "enemy", "stomp", "vine", "flyer", "orb", "gravity",
-                         "bounce", "ramp", "back"}),
+                         "bounce", "ramp", "glitch", "screen_flip", "screen_split"}),
     margin_ms=120.0,
 )

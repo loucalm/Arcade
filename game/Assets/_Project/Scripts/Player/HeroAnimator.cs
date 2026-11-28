@@ -38,6 +38,8 @@ namespace Kenta.Player
         [Header("Animations Gemini (si le jeu d'images les a)")]
         [Tooltip("Durée (s) d'une image de la victoire, de la liane, du touché et de la mort.")]
         [SerializeField] float victoryFrameSeconds = 0.12f, vineFrameSeconds = 0.14f, hurtFrameSeconds = 0.05f, deathFrameSeconds = 0.09f;
+        [Tooltip("Durée (s) d'une image de la respiration (idleCycle) en fin de niveau sans pose de victoire.")]
+        [SerializeField] float idleFrameSeconds = 0.14f;
         [Tooltip("Durée (s) de l'atterrissage (toutes ses images).")]
         [SerializeField] float landSeconds = 0.12f;
         [Tooltip("Part du vol d'un tambour jouée par l'envol (le reste : le saut normal, vrille comprise).")]
@@ -68,6 +70,14 @@ namespace Kenta.Player
             if (frames <= 0) return -1;
             if (elapsed <= 0f || frameSeconds <= 0f) return 0;
             return Mathf.Min(frames - 1, (int)(elapsed / frameSeconds));
+        }
+
+        /// <summary>Image d'une boucle jouée depuis `elapsed` s, à `frameSeconds` s par image ; -1 sans images.</summary>
+        public static int LoopFrameIndex(float elapsed, float frameSeconds, int frames)
+        {
+            if (frames <= 0) return -1;
+            if (elapsed <= 0f || frameSeconds <= 0f) return 0;
+            return (int)(elapsed / frameSeconds) % frames;
         }
 
         /// <summary>Image du cycle de course pour une distance donnée (boucle, jamais négative).</summary>
@@ -177,8 +187,11 @@ namespace Kenta.Player
             if (run != null && run.Completed && !run.IsRunning)          // niveau fini : il s'arrête et savoure sa victoire
             {
                 if (doneAt < 0f) doneAt = Time.time;
+                float elapsed = Time.time - doneAt;
                 int nv = Count(sprites.victoryFrames);
-                if (nv > 0) return sprites.victoryFrames[OnceFrameIndex(Time.time - doneAt, victoryFrameSeconds, nv)];
+                if (nv > 0) return sprites.victoryFrames[OnceFrameIndex(elapsed, victoryFrameSeconds, nv)];
+                int ni = Count(sprites.idleCycle);
+                if (ni > 0) return sprites.idleCycle[LoopFrameIndex(elapsed, idleFrameSeconds, ni)];
                 return sprites.idle != null ? sprites.idle : sprites.run;
             }
             doneAt = -1f;

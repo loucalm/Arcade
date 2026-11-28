@@ -1327,7 +1327,7 @@ def make_e_attaques():
     md.polygon([(31, 20), (14, 24), (26, 17)], fill=WHITE)
     md.ellipse([23, 9, 31, 23], fill=WHITE)
 
-    # 4. Eighth note mask (16x16), shared by note_black (2 frames) and note_gold
+    # 4. Eighth note mask (16x16), for note_gold (note_black is drawn bigger, below)
     # Stem is 3 px wide (x=7..9) and flag is 3-4 px thick so 1-px outline leaves a clear interior core!
     note_mask = [[False] * 16 for _ in range(16)]
     # Oval note head bottom-left: centered around (5.5, 11.5), rx=4.3, ry=3.3
@@ -1355,19 +1355,47 @@ def make_e_attaques():
         for x in range(x0, x1 + 1):
             note_mask[y][x] = True
 
+    # Croche noire à frapper (34x34, 0,85 u : la taille de sa zone de frappe). En 16x16, elle faisait la moitié de sa
+    # zone et se perdait dans le décor (« quasiment invisibles », 27/11). Tête ovale penchée, hampe de 4 px, crochet
+    # courbe épais ; même dessin : corps noir, contour blanc de 1 px, œil rouge qui cligne.
+    NB = 34
+    note_big = [[False] * NB for _ in range(NB)]
+    tilt = math.radians(-22)
+    for y in range(NB):
+        for x in range(NB):
+            dx, dy = x + 0.5 - 12.0, y + 0.5 - 25.0
+            u = (dx * math.cos(tilt) + dy * math.sin(tilt)) / 8.6
+            v = (-dx * math.sin(tilt) + dy * math.cos(tilt)) / 6.2
+            if u * u + v * v <= 1.0:
+                note_big[y][x] = True
+    for y in range(3, 25):                                   # hampe, à droite de la tête
+        for x in range(17, 21):
+            note_big[y][x] = True
+    for k in range(41):                                      # crochet : courbe de Bézier épaissie
+        t = k / 40
+        bx = (1 - t) ** 2 * 19 + 2 * (1 - t) * t * 31 + t * t * 27
+        by = (1 - t) ** 2 * 4 + 2 * (1 - t) * t * 9 + t * t * 19
+        r = 2.6 - 1.1 * t
+        for y in range(NB):
+            for x in range(NB):
+                if (x + 0.5 - bx) ** 2 + (y + 0.5 - by) ** 2 <= r * r:
+                    note_big[y][x] = True
+
     def make_note_black(eye_open):
-        im = outline_silhouette(note_mask, 16, 16)
+        im = outline_silhouette(note_big, NB, NB)
         npx = im.load()
-        # Tiny red eye inside note head (x=3..7, y=11..12)
+        # œil rouge dans la tête, reflet blanc en haut à gauche ; fermé : une fente
         if eye_open:
-            for x in (4, 5, 6):
-                npx[x, 11] = RED
-                npx[x, 12] = RED
-            npx[6, 12] = DARK_RED
-            npx[4, 11] = WHITE  # 1-px eye glint
+            for y in (23, 24, 25):
+                for x in range(8, 14):
+                    npx[x, y] = RED
+            for x in range(9, 14):
+                npx[x, 26] = DARK_RED
+            npx[8, 23] = npx[9, 23] = WHITE
         else:
-            for x in (4, 5, 6):
-                npx[x, 12] = RED
+            for x in range(8, 14):
+                npx[x, 25] = RED
+                npx[x, 26] = DARK_RED
         return im
 
     def make_note_gold():

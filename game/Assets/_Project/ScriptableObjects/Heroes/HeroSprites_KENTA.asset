@@ -18,6 +18,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: ae1b95bf27a1d4d9db9707b902293ccf, type: 3}
   - {fileID: 21300000, guid: c19b10bbac6d749fab9a9e9496e0a7b0, type: 3}
   - {fileID: 21300000, guid: 7dd246d6252004e8b92f0e95bb4d9d5f, type: 3}
+  - {fileID: 21300000, guid: c9b10ef98b92a4b338e60ab8caf365bc, type: 3}
+  - {fileID: 21300000, guid: 7da46bcfd494041db8806b2cd235fc54, type: 3}
   run: {fileID: 21300000, guid: a821c0350ce394e08ba15a136b849abe, type: 3}
   runCycle:
   - {fileID: 21300000, guid: a821c0350ce394e08ba15a136b849abe, type: 3}
@@ -75,10 +77,14 @@ MonoBehaviour:
   - {fileID: 21300000, guid: d1ce9dd6ea2914cd699a72f27ad44daf, type: 3}
   victoryFrames: []
   landFrames: []
-  vineFrames: []
+  vineFrames:
+  - {fileID: 21300000, guid: 6f215f78e29114a8badfdb05849110eb, type: 3}
+  - {fileID: 21300000, guid: 485e7dfa60d664dffa0da0ebd83a6a1e, type: 3}
   wallCycle: []
   drumFrames: []
-  hurtFrames: []
+  hurtFrames:
+  - {fileID: 21300000, guid: 3ac996e10fa784bbe890283e5ded852b, type: 3}
+  - {fileID: 21300000, guid: 26c02b49e47184092b6a41893d7df21f, type: 3}
   deathFrames: []
   airHitFrames: []
   portraits: []
