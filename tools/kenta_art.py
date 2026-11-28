@@ -229,15 +229,7 @@ def draw_far(b, scale=BG_SCALE, foot=True):
             tile_wrap(p, x, lambda x0, h=h: (p.poly([(x0 - 5, GROUND_Y), (x0 - 5, GROUND_Y - h + 8), (x0, GROUND_Y - h), (x0 + 5, GROUND_Y - h + 8), (x0 + 5, GROUND_Y)], f["body"]),
                                               p.poly([(x0 - 5, GROUND_Y), (x0 - 5, GROUND_Y - h + 8), (x0, GROUND_Y - h), (x0, GROUND_Y)], f["shade"])))
     elif k == "volcano":
-        for cx, h, w in ((120, 74, 190), (380, 58, 150)):
-            def volc(x0, h=h, w=w):
-                p.poly([(x0 - w // 2, GROUND_Y), (x0 - 16, GROUND_Y - h), (x0 + 16, GROUND_Y - h), (x0 + w // 2, GROUND_Y)], f["body"])
-                p.poly([(x0 - w // 2, GROUND_Y), (x0 - 16, GROUND_Y - h), (x0 - 2, GROUND_Y - h), (x0 - 6, GROUND_Y)], f["shade"])
-                for dx in (-10, 4, 14):
-                    p.line((x0 + dx, GROUND_Y - h + 2), (x0 + dx * 2, GROUND_Y - h + 26), f["snow"], 2)
-                p.rect(x0 - 16, GROUND_Y - h - 1, x0 + 17, GROUND_Y - h + 2, f["snow"])
-                blob(p, x0 + 6, GROUND_Y - h - 18, 22, 12, b["clouds"], hi=mix(b["clouds"], "#FFFFFF", 0.1), lo=b["cloud_shadow"], rng=rng)
-            tile_wrap(p, cx, volc)
+        draw_volcanoes(p, b, f, rng)
     elif k == "ruins":
         x = 0
         while x < STRIP_W:
@@ -266,6 +258,113 @@ def draw_far(b, scale=BG_SCALE, foot=True):
     if foot:
         add_foot(p, b, 0.0)
     return p
+
+
+
+# ============================================================================
+# LA FORGE (maquette du PDF, page 9) : un grand volcan qui brille, un second plus loin, cheminées de forge
+# ============================================================================
+# cratères (centre de la lèvre) en coordonnées de composition 640×180 : le grand volcan, puis le petit
+VOLCANO_VENTS = [(176, 40), (488, 64)]
+
+
+def vents_json(b, scale=BG_SCALE):
+    """Cratères d'où jaillit l'éruption (BiomeBackdrop.Erupt) : px de l'image du calque lointain (1280×360), y depuis
+    le haut. Vide pour les biomes sans volcan."""
+    vents = [[x * scale, y * scale] for x, y in VOLCANO_VENTS] if b["far"]["kind"] == "volcano" else []
+    return dict(id=b["id"], vents=vents)
+
+
+def lava_flow(p, f, x0, y0, y1, amp, phase, drift):
+    """Coulée sinueuse du cratère vers le pied : bord sombre, lave, cœur clair."""
+    pts = []
+    for i in range(13):
+        t = i / 12
+        pts.append((x0 + drift * t + amp * t * math.sin(phase + t * 5.5), y0 + (y1 - y0) * t))
+    for width, c in ((3, f["edge"]), (2, f["lava"]), (1, f["core"])):
+        for a, b_ in zip(pts, pts[1:]):
+            w = width if a[1] < y0 + (y1 - y0) * 0.7 else max(1, width - 1)    # la coulée s'affine en bas
+            p.line(a, b_, c, w)
+
+
+def volcano(p, f, rng, cx, top, half, crater):
+    """Cône aux flancs irréguliers : face éclairée à gauche, ombre à droite, arêtes sombres, cratère qui brille."""
+    base = GROUND_Y
+    left, right = [], []
+    for i in range(1, 6):
+        t = i / 6
+        y = top + (base - top) * t
+        left.append((cx - crater - (half - crater) * t + rng.randint(-3, 3), y))
+        right.append((cx + crater + (half - crater) * t + rng.randint(-3, 3), y))
+    outline = [(cx - half, base), *reversed(left), (cx - crater, top), (cx + crater, top), *right, (cx + half, base)]
+    p.poly(outline, f["body"])
+    p.poly([(cx + 2, top), (cx + crater, top), *right, (cx + half, base), (cx + half // 5, base)], f["shade"])
+    p.poly([(cx - crater, top), (cx - 3, top), (cx - half // 3, base), (cx - half, base), *reversed(left)], f["lit"])
+    for dx in (-half // 2, half // 3, half // 2 + 6):                       # ravines
+        p.line((cx + dx * 0.15, top + 6), (cx + dx, base - 2), f["shade"], 1)
+    lava_flow(p, f, cx - crater // 2, top + 2, base - 6, 7, 0.4, -half * 0.45)
+    lava_flow(p, f, cx + crater // 3, top + 2, base - 12, 6, 2.1, half * 0.3)
+    p.rect(cx - crater, top - 1, cx + crater + 1, top + 2, f["lava"])        # lèvre du cratère
+    p.rect(cx - crater + 2, top - 2, cx + crater - 1, top, f["core"])
+    p.rect(cx - crater + 4, top - 3, cx + crater - 3, top - 2, f["ember"])
+
+
+def ash_cloud(p, f, rng, cx, y, rx):
+    """Panache de cendre en bandes, plus large en haut (maquette du PDF)."""
+    p.rect(cx - 4, y + 6, cx + 5, y + 18, f["ash_lo"])
+    blob(p, cx, y, rx, rx // 2, f["ash"], hi=mix(f["ash"], f["core"], 0.18), lo=f["ash_lo"], rng=rng, lumps=6)
+    blob(p, cx + rx // 2, y - 4, rx // 2, rx // 4 + 2, f["ash"], lo=f["ash_lo"], rng=rng, lumps=4)
+
+
+def forge_chimney(p, f, x, h, w):
+    """Silhouette de cheminée / pilier de forge, avec une lueur à la bouche."""
+    p.rect(x - w // 2, GROUND_Y - h, x + w // 2, GROUND_Y, f["far_dark"])
+    p.rect(x - w // 2 - 2, GROUND_Y - h - 3, x + w // 2 + 2, GROUND_Y - h, f["far_dark"])
+    p.rect(x - w // 2 + 2, GROUND_Y - h - 3, x + w // 2 - 2, GROUND_Y - h - 2, f["lava"])
+    for yy in range(GROUND_Y - h + 10, GROUND_Y - 8, 14):                 # rivets / bandes
+        p.rect(x - w // 2, yy, x + w // 2, yy + 1, f["shade"])
+
+
+def draw_volcanoes(p, b, f, rng):
+    # pics de basalte bas, au loin
+    for i in range(16):
+        x = int(i * STRIP_W / 16 + rng.randint(-10, 10))
+        h, w = rng.randint(14, 30), rng.randint(16, 34)
+        tile_wrap(p, x, lambda x0, h=h, w=w: p.poly([(x0 - w, GROUND_Y), (x0 - w // 3, GROUND_Y - h + 6), (x0, GROUND_Y - h),
+                                                      (x0 + w // 4, GROUND_Y - h + 9), (x0 + w, GROUND_Y)], f["far_dark"]))
+    for x, h, w in ((36, 92, 12), (330, 76, 10), (612, 104, 14)):        # cheminées de la forge
+        tile_wrap(p, x, lambda x0, h=h, w=w: forge_chimney(p, f, x0, h, w))
+    (bx, by), (sx, sy) = VOLCANO_VENTS
+    tile_wrap(p, sx, lambda x0: (volcano(p, f, rng, x0, sy, 92, 10), ash_cloud(p, f, rng, x0 + 4, sy - 16, 22)))
+    tile_wrap(p, bx, lambda x0: (volcano(p, f, rng, x0, by, 140, 15), ash_cloud(p, f, rng, x0 + 6, by - 22, 38)))
+
+
+def basalt_spire(p, m, x0, h, w, crack, rng):
+    """Pic de basalte déchiqueté (calque du milieu de la Forge), une fissure de lave sur un pic sur trois."""
+    top = GROUND_Y - h
+    pts = [(x0 - w, GROUND_Y), (x0 - w // 2, top + h // 3), (x0 - w // 4, top + 4), (x0, top),
+           (x0 + w // 5, top + 7), (x0 + w // 2, top + h // 4), (x0 + w, GROUND_Y)]
+    p.poly(pts, m["mid"])
+    p.poly([(x0 - w, GROUND_Y), (x0 - w // 2, top + h // 3), (x0 - w // 4, top + 4), (x0, top), (x0 - w // 6, GROUND_Y)], m["light"])
+    p.poly([(x0 + w // 5, top + 7), (x0 + w // 2, top + h // 4), (x0 + w, GROUND_Y), (x0 + w // 3, GROUND_Y)], m["dark"])
+    if crack:
+        p.line((x0 - 1, top + 6), (x0 + 3, top + h // 2), "#FF7A1A", 1)
+        p.line((x0 + 3, top + h // 2), (x0 - 2, GROUND_Y - 3), "#D8401A", 1)
+
+
+def hanging_chain(p, x, y0, y1, n):
+    """Chaîne de forge qui pend (maillons de 3×4, alternés de face et de profil)."""
+    dark, lit = n.get("chain_dark", "#2D0C08"), n.get("chain_lit", "#8A4A3A")
+    y, k = y0, 0
+    while y < y1:
+        if k % 2 == 0:                                   # maillon de face : anneau clair, trou sombre
+            p.rect(x - 1, y, x + 2, y + 4, lit)
+            p.rect(x, y + 1, x + 1, y + 3, dark)
+        else:                                            # maillon de profil
+            p.rect(x, y, x + 1, y + 4, dark)
+        y, k = y + 3, k + 1
+    p.rect(x - 2, y1, x + 3, y1 + 3, dark)                                 # crochet
+    p.rect(x + 2, y1 - 2, x + 3, y1, dark)
 
 
 def draw_mid(b, scale=BG_SCALE, foot=True):
@@ -297,13 +396,8 @@ def draw_mid(b, scale=BG_SCALE, foot=True):
                     p.poly([(x0 + dx + 1, GROUND_Y), (x0 + dx + 1, GROUND_Y - hh + 3), (x0 + dx + wv, GROUND_Y - hh + 6), (x0 + dx + wv, GROUND_Y)], m["dark"])
             tile_wrap(p, x, cl)
         elif k == "lavarocks":
-            def rk(x0, h=h):
-                hh = int(h * 0.7)
-                p.poly([(x0 - 22, GROUND_Y), (x0 - 12, GROUND_Y - hh), (x0 + 4, GROUND_Y - hh - 6), (x0 + 16, GROUND_Y - hh + 8), (x0 + 24, GROUND_Y)], m["mid"])
-                p.poly([(x0 - 22, GROUND_Y), (x0 - 12, GROUND_Y - hh), (x0 - 3, GROUND_Y - hh + 4), (x0 - 4, GROUND_Y)], m["light"])
-                p.line((x0, GROUND_Y - hh + 2), (x0 + 5, GROUND_Y - 6), "#FF7A1A", 1)
-                p.line((x0 - 9, GROUND_Y - hh + 10), (x0 - 12, GROUND_Y - 4), "#D8401A", 1)
-            tile_wrap(p, x, rk)
+            w = rng.randint(10, 44)
+            tile_wrap(p, x, lambda x0, h=h, w=w, crack=(i % 3 == 0): basalt_spire(p, m, x0, int(h * 0.62), w, crack, rng))
         elif k == "autumn":
             def tr(x0, h=h):
                 p.rect(x0 - 2, GROUND_Y - h, x0 + 2, GROUND_Y, "#6B4A32")
@@ -352,6 +446,8 @@ def draw_near(b, scale=BG_SCALE, foot=True):
     ]
     for x, draw in motifs:
         tile_wrap(p, x, draw)
+    if n.get("chain"):                           # la Forge : une chaîne de forge pend du haut (maquette du PDF)
+        tile_wrap(p, 392, lambda x0: hanging_chain(p, x0, 0, 78, n))
     if foot:                                     # sous les arbres proches : le sol de la forêt (couleur du calque milieu)
         add_foot(p, b, 1.0, base=dominant_color(draw_mid(b, scale, foot=False)))
     return p
@@ -483,3 +579,40 @@ def draw_hazard(b):
             p.px(x + rng.randrange(3), 3, shade(h["glow"], 0.25))
     p.rect(0, 0, 32, 1, h["ring"])
     return p
+
+
+# ============================================================================
+# MÉTÉO DU DÉCOR (FX/WeatherFx, ADR-047) : petites particules à l'échelle 1 (pixels du monde)
+# ============================================================================
+def draw_weather(name):
+    """Goutte, flocons, braise, morceau de lave et fumée de l'éruption. Blanc ou couleur pleine : WeatherFx les
+    teinte (pluie et neige bleutées, braises et lave orange)."""
+    if name == "rain":                                   # trait de pluie, plus clair en bas
+        im = Image.new("RGBA", (1, 5), (0, 0, 0, 0))
+        for y, a in enumerate((90, 140, 190, 230, 255)):
+            im.putpixel((0, y), (255, 255, 255, a))
+        return im
+    if name == "snow_0":
+        return Image.new("RGBA", (1, 1), (255, 255, 255, 255))
+    if name == "snow_1":
+        im = Image.new("RGBA", (2, 2), (255, 255, 255, 255))
+        im.putpixel((1, 1), (255, 255, 255, 160))
+        return im
+    if name == "ember":
+        im = Image.new("RGBA", (2, 2), col("#FF7A1A"))
+        im.putpixel((0, 0), col("#FFA040"))
+        return im
+    if name == "eruption_blob":                          # bloc de lave : cœur clair, bord sombre, coins vides
+        p = Pix(4, 4)
+        p.rect(0, 1, 4, 3, "#D8401A")
+        p.rect(1, 0, 3, 4, "#D8401A")
+        p.rect(1, 1, 3, 3, "#FFA040")
+        p.px(1, 1, "#FFE0A0")
+        return p.im
+    if name == "eruption_smoke":                         # bouffée de cendre
+        p = Pix(12, 8)
+        p.ellipse(4, 4, 4, 3, "#3A1A16")
+        p.ellipse(7, 3, 4, 3, "#5A3A30")
+        p.ellipse(5, 3, 2, 2, "#6A4A3E")
+        return p.im
+    raise ValueError(name)
