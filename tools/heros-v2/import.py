@@ -994,7 +994,7 @@ def _place_airhit(spr):
 
 def apply_gemini_overrides(hero_id, res, src_dir):
     """Charge les planches complémentaires/corrigées de tools/heros-v2/raw/gemini/ si elles existent."""
-    base_scale = {"kenta": 0.180, "aiko": 0.242, "ryo": 0.200}[hero_id]
+    base_scale = {"kenta": 0.180, "aiko": 0.195, "ryo": 0.185}[hero_id]
 
     p_run = _find_gemini_sheet(src_dir, hero_id, "run")
     if p_run:
@@ -1046,9 +1046,15 @@ def apply_gemini_overrides(hero_id, res, src_dir):
         rows = _split_rows_by_valleys(fg, 2)
         # Rangée 1 : liane (4 frames) avec la main levée alignée au centre-haut
         y0, y1 = rows[0]
-        for k, (x0, x1) in enumerate(split_row_by_valleys(fg[y0:y1], 4)):
+        vine_cols = 5 if hero_id == "ryo" else 4
+        vine_ranges = split_row_by_valleys(fg[y0:y1], vine_cols)
+        if hero_id == "ryo":
+            vine_ranges = [vine_ranges[i] for i in (0, 1, 3, 4)]
+        for k, (x0, x1) in enumerate(vine_ranges):
             sub_fg = keep_largest_component(fg[y0:y1, x0:x1])
             spr = downsample_crisp(rgb[y0:y1, x0:x1], sub_fg, sc)
+            if hero_id == "aiko" and k == 2:
+                spr = spr.transpose(Image.FLIP_LEFT_RIGHT)
             res[f"vine_{k}"] = _align_vine_fist(spr, fist_y_from_bottom=54)
         res["vine"] = res["vine_0"]
         # Rangée 2 : tambour (4 frames)
@@ -1064,7 +1070,13 @@ def apply_gemini_overrides(hero_id, res, src_dir):
         rgb, fg = _load_gemini(p_wv)
         sc = base_scale * (1376.0 / rgb.shape[1])
         rows = _split_rows_by_valleys(fg, 2)
-        wall_frames = extract_grid(rgb, fg, [rows[0]], [6], sc)
+        fg_wall = fg.copy()
+        if hero_id == "ryo":
+            # Retire la fine ligne verticale noire dessinée sur le bord droit de la frame 6
+            y0, y1 = rows[0]
+            col_h = fg_wall[y0:y1].sum(axis=0)
+            fg_wall[y0:y1, col_h > (y1 - y0) * 0.72] = False
+        wall_frames = extract_grid(rgb, fg_wall, [rows[0]], [6], sc)
         for k, im in enumerate(wall_frames):
             res[f"wall_{k}"] = im
         res["wall"] = res["wall_0"]
@@ -1078,12 +1090,18 @@ def apply_gemini_overrides(hero_id, res, src_dir):
         sc = base_scale * (1376.0 / rgb.shape[1])
         rows = _split_rows_by_valleys(fg, 2)
         hd_frames = []
-        for r_idx, (y0, y1) in enumerate(rows):
-            for c_idx, (x0, x1) in enumerate(split_row_by_valleys(fg[y0:y1], 4)):
+        counts = [5, 4] if hero_id == "ryo" else [4, 4]
+        for (y0, y1), cnt in zip(rows, counts):
+            for (x0, x1) in split_row_by_valleys(fg[y0:y1], cnt):
                 sub_fg = fg[y0:y1, x0:x1]
-                # Garde le katana tombé au sol dans death_2..4
                 spr = downsample_crisp(rgb[y0:y1, x0:x1], sub_fg, sc)
                 hd_frames.append(place_in_canvas(spr, min_island=3))
+        if hero_id == "ryo":
+            # 9 frames : 0..2 = hurt, 3 + 5..8 = death (5 frames)
+            hd_frames = hd_frames[:3] + [hd_frames[3]] + hd_frames[5:9]
+        elif hero_id == "aiko":
+            # Garde la tête à gauche sur la dernière frame de mort
+            hd_frames[7] = hd_frames[7].transpose(Image.FLIP_LEFT_RIGHT)
         for k in range(3):
             res[f"hurt_{k}"] = hd_frames[k]
         res["hurt"] = res["hurt_0"]
@@ -1096,15 +1114,32 @@ def apply_gemini_overrides(hero_id, res, src_dir):
         rgb, fg = _load_gemini(p_ah)
         sc = base_scale * (1376.0 / rgb.shape[1])
         rows = _split_rows_by_valleys(fg, 2)
-        idx = 0
-        for (y0, y1) in rows:
-            for (x0, x1) in split_row_by_valleys(fg[y0:y1], 2):
+        if hero_id == "ryo":
+            r1 = split_row_by_valleys(fg[rows[0][0]:rows[0][1]], 5)
+            y20, y21 = rows[1]
+            col2 = fg[y20:y21].sum(axis=0) > 0
+            xs2 = np.nonzero(col2)[0]
+            mid2 = (int(xs2[0]) + int(xs2[-1])) // 2
+            picks = [
+                (rows[0][0], rows[0][1], r1[1][0], r1[1][1]),
+                (y20, y21, int(xs2[0]), mid2),
+                (rows[0][0], rows[0][1], r1[2][0], r1[2][1]),
+                (y20, y21, mid2, int(xs2[-1]) + 1),
+            ]
+            for idx, (y0, y1, x0, x1) in enumerate(picks):
                 spr = downsample_crisp(rgb[y0:y1, x0:x1], fg[y0:y1, x0:x1], sc)
                 res[f"airhit_{idx}"] = _place_airhit(spr)
-                if idx in AIRHIT_SLASH:
-                    # l'arc de Gemini s'arrête vers +50 px : la traînée va jusqu'à la portée de frappe, comme au sol
-                    res[f"airhit_{idx}"] = draw_slash(res[f"airhit_{idx}"], *AIRHIT_SLASH[idx])
-                idx += 1
+        else:
+            idx = 0
+            for (y0, y1) in rows:
+                for (x0, x1) in split_row_by_valleys(fg[y0:y1], 2):
+                    spr = downsample_crisp(rgb[y0:y1, x0:x1], fg[y0:y1, x0:x1], sc)
+                    res[f"airhit_{idx}"] = _place_airhit(spr)
+                    idx += 1
+        for idx, params in AIRHIT_SLASH.items():
+            if f"airhit_{idx}" in res:
+                # l'arc de Gemini s'arrête vers +50 px : la traînée va jusqu'à la portée de frappe, comme au sol
+                res[f"airhit_{idx}"] = draw_slash(res[f"airhit_{idx}"], *params)
 
     p_pt = _find_gemini_sheet(src_dir, hero_id, "portrait")
     if p_pt:
