@@ -82,9 +82,12 @@ Règles :
 - [ ] Écran des niveaux : son au déplacement et à la validation ; tester à la main sur la borne (défilement maintenu, extrait, retour au héros)
 - [ ] **Contenu unique par niveau** : un morceau et une chart propres à chacun des 8 niveaux (aujourd'hui tous sur « Main Theme » et `level01_shovel_knight.json`). Un thème par niveau, sans changement de monde en cours de partie. Plan proposé le 2026-11-26 : 6 niveaux à difficulté croissante, voir la section « Niveaux par monde »
 - [x] (2026-11-27, ADR-041) **Ciel qui vit** : le soleil se couche au fil du morceau, la nuit tombe à la section `fin` (lune, étoiles) ; éclairs sur les temps dans l'Orage (événement `lightning`, niveau 8)
-- [ ] **P2** Autres états du thème, sur le même modèle (événement de chart ou section) : pluie au Bayou, lucioles la nuit dans la Sylve, braises qui montent à la Forge sur les temps forts, cristaux des Échos qui brillent sur le temps
+- [x] (2026-11-28, ADR-047) **Météo du décor** sur la musique : pluie au Bayou (niveau 2), neige au Givre (niveau 6), braises et éruptions à la Forge (niveau 4), événements `weather` et `eruption` ; décor de la Forge redessiné d'après le PDF
+- [ ] **P2** Météo des autres biomes, sur le même modèle (`weather`) : lucioles la nuit dans la Sylve, pluie en double-croches dans l'Orage, cristaux des Échos qui brillent sur le temps, poussière de la Cité
+- [ ] **P2** Forge : lac de lave qui reflète le héros sous le sol (maquette du PDF) ; le sol appartient au niveau, pas au décor
+- [ ] **P1** Mesurer les fps de la météo sur la borne (build Web, niveau 6 à l'`avalanche`, niveau 4 au refrain) ; baisser les densités si < 60
 - [ ] **P2** Gardien du décor toujours au centre du ciel : `BiomeBackdrop` multiplie `guardianOffset` par `k / PixelScreen.Ppu`, une division entière (= 0). Corriger (`(float)`) déplacerait chaque gardien à la place écrite par `gemini-gardiens/clean.py` : à regarder biome par biome avant
-- [ ] **États du thème** au fil d'un niveau : pluie, nuit, lever du jour… Visuels par biome (particules, palette, ciel) + un champ par section dans la chart, appliqué au décor par `RunManager`. À écrire avec la chart propre à chaque niveau (un orage se cale sur un drop du morceau)
+- [x] (2026-11-28, ADR-047) **États du thème** au fil d'un niveau : pluie, neige, braises, éruptions (événement `weather` de la chart, lu par le décor) ; nuit et coucher du soleil : ADR-041
 - [ ] **Mode 2 joueurs** hot-seat (P1 puis P2 sur le même morceau, comparaison à la fin)
 - [ ] Stems audio : couches (batterie, mélodie) qui montent selon le combo ou la section
 

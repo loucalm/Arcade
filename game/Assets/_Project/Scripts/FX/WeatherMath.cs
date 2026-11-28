@@ -21,6 +21,14 @@ namespace Kenta.FX
         public static int SpawnCount(float intensity, int perTickAtFull) =>
             (int)System.Math.Round(UnityEngine.Mathf.Clamp01(intensity) * perTickAtFull, System.MidpointRounding.AwayFromZero);
 
+        /// <summary>Position x (repère de la vue) ramenée dans [-span, span] : sortie à gauche, la particule revient à droite.</summary>
+        public static float Wrap(float x, float span)
+        {
+            if (x < -span) return x + 2f * span;
+            if (x > span) return x - 2f * span;
+            return x;
+        }
+
         /// <summary>Emplacement suivant du pool : on reprend toujours le plus ancien (aucune allocation).</summary>
         public static int NextSlot(int next, int capacity) => (next + 1) % capacity;
     }

@@ -18,7 +18,7 @@ namespace Kenta.FX
         [SerializeField] Camera cam;
         [Tooltip("Parallaxe de la météo (comme le calque proche du décor).")]
         [SerializeField] float parallax = 0.7f;
-        [SerializeField] Color rainColor = new(0.78f, 0.86f, 1f, 0.55f);
+        [SerializeField] Color rainColor = new(0.8f, 0.88f, 1f, 0.75f);
         [SerializeField] Color snowColor = new(1f, 1f, 1f, 0.9f);
         [SerializeField] Color emberColor = new(1f, 0.75f, 0.45f, 1f);
         [Tooltip("Teinte du ciel sous une pluie pleine (multipliée à l'ambiance de la section).")]
@@ -32,6 +32,7 @@ namespace Kenta.FX
             public Vector2 local, velocity;      // position par rapport au centre de la vue (u), vitesse (u/s)
             public float life, maxLife, gravity, sway, phase, parallax;
             public Color color;
+            public bool wrap;                    // météo : sort à gauche, revient à droite (la caméra court vite)
         }
 
         Particle[] particles;
@@ -108,6 +109,7 @@ namespace Kenta.FX
             p.sway = sway;
             p.phase = Random.value * 6.28f;
             p.parallax = layerParallax >= 0f ? layerParallax : parallax;
+            p.wrap = layerParallax < 0f;
             p.color = color;
             p.renderer.sprite = sprite;
             p.renderer.color = color;
@@ -133,8 +135,8 @@ namespace Kenta.FX
             float halfH = cam.orthographicSize, half = halfH * cam.aspect;
             if (r > 0f)
                 for (int t = WeatherMath.Ticks(prevBeat, beat, 0.25, 2); t > 0; t--)          // double-croches
-                    for (int n = WeatherMath.SpawnCount(r, 6); n > 0; n--)
-                        SpawnTop(rain, half, halfH, new Vector2(-1.6f, Random.Range(-15f, -12f)), 0.9f, rainColor, 0f);
+                    for (int n = WeatherMath.SpawnCount(r, 10); n > 0; n--)       // durée de vie : juste la traversée
+                        SpawnTop(rain, half, halfH, new Vector2(-1.6f, Random.Range(-15f, -12f)), 0.1f, rainColor, 0f);
             if (s > 0f)
             {
                 for (int t = WeatherMath.Ticks(prevBeat, beat, 0.5, 2); t > 0; t--)           // croches
@@ -176,6 +178,7 @@ namespace Kenta.FX
         {
             Vector2 c = cam.transform.position;
             float time = Time.time;
+            float span = cam.orthographicSize * cam.aspect + 0.5f;     // demi-largeur de la vue, plus une marge
             for (int i = 0; i < particles.Length; i++)
             {
                 ref var p = ref particles[i];
@@ -186,6 +189,7 @@ namespace Kenta.FX
                 // monde fixe : il glisse de -camDx à l'écran ; un calque en parallaxe p glisse de -camDx × p
                 p.local.x += p.velocity.x * dt - camDx * p.parallax;
                 p.local.y += p.velocity.y * dt;
+                if (p.wrap) p.local.x = WeatherMath.Wrap(p.local.x, span);
                 float x = c.x + p.local.x + (p.sway > 0f ? Mathf.Sin(time * 2.2f + p.phase) * p.sway : 0f);
                 p.transform.position = new Vector3(PixelScreen.Snap(x), PixelScreen.Snap(c.y + p.local.y), 0f);
                 float t = p.life / p.maxLife;

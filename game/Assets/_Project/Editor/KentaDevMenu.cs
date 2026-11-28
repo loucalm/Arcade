@@ -34,6 +34,18 @@ namespace Kenta.EditorTools
         [MenuItem("Kenta/Tester le niveau 1 (coucher du soleil, nuit)")]
         static void PlayLevel1Night() => PlayFrom(108f, "sylve");
 
+        /// <summary>Le niveau 2, le Bayou, en autoplay : la pluie arrive au pont (128), averse à la montée (176, ADR-047).</summary>
+        [MenuItem("Kenta/Tester la pluie du Bayou (niveau 2)")]
+        static void PlayRain() => PlayFrom(124f, "bayou", true);
+
+        /// <summary>Le niveau 6, le Givre, en autoplay : tempête de neige à l'avalanche (240, ADR-047).</summary>
+        [MenuItem("Kenta/Tester la neige du Givre (niveau 6)")]
+        static void PlaySnow() => PlayFrom(204f, "givre", true);
+
+        /// <summary>Le niveau 4, la Forge, en autoplay : éruption sur le 1 du refrain (96), braises plus nombreuses (ADR-047).</summary>
+        [MenuItem("Kenta/Tester les éruptions de la Forge (niveau 4)")]
+        static void PlayEruption() => PlayFrom(92f, "forge", true);
+
         [MenuItem("Kenta/Tester le refrain (prototype)")]
         static void PlayRefrain() => PlayFrom(RefrainBeat);
 

@@ -271,6 +271,11 @@ def build():
     for name, beat in SECTIONS:
         if beat > 0:
             L.add(beat, "section_change", intensity=1.2 if "refrain" in name else 0.5)
+    # météo du décor (ADR-047) : neige légère, plus dense aux refrains, presque rien dans la caverne, tempête à
+    # l'avalanche
+    for beat, level, length in ((0, 0.3, 0), (80, 0.7, 4), (112, 0.1, 4), (144, 0.4, 4), (208, 0.7, 4), (240, 1.0, 2),
+                                (272, 0.3, 8)):
+        L.weather(beat, "snow", level, length)
     L.ev.sort(key=lambda e: (e["beat"], e["type"]))
     return L.ev
 

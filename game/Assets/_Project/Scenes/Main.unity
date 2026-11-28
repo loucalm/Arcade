@@ -1941,7 +1941,7 @@ MonoBehaviour:
   capacity: 120
   cam: {fileID: 620517797}
   parallax: 0.7
-  rainColor: {r: 0.78, g: 0.86, b: 1, a: 0.55}
+  rainColor: {r: 0.8, g: 0.88, b: 1, a: 0.75}
   snowColor: {r: 1, g: 1, b: 1, a: 0.9}
   emberColor: {r: 1, g: 0.75, b: 0.45, a: 1}
   rainSky: {r: 0.68, g: 0.7, b: 0.8, a: 1}

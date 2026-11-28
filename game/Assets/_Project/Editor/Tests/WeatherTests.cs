@@ -69,6 +69,15 @@ namespace Kenta.EditorTests
         }
 
         [Test]
+        public void Wrap_KeepsFlakesOnScreen()
+        {
+            // la caméra court vite : un flocon sorti à gauche revient à droite au lieu de disparaître
+            Assert.AreEqual(7f, WeatherMath.Wrap(-9f, 8f), 1e-5f);
+            Assert.AreEqual(-7f, WeatherMath.Wrap(9f, 8f), 1e-5f);
+            Assert.AreEqual(3f, WeatherMath.Wrap(3f, 8f), 1e-5f);
+        }
+
+        [Test]
         public void Pool_Recycles_Oldest()
         {
             int slot = 0;
