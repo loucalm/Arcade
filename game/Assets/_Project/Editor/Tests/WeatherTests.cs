@@ -78,6 +78,34 @@ namespace Kenta.EditorTests
         }
 
         [Test]
+        public void Weather_MovesAfterTheCamera()
+        {
+            // CameraRig bouge la caméra dans LateUpdate (ordre -50) : placées dans Update, les particules avaient une
+            // image de retard (lave à gauche du cratère, neige qui tremble)
+            var t = typeof(WeatherFx);
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+            Assert.IsNotNull(t.GetMethod("LateUpdate", flags));
+            Assert.IsNull(t.GetMethod("Update", flags));
+        }
+
+        [Test]
+        public void Lava_IsDrawnWithTheFarLayer()
+        {
+            // la lave du volcan lointain passe derrière le calque du milieu (+20) et le proche (+30)
+            int order = BiomeBackdrop.FarFxOrder(-100);
+            Assert.Greater(order, -100 + 10);
+            Assert.Less(order, -100 + 20);
+        }
+
+        [Test]
+        public void Snow_FitsThePool_AtFullStorm()
+        {
+            // avalanche du Givre : 168 BPM, intensité 1, flocons vivant jusqu'à 11,7 s en plan large 640
+            float perSecond = WeatherMath.SnowPerSecond(168f, 4, 1f);
+            Assert.LessOrEqual(perSecond * 11.7f, 120f, $"{perSecond} flocons/s");
+        }
+
+        [Test]
         public void Pool_Recycles_Oldest()
         {
             int slot = 0;

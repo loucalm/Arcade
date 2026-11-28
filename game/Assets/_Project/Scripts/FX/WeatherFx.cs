@@ -42,6 +42,7 @@ namespace Kenta.FX
         double prevBeat;
         bool started;
         float lastCamX;
+        int weatherOrder;
 
         /// <summary>Multiplicateur de la teinte du ciel et du décor (pluie : plus sombre ; neige : plus froid).</summary>
         public Color SkyTint { get; private set; } = Color.white;
@@ -58,6 +59,7 @@ namespace Kenta.FX
         {
             if (particles != null) return;
             if (cam == null) cam = camera;
+            weatherOrder = sortingOrder;
             particles = new Particle[capacity];
             for (int i = 0; i < capacity; i++)
             {
@@ -96,7 +98,7 @@ namespace Kenta.FX
         /// qui la porte (0,12 pour la lave du volcan lointain). Reprend la plus ancienne si le pool est plein.
         /// </summary>
         public void Spawn(Sprite sprite, Vector2 world, Vector2 velocity, float life, Color color, float gravity = 0f,
-                          float layerParallax = -1f, float sway = 0f)
+                          float layerParallax = -1f, float sway = 0f, int sortingOrder = int.MinValue)
         {
             if (particles == null || cam == null || sprite == null) return;
             ref var p = ref particles[next];
@@ -112,6 +114,7 @@ namespace Kenta.FX
             p.wrap = layerParallax < 0f;
             p.color = color;
             p.renderer.sprite = sprite;
+            p.renderer.sortingOrder = sortingOrder != int.MinValue ? sortingOrder : weatherOrder;
             p.renderer.color = color;
             p.transform.position = new Vector3(PixelScreen.Snap(world.x), PixelScreen.Snap(world.y), 0f);
             p.transform.gameObject.SetActive(true);
@@ -120,7 +123,8 @@ namespace Kenta.FX
         public Sprite LavaBlob => lavaBlob;
         public Sprite Smoke => smoke;
 
-        void Update()
+        // LateUpdate : après CameraRig (ordre -50), qui déplace la caméra ; sinon une image de retard sur elle
+        void LateUpdate()
         {
             if (particles == null || cam == null) return;   // scripts rechargés en pleine partie (Play mode)
             var conductor = Conductor.Instance;
@@ -140,9 +144,9 @@ namespace Kenta.FX
             if (s > 0f)
             {
                 for (int t = WeatherMath.Ticks(prevBeat, beat, 0.5, 2); t > 0; t--)           // croches
-                    for (int n = WeatherMath.SpawnCount(s, 2); n > 0; n--) SpawnFlake(half, halfH, 0f);
+                    for (int n = WeatherMath.SpawnCount(s, WeatherMath.SnowPerEighth); n > 0; n--) SpawnFlake(half, halfH, 0f);
                 for (int t = WeatherMath.Ticks(prevBeat, beat, beatsPerBar, 1); t > 0; t--)   // rafale sur le 1
-                    for (int n = WeatherMath.SpawnCount(s, 12); n > 0; n--) SpawnFlake(half, halfH, -2.6f);
+                    for (int n = WeatherMath.SpawnCount(s, WeatherMath.SnowGust); n > 0; n--) SpawnFlake(half, halfH, -2.6f);
             }
             if (e > 0f)
                 for (int t = WeatherMath.Ticks(prevBeat, beat, 2, 1); t > 0; t--)             // temps 1 et 3

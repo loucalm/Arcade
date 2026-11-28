@@ -131,7 +131,7 @@ namespace Kenta.FX
             cloudLayer = Make("CloudSea", firstSortingOrder + 35);   // devant les calques, sous la brume et le niveau
             cloudLayer.sprite = FogSprite(0f, 0.5f, 0.35f);      // 50 % au bas de l'image, rien au-dessus du tiers
             if (weather == null) weather = GetComponent<WeatherFx>();
-            if (weather != null) weather.Init(cam, firstSortingOrder + 38);   // devant les 3 calques, sous la mer de nuages et la brume
+            if (weather != null) weather.Init(cam, firstSortingOrder + 38);   // devant les 3 calques et la mer de nuages, sous la brume
         }
 
         /// <summary>Brume en dégradé vertical (8 bandes, pixel art) : sprite de 1 × 1 unité.</summary>
@@ -257,11 +257,15 @@ namespace Kenta.FX
             for (int i = 0; i < blobs; i++)
                 weather.Spawn(weather.LavaBlob, at + new Vector2(Random.Range(-0.1f, 0.1f), 0.05f),
                               new Vector2(Random.Range(-1.4f, 1.4f), Random.Range(3.5f, 6f)), Random.Range(1.1f, 1.6f),
-                              Color.white, 7f, far);
+                              Color.white, 7f, far, 0f, FarFxOrder(firstSortingOrder));
             for (int i = 0; i < 4; i++)
                 weather.Spawn(weather.Smoke, at + new Vector2(Random.Range(-0.2f, 0.2f), 0.2f),
-                              new Vector2(Random.Range(-0.2f, 0.3f), Random.Range(0.5f, 0.9f)), 2.2f, Color.white, 0f, far, 0.1f);
+                              new Vector2(Random.Range(-0.2f, 0.3f), Random.Range(0.5f, 0.9f)), 2.2f, Color.white, 0f, far, 0.1f,
+                              FarFxOrder(firstSortingOrder));
         }
+
+        /// <summary>Plan des particules du calque lointain (lave, fumée) : juste devant lui, derrière le milieu (+20).</summary>
+        public static int FarFxOrder(int firstSortingOrder) => firstSortingOrder + 11;
 
         /// <summary>
         /// Lueur d'une éruption `t` s après son début : monte vite jusqu'à 0,35 × intensité puis s'éteint avant 1 s, par

@@ -17,6 +17,20 @@ namespace Kenta.FX
             return (int)System.Math.Min(max, System.Math.Max(0, n));
         }
 
+        /// <summary>Flocons par croche et par rafale (sur le 1 de la mesure), à pleine intensité.</summary>
+        public const int SnowPerEighth = 1, SnowGust = 6;
+
+        /// <summary>
+        /// Flocons lâchés par seconde : à l'avalanche du Givre (168 BPM), ils doivent tenir dans le pool de 120 pendant
+        /// toute leur chute (jusqu'à 11,7 s en plan large), sinon des flocons disparaissent en plein écran.
+        /// </summary>
+        public static float SnowPerSecond(float bpm, int beatsPerBar, float intensity)
+        {
+            float beatsPerSecond = bpm / 60f;
+            return beatsPerSecond * 2f * SpawnCount(intensity, SnowPerEighth)
+                 + beatsPerSecond / UnityEngine.Mathf.Max(1, beatsPerBar) * SpawnCount(intensity, SnowGust);
+        }
+
         /// <summary>Particules lâchées sur un pas, selon l'intensité (0..1).</summary>
         public static int SpawnCount(float intensity, int perTickAtFull) =>
             (int)System.Math.Round(UnityEngine.Mathf.Clamp01(intensity) * perTickAtFull, System.MidpointRounding.AwayFromZero);

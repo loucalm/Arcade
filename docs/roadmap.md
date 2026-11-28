@@ -86,6 +86,7 @@ Règles :
 - [ ] **P2** Météo des autres biomes, sur le même modèle (`weather`) : lucioles la nuit dans la Sylve, pluie en double-croches dans l'Orage, cristaux des Échos qui brillent sur le temps, poussière de la Cité
 - [ ] **P2** Forge : lac de lave qui reflète le héros sous le sol (maquette du PDF) ; le sol appartient au niveau, pas au décor
 - [ ] **P1** Mesurer les fps de la météo sur la borne (build Web, niveau 6 à l'`avalanche`, niveau 4 au refrain) ; baisser les densités si < 60
+- [ ] **P2** Météo (relecture du 28/11) : neige pré-remplie sur toute la hauteur au départ et après une reprise au début (sinon bas de l'écran vide 5 à 9 s) ; `ResetMood` remet aussi la lueur d'éruption à zéro ; second cratère de la Forge décalé d'environ 10 px (`VOLCANO_VENTS`) ; décider si la météo doit s'arrêter dès le Game Over (aujourd'hui, les particules finissent leur chute)
 - [ ] **P2** Gardien du décor toujours au centre du ciel : `BiomeBackdrop` multiplie `guardianOffset` par `k / PixelScreen.Ppu`, une division entière (= 0). Corriger (`(float)`) déplacerait chaque gardien à la place écrite par `gemini-gardiens/clean.py` : à regarder biome par biome avant
 - [x] (2026-11-28, ADR-047) **États du thème** au fil d'un niveau : pluie, neige, braises, éruptions (événement `weather` de la chart, lu par le décor) ; nuit et coucher du soleil : ADR-041
 - [ ] **Mode 2 joueurs** hot-seat (P1 puis P2 sur le même morceau, comparaison à la fin)
